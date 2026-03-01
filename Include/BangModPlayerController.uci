@@ -754,6 +754,23 @@ exec function AdminGotoKendo() {
 	ServerChangeMap("AOCTDM-Moor_p");
 }
 
+exec function AdminGotoOF() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-OldForest_p");
+}
+
+// Switch to CompMod3 server (players without the mod will be kicked and must rejoin manually)
+exec function AdminGotoCompMod() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCFFA-YeedYard_p?modname=CompMod3");
+}
+
 exec function AdminForceSpectate(String PlayerName) {
 	if (!PlayerReplicationInfo.bAdmin) {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
