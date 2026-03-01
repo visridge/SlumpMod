@@ -241,7 +241,7 @@ DefaultProperties
     PlayerReplicationInfoClass=class'`{GAMEMODE}PRI'
 
     //This is the name that shows in the server browser for this mod:
-    ModDisplayString="SlumpMod 2.4.0"
+    ModDisplayString="SlumpMod 2.4.2"
 
     Families.Empty;
     Families(ECLASS_Archer)=class'BangModFamilyInfo_Agatha_Archer'
