@@ -1,0 +1,29 @@
+[ChatMessages]
+Welcome=Welcome to Bang Mod!
+
+[BangModWeapon_Warbow]
+WeaponName=Warbow
+
+[BangModWeapon_Longbow]
+WeaponName=Longbow
+
+[BangModWeapon_Shortbow]
+WeaponName=Shortbow
+
+[BangModWeapon_HeavyCrossbow]
+WeaponName=Heavy Crossbow
+
+[BangModWeapon_LightCrossbow]
+WeaponName=Light Crossbow
+
+[BangModWeapon_Crossbow]
+WeaponName=Crossbow
+
+[BangModWeapon_HeavyCrossbow]
+WeaponName=Heavy Crossbow
+
+[BangModWeapon_Sling]
+WeaponName=Sling
+
+[BangModWeapon_ProjWarbowArrow]
+WeaponName=Warbow Arrow

@@ -1,0 +1,82 @@
+// SlumpMod Team Objective gamemode-specific optimizations
+// This file is ONLY included by BangModTO.uc (the gamemode class)
+
+// Override Timer to only force net updates when scoreboard values actually change
+State AOCRoundInProgress
+{
+    function Timer()
+    {
+        local float NewCurVar, NewMaxVar, NewExtraVar;
+        local float OldCurVar, OldMaxVar, OldExtraVar;
+        local bool bNeedsUpdate;
+        
+        super.Timer();
+        
+        // Only update scoreboard text if values actually changed
+        if (CurrentObjectiveStage >= 0 && AllObjSBText[CurrentObjectiveStage].bInUse)
+        {
+            // Cache current GRI values before updating
+            OldCurVar = AOCTOGRI(GameReplicationInfo).CurObjective.CurVar;
+            OldMaxVar = AOCTOGRI(GameReplicationInfo).CurObjective.MaxVar;
+            OldExtraVar = AOCTOGRI(GameReplicationInfo).CurObjective.ExtraVar;
+            bNeedsUpdate = false;
+            
+            // Read new values from Kismet variables
+            if (AllObjSBText[CurrentObjectiveStage].CurVar != none)
+            {
+                if (SeqVar_Int(AllObjSBText[CurrentObjectiveStage].CurVar) != none)
+                    NewCurVar = float(SeqVar_Int(AllObjSBText[CurrentObjectiveStage].CurVar).IntValue);
+                else
+                    NewCurVar = SeqVar_Float(AllObjSBText[CurrentObjectiveStage].CurVar).FloatValue;
+                
+                if (OldCurVar != NewCurVar)
+                {
+                    AOCTOGRI(GameReplicationInfo).CurObjective.CurVar = NewCurVar;
+                    AOCTOGRI(GameReplicationInfo).CurObjective.bUseIntegerCurMax = AllObjSBText[CurrentObjectiveStage].bUseIntegerCurMax;
+                    bNeedsUpdate = true;
+                }
+            }
+            
+            if (AllObjSBText[CurrentObjectiveStage].MaxVar != none)
+            {
+                if (SeqVar_Int(AllObjSBText[CurrentObjectiveStage].MaxVar) != none)
+                    NewMaxVar = float(SeqVar_Int(AllObjSBText[CurrentObjectiveStage].MaxVar).IntValue);
+                else
+                    NewMaxVar = SeqVar_Float(AllObjSBText[CurrentObjectiveStage].MaxVar).FloatValue;
+                
+                if (OldMaxVar != NewMaxVar)
+                {
+                    AOCTOGRI(GameReplicationInfo).CurObjective.MaxVar = NewMaxVar;
+                    AOCTOGRI(GameReplicationInfo).CurObjective.bUseIntegerCurMax = AllObjSBText[CurrentObjectiveStage].bUseIntegerCurMax;
+                    bNeedsUpdate = true;
+                }
+            }
+            
+            if (AllObjSBText[CurrentObjectiveStage].ExtraVar != none)
+            {
+                if (SeqVar_Int(AllObjSBText[CurrentObjectiveStage].ExtraVar) != none)
+                    NewExtraVar = float(SeqVar_Int(AllObjSBText[CurrentObjectiveStage].ExtraVar).IntValue);
+                else
+                    NewExtraVar = SeqVar_Float(AllObjSBText[CurrentObjectiveStage].ExtraVar).FloatValue;
+                
+                if (OldExtraVar != NewExtraVar)
+                {
+                    AOCTOGRI(GameReplicationInfo).CurObjective.ExtraVar = NewExtraVar;
+                    AOCTOGRI(GameReplicationInfo).CurObjective.bUseIntegerExtra = AllObjSBText[CurrentObjectiveStage].bUseIntegerExtra;
+                    bNeedsUpdate = true;
+                }
+            }
+            
+            // Only force net update if values actually changed
+            // This prevents unnecessary replication when scoreboard is static
+            if (bNeedsUpdate)
+                AOCTOGRI(GameReplicationInfo).bForceNetUpdate = true;
+        }
+    }
+}
+
+DefaultProperties
+{
+    SpawnWaveInterval = 10.0f
+    MinimumRespawnTime = 10.0
+}

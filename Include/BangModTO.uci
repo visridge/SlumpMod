@@ -1,0 +1,5 @@
+// SlumpMod Team Objective common definitions
+// This file is included by all TO classes (gamemode, pawn, controller, HUD, PRI)
+
+`define GAMEMODE BangModTO
+

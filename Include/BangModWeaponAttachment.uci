@@ -1,0 +1,14 @@
+// BangMod Weapon Attachment Netcode Optimization
+// Maximum performance: 120Hz for all weapon attachments
+
+// Netcode optimization: High priority replication for all weapon attachments
+event float GetNetPriority(Actor Viewer, vector ViewLocation, float ViewDist)
+{
+	// Always use maximum priority and frequency for weapon attachments
+	NetUpdateFrequency = 120.0;
+	return 5000.0;
+}
+
+// Default properties
+NetUpdateFrequency=120
+ParryTracersLength=67.0

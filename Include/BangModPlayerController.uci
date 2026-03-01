@@ -1,0 +1,1793 @@
+var BangModCustomizationContent CustomizationBaseDummy;
+var float InterpYaw;
+var float InterpPitch;
+
+var bool bShowDeathMessages;
+var bool bPCShowHitTime;
+var bool bShowHitTime;
+
+var bool bShowGroundSpeed;
+
+var float fLastFeintTime;  // Track when last feint was attempted to prevent spam
+
+var bool bShownOptimizationTip;  // Track if we've shown the optimization tip to this player
+
+// Camera shake configuration
+var globalconfig bool bDisableScreenShake;  // Disable all camera shake effects (flinch, dazed, hits)
+
+// FPS uncapping
+var bool bFPSUncapped;  // Track if we've already uncapped FPS for this client
+
+// Proximity Voice Chat
+var globalconfig float ProximityChatDistance;  // Distance in UU where players can hear each other
+var globalconfig bool bEnableProximityChat;     // Master toggle for proximity chat
+var bool bIsTalking;  // Is local player currently talking
+var array<AOCPRI> NearbyTalkers;  // List of PRIs currently talking within range
+
+// Unpause countdown
+var bool bIsPaused;  // Tracks whether the game is currently paused by an admin
+var int UnpauseCountdownTime;  // Countdown start value for unpause (default 3)
+
+// Ensure BangMod uses its customization class everywhere
+simulated event PostBeginPlay()
+{
+	super.PostBeginPlay();
+	if (CustomizationClass != class'BangModCustomization')
+	{
+		CustomizationClass = class'BangModCustomization';
+	}
+	
+	// FPS uncapping removed - use 'UncapFPS' console command manually if desired
+}
+
+// Exec command for players to manually uncap FPS
+exec function UncapFPS()
+{
+	local string Cmd;
+	local GameEngine GEngine;
+	local LocalPlayer LP;
+	
+	// Try obfuscated version
+	// Cmd = "Set" @ "Engine.GameEngine" @ "MaxSmoothedFrameRate" @ "0";
+	// ConsoleCommand(Cmd);
+	// ConsoleCommand("Set Engine.GameEngine MinSmoothedFrameRate 0");
+	// ConsoleCommand("Set Engine.GameEngine bSmoothFrameRate False");
+	// ClientDisplayConsoleMessage("FPS uncap attempted (check with 'stat fps')");
+
+	// Method 1: Try to access GameEngine directly through the class hierarchy
+	GEngine = GameEngine(class'Engine'.static.GetEngine());
+	if (GEngine != None)
+	{
+		GEngine.MaxSmoothedFrameRate = 165.0;
+		bFPSUncapped = true;
+		ClientDisplayConsoleMessage("FPS uncap to 165 enabled (check with 'stat fps')");
+	}
+	else
+	{
+		// Method 2: Try through LocalPlayer
+		LP = LocalPlayer(Player);
+		if (LP != None && LP.ViewportClient != None && LP.ViewportClient.Outer != None)
+		{
+			GEngine = GameEngine(LP.ViewportClient.Outer);
+			if (GEngine != None)
+			{
+				GEngine.MaxSmoothedFrameRate = 165.0;
+				bFPSUncapped = true;
+				ClientDisplayConsoleMessage("FPS uncap to 165 enabled (check with 'stat fps')");
+			}
+		}
+	}
+	
+}
+
+// Override ProcessViewRotation to remove turn cap during parry counters
+function ProcessViewRotation( float DeltaTime, out Rotator out_ViewRotation, Rotator DeltaRot )
+{
+	local float MaxTurnSpeed;
+	local float MaxVertTurnSpeed;
+
+	if( PreventTurning )
+        return;
+	if( PlayerCamera != None )
+	{
+		PlayerCamera.ProcessViewRotation( DeltaTime, out_ViewRotation, DeltaRot );
+	}
+	
+	if(ScriptBlockedInputs[EINBLOCK_Rotate])
+	{
+		DeltaRot.Yaw = 0;
+		DeltaRot.Pitch = 0;
+		DeltaRot.Roll = 0;	
+	}
+	else if ( AOCPawn(Pawn) != None )
+	{	
+		if ( AOCPawn(Pawn).StateVariables.bIsAttacking && LimitTurnSpeed  && Pawn.Weapon != none && AOCWeapon(Pawn.Weapon) != none)
+		{
+			MaxTurnSpeed = AOCWeapon(Pawn.Weapon).GetHorizontalRotateSpeed();
+			MaxVertTurnSpeed = AOCWeapon(Pawn.Weapon).GetVerticalRotateSpeed();
+			
+			// BANGMOD: Loosen turn cap during parry animation - use Holy Water Sprinkler esque speeds
+			if (AOCPawn(Pawn).StateVariables.bIsParrying)
+			{
+				MaxTurnSpeed = 75000.0;
+				MaxVertTurnSpeed = 75000.0;
+			}
+			else
+			{
+				if ( AOCPawn(Pawn).StateVariables.bIsSprinting )
+					MaxTurnSpeed = FMin(MaxTurnSpeed, MaxSprintTurnSpeed);
+				
+				if ( AOCPawn(Pawn).Weapon.IsInState('Reload') && AOCWeapon_Crossbow(AOCPawn(Pawn).Weapon) != none || AOCWeapon_PaviseShield(AOCPawn(Pawn).Weapon) != none)
+				{
+					MaxTurnSpeed = 0.0f;
+					MaxVertTurnSpeed = 0.0f;
+				}
+			}
+			
+			if( AOCWeapon(Pawn.Weapon).IsInState( 'Windup' ) || AOCWeapon(Pawn.Weapon).IsInState( 'Release' ) || AOCWeapon(Pawn.Weapon).IsInState( 'Transition' ) || ( AOCPawn(Pawn).Weapon.IsInState('Reload') && AOCWeapon_Crossbow(AOCPawn(Pawn).Weapon) != none )
+				|| (AOCPawn(Pawn).StateVariables.bIsAttacking && AOCPawn(Pawn).Weapon.CurrentFireMode == Attack_Sprint)
+				|| AOCMeleeWeapon(Pawn.Weapon).bParryHitCounter)
+			{
+				if ( DeltaRot.Pitch >= 0 )
+					DeltaRot.Pitch = FMin( DeltaRot.Pitch, MaxVertTurnSpeed * DeltaTime );
+				else
+					DeltaRot.Pitch = FMax( DeltaRot.Pitch, -MaxVertTurnSpeed * DeltaTime );
+			}
+
+			if ( DeltaRot.Yaw >= 0 )
+				DeltaRot.Yaw = FMin( DeltaRot.Yaw, MaxTurnSpeed * DeltaTime);
+			else
+				DeltaRot.Yaw = FMax( DeltaRot.Yaw, -MaxTurnSpeed * DeltaTime);
+
+			out_ViewRotation	+= DeltaRot;
+			out_ViewRotation	 = LimitViewRotation(out_ViewRotation, -14000, 16383 );
+		}
+		else if(AOCWeapon_PaviseShield(AOCPawn(Pawn).Weapon) != none || AOCPawn(Pawn).PawnState == ESTATE_Execution)
+		{
+			if(AOCWeapon_PaviseShield(AOCPawn(Pawn).Weapon) != none)
+			{
+				out_ViewRotation.Pitch = 0;
+			}
+			
+			DeltaRot.Yaw = 0;
+			DeltaRot.Pitch = 0;
+			DeltaRot.Roll = 0;
+		}
+		else
+		{
+			AOCPawn(Pawn).ProcessViewRotation( DeltaTime, out_ViewRotation, DeltaRot );
+		}
+		LastDeltaRot = DeltaRot;
+	}
+	else
+	{
+		out_ViewRotation += DeltaRot;
+	}
+}
+
+// Override to prevent players from enabling ragdolls via console commands
+exec function SetRagdollLimit(int NewLimit)
+{
+	// Always force to 0 regardless of what player requests
+	MaxRagdolls = 0;
+	default.MaxRagdolls = 0;
+	
+	// Clean up any existing ragdolls
+	if (RagdolledPawns.Length > 0)
+	{
+		RemoveRagdolls(RagdolledPawns.Length);
+	}
+}
+
+// Override to prevent ragdolls from being added in the first place
+function AddRagdolledPawn(AOCPawn RagdolledPawn)
+{
+	// Immediately remove the ragdoll - don't add it to the list
+	if (RagdolledPawn != none)
+	{
+		RagdolledPawn.LifeSpan = 0.1f;
+	}
+}
+
+// Override Possess to enforce ragdoll limit and show optimization tip on first spawn
+event Possess(Pawn inPawn, bool bVehicleTransition)
+{
+	super.Possess(inPawn, bVehicleTransition);
+	
+	// Force ragdolls disabled on every spawn (catches players with read-only configs)
+	ConsoleCommand("SetRagdollLimit 0");
+	
+	// Show optimization tip once when player first spawns
+	if (!bShownOptimizationTip && Role == ROLE_Authority)
+	{
+		bShownOptimizationTip = true;
+		SetTimer(2.0f, false, 'ShowOptimizationTip');
+	}
+}
+
+// Send optimization tip as a server message that appears in chat
+function ShowOptimizationTip()
+{
+	ReceiveChatMessage("=== SlumpMod Performance Tip ===", EFAC_ALL, false, true, "#00FF00");
+	ReceiveChatMessage("For best experience, edit UDKEngine.ini and set:", EFAC_ALL, false, true, "#FFAA00");  
+	ReceiveChatMessage("  NetClientTicksPerSecond=120", EFAC_ALL, false, true, "#FFFFFF");
+	ReceiveChatMessage("File: Documents\\My Games\\Chivalry Medieval Warfare\\UDKGame\\Config\\UDKEngine.ini", EFAC_ALL, false, true, "#FFAA00");
+}
+
+reliable server function bool IsAdmin() {
+	return WorldInfo.Game.AccessControl.IsAdmin(self) || WorldInfo.NetMode == NM_Standalone;
+}
+
+reliable server function S_AdminBroadcastMessage(string Message, optional bool bShowName=true) {
+	local AOCPlayerController PC;
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC) {
+		if (bShowName)
+			PC.ReceiveChatMessage(AOCPRI(PlayerReplicationInfo).GetHumanReadableName()$":"@Message, EFAC_ALL, false, false, ,false);
+		else
+			PC.ReceiveChatMessage(Message, EFAC_ALL, false, false, ,false);
+	}
+}
+
+exec function AdminBroadcastMessage(String Message) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage(Message);
+}
+
+exec function AdminChangeTeam(String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminChangeTeam "$PlayerName);
+	super.AdminChangeTeam(PlayerName);
+}
+
+exec function AdminChangeTeamDamageAmount(float Amount) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminChangeTeamDamageAmount "$Amount);
+	super.AdminChangeTeamDamageAmount(Amount);
+}
+
+exec function AdminCancelVote() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminCancelVote");
+	super.AdminCancelVote();
+}
+
+exec function AdminReadyAll() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminReadyAll");
+	super.AdminReadyAll();
+}
+
+function bool SetPause(bool bPause, optional delegate<CanUnpause> CanUnpauseDelegate=CanUnpause) {
+	local bool bResult;
+	if (bPause) {
+		bFire = 0;
+		// Pause gamepad rumbling too if needed
+		bResult = WorldInfo.Game.SetPause(self,CanUnpauseDelegate);
+		if (bResult) {
+			PauseRumbleForAllPlayers();
+			bIsPaused = true;
+		}
+	} else if (IsAdmin() && bIsPaused) {
+		// Route through countdown instead of immediate unpause
+		S_StartUnpauseCountdown();
+	}
+	return bResult;
+}
+
+// Explicit admin command to start unpause countdown
+exec function UnPause() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_StartUnpauseCountdown();
+}
+
+reliable server function S_StartUnpauseCountdown() {
+	if (!IsAdmin())
+		return;
+	if (!bIsPaused) {
+		ClientDisplayConsoleMessage("The game is not currently paused.");
+		return;
+	}
+	UnpauseCountdownTime = Default.UnpauseCountdownTime;
+	S_AdminBroadcastMessage("Unpausing in...", false);
+	UnpauseCountdownTick();
+	SetTimer(1.0f, true, 'UnpauseCountdownTick');
+}
+
+function UnpauseCountdownTick() {
+	if (UnpauseCountdownTime == 0) {
+		S_AdminBroadcastMessage("GO!", false);
+		WorldInfo.Game.ClearPause();
+		if (WorldInfo.Pauser == None) {
+			WorldInfo.bGameplayFramePause = false;
+			PauseRumbleForAllPlayers(false);
+		}
+		bIsPaused = false;
+		ClearTimer('UnpauseCountdownTick');
+	} else {
+		S_AdminBroadcastMessage("    "$UnpauseCountdownTime$"...", false);
+		UnpauseCountdownTime--;
+	}
+}
+
+
+//quilt
+//debug functions
+
+
+
+simulated event tick(float DeltaTime)
+{
+	local rotator DeltaRot, ViewRotation, NewRotation;
+	local GameEngine GEngine;
+	super.tick(DeltaTime);
+	
+	// Continuously enforce FPS uncap when enabled
+	if (bFPSUncapped && IsLocalPlayerController())
+	{
+		GEngine = GameEngine(class'Engine'.static.GetEngine());
+		if (GEngine != None && GEngine.MaxSmoothedFrameRate < 200.0)
+		{
+			GEngine.MaxSmoothedFrameRate = 0.0;
+		}
+	}
+	
+	if (bShowGroundSpeed)
+	{
+		DrawDebugTextToHud(string(AOCPawn(Pawn).SprintTime) @string(AOCPawn(Pawn).StateVariables.bCanSprint), 40.0, 7.0);
+		
+		DrawDebugTextToHud(string(VSize(Pawn.Velocity * vect(1, 1, 0))), 40.0, 15.0);
+		
+		DrawDebugTextToHud("parry: " @string(AOCPawn(Pawn).StateVariables.bIsParrying), 40.0, 25.0);
+	}
+	
+	if (Role == ROLE_SimulatedProxy)
+	{
+		// Calculate Delta to be applied on ViewRotation
+		DeltaRot.Yaw	= 100;
+		DeltaRot.Pitch	= 100;
+		//DrawTextOverHead(string(DeltaRot));
+		ProcessViewRotation( DeltaTime, ViewRotation, DeltaRot );
+		SetRotation(ViewRotation);
+
+		ViewShake( deltaTime );
+
+		NewRotation = ViewRotation;
+		NewRotation.Roll = Rotation.Roll;
+
+		if ( Pawn != None )
+			Pawn.FaceRotation(NewRotation, deltatime);
+	}
+	
+}
+
+
+
+
+exec function DrawParryHitbox() 
+{//box parry system isn't even enabled?
+	if (bDrawParryBox)
+		bDrawParryBox=false;
+	else
+		bDrawParryBox=true;
+}
+
+/* exec function EnableParryDebug(bool b)
+	{
+		S_EnableParryDebug(b);
+	}
+
+reliable server function S_EnableParryDebug(bool b)
+	{
+		bEnableParryDebug = b;
+	} */
+
+exec function ShowMyParryBox()
+{
+	AOCPawn(Pawn).ParryComponent.SetMaterial(0, Material'CHV_Material_Pack.Materials.Masters.M_Water_Master');	
+	AOCPawn(Pawn).ParryComponent.SetHidden(false);
+}
+
+exec function ShowOthersParryBoxes()
+{
+	local AOCPawn P;
+	foreach Worldinfo.AllPawns(class'AOCPawn', P)
+	{
+		if(P != Pawn)
+		{
+			P.ParryComponent.SetMaterial(0, Material'CHV_Material_Pack.Materials.Masters.M_Water_Master');	
+			P.ParryComponent.SetHidden(false);
+		}
+	}
+}
+exec function ShowAllParryBoxes()
+{
+	local AOCPawn P;
+	foreach Worldinfo.AllPawns(class'AOCPawn', P)
+	{
+		P.ParryComponent.SetMaterial(0, Material'CHV_Material_Pack.Materials.Masters.M_Water_Master');	
+		P.ParryComponent.SetHidden(false);
+	}
+}
+
+/*function bool SetPause(bool bPause, optional delegate<CanUnpause> CanUnpauseDelegate=CanUnpause) {
+	local bool bResult;
+	bResult = false;
+	if (bPause)
+		bResult = ActualPause(CanUnpauseDelegate);
+	else
+		ClientDisplayConsoleMessage("Please use the command 'BangModUnpause' to unpause.");
+	return bResult;
+}
+
+exec function BangModPause() {
+	if (IsAdmin())
+		ActualPause();
+	else
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+}
+
+exec function BangModUnpause() {
+	if (IsAdmin() && bPaused)
+		StartUnpauseCountdown();
+	else if (!bPaused)
+		ClientDisplayConsoleMessage("You cannot unpause at this time.");
+	else
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+}
+
+reliable server function StartUnpauseCountdown() {
+	UnpauseCountdownTime = Default.UnpauseCountdownTime;
+	AdminBroadcastMessage("Unpausing in...");
+	CountdownTick();
+	SetTimer(1.0f, true, 'CountdownTick');
+}
+
+reliable server function CountdownTick() {
+	if (UnpauseCountdownTime == 0) {
+		ActualUnpause();
+		ClearTimer('CountdownTick');
+	} else {
+		AdminBroadcastMessage("    "@UnpauseCountdownTime@"...");
+		UnpauseCountdownTime--;
+	}
+}
+
+reliable server function bool ActualPause(delegate<CanUnpause> CanUnpauseDelegate=CanUnpause) {
+	local bool bResult;
+	bResult = false;
+	if (IsAdmin() && !bPaused) {
+		bFire = 0;
+		// Pause gamepad rumbling too if needed
+		bResult = WorldInfo.Game.SetPause(self,CanUnpauseDelegate);
+		if (bResult) {
+			PauseRumbleForAllPlayers();
+			bPaused = true;
+		}
+	}
+	return bResult;
+}
+
+reliable server function ActualUnpause() {
+	if (IsAdmin() && bPaused) {
+		WorldInfo.Game.ClearPause();
+		// If the unpause is complete, let rumble occur
+		if (WorldInfo.Pauser == None) {
+			// If we did a gameplay frame pause clear it out now
+			WorldInfo.bGameplayFramePause = false;
+			PauseRumbleForAllPlayers(false);
+		}
+		bPaused = false;
+	}
+}*/
+
+// Override ReplicateMove to set fixed 120Hz client movement updates (improves netcode smoothness)
+function ReplicateMove(float DeltaTime, vector NewAccel, eDoubleClickDir DoubleClickMove, rotator DeltaRot)
+{
+	local SavedMove NewMove, OldMove, AlmostLastMove, LastMove;
+	local byte ClientRoll;
+	local float NetMoveDelta;
+	local int OldServerTimeStamp;
+	local vector OldAccel;
+
+	// do nothing if we are no longer connected
+	if (Player == None)
+	{
+		return;
+	}
+
+	MaxResponseTime = Default.MaxResponseTime * WorldInfo.TimeDilation;
+	DeltaTime = ((Pawn != None) ? Pawn.CustomTimeDilation : CustomTimeDilation) * FMin(DeltaTime, MaxResponseTime);
+
+	// find the most recent move (LastMove), and the oldest (unacknowledged) important move (OldMove)
+	// a SavedMove is interesting if it differs significantly from the last acknowledged move
+	if ( SavedMoves != None )
+	{
+		LastMove = SavedMoves;
+		AlmostLastMove = LastMove;
+		OldMove = None;
+		while ( LastMove.NextMove != None )
+		{
+			// find first important unacknowledged move
+			if ( (OldMove == None) && (Pawn != None) && LastMove.IsImportantMove(LastAckedAccel) )
+			{
+				OldMove = LastMove;
+			}
+			AlmostLastMove = LastMove;
+			LastMove = LastMove.NextMove;
+		}
+	}
+
+	// Get a SavedMove object to store the movement in.
+	NewMove = GetFreeMove();
+	if ( NewMove == None )
+	{
+		return;
+	}
+	NewMove.SetMoveFor(self, DeltaTime, NewAccel, DoubleClickMove);
+
+	// Simulate the movement locally.
+	bDoubleJump = false;
+	ProcessMove(NewMove.Delta, NewMove.Acceleration, NewMove.DoubleClickMove, DeltaRot);
+
+	// see if the two moves could be combined
+	if ( (PendingMove != None) && PendingMove.CanCombineWith(NewMove, Pawn, MaxResponseTime) )
+	{
+		// to combine move, first revert pawn position to PendingMove start position, before playing combined move on client
+		Pawn.SetLocation(PendingMove.GetStartLocation());
+		Pawn.Velocity = PendingMove.StartVelocity;
+		if( PendingMove.StartBase != Pawn.Base )
+		{
+			Pawn.SetBase(PendingMove.StartBase);
+		}
+		Pawn.Floor = PendingMove.StartFloor;
+		NewMove.Delta += PendingMove.Delta;
+		NewMove.SetInitialPosition(Pawn);
+
+		// remove pending move from move list
+		if ( LastMove == PendingMove )
+		{
+			if ( SavedMoves == PendingMove )
+			{
+				SavedMoves.NextMove = FreeMoves;
+				FreeMoves = SavedMoves;
+				SavedMoves = None;
+			}
+			else
+			{
+				PendingMove.NextMove = FreeMoves;
+				FreeMoves = PendingMove;
+				if ( AlmostLastMove != None )
+				{
+					AlmostLastMove.NextMove = None;
+					LastMove = AlmostLastMove;
+				}
+			}
+			FreeMoves.Clear();
+		}
+		PendingMove = None;
+	}
+
+	if( Pawn != None )
+	{
+		Pawn.AutonomousPhysics(NewMove.Delta);
+	}
+	else
+	{
+		AutonomousPhysics(DeltaTime);
+	}
+	NewMove.PostUpdate(self);
+
+	if( SavedMoves == None )
+	{
+		SavedMoves = NewMove;
+	}
+	else
+	{
+		LastMove.NextMove = NewMove;
+	}
+
+	if ( PendingMove == None )
+	{
+		// BangMod: Fixed 120Hz update rate for improved netcode
+		// Original code had dynamic rates: 90Hz (<=10 players) or 45Hz+ (>10 players) on listen servers, 20Hz on dedicated
+		// Setting to 0.00833 (~120Hz) matches the server's max tickrate for optimal smoothness
+		NetMoveDelta = 0.00833;
+
+		if( (WorldInfo.TimeSeconds - ClientUpdateTime) * WorldInfo.TimeDilation < NetMoveDelta )
+		{
+			PendingMove = NewMove;
+			return;
+		}
+	}
+
+	ClientUpdateTime = WorldInfo.TimeSeconds;
+
+	// check if need to redundantly send previous move
+	if ( OldMove != None )
+	{
+		// old move is important to replicate redundantly
+		OldServerTimeStamp = OldMove.TimeStamp;
+		OldAccel = OldMove.Acceleration;
+	}
+
+	// Send to the server
+	ClientRoll = (Rotation.Roll >> 8) & 255;
+
+	CallServerMove( NewMove,
+			((Pawn == None) ? Location : Pawn.Location),
+			ClientRoll,
+			((Rotation.Yaw & 65535) << 16) + (Rotation.Pitch & 65535),
+			OldMove );
+
+	PendingMove = None;
+}
+
+exec function GetAdmins() {
+	S_GetAdmins();
+}
+
+reliable server function S_GetAdmins() {
+	local AOCPlayerController PC;
+	ReceiveChatMessage("All admins:", EFAC_ALL, false, false, ,false);
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC) {
+		if (AOCPRI(PC.PlayerReplicationInfo).bAdmin)
+			ReceiveChatMessage(AOCPRI(PC.PlayerReplicationInfo).GetHumanReadableName(), EFAC_ALL, false, false, ,false);
+	}
+}
+
+reliable client function NotifyTournamentWaiting(float Threshold) {
+	bShowedTournamentWaitingMessage = true;
+}
+
+exec function AdminTournamentMode(optional bool bEnable = true)
+{
+	ClientDisplayConsoleMessage("Deprecated: use 'Admin TournamentMode' instead");
+	ClientDisplayConsoleMessage("Disable: Admin TournamentMode 0");
+	ClientDisplayConsoleMessage("Enable: Admin TournamentMode 1");
+}
+
+reliable server function S_AdminTournamentMode(bool bEnable) {}
+
+reliable server function S_SendF10Message() {
+	ReceiveChatMessage("You will implode in 1 second.", EFAC_ALL, false, false, ,false);
+}
+
+exec function FOV(float F) {
+	if((F >= 60.0 && F <= 165.0) || PlayerReplicationInfo.bOnlySpectator) {
+		DefaultFOV = F;
+		DesiredFOV = DefaultFOV;
+
+		if((F >= 60.0 && F <= 165.0) && PlayerCamera != None) {
+			PlayerCamera.SetFOV( F );
+			return;
+		}
+
+		if (IsLocalPlayerController()) {
+			MyFOV = F;
+			default.MyFOV = F;
+			StaticSaveConfig();
+		}
+	}
+}
+
+exec function ce(optional name EventName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("CauseEvent "$EventName);
+	super.ce(EventName);
+}
+
+exec function CauseEvent(optional name EventName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("CauseEvent "$EventName);
+	super.CauseEvent(EventName);
+}
+
+exec function AdminGotoSF() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-Slumforest_p");
+}
+
+exec function AdminGotoSH() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-Slumpshill_p");
+}
+
+exec function AdminGotoSP() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-Slumppost_p");
+}
+
+exec function AdminGotoDuel() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("aocffa-SlumYard_p");
+}
+
+exec function AdminGotoMoor() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCLTS-Moor_p");
+}
+
+exec function AdminGotoKendo() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTDM-Moor_p");
+}
+
+exec function AdminForceSpectate(String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminForceSpectate(PlayerName);
+}
+
+reliable server function S_AdminForceSpectate(String PlayerName) {
+	local AOCPlayerController Target;
+	local AOCAccessControl AccessControl;
+
+	AccessControl = AOCAccessControl(WorldInfo.Game.AccessControl);
+
+	if (!IsAdmin()) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+
+	Target = AOCPlayerController(AccessControl.GetControllerFromString(PlayerName));
+	if (Target == none) {
+		ClientDisplayConsoleMessage("The specified player was not found.");
+		return;
+	}
+
+	if(Target.CurrentFamilyInfo.class == class'AOCFamilyInfo_Agatha_King' || Target.CurrentFamilyInfo.class == class'AOCFamilyInfo_Mason_King' || AOCPRI(Target.PlayerReplicationInfo).bAdmin) {
+		ClientDisplayConsoleMessage("The specified player cannot be moved to spectate.");
+		return;
+	}
+
+	Target.JoinSpectatorTeam();
+
+	S_AdminBroadcastMessage("AdminForceSpectate "$AOCPRI(Target.PlayerReplicationInfo).GetHumanReadableName());
+}
+
+exec function AdminForceSpectateAll() {
+	S_AdminForceSpectateAll();
+}
+
+reliable server function S_AdminForceSpectateAll() {
+	local AOCPlayerController Target;
+
+	if (!IsAdmin()) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', Target)
+	{
+		if (Target.CurrentFamilyInfo.class == class'AOCFamilyInfo_Agatha_King' ||
+			Target.CurrentFamilyInfo.class == class'AOCFamilyInfo_Mason_King' ||
+			Target.PlayerReplicationInfo.bAdmin
+		) {
+			ClientDisplayConsoleMessage("'" $ Target.PlayerReplicationInfo.GetHumanReadableName() $ "' cannot be forced to spectate.");
+			continue;
+		}
+
+		Target.JoinSpectatorTeam();
+	}
+
+	S_AdminBroadcastMessage("AdminForceSpectateAll");
+}
+
+exec function Reload() {
+	if(!ScriptBlockedInputs[EINBLOCK_Reload] && BangModWeapon_Crossbow(Pawn.Weapon) != none)
+		BangModWeapon_Crossbow(Pawn.Weapon).ActivateReload();
+}
+
+exec function PerformAim() {
+	if (class<BangModWeapon_Crossbow>(Pawn.Weapon.Class) != none)
+		StartFire(1);
+}
+
+reliable server function ServerPerformFeint()
+{
+	local float TimeSinceLastFeint;
+	
+	// Block feint if already in Active/Feint state
+	if (Pawn.Weapon.IsInState('Active') || Pawn.Weapon.IsInState('Feint'))
+		return;
+	
+	// Custom: Prevent feint spam during Release/Transition/early riposte to fix visual desync bug
+	// Block feint during Release state (attack active frames)
+	if (Pawn.Weapon.IsInState('Release'))
+		return;
+		
+	// Prevent feint spamming with 200ms cooldown between attempts
+	TimeSinceLastFeint = WorldInfo.TimeSeconds - fLastFeintTime;
+	if (TimeSinceLastFeint < 0.2)
+		return;
+		
+	fLastFeintTime = WorldInfo.TimeSeconds;
+
+	AOCPawn(Pawn).OnActionInitiated(EACT_Feint);
+	AOCWeapon(Pawn.Weapon).DoFeintAttack();
+
+	`{GAMEMODE}PRI(PlayerReplicationInfo).Feints += 1;
+}
+
+exec function ShowStats()
+{
+	local `{GAMEMODE}PRI PRI;
+
+	PRI = `{GAMEMODE}PRI(PlayerReplicationInfo);
+
+	ClientDisplayConsoleMessage("--------------------------------------------------");
+	ClientDisplayConsoleMessage("--------------------------------------------------");
+	ClientDisplayConsoleMessage("Score:"   @ PRI.Score);
+	ClientDisplayConsoleMessage("Kills:"   @ PRI.NumKills);
+	ClientDisplayConsoleMessage("Deaths:"  @ PRI.Deaths);
+	ClientDisplayConsoleMessage("Assists:" @ PRI.NumAssists);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Health:");
+	ClientDisplayConsoleMessage("    Regenerated:"        @ PRI.HealthRegenerated);
+	ClientDisplayConsoleMessage("    Damage Received:");
+	ClientDisplayConsoleMessage("        from all:"       @ PRI.AllDamageTaken);
+	ClientDisplayConsoleMessage("        from enemies:"   @ PRI.DamageTaken);
+	ClientDisplayConsoleMessage("        from teammates:" @ PRI.TeamDamageTaken);
+	ClientDisplayConsoleMessage("    Damage Dealt:");
+	ClientDisplayConsoleMessage("        to enemies:"     @ PRI.EnemyDamageDealt);
+	ClientDisplayConsoleMessage("        to teammates:"   @ PRI.TeamDamageDealt);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Stamina:");
+	ClientDisplayConsoleMessage("    Regenerated:"        @ PRI.StaminaRegenerated);
+	ClientDisplayConsoleMessage("    Damage Received:");
+	ClientDisplayConsoleMessage("        from all:"       @ PRI.AllStaminaConsumed);
+	ClientDisplayConsoleMessage("        from enemies:"   @ PRI.EnemyStaminaDamageTaken);
+	ClientDisplayConsoleMessage("        from teammates:" @ PRI.TeamStaminaDamageTaken);
+	ClientDisplayConsoleMessage("    Damage Dealt:");
+	ClientDisplayConsoleMessage("        to enemies:"     @ PRI.EnemyStaminaDamageDealt);
+	ClientDisplayConsoleMessage("        to teammates:"   @ PRI.TeamStaminaDamageDealt);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Feints:" @ PRI.Feints);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Attacks:");
+	ClientDisplayConsoleMessage("    Total:"      @ PRI.NumAttacks);
+	ClientDisplayConsoleMessage("    Successful:" @ PRI.NumHits);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Hits:");
+	ClientDisplayConsoleMessage("    Melee:"       @ PRI.MeleeHits);
+	ClientDisplayConsoleMessage("    Projectile:"  @ PRI.ProjectileHits);
+	ClientDisplayConsoleMessage("    Light Shove:" @ PRI.LightShoveHits);
+	ClientDisplayConsoleMessage("    Heavy Shove:" @ PRI.HeavyShoveHits);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Parries:" @ PRI.Parries);
+	ClientDisplayConsoleMessage("Blocks:"  @ PRI.Blocks);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Crouches:" @ PRI.Crouches);
+	ClientDisplayConsoleMessage("Jumps:"    @ PRI.Jumps);
+	ClientDisplayConsoleMessage("Dodges:"   @ PRI.Dodges);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Objective Points:" @ PRI.ObjPoints);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Decapitations:"    @ PRI.NumDecaps);
+	ClientDisplayConsoleMessage("Chatter:"    @ PRI.Chatter);
+	ClientDisplayConsoleMessage("--------------------------------------------------");
+	ClientDisplayConsoleMessage("--------------------------------------------------");
+}
+
+reliable client function OverrideVoteText(optional string Primary, optional string Secondary)
+{
+	AOCBaseHUD(myHUD).HUD.MainHUD.VotePrimaryTitle.SetText(Primary);
+	AOCBaseHUD(myHUD).HUD.MainHUD.VoteSecondaryTitle.SetText(Secondary);
+}
+
+
+function DrawTextOverHead(string DebugText)
+{
+	local color tcolor;
+	tcolor.G = 0;
+	FlushDebugStrings();
+	DrawDebugString(Vect(0, 0, 85.0), DebugText, Pawn, tcolor); //off for now
+}
+
+function bool IsSprintAngle(int fInputAngle) //checks if the player should be allowed to sprint or not
+{
+	//DrawTextOverHead(string(fInputAngle));
+	return ((fInputAngle < 27079) && (fInputAngle > 7892)); //24576, 8192, //27079 and 7892 work but i'm loosening them slightly so that controller players can sprint at 45 degrees more consistently
+}
+
+// Player movement.
+// Player Standing, walking, running, falling.
+state PlayerWalking
+{
+	//This doesn't do anything besides add an extra function call to the stack and should probably be deleted.
+	//Calling the ProcessMove function without this would automatically call the function in the parent class.
+	//If someone else sees this and agrees, delete it.  If I'm missing something, then /slap Eric
+	//In the mean time, I commented it out.
+	
+	function ProcessMove(float DeltaTime, vector NewAccel, eDoubleClickDir DoubleClickMove, rotator DeltaRot)
+	{
+		super.ProcessMove(DeltaTime, NewAccel, DoubleClickMove, DeltaRot);
+	}
+	/*
+	function ProcessMove(float DeltaTime, vector NewAccel, eDoubleClickDir DoubleClickMove, rotator DeltaRot)
+	{
+		if( Pawn == None )
+		{
+			return;
+		}
+
+		if (Role == ROLE_Authority)
+		{
+			// Update ViewPitch for remote clients
+			Pawn.SetRemoteViewPitch( Rotation.Pitch );
+		}
+
+		Pawn.Acceleration = NewAccel;
+
+		CheckJumpOrDuck();
+	}
+	*/
+
+	function PlayerMove( float DeltaTime )
+	{
+		local vector			X,Y,Z, NewAccel;
+		local eDoubleClickDir	DoubleClickMove;
+		local rotator			OldRotation;
+		local bool				bSaveJump;
+		local bool              bLastMoveForward;
+
+		if( Pawn == None )
+		{
+			GotoState('Dead');
+		}
+		else
+		{
+			GetAxes(Pawn.Rotation,X,Y,Z);
+
+			InputDirection.X = PlayerInput.aStrafe;
+			InputDirection.Y = PlayerInput.aForward;
+			InputDirection.Z = 0.f;
+			
+			bLastMoveForward = bMoveForward;
+			
+			bMoveBackward = PlayerInput.aForward < 0.0f;
+			bMoveForward = (PlayerInput.aForward > 0.0f);
+			
+			bMoving = PlayerInput.aForward != 0.0f || PlayerInput.aStrafe != 0.0f;
+			
+			if (!IsSprintAngle(rotator(InputDirection).Yaw) && bMoveForward)
+			{
+				if (InputDirection.X > 0.0)
+			{
+			InputDirection.X = 0.71;
+			InputDirection.Y = 0.71;
+			}
+			else
+			{
+			InputDirection.X = -0.71;
+			InputDirection.Y = 0.71;
+			}
+			}
+			
+			
+			
+			
+			
+			if (Role != ROLE_Authority || WorldInfo.NetMode == NM_Standalone || (Worldinfo.NetMode == NM_ListenServer && IsLocalPlayerController()))
+			{
+				if ((bLastMoveForward && !bMoveForward) || (bLastMoveForward && !IsSprintAngle(rotator(InputDirection).Yaw)))
+				{
+					AOCPawn(Pawn).DisableSprint(true);
+				}
+			}
+			
+			// Update acceleration.
+			NewAccel = Vect(0,0,0);
+			if(!ScriptBlockedInputs[EINBLOCK_MoveBackward] && bMoveBackward
+				|| !ScriptBlockedInputs[EINBLOCK_MoveForward] && bMoveForward )
+			{
+				NewAccel += PlayerInput.aForward*X;
+			}
+			
+			if(!ScriptBlockedInputs[EINBLOCK_MoveLeft] && PlayerInput.aStrafe < 0.0f
+				|| !ScriptBlockedInputs[EINBLOCK_MoveRight] && PlayerInput.aStrafe > 0.0f )
+			{
+				if (AOCPawn(Pawn).StateVariables.bIsSprinting)
+					NewAccel += PlayerInput.aStrafe*Y * 0.5f;
+				else
+					NewAccel += PlayerInput.aStrafe*Y;
+			}
+			
+			NewAccel.Z	= 0;
+			NewAccel = Pawn.AccelRate * Normal(NewAccel);
+			NewAccel = NewAccel;
+			// NewAccel is max when we're walking, limit it slightly when we're in the air whatever
+			if (Pawn.Physics != PHYS_Walking)
+				NewAccel *= 0.25f;
+				
+			if(ScriptBlockedInputs[EINBLOCK_Dodge])
+			{	
+				DoubleClickMove = DCLICK_None;
+			}
+			else
+			{
+				DoubleClickMove = PlayerInput.CheckForDoubleClickMove( DeltaTime/WorldInfo.TimeDilation );
+			}
+
+			// Update rotation.
+			OldRotation = Rotation;
+			//DrawTextOverHead(string(OldRotation));
+			InterpYaw = Rotation.Yaw;
+			InterpPitch = Rotation.Pitch;
+			if (AOCPawn(Pawn).PawnState != ESTATE_PUSH && !bForceIgnoreRotation)
+				UpdateRotation( DeltaTime * AOCPawn(Pawn).ModAnimRate ); //update rotation !!!!!!!!!!!!!!! importantttttttttttttttttttttttttttttttttttttttttttttttttttttt!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			bDoubleJump = false;
+			bPressedJump = bPressedJump && !ScriptBlockedInputs[EINBLOCK_Jump];
+			if( bPressedJump && Pawn.CannotJumpNow() )
+			{
+				bSaveJump = true;
+				bPressedJump = false;
+			}
+			else
+			{
+				bSaveJump = false;
+			}
+			if( Role < ROLE_Authority ) // then save this move and replicate it
+			{
+				ReplicateMove(DeltaTime, NewAccel, DoubleClickMove, OldRotation - Rotation);
+			}
+			else
+			{
+				ProcessMove(DeltaTime, NewAccel, DoubleClickMove, OldRotation - Rotation);
+			}
+			bPressedJump = bSaveJump;		
+		}
+	}
+}
+
+//
+//debugging interpolation
+//
+function UpdateRotation( float DeltaTime )
+{
+	local Rotator	DeltaRot, newRotation, ViewRotation;
+	local Rotator DesiredRot;
+
+	ViewRotation = Rotation;
+	if (Pawn!=none)
+	{
+		Pawn.SetDesiredRotation(ViewRotation);
+	}
+	
+	if(LookAtTarget != none)
+	{
+		if(AOCPawn(LookAtTarget) == none)
+		{
+			DesiredRot = (ViewRotation - AOCPawn(Pawn).GetViewRotation()) + Rotator(LookAtTarget.Location - AOCPawn(Pawn).GetPawnViewLocation());
+		}
+		else
+		{
+			//Look at Pawn's heads
+			DesiredRot = (ViewRotation - AOCPawn(Pawn).GetViewRotation()) + Rotator(AOCPawn(LookAtTarget).GetPawnViewLocation() - AOCPawn(Pawn).GetPawnViewLocation());
+		}
+		ViewRotation = RInterpTo(ViewRotation, DesiredRot, DeltaTime, fLookAtRate); //what does this do? ~~~~~~~~~~~~~~~~~~~~ //
+		if(RDiff(ViewRotation, DesiredRot) ~= 0)
+		{
+			LookAtTarget = none;
+
+			OnTurnTowardTargetComplete(self);
+		}
+	}
+	
+	// Calculate Delta to be applied on ViewRotation
+	DeltaRot.Yaw	= PlayerInput.aTurn;
+	DeltaRot.Pitch	= PlayerInput.aLookUp;
+	//DrawTextOverHead(string(DeltaRot));
+	ProcessViewRotation( DeltaTime, ViewRotation, DeltaRot );
+	SetRotation(ViewRotation);
+
+	ViewShake( deltaTime );
+
+	NewRotation = ViewRotation;
+	NewRotation.Roll = Rotation.Roll;
+
+	if ( Pawn != None )
+		Pawn.FaceRotation(NewRotation, deltatime);
+}
+/* 
+function UpdateRotation( float DeltaTime ) //temp
+{
+	local Rotator	DeltaRot, newRotation, ViewRotation;
+	local Rotator DesiredRot;
+
+	ViewRotation = Rotation;
+	if (Pawn!=none)
+	{
+		Pawn.SetDesiredRotation(ViewRotation);
+	}
+	
+	DeltaRot.Yaw	= InterpYaw;
+	DeltaRot.Pitch	= InterpPitch;
+	ProcessViewRotation( DeltaTime, ViewRotation, DeltaRot );
+	
+	SetRotation(ViewRotation);
+	
+	
+	
+	SetFocalPoint(vector(ViewRotation) * 1000.f + Pawn.Location, false); //this is so hacky i hate it but pitch doesn't work otherwise.......
+	
+	
+	NewRotation = ViewRotation;
+	NewRotation.Roll = Rotation.Roll; //bisplayer
+	
+	if ( Pawn != None )
+		Pawn.FaceRotation(NewRotation, DeltaTime); //this rotates pawn yaw, pitch isn't changed because it's the pawn
+}
+ */
+
+//death messages
+exec function ToggleDeathMessages() //toggles dying messages in console
+{
+	if (bShowDeathMessages){
+		bShowDeathMessages = false;
+		ClientDisplayConsoleMessage("death messages off");
+	}
+	else {
+		bShowDeathMessages = true;
+		ClientDisplayConsoleMessage("death messages on");
+	}
+}
+
+exec function EnableDeathMessages() //toggles dying messages in console
+{
+	bShowDeathMessages = true;
+	ClientDisplayConsoleMessage("death messages on");
+	
+}
+
+exec function DisableDeathMessages() //toggles dying messages in console
+{
+	bShowDeathMessages = false;
+	ClientDisplayConsoleMessage("death messages off");
+}
+
+simulated function PrintAndClearConsoleDamage()
+{
+	local int i;
+	
+	if(!bShowDamageOnConsole || VerboseDamageMessages.Length <= 0)
+	{
+		return;
+	}
+	
+	if (bShowDeathMessages == false)
+	{
+		return;
+	}
+	
+	if(bShowVerboseDamageMessagesOnConsole)
+	{
+		ClientDisplayConsoleMessage("-------------------");
+		ClientDisplayConsoleMessage("Last life recap:");
+		ClientDisplayConsoleMessage("");
+
+		for(i = 0; i < VerboseDamageMessages.Length; ++i)
+		{
+			ClientDisplayConsoleMessage(VerboseDamageMessages[i]);
+		}
+		ClientDisplayConsoleMessage("-------------------");
+	}
+	else
+	{
+		ClientDisplayConsoleMessage("-------------------");
+		ClientDisplayConsoleMessage("Last life recap:");
+		ClientDisplayConsoleMessage("");
+
+		if(RecordedDamageDealt.Length > 0)
+		{
+			ClientDisplayConsoleMessage("Damage dealt:");
+			ClientDisplayConsoleMessage("");
+
+			for(i = 0; i < RecordedDamageDealt.Length; ++i)
+			{
+				ClientDisplayConsoleMessage(RecordedDamageDealt[i].Damage@"damage dealt to"@GetPriOrActorName(RecordedDamageDealt[i].Other)@"in"@RecordedDamageDealt[i].Hits@"hits");
+			}
+			if(RecordedDamageTaken.Length > 0)
+			{
+				ClientDisplayConsoleMessage("");
+			}
+		}
+		if(RecordedDamageTaken.Length > 0)
+		{
+			ClientDisplayConsoleMessage("Damage received:");
+			ClientDisplayConsoleMessage("");
+
+			for(i = 0; i < RecordedDamageTaken.Length; ++i)
+			{
+				ClientDisplayConsoleMessage(RecordedDamageTaken[i].Damage@"damage taken from"@GetPriOrActorName(RecordedDamageTaken[i].Other)@"in"@RecordedDamageTaken[i].Hits@"hits");
+			}
+		}
+
+		ClientDisplayConsoleMessage("-------------------");
+	}
+
+	VerboseDamageMessages.Remove(0, VerboseDamageMessages.Length);
+	RecordedDamageDealt.Remove(0, RecordedDamageDealt.Length);
+	RecordedDamageTaken.Remove(0, RecordedDamageTaken.Length);
+}
+
+exec function ToggleReleaseHitMessage() //toggles messages that show how far into release you hit your opponent
+{
+	if (bPCShowHitTime){
+		BangModPawn(Pawn).Set_bShowHitTime(true);
+		ClientDisplayConsoleMessage("release hit time messages off");
+	}
+	else {
+		BangModPawn(Pawn).Set_bShowHitTime(false);
+		ClientDisplayConsoleMessage("release hit time messages on");
+	}
+}
+// this is dumb, just let ppl set it
+exec function EnableReleaseHitMessage() //toggles messages that show how far into release you hit your opponent
+{
+	BangModPawn(Pawn).Set_bShowHitTime(true);
+	ClientDisplayConsoleMessage("release hit time messages on");
+}
+
+exec function DisableReleaseHitMessage() //toggles messages that show how far into release you hit your opponent
+{
+	BangModPawn(Pawn).Set_bShowHitTime(true);
+	ClientDisplayConsoleMessage("release hit time messages off");
+}
+
+exec function aoc_DrawTracerHitDetails( bool draw )
+	{
+		bDrawWeaponTracers = draw;
+		bDrawTracerHitDetails = draw;
+	}
+
+/* exec function ShowTraceReach()
+	{
+		AOCBaseHUD(myHUD).bDebugReach = !AOCBaseHUD(myHUD).bDebugReach;
+	} */
+
+exec function ShowGroundSpeed(bool set)
+{
+	bShowGroundSpeed = set;
+}
+
+
+function DrawDebugTextToHud(string DebugText, float func_xpos, float func_ypos)
+{
+	local color tcolor;
+	//tcolor = (255, int(Sin(WorldInfo.TimeSeconds)), int(Sin(WorldInfo.TimeSeconds + 15.0)));
+	//tcolor = (255, 255, 255);
+	tcolor.r = int(Sin(WorldInfo.TimeSeconds));
+	tcolor.g = int(Sin(WorldInfo.TimeSeconds * 0.9 + 15.0));
+	tcolor.b = int(Sin(WorldInfo.TimeSeconds * 1.1 + 25.0));
+	tcolor.a = 255;
+	
+	AOCBaseHUD(myHUD).Canvas.Font = Font'AOC_UI_Common.DescriptionFont';
+	AOCBaseHUD(myHUD).Canvas.DrawColor = tcolor;
+	
+	AOCBaseHUD(myHUD).Canvas.SetPos(AOCBaseHUD(myHUD).Canvas.SizeX - func_xpos, AOCBaseHUD(myHUD).Canvas.SizeY - func_ypos * AOCBaseHUD(myHUD).Canvas.Font.GetMaxCharHeight() );
+	AOCBaseHUD(myHUD).Canvas.DrawText(DebugText, true);
+	
+	//AOCPlayerController(myCombatTarget.Controller).Announce(DebugText);
+}
+
+//release
+
+
+exec function GetServerTickTime()
+{
+	ServerGetServerTickTime();
+}
+
+reliable server function ServerGetServerTickTime()
+{
+	if(PlayerReplicationInfo.bAdmin)
+	{
+		ClientDisplayConsoleMessage(GetWorldTickTime());
+	}
+}
+
+exec function StartPollingServerTickTime()
+{
+	if(!bPollingServerTickTime)
+	{
+		ServerStartPollingServerTickTime();
+		bPollingServerTickTime = true;
+	}
+}
+
+reliable server function ServerStartPollingServerTickTime()
+{
+	if(Worldinfo.Game.AccessControl.IsAdmin(self))
+	{
+		SetTimer(1.0f, true, 'UpdateServerTickTime');
+	}
+}
+
+function UpdateServerTickTime()
+{
+	ClientUpdateServerTickTime(GetWorldTickTime());
+	ClientUpdateServerRelevancyBonus(GetAlwaysRelevantBonus());
+}
+
+unreliable client function ClientUpdateServerTickTime(float time)
+{
+	ServerTickMs = 	time;
+	bPollingServerTickTime = true;
+}
+
+unreliable client function ClientUpdateServerRelevancyBonus(float bonus)
+{
+	ServerRelBonus = bonus;
+}
+
+// Override camera shake functions to respect bDisableScreenShake setting
+function PlayDazedCam()
+{
+	if (!bDisableScreenShake)
+	{
+		super.PlayDazedCam();
+	}
+}
+
+function PlayFlinchCam()
+{
+	if (!bDisableScreenShake)
+	{
+		super.PlayFlinchCam();
+	}
+}
+
+function PlayCustomCamAnim(CameraAnim Anim, optional float DesiredLength = 0.f)
+{
+	if (!bDisableScreenShake)
+	{
+		super.PlayCustomCamAnim(Anim, DesiredLength);
+	}
+}
+
+function PC_ReceiveHit(Actor DamageDealer, vector HitLoc, float Damage, class<DamageType> DamageType)
+{
+	if (!bDisableScreenShake)
+	{
+		super.PC_ReceiveHit(DamageDealer, HitLoc, Damage, DamageType);
+	}
+	else
+	{
+		// Still play the directional hit effect even when screen shake is disabled
+		if(Controller(DamageDealer) != none)
+		{
+			DamageDealer = Controller(DamageDealer).Pawn;
+		}
+		ClientPlayTakeDirHitEffect(DamageDealer, HitLoc, Damage, DamageType);
+	}
+}
+
+// Console command to toggle screen shake
+exec function DisableScreenShake(bool bDisable)
+{
+	bDisableScreenShake = bDisable;
+	SaveConfig();
+	
+	if (bDisable)
+		ClientDisplayConsoleMessage("Screen shake disabled");
+	else
+		ClientDisplayConsoleMessage("Screen shake enabled");
+}
+
+// Override to refresh live pawn customization when changed mid-game
+// NOTE: Disabled live refresh to prevent visual bugs when selecting different class in menu
+// Customization changes will apply on next spawn or server rejoin
+reliable server function ServerUpdateCustomizationInfo(SCustomizationChoice NewCustomization)
+{
+	super.ServerUpdateCustomizationInfo(NewCustomization);
+	
+	// Don't refresh live pawn - causes visual bugs if player selects different class in menu
+	// The customization is saved and will apply on next spawn/rejoin
+	
+	/* DISABLED - causes skin mismatch when browsing classes in menu
+	if (Pawn != none && AOCPawn(Pawn) != none)
+	{
+		AOCPawn(Pawn).PawnInfo.myCustomization = NewCustomization;
+		AOCPawn(Pawn).LoadAssets();
+	}
+	*/
+}
+
+/** Client RPC to hide the spectator target's head */
+// reliable client function ClientHideSpectatorHead(AOCPawn TargetPawn)
+// {
+// 	if (TargetPawn != None)
+// 	{
+// 		// Hide helmet and head bones for spectator's view to match what the player sees
+// 		TargetPawn.HelmetMeshComp.SetOwnerNoSee(true);
+// 		TargetPawn.Mesh.HideBoneByName('b_head', PBO_None);
+// 	}
+// }
+
+// /** Client RPC to restore the spectator target's head visibility */
+// reliable client function ClientShowSpectatorHead(AOCPawn TargetPawn)
+// {
+// 	if (TargetPawn != None)
+// 	{
+// 		TargetPawn.HelmetMeshComp.SetOwnerNoSee(false);
+// 		TargetPawn.Mesh.UnHideBoneByName('b_head');
+// 	}
+// }
+
+/** First-person only spectator mode when following players - allows free camera */
+// state Spectating
+// {
+// 	/** Allow free camera, block third-person when following players */
+// 	exec function BehindView()
+// 	{
+// 		// Only allow if in free camera mode
+// 		if (bFreeCamera)
+// 		{
+// 			super.BehindView();
+// 		}
+// 		// Otherwise blocked - locked to first person when following players
+// 	}
+	
+// 	/** Allow free camera, block perspective toggle when following players */
+// 	exec function SpectatorPerspective()
+// 	{
+// 		// Only allow if in free camera mode
+// 		if (bFreeCamera)
+// 		{
+// 			super.SpectatorPerspective();
+// 		}
+// 		// Otherwise blocked - locked to first person when following players
+// 	}
+	
+// 	/** Allow free camera, block camera angle cycling when following players */
+// 	exec function NextCameraAngle()
+// 	{
+// 		// Only allow if in free camera mode
+// 		if (bFreeCamera)
+// 		{
+// 			super.NextCameraAngle();
+// 		}
+// 		// Otherwise blocked - locked to first person when following players
+// 	}
+	
+// 	/** Force first-person view when entering spectator mode */
+// 	function BeginState(Name PreviousStateName)
+// 	{
+// 		super.BeginState(PreviousStateName);
+		
+// 		// If we have a ViewTarget that's a pawn, force first person mode
+// 		if (ViewTarget != None && ViewTarget.IsA('Pawn'))
+// 		{
+// 			bFreeCamera = false;
+// 			bBehindView = false;
+// 			HideViewTargetHead();
+// 		}
+// 	}
+	
+// 	/** Continuously enforce first-person view when following players, handle respawns */
+// 	function PlayerTick(float DeltaTime)
+// 	{
+// 		local Rotator CamRot;
+		
+// 		super.PlayerTick(DeltaTime);
+		
+// 		// Only enforce when following a pawn (not in free camera)
+// 		if (!bFreeCamera && ViewTarget != None && ViewTarget.IsA('Pawn'))
+// 		{
+// 			// Force first-person view - prevents server from reverting to third person
+// 			if (bBehindView)
+// 			{
+// 				bBehindView = false;
+// 			}
+			
+// 			// Remove camera roll (tilt) to prevent lean animation affecting spectator
+// 			CamRot = Rotation;
+// 			if (CamRot.Roll != 0)
+// 			{
+// 				CamRot.Roll = 0;
+// 				SetRotation(CamRot);
+// 			}
+			
+// 			// Continuously hide head to handle respawns and state changes
+// 			HideViewTargetHead();
+// 		}
+// 	}
+	
+// 	/** Maintain first-person view when switching spectator targets */
+// 	function ViewAPlayer(int dir)
+// 	{
+// 		local Actor OldTarget;
+		
+// 		// Store old target to restore their head visibility
+// 		OldTarget = ViewTarget;
+		
+// 		super.ViewAPlayer(dir);
+		
+// 		// Restore previous target's head visibility
+// 		if (OldTarget != None && AOCPawn(OldTarget) != None)
+// 		{
+// 			ClientShowSpectatorHead(AOCPawn(OldTarget));
+// 		}
+		
+// 		// Force disable free camera when following a player
+// 		if (ViewTarget != None && ViewTarget.IsA('Pawn'))
+// 		{
+// 			bFreeCamera = false;
+// 			bBehindView = false;
+// 			HideViewTargetHead();
+// 		}
+// 	}
+	
+// 	/** Hide the viewed player's head mesh to prevent seeing inside their head */
+// 	function HideViewTargetHead()
+// 	{
+// 		if (ViewTarget != None && AOCPawn(ViewTarget) != None)
+// 		{
+// 			// Call client RPC to hide head on client side
+// 			ClientHideSpectatorHead(AOCPawn(ViewTarget));
+// 		}
+// 	}
+	
+// 	/** Restore head visibility when leaving spectator mode */
+// 	function EndState(Name NextStateName)
+// 	{
+// 		// Restore viewed player's head visibility
+// 		if (ViewTarget != None && AOCPawn(ViewTarget) != None)
+// 		{
+// 			ClientShowSpectatorHead(AOCPawn(ViewTarget));
+// 		}
+		
+// 		super.EndState(NextStateName);
+// 	}
+// }
+
+/* ************************************************************************
+ * PROXIMITY VOICE CHAT IMPLEMENTATION
+ * BangMod adds working proximity voice chat functionality
+ **************************************************************************/
+
+// Push-to-talk command (bound to G key by default)
+exec function GBA_ToggleSpeaking()
+{
+	if (!bEnableProximityChat)
+	{
+		ClientDisplayConsoleMessage("Proximity voice chat is disabled. Enable in config.");
+		return;
+	}
+		
+	bIsTalking = !bIsTalking;
+	
+	// Debug message
+	ClientDisplayConsoleMessage("Voice chat: " $ (bIsTalking ? "TALKING" : "STOPPED"));
+	
+	// Update HUD to show we're talking
+	if (AOCBaseHUD(myHUD) != none)
+	{
+		if (AOCBaseHUD(myHUD).HUD != none && AOCBaseHUD(myHUD).HUD.MainHUD != none)
+		{
+			AOCBaseHUD(myHUD).HUD.MainHUD.LocalPlayerStartTalking(bIsTalking);
+			ClientDisplayConsoleMessage("Updated HUD talking indicator");
+		}
+		else
+		{
+			ClientDisplayConsoleMessage("HUD not available");
+		}
+	}
+	
+	// NOTE: Actual voice transmission requires the VoIP codec which was removed from the engine
+	// The infrastructure is here, but microphone capture/transmission is not available
+	// without engine-level modifications or external voice solutions (Discord, etc.)
+	
+	// Server notification disabled - voice codec missing makes this non-functional
+	// ServerNotifyTalkingState(bIsTalking);
+}
+
+// NOTE: Server-side proximity notification disabled due to voice codec being missing from engine
+// The functions below are kept for reference but commented out to avoid compilation errors
+/*
+// Notify server we're talking (so it can replicate to nearby clients)
+reliable server function ServerNotifyTalkingState(bool bTalking)
+{
+	bIsTalking = bTalking;
+	NotifyNearbyPlayersOfTalker(bTalking);
+}
+
+// Check which players are in range and notify them
+function NotifyNearbyPlayersOfTalker(bool bTalking)
+{
+	// Would need to iterate controllers and call ClientReceiveProximityTalker
+	// But this causes compile errors due to type casting limitations
+	// Disabled since voice codec is missing anyway
+	ClientDisplayConsoleMessage("Proximity Voice: " $ PlayerReplicationInfo.PlayerName $ (bTalking ? " is talking" : " stopped"));
+}
+*/
+
+// Receive notification that someone nearby is talking
+reliable client function ClientReceiveProximityTalker(PlayerReplicationInfo TalkerPRI, bool bTalking)
+{
+	local int i;
+	local VOIPInfo NewTalker;
+	local AOCPRI APRI;
+	
+	APRI = AOCPRI(TalkerPRI);
+	if (APRI == none)
+		return;
+	
+	if (bTalking)
+	{
+		// Add to nearby talkers list
+		if (NearbyTalkers.Find(APRI) == INDEX_NONE)
+		{
+			NearbyTalkers.AddItem(APRI);
+		}
+		
+		// Update HUD to show this person is talking
+		if (AOCBaseHUD(myHUD) != none)
+		{
+			NewTalker.VOIPName = APRI.PlayerName;
+			NewTalker.LastUpdateTime = WorldInfo.TimeSeconds;
+			NewTalker.TalkerTeam = EFAC_ALL;
+			
+			// Add to the talking list in HUD
+			for (i = 0; i < AOCBaseHUD(myHUD).AllPlayersTalking.Length; i++)
+			{
+				if (AOCBaseHUD(myHUD).AllPlayersTalking[i].VOIPName == APRI.PlayerName)
+				{
+					AOCBaseHUD(myHUD).AllPlayersTalking[i].LastUpdateTime = WorldInfo.TimeSeconds;
+					return;  // Already in list, just updated time
+				}
+			}
+			
+			// Not in list, add them
+			AOCBaseHUD(myHUD).AllPlayersTalking.AddItem(NewTalker);
+		}
+	}
+	else
+	{
+		// Remove from nearby talkers
+		NearbyTalkers.RemoveItem(APRI);
+		
+		// Queue for removal from HUD
+		if (AOCBaseHUD(myHUD) != none)
+		{
+			for (i = 0; i < AOCBaseHUD(myHUD).AllPlayersTalking.Length; i++)
+			{
+				if (AOCBaseHUD(myHUD).AllPlayersTalking[i].VOIPName == APRI.PlayerName)
+				{
+					AOCBaseHUD(myHUD).QueueToRemove.AddItem(AOCBaseHUD(myHUD).AllPlayersTalking[i]);
+					break;
+				}
+			}
+		}
+	}
+}
+
+// Override ClientNotifyPlayerTalking to handle proximity filtering
+function ClientNotifyPlayerTalking(UniqueNetId TalkingPlayer, bool bIsTalking)
+{
+	local PlayerReplicationInfo PRI;
+	local float Distance;
+	
+	// Find the PRI for this player
+	foreach DynamicActors(class'PlayerReplicationInfo', PRI)
+	{
+		if (PRI.UniqueId == TalkingPlayer)
+		{
+			// Check if they're in proximity range
+			if (Pawn != none && PRI.Owner != none && Pawn(PRI.Owner) != none)
+			{
+				Distance = VSize(Pawn.Location - Pawn(PRI.Owner).Location);
+				
+				if (Distance <= ProximityChatDistance)
+				{
+					// They're in range, process normally
+					ClientReceiveProximityTalker(PRI, bIsTalking);
+				}
+			}
+			break;
+		}
+	}
+}
+
+// Process VOIP queue to update HUD
+function ProcessVOIPQueue()
+{
+	local int i;
+	local float CurrentTime;
+	local array<VOIPInfo> CurrentTalkers;
+	
+	if (AOCBaseHUD(myHUD) == none)
+		return;
+		
+	CurrentTime = WorldInfo.TimeSeconds;
+	
+	// Remove old talkers (haven't updated in 0.5 seconds)
+	for (i = AOCBaseHUD(myHUD).AllPlayersTalking.Length - 1; i >= 0; i--)
+	{
+		if (CurrentTime - AOCBaseHUD(myHUD).AllPlayersTalking[i].LastUpdateTime > 0.5)
+		{
+			AOCBaseHUD(myHUD).AllPlayersTalking.Remove(i, 1);
+		}
+	}
+	
+	// Process removal queue
+	for (i = 0; i < AOCBaseHUD(myHUD).QueueToRemove.Length; i++)
+	{
+		AOCBaseHUD(myHUD).AllPlayersTalking.RemoveItem(AOCBaseHUD(myHUD).QueueToRemove[i]);
+	}
+	AOCBaseHUD(myHUD).QueueToRemove.Length = 0;
+	
+	// Build current talkers array for HUD
+	CurrentTalkers = AOCBaseHUD(myHUD).AllPlayersTalking;
+	
+	// Update the HUD display
+	if (AOCBaseHUD(myHUD).HUD != none && AOCBaseHUD(myHUD).HUD.MainHUD != none)
+	{
+		AOCBaseHUD(myHUD).HUD.MainHUD.RegisterCurrentTalkers(CurrentTalkers);
+	}
+}
+
+
+DefaultProperties
+{
+	NetUpdateFrequency=120
+	// Netcode optimization: Client-side interpolation interval to match 120Hz tickrate
+	MaxClientUpdateInterval=0.00833  // 1/120 = 0.00833 seconds between client updates
+	suicideDelay = 1.0f
+	CustomizationClass=class'BangModCustomization'
+	bShowDeathMessages = true
+	
+	// Proximity voice chat defaults
+	ProximityChatDistance=2048.0  // About 39 meters (typical medieval battle communication range)
+	bEnableProximityChat=true
+	bIsTalking=false
+
+	// Unpause countdown
+	UnpauseCountdownTime=3
+}
+

@@ -1,0 +1,7 @@
+`define GAMEMODE BangModLTS
+
+DefaultProperties
+{
+	IdleTimeLimit=9000.f 
+	RoundTime=9000
+}

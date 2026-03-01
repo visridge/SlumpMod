@@ -1,0 +1,1 @@
+class BangModGFx_HUDManager extends AOCGFx_HUDManager;
