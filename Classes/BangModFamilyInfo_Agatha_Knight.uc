@@ -15,9 +15,11 @@ DefaultProperties
 	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_Longsword')
 	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_SwordOfWar')
 	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Messer')
-	
-	
-	
+	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Flail',CForceTertiary=(class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
+	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_HFlail',CForceTertiary=(class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
+
+
+
 	NewSecondaryWeapons.empty;
 	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_Mace')
 	NewSecondaryWeapons(1)=(CWeapon=class'BangModWeapon_MorningStar')

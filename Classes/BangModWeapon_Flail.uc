@@ -229,7 +229,7 @@ DefaultProperties
 
 	AttachmentClass=class'AOCWeaponAttachment_Flail'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Flail'
-	AllowedShieldClass=none
+	AllowedShieldClass=class'BangModShield_Kite'
 	CurrentWeaponType=EWEP_Flail
 	CurrentShieldType=ESHIELD_none
 	bHaveShield=true

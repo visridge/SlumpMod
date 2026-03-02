@@ -131,7 +131,7 @@ DefaultProperties
 
 	AttachmentClass=class'AOCWeaponAttachment_HFlail'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_HFlail'
-	AllowedShieldClass=class'BangModShield_Heater'
+	AllowedShieldClass=class'BangModShield_Kite'
 	CurrentWeaponType=EWEP_HFlail
 	bHaveShield=false
 	WeaponIdentifier="hflail"
