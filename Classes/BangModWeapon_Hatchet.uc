@@ -60,8 +60,8 @@ DefaultProperties
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Hatchet
 	CurrentShieldType=ESHIELD_None
-	bHaveShield=false
-	bCanSwitchShield=false
+	bHaveShield=true
+	bCanSwitchShield=true
 
 	ImpactSounds(ESWINGSOUND_Slash)={(
 		light=SoundCue'A_Impacts_Melee.Light_Chop_Average',
@@ -296,5 +296,5 @@ DefaultProperties
 	ExecuteeAnimations(3)=(AnimationName=3p_death_1hbluntBdeath,ComboAnimation=,AssociatedSoundCue=,bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=0.0,fAnimationLength=0.0,fBlendInTime=0.0,fBlendOutTime=0.00,bLastAnimation=false,fShieldAnimLength=0.0,bUseSlotSystem=True)
 
 	// Double the lunge distance for better mobility (vanilla is 1.3)
-	fLungeSpeedMultiplier=1.3f
+	fLungeSpeedMultiplier=1.7f
 }

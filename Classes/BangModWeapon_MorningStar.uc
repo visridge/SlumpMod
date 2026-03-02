@@ -58,7 +58,8 @@ DefaultProperties
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_MorningStar
 	CurrentShieldType=ESHIELD_None
-	bHaveShield=false
+	bHaveShield=true
+	bCanSwitchShield=true
 	FlinchTime1H=1.00
 
 	ImpactSounds(ESWINGSOUND_Slash)={(

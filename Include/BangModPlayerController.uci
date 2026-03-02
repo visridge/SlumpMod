@@ -768,7 +768,12 @@ exec function AdminGotoCompMod() {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
 		return;
 	}
-	ServerChangeMap("AOCFFA-YeedYard_p?modname=CompMod3");
+	S_AdminGotoCompMod();
+}
+
+reliable server function S_AdminGotoCompMod() {
+	if (!IsAdmin()) return;
+	WorldInfo.ServerTravel("AOCFFA-YeedYard_p?modname=CompMod3", false);
 }
 
 exec function AdminForceSpectate(String PlayerName) {

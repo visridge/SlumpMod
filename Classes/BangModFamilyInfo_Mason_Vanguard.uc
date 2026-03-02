@@ -28,8 +28,6 @@ DefaultProperties
 	NewTertiaryWeapons.empty;
 	NewTertiaryWeapons(0)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
 	NewTertiaryWeapons(1)=(CWeapon=class'BangModWeapon_Heater_Mason',bEnabledDefault=true)
-	NewTertiaryWeapons(2)=(CWeapon=class'BangModWeapon_Kite_Mason',bEnabledDefault=true)
-	NewTertiaryWeapons(3)=(CWeapon=class'BangModWeapon_Buckler_Mason',bEnabledDefault=true)
 
 	DamageResistances(EDMG_Swing) = 0.6
 	DamageResistances(EDMG_Pierce) = 0.8

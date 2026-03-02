@@ -32,8 +32,6 @@ DefaultProperties
 	NewTertiaryWeapons.empty;
 	NewTertiaryWeapons(0)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
 	NewTertiaryWeapons(1)=(CWeapon=class'BangModWeapon_Heater_Agatha',bEnabledDefault=true)
-	NewTertiaryWeapons(2)=(CWeapon=class'BangModWeapon_Kite_Agatha',bEnabledDefault=true)
-	NewTertiaryWeapons(3)=(CWeapon=class'BangModWeapon_Buckler_Agatha',bEnabledDefault=true)
 
 
 	bCanSprintAttack=false

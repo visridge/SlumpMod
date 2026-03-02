@@ -60,7 +60,8 @@ DefaultProperties
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_WarAxe
 	CurrentShieldType=ESHIELD_None
-	bHaveShield=false
+	bHaveShield=true
+	bCanSwitchShield=true
 
 	ImpactSounds(ESWINGSOUND_Slash)={(
 		light=SoundCue'A_Impacts_Melee.Light_Chop_Average',

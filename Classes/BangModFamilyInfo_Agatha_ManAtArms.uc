@@ -28,7 +28,6 @@ DefaultProperties
 	NewTertiaryWeapons(1)=(CWeapon=class'BangModWeapon_ThrowingAxe')
 	NewTertiaryWeapons(2)=(CWeapon=class'BangModWeapon_OilPot')
 	NewTertiaryWeapons(3)=(CWeapon=class'BangModWeapon_Heater_Agatha',bEnabledDefault=true)
-	NewTertiaryWeapons(4)=(CWeapon=class'BangModWeapon_Buckler_Agatha',bEnabledDefault=true)
 	bCanDodge=true
 
 	ProjectileLocationModifiers(EHIT_Head) = 1.5

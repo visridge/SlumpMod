@@ -58,7 +58,8 @@ DefaultProperties
 	AttachmentClass=class'BangModWeaponAttachment_Dane'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Dane'
 	AllowedShieldClass=none
-	bHaveShield=false
+	bHaveShield=true
+	bCanSwitchShield=true
 	CurrentWeaponType=EWEP_Dane
 	CurrentShieldType=ESHIELD_None
 

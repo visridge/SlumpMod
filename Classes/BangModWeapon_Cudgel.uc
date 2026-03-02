@@ -172,7 +172,8 @@ DefaultProperties
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Cudgel
 	CurrentShieldType=ESHIELD_None
-	bHaveShield=false
+	bHaveShield=true
+	bCanSwitchShield=true
 
 	CurrentGenWeaponType=EWT_1hand
 

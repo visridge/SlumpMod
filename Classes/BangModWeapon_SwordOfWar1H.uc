@@ -154,8 +154,8 @@ DefaultProperties
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_SwordOfWar
 	CurrentShieldType=ESHIELD_None
-	bHaveShield=false
-	bCanSwitchShield=false
+	bHaveShield=true
+	bCanSwitchShield=true
 	WeaponIdentifier="1hsharp"
 
 	CurrentGenWeaponType=EWT_1hand

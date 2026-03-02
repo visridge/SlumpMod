@@ -536,23 +536,176 @@ simulated state Parry
 		
 		// Call parent to handle all normal parry logic
 		super.BeginState(PreviousStateName);
+		
+		// BANGMOD: Disable riposte for shields - must come AFTER super because
+		// AOCMeleeWeapon.Parry.BeginState resets bCanParryHitCounter = true
+		if (bEquipShield)
+		{
+			bCanParryHitCounter = false;
+		}
+	}
+	
+	/** BANGMOD: Override shield flow - route to ParryRelease instead of ShieldUpIdle
+	 *  This gives shields the same timed parry window as weapons (~500ms active, ~400ms recovery)
+	 *  instead of the vanilla held-block behavior
+	 */
+	simulated function OnStateAnimationEnd()
+	{
+		if (bEquipShield && bShieldRaised)
+		{
+			// Route shields through ParryRelease (same as weapon parry)
+			// instead of ShieldUpIdle (vanilla held block)
+			GotoState('ParryRelease');
+		}
+		else
+		{
+			// Non-shield weapons use normal flow
+			super.OnStateAnimationEnd();
+		}
 	}
 }
 /** 
- * BANGMOD: Override ShieldUpIdle to allow timed parry but use vanilla blocking
- * The timer from Parry state will auto-drop the shield after the window
+ * BANGMOD: ShieldUpIdle safety net - shields should never reach this state under timed parry
+ * Parry state now routes shields to ParryRelease instead of ShieldUpIdle
+ * If we somehow end up here, immediately go to Recovery
  */
 simulated state ShieldUpIdle
 {
-	// Override animation to prevent looping horizontal shield bug
-	simulated function PlayStateAnimation()
+	simulated event BeginState(Name PreviousStateName)
 	{
-		local AnimationInfo Info;
-		// Play shield raise animation but DON'T loop it
-		Info = ReleaseAnimations[Attack_Parry];
-		Info.bLoop = false;  // This prevents the saucer shield bug
-		Info.bFullBody = false;
-		AOCOwner.ReplicateCompressedAnimation(Info, EWST_Release, Attack_Parry);
+		// Shields should never be in ShieldUpIdle under BangMod timed parry system
+		// Safety redirect to Recovery
+		bShieldRaised = false;
+		AOCOwner.StateVariables.bIsActiveShielding = false;
+		AOCOwner.StateVariables.bIsParrying = false;
+		GotoState('Recovery');
+	}
+}
+
+/** 
+ * BANGMOD: Override ParryRelease for shields - timed parry window with no riposte
+ * Shields use the same ParryRelease path as weapons (~500ms active window)
+ * but cannot riposte. After the window, auto-drops into Recovery.
+ */
+simulated state ParryRelease
+{
+	/** Shield uses ParryRelease for its active parry window.
+	 *  Keep bIsActiveShielding true so DetectSuccessfulParry uses shield branch (zero stamina drain).
+	 */
+	simulated event BeginState(Name PreviousStateName)
+	{
+		super.BeginState(PreviousStateName);
+		
+		// For shields: maintain active shielding state during ParryRelease
+		// so that incoming hits are detected as shield blocks (zero stamina drain)
+		if (bEquipShield)
+		{
+			AOCOwner.StateVariables.bIsActiveShielding = true;
+			bCanParryHitCounter = false;  // No riposte for shields
+		}
+	}
+	
+	/** Block riposte for shields - only allow attack queueing */
+	simulated function BeginFire(byte FireModeNum)
+	{
+		if (bEquipShield)
+		{
+			// Shields cannot riposte - queue attacks for after recovery instead
+			if (bManualAllowQueue)
+				AttackQueue = EAttack(FireModeNum);
+		}
+		else
+		{
+			// Non-shield weapons use normal ParryRelease logic (allows riposte)
+			super.BeginFire(FireModeNum);
+		}
+	}
+	
+	/** For shields: auto-drop after the parry window expires */
+	simulated function AllowLowerParry()
+	{
+		if (bEquipShield)
+		{
+			// Force drop shield - no held block allowed
+			bShieldRaised = false;
+			AOCOwner.StateVariables.bIsActiveShielding = false;
+			AOCOwner.StateVariables.bIsParrying = false;
+			GotoState('Recovery');
+		}
+		else
+		{
+			super.AllowLowerParry();
+		}
+	}
+	
+	/** For shields: block manual lowering during the parry window */
+	simulated function LowerShield()
+	{
+		if (bEquipShield)
+		{
+			// Don't allow manual shield drop - timer will handle it
+			return;
+		}
+		super.LowerShield();
+	}
+	
+	/** BANGMOD: Shield-specific successful parry handling.
+	 *  AOCMeleeWeapon.ParryRelease.SuccessfulParry calls ChooseDirParryHitAnim() which
+	 *  explicitly rejects shields (!bShieldEquipped), returning an empty AnimationInfo with
+	 *  fModifiedMovement=0.0. ReplicateCompressedAnimation then applies an indefinite
+	 *  EDEBF_ANIMATION debuff that freezes movement to 0%. Since shields route to Active
+	 *  (not Recovery), the debuff is never cleaned up.
+	 *  Fix: just flag success without the broken DirParryHitAnim path.
+	 */
+	simulated function SuccessfulParry(EAttack Type, int Dir)
+	{
+		if (bEquipShield)
+		{
+			if (bSuccessfulParry)
+				return;
+
+			AOCOwner.OnActionSucceeded(EACT_Block);
+			bSuccessfulParry = true;
+			// Immediately drop shield on successful block - don't wait for the timer.
+			// This lets the player re-parry quickly by clicking again.
+			ClearTimer('AllowLowerParry');
+			GotoState('Recovery');
+		}
+		else
+		{
+			super.SuccessfulParry(Type, Dir);
+		}
+	}
+	
+	/** BANGMOD: Shields always go to Recovery after ParryRelease (no riposte).
+	 *  Vanilla weapons route to Active on successful parry for riposte opportunity;
+	 *  shields have no riposte, so Recovery is the correct destination.
+	 */
+	simulated function OnStateAnimationEnd()
+	{
+		if (bEquipShield)
+		{
+			GotoState('Recovery');
+		}
+		else
+		{
+			super.OnStateAnimationEnd();
+		}
+	}
+	
+	/** Clean up shield state on exit */
+	simulated event EndState(Name NextStateName)
+	{
+		if (bEquipShield)
+		{
+			AOCOwner.StateVariables.bIsActiveShielding = false;
+			// Safety: remove any animation movement debuffs that may have been
+			// applied during this state (double-remove matches pattern used in
+			// Parry.BeginState to clear potentially stacked EDEBF_ANIMATION)
+			AOCOwner.RemoveDebuff(EDEBF_ANIMATION);
+			AOCOwner.RemoveDebuff(EDEBF_ANIMATION);
+		}
+		super.EndState(NextStateName);
 	}
 }
 

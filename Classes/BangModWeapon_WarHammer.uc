@@ -172,7 +172,8 @@ DefaultProperties
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_WarHammer
 	CurrentShieldType=ESHIELD_None
-	bHaveShield=false
+	bHaveShield=true
+	bCanSwitchShield=true
 
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_WarHammer]
