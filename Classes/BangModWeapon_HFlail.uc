@@ -133,7 +133,7 @@ DefaultProperties
 	InventoryAttachmentClass=class'AOCInventoryAttachment_HFlail'
 	AllowedShieldClass=class'BangModShield_Kite'
 	CurrentWeaponType=EWEP_HFlail
-	bHaveShield=false
+	bHaveShield=true
 	WeaponIdentifier="hflail"
 	bPlayOnWeapon=true
 	bWantToFire=false
@@ -247,4 +247,6 @@ DefaultProperties
 	AlternateRecoveryAnimations(8)=(AnimationName=3p_flail_dazedB01,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.9,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=true)
 	AlternateRecoveryAnimations(9)=(AnimationName=3p_flail_dazedB01,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.9,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=true)
 
-}
+        // BANGMOD: Prevent dodging while HFlail is equipped (weapon is too heavy/cumbersome)
+        bCanDodge=false
+

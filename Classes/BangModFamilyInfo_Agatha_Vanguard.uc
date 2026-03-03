@@ -2,9 +2,6 @@ class BangModFamilyInfo_Agatha_Vanguard extends AOCFamilyInfo_Agatha_Vanguard;
 
 DefaultProperties
 {
-	ParryBoxScale=(X=0.11,Y=0.17,Z=0.35)
-	ParryBoxTranslation=(X=10, Y=1, Z=-28)
-
 	NewPrimaryWeapons.empty;
 	NewPrimaryWeapons(0)=(CWeapon=class'BangModWeapon_Greatsword',CorrespondingDuelProp=EDUEL_GreatswordUse)
 	NewPrimaryWeapons(1)=(CWeapon=class'BangModWeapon_Claymore',CorrespondingDuelProp=EDUEL_ClaymoreUse)
@@ -31,7 +28,6 @@ DefaultProperties
 
 	NewTertiaryWeapons.empty;
 	NewTertiaryWeapons(0)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
-	NewTertiaryWeapons(1)=(CWeapon=class'BangModWeapon_Heater_Agatha',bEnabledDefault=true)
 
 
 	bCanSprintAttack=false

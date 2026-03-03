@@ -2,9 +2,6 @@ class BangModFamilyInfo_Mason_Archer extends AOCFamilyInfo_Mason_Archer;
 
 DefaultProperties
 {
-	ParryBoxScale=(X=0.11,Y=0.17,Z=0.35)
-	ParryBoxTranslation=(X=10, Y=1, Z=-28)
-
 	NewPrimaryWeapons.empty;
 	NewPrimaryWeapons(0)=(CWeapon=class'BangModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
 	NewPrimaryWeapons(1)=(CWeapon=class'BangModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)

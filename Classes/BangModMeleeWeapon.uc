@@ -547,20 +547,53 @@ simulated state Parry
 	
 	/** BANGMOD: Override shield flow - route to ParryRelease instead of ShieldUpIdle
 	 *  This gives shields the same timed parry window as weapons (~500ms active, ~400ms recovery)
-	 *  instead of the vanilla held-block behavior
+	 *  instead of the vanilla held-block behavior.
+	 *  If the shield already blocked during the raise animation, skip ParryRelease
+	 *  entirely and go straight to Recovery. Otherwise ParryRelease.BeginState resets
+	 *  bSuccessfulParry=false and the full 500ms window plays out again.
 	 */
 	simulated function OnStateAnimationEnd()
 	{
 		if (bEquipShield && bShieldRaised)
 		{
-			// Route shields through ParryRelease (same as weapon parry)
-			// instead of ShieldUpIdle (vanilla held block)
-			GotoState('ParryRelease');
+			if (bSuccessfulParry)
+			{
+				// Already blocked during raise - drop shield immediately
+				GotoState('Recovery');
+			}
+			else
+			{
+				// No block yet - enter the active parry window
+				GotoState('ParryRelease');
+			}
 		}
 		else
 		{
 			// Non-shield weapons use normal flow
 			super.OnStateAnimationEnd();
+		}
+	}
+	
+	/** BANGMOD: Shield-specific parry hit during the raise animation.
+	 *  Vanilla Parry.SuccessfulParry calls super.SuccessfulParry for shields which
+	 *  may trigger ChooseDirParryHitAnim (movement freeze bug). Override to just
+	 *  flag success - OnStateAnimationEnd will route to Recovery when the raise ends.
+	 *  No GotoState here: bIsActiveShielding must stay true so DetectSuccessfulParry
+	 *  can zero HitDamage before we leave the Parry state.
+	 */
+	simulated function SuccessfulParry(EAttack Type, int Dir)
+	{
+		if (bEquipShield)
+		{
+			if (bSuccessfulParry)
+				return;
+
+			AOCOwner.OnActionSucceeded(EACT_Block);
+			bSuccessfulParry = true;
+		}
+		else
+		{
+			super.SuccessfulParry(Type, Dir);
 		}
 	}
 }
@@ -602,6 +635,9 @@ simulated state ParryRelease
 		{
 			AOCOwner.StateVariables.bIsActiveShielding = true;
 			bCanParryHitCounter = false;  // No riposte for shields
+			// BANGMOD: Reduce shield active window by 50ms (450ms instead of vanilla 500ms)
+			ClearTimer('AllowLowerParry');
+			SetTimer(0.45f, false, 'AllowLowerParry');
 		}
 	}
 	
@@ -656,6 +692,13 @@ simulated state ParryRelease
 	 *  EDEBF_ANIMATION debuff that freezes movement to 0%. Since shields route to Active
 	 *  (not Recovery), the debuff is never cleaned up.
 	 *  Fix: just flag success without the broken DirParryHitAnim path.
+	 *
+	 *  IMPORTANT: We must NOT call GotoState('Recovery') synchronously here.
+	 *  SuccessfulParry is called from NotifySuccessfulParry inside DetectSuccessfulParry.
+	 *  If we transition to Recovery now, ParryRelease.EndState clears bIsActiveShielding
+	 *  BEFORE DetectSuccessfulParry checks it to zero out HitDamage. Result: shield block
+	 *  plays visually but full damage still goes through.
+	 *  Fix: defer the state transition to the next tick via SetTimer.
 	 */
 	simulated function SuccessfulParry(EAttack Type, int Dir)
 	{
@@ -666,15 +709,24 @@ simulated state ParryRelease
 
 			AOCOwner.OnActionSucceeded(EACT_Block);
 			bSuccessfulParry = true;
-			// Immediately drop shield on successful block - don't wait for the timer.
-			// This lets the player re-parry quickly by clicking again.
+			// Defer shield drop to next tick so DetectSuccessfulParry can finish
+			// checking bIsActiveShielding and zeroing HitDamage first.
 			ClearTimer('AllowLowerParry');
-			GotoState('Recovery');
+			SetTimer(0.001, false, 'DeferredShieldDrop');
 		}
 		else
 		{
 			super.SuccessfulParry(Type, Dir);
 		}
+	}
+	
+	/** Called next tick after a successful shield block to drop into Recovery.
+	 *  Deferred from SuccessfulParry to avoid clearing bIsActiveShielding
+	 *  before DetectSuccessfulParry can zero out HitDamage.
+	 */
+	simulated function DeferredShieldDrop()
+	{
+		GotoState('Recovery');
 	}
 	
 	/** BANGMOD: Shields always go to Recovery after ParryRelease (no riposte).

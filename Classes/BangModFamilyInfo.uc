@@ -13,8 +13,4 @@ class BangModFamilyInfo extends AOCFamilyInfo;
 
 DefaultProperties
 {
-	// Extend parry box backward by making it much longer (Y) and reducing forward offset (X)
-	// Since X can't go negative effectively, we compensate with massive Y depth
-	ParryBoxScale=(X=0.1,Y=0.17,Z=0.35)
-	ParryBoxTranslation=(X=5, Y=5, Z=-28)
 }
