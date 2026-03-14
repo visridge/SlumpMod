@@ -14,6 +14,7 @@ DefaultProperties
 	NewPrimaryWeapons(5)=(CWeapon=class'BangModWeapon_Halberd',CorrespondingDuelProp=EDUEL_HalberdUse)
 	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_PoleHammer',CorrespondingDuelProp=EDUEL_PoleHammerUse)
 	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
+	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Nodachi',CorrespondingDuelProp=EDUEL_ZweihanderUse)
 	
 
 	NewSecondaryWeapons.empty;
