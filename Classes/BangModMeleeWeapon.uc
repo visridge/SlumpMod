@@ -637,7 +637,7 @@ simulated state ParryRelease
 			bCanParryHitCounter = false;  // No riposte for shields
 			// BANGMOD: Reduce shield active window by 50ms (450ms instead of vanilla 500ms)
 			ClearTimer('AllowLowerParry');
-			SetTimer(0.45f, false, 'AllowLowerParry');
+			SetTimer(0.4f, false, 'AllowLowerParry');
 		}
 	}
 	

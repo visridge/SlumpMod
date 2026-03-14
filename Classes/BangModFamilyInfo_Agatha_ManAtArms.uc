@@ -2,6 +2,9 @@ class BangModFamilyInfo_Agatha_ManAtArms extends AOCFamilyInfo_Agatha_ManAtArms;
 
 DefaultProperties
 {
+	ParryBoxScale=(X=0.18,Y=0.17,Z=0.35)
+    ParryBoxTranslation=(X=10, Y=5, Z=-28)
+
 	NewPrimaryWeapons.empty;
 	NewPrimaryWeapons(0)=(CWeapon=class'BangModWeapon_Broadsword')
 	NewPrimaryWeapons(1)=(CWeapon=class'BangModWeapon_NorseSword')

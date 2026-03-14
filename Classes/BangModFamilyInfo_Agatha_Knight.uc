@@ -2,6 +2,9 @@ class BangModFamilyInfo_Agatha_Knight extends AOCFamilyInfo_Agatha_Knight;
 
 DefaultProperties
 {
+	ParryBoxScale=(X=0.18,Y=0.17,Z=0.35)
+    ParryBoxTranslation=(X=10, Y=5, Z=-28)
+
 	NewPrimaryWeapons.empty;
 	NewPrimaryWeapons(0)=(CWeapon=class'BangModWeapon_DoubleAxe',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
 	NewPrimaryWeapons(1)=(CWeapon=class'BangModWeapon_PoleAxe',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))

@@ -307,6 +307,10 @@ reliable server function S_StartUnpauseCountdown() {
 	}
 	UnpauseCountdownTime = Default.UnpauseCountdownTime;
 	S_AdminBroadcastMessage("Unpausing in...", false);
+	// ClearPause first so SetTimer ticks run; countdown provides the delay before GO!
+	WorldInfo.Game.ClearPause();
+	PauseRumbleForAllPlayers(false);
+	bIsPaused = false;
 	UnpauseCountdownTick();
 	SetTimer(1.0f, true, 'UnpauseCountdownTick');
 }
@@ -314,12 +318,6 @@ reliable server function S_StartUnpauseCountdown() {
 function UnpauseCountdownTick() {
 	if (UnpauseCountdownTime == 0) {
 		S_AdminBroadcastMessage("GO!", false);
-		WorldInfo.Game.ClearPause();
-		if (WorldInfo.Pauser == None) {
-			WorldInfo.bGameplayFramePause = false;
-			PauseRumbleForAllPlayers(false);
-		}
-		bIsPaused = false;
 		ClearTimer('UnpauseCountdownTick');
 	} else {
 		S_AdminBroadcastMessage("    "$UnpauseCountdownTime$"...", false);
