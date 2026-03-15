@@ -179,7 +179,7 @@ DefaultProperties
 	 * Using Zweihander animation timings with GrandMace-level damage
 	 */
 	iFeintStaminaCost=15
-	FeintTime=0.3
+	FeintTime=0.35
 	TertiaryFeintTime=0.5
 	fParryNegation=24
 	ParryDrain(0)=28
