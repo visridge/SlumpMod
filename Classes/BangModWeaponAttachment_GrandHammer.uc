@@ -52,7 +52,7 @@ DefaultProperties
 	bUseAlternativeKick=true
 
 	AttackTypeInfo(0)=(fBaseDamage=75.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
-	AttackTypeInfo(1)=(fBaseDamage=82.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=78.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
 	AttackTypeInfo(2)=(fBaseDamage=40.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
 	AttackTypeInfo(3)=(fBaseDamage=0.0, fForce=22500, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
 	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=25500, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
@@ -62,35 +62,35 @@ DefaultProperties
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_GrandHammer",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_GrandHammer",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_GrandHammer_INST",
-		StaticMeshScale=0.8,
+		StaticMeshScale=0.70,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(1)={(
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_GrandHammer",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_GrandHammer",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_GrandHammer_INST",
-		StaticMeshScale=0.8,
+		StaticMeshScale=0.70,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(2)={(
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_GrandHammer",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_GrandHammer",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_GrandHammer_INST",
-		StaticMeshScale=0.8,
+		StaticMeshScale=0.70,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(3)={(
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_GrandHammer",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_GrandHammer",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_GrandHammer_INST",
-		StaticMeshScale=0.8,
+		StaticMeshScale=0.70,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(4)={(
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_GrandHammer",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_GrandHammer",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_GrandHammer_INST",
-		StaticMeshScale=0.8,
+		StaticMeshScale=0.70,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 }
