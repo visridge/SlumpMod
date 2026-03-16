@@ -192,7 +192,7 @@ simulated function bool CheckProjectileParry(HitInfo Info) {
 	local vector OtherPawnFaceDirection;
 	local float fAngle;
 
-	if (Info.DamageType.default.bIsProjectile && class<AOCDmgType_BallistaBolt>(Info.DamageType) == none) {
+	if (Info.DamageType.default.bIsProjectile) {
 		DirVector = Normal(Location - Info.HitActor.Location);
 		OtherPawnFaceDirection = Normal(Info.HitActor.GetForwardDirection());
 		fAngle = Acos(DirVector dot OtherPawnFaceDirection);
