@@ -81,15 +81,22 @@ static function bool IsEmblemOwnedBy(int EmblemID, int Faction, PlayerReplicatio
 
 static function bool IsCharacterOwnedBy(int CharacterID, int FactionID, int ClassID, PlayerReplicationInfo PRI)
 {
-    // Block Skeleton and Peasant character skins
-    // Character IDs from BangModCustomizationContent:
-    // 0 = Skeleton (placeholder), 1 = Skeleton, 12 = Peasant, 13 = Playable_Peasant, 14 = Playable_Skeleton
-    if (CharacterID == 0 || CharacterID == 1 || CharacterID == 12 || CharacterID == 13 || CharacterID == 14)
-    {
-        return false;
-    }
-    
-    return true;
+	// Character IDs from BangModCustomizationContent:
+	// 0 = Skeleton (placeholder), 1 = Skeleton, 12 = Peasant, 13 = Playable_Peasant, 14 = Playable_Skeleton
+
+	// Keep skeletons blocked for all classes
+	if (CharacterID == 0 || CharacterID == 1 || CharacterID == 14)
+	{
+		return false;
+	}
+
+	// Allow peasant only for Archer
+	if (CharacterID == 12 || CharacterID == 13)
+	{
+		return EAOCClass(ClassID) == ECLASS_Archer;
+	}
+
+	return true;
 }
 
 static function bool IsShieldPatternOwnedBy(int ShieldPatternID, int CharacterID, PlayerReplicationInfo PRI, optional int CheckClass)

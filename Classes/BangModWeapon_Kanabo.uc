@@ -213,7 +213,7 @@ DefaultProperties
 	BloodSprayTemplates(1)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
-	WeaponIdentifier="qstaff"  // Use quarterstaff for 2H idle stance + dodge animations (MaA weapon, so dodge anims exist)
+	WeaponIdentifier="doubleaxe"  // Use doubleaxe for proper 2H idle stance; BangModDodge remaps this to "qstaff" for dodge anims
 	WeaponName="Kanabo"
 
 	CurrentGenWeaponType=EWT_2handsword

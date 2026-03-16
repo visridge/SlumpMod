@@ -491,6 +491,15 @@ simulated function FinishDodgeFlinch() {
 	DodgeSM.StartQueuedAttack();
 }
 
+/** Override to use BangModDodge which remaps WeaponIdentifiers that lack MaA dodge animations */
+simulated function VerifyDodgeSMInitialize()
+{
+	if (DodgeSM == none)
+	{
+		DodgeSM = new(Outer) class'BangModDodge';
+		DodgeSM.OwnerPawn = self;
+	}
+}
 
 
 

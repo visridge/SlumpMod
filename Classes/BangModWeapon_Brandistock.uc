@@ -102,7 +102,7 @@ DefaultProperties
 	EncircleRadius=30.0f
 	EffectiveDistance=300.0f
 	bTwoHander=true
-	FlinchTime2H=1.10
+	FlinchTime2H=1.05
 
 	ImpactSounds(ESWINGSOUND_Slash)={(
 		light=SoundCue'A_Impacts_Melee.Light_Chop_Small',

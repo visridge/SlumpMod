@@ -135,10 +135,8 @@ simulated state Reload
 	/** Play appropriate attack animation */
 	simulated event BeginState(Name PreviousStateName)
 	{
-		AOCOwner.ToggleSprint(false);
-		AOCOwner.StateVariables.bCanSprint = false;
-		super.BeginState(PreviousStateName);
 		AOCPawn(Owner).ConsumeStamina(fBowDrawCost);
+		PlayStateAnimation();
 	}
 
 	/** Play recovery animation */

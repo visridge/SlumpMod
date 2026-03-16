@@ -99,7 +99,7 @@ DefaultProperties
 	EncircleRadius=30.0f
 	EffectiveDistance=300.0f
 	bTwoHander=true
-	FlinchTime2H=1.10
+	FlinchTime2H=1.05
 	bCanCombo=false
 
 	ImpactSounds(ESWINGSOUND_Slash)={(
@@ -114,7 +114,7 @@ DefaultProperties
 		stone=SoundCue'A_Phys_Mat_Impacts.Bardiche_Stone')}
 
 	ImpactSounds(ESWINGSOUND_SlashCombo)={(
-		light=SoundCue'A_Impacts_Melee.Light_Stab_Small',
+		light=SoundCue'A_Impacts_Melee.Light_Stab_Small', 
 		medium=SoundCue'A_Impacts_Melee.Medium_Stab_Small',
 		heavy=SoundCue'A_Impacts_Melee.Heavy_Stab_Small',
 		wood=SoundCue'A_Phys_Mat_Impacts.Bardiche_Wood',

@@ -12,6 +12,12 @@ DefaultProperties
 	NewPrimaryWeapons(3)=(CWeapon=class'BangModWeapon_Longbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(4)=(CWeapon=class'BangModWeapon_Shortbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(5)=(CWeapon=class'BangModWeapon_Warbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
+	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_GrandHammer')
+	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_Zweihander',CorrespondingDuelProp=EDUEL_ZweihanderUse)
+	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Bardiche',CorrespondingDuelProp=EDUEL_BardicheUse)
+	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Halberd',CorrespondingDuelProp=EDUEL_HalberdUse)
+	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
+	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_Nodachi',CorrespondingDuelProp=EDUEL_ZweihanderUse)
 
 	NewSecondaryWeapons.empty;
 	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_Saber')
