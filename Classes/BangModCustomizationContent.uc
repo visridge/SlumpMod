@@ -61,6 +61,8 @@ defaultproperties
 	Characters.Add(class'BangModCharacterInfo_BARB_Mason_ManAtArms')
 	Characters.Add(class'BangModCharacterInfo_BARB_Mason_Vanguard')
 	Characters.Add(class'AOCCharacterInfo_Playable_PeasantRevolt')
+	Characters.Add(class'BangModCharacterInfo_Agatha_Footman')
+	Characters.Add(class'BangModCharacterInfo_Mason_Footman')
     
 
     Teams.Empty()

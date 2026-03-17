@@ -24,6 +24,9 @@ var globalconfig bool bEnableProximityChat;     // Master toggle for proximity c
 var bool bIsTalking;  // Is local player currently talking
 var array<AOCPRI> NearbyTalkers;  // List of PRIs currently talking within range
 
+// Parry box toggle
+var globalconfig bool bBangModParryBox;  // When true, use BangMod parry box values; when false, revert to vanilla AOC defaults
+
 // Unpause countdown
 var bool bIsPaused;  // Tracks whether the game is currently paused by an admin
 var int UnpauseCountdownTime;  // Countdown start value for unpause (default 3)
@@ -662,7 +665,95 @@ exec function AdminTournamentMode(optional bool bEnable = true)
 	ClientDisplayConsoleMessage("Enable: Admin TournamentMode 1");
 }
 
+// Override AdminLoginHidden to prevent silent admin logins on BangMod servers.
+// Redirects to the standard AdminLogin which broadcasts to all players.
+exec function AdminLoginHidden(string Password)
+{
+	AdminLogin(Password);
+}
+
+reliable server function ServerAdminLoginHidden(string Password)
+{
+	// Intentionally disabled - use ServerAdminLogin instead (broadcasts to server)
+}
+
+exec function AdminToggleParryBox(optional bool bEnable = true)
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminToggleParryBox(bEnable);
+}
+
+reliable server function S_AdminToggleParryBox(bool bEnable) {
+	if (!IsAdmin())
+		return;
+	bBangModParryBox = bEnable;
+	StaticSaveConfig();
+	if (bEnable)
+		S_AdminBroadcastMessage("BangMod parry box ENABLED (respawn to apply)", false);
+	else
+		S_AdminBroadcastMessage("BangMod parry box DISABLED - using vanilla AOC parry box (respawn to apply)", false);
+}
+
 reliable server function S_AdminTournamentMode(bool bEnable) {}
+
+// Option A: Reset ALL physics volumes to default friction (nuclear)
+exec function AdminResetAllTraction()
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminResetAllTraction();
+}
+
+reliable server function S_AdminResetAllTraction() {
+	local PhysicsVolume PV;
+	local int Count;
+
+	if (!IsAdmin())
+		return;
+
+	foreach AllActors(class'PhysicsVolume', PV)
+	{
+		if (PV.GroundFriction != 8.0)
+		{
+			PV.GroundFriction = 8.0;
+			Count++;
+		}
+	}
+	S_AdminBroadcastMessage("Reset traction on" @ Count @ "physics volumes (Option A - all volumes)", false);
+}
+
+// Option C: Reset only non-water low-friction volumes (selective)
+exec function AdminResetIceTraction()
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminResetIceTraction();
+}
+
+reliable server function S_AdminResetIceTraction() {
+	local PhysicsVolume PV;
+	local int Count;
+
+	if (!IsAdmin())
+		return;
+
+	foreach AllActors(class'PhysicsVolume', PV)
+	{
+		if (PV.GroundFriction < 8.0 && !PV.bWaterVolume)
+		{
+			PV.GroundFriction = 8.0;
+			Count++;
+		}
+	}
+	S_AdminBroadcastMessage("Reset ice traction on" @ Count @ "physics volumes (Option C - non-water only)", false);
+}
 
 reliable server function S_SendF10Message() {
 	ReceiveChatMessage("You will implode in 1 second.", EFAC_ALL, false, false, ,false);
@@ -1806,6 +1897,9 @@ DefaultProperties
 	ProximityChatDistance=2048.0  // About 39 meters (typical medieval battle communication range)
 	bEnableProximityChat=true
 	bIsTalking=false
+
+	// Parry box toggle default (enabled = use BangMod values)
+	bBangModParryBox=true
 
 	// Unpause countdown
 	UnpauseCountdownTime=3

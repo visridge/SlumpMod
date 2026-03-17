@@ -1420,6 +1420,19 @@ function Set_bShowHitTime(bool set)
 
 
 
+// Override to reset parry box to AOC defaults when BangMod parry box is disabled
+simulated function AOCSetCharacterClassFromInfo(AOCFamilyInfo Info)
+{
+	super.AOCSetCharacterClassFromInfo(Info);
+
+	if (Controller != none && !class'BangModAOCDuelPlayerController'.default.bBangModParryBox)
+	{
+		// Revert to vanilla AOC parry box
+		ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
+		ParryComponent.SetTranslation(vect(30, 0, -30));
+	}
+}
+
 //netupdate
 function PossessedBy(Controller C, bool bVehicleTransition)
 {
