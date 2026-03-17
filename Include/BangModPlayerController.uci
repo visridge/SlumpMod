@@ -851,6 +851,30 @@ exec function AdminGotoOF() {
 	ServerChangeMap("AOCTO-OldForest_p");
 }
 
+exec function AdminGotoWF() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-Snowforest_p");
+}
+
+exec function AdminGotoSpooky() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-SpookyForest_p");
+}
+
+exec function AdminGotoDF() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-Darkforest_p");
+}
+
 // Switch to CompMod3 server (players without the mod will be kicked and must rejoin manually)
 exec function AdminGotoCompMod() {
 	if (!PlayerReplicationInfo.bAdmin) {
