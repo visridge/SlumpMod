@@ -1,4 +1,4 @@
-class BangModCharacterInfo_Mason_Footman extends BangModCharacterInfo;
+class BangModCharacterInfo_Mason_Footman extends AOCCharacterInfo;
 
 defaultproperties
 {

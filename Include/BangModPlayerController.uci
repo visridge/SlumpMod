@@ -16,7 +16,7 @@ var bool bShownOptimizationTip;  // Track if we've shown the optimization tip to
 var globalconfig bool bDisableScreenShake;  // Disable all camera shake effects (flinch, dazed, hits)
 
 // FPS uncapping
-var bool bFPSUncapped;  // Track if we've already uncapped FPS for this client
+var int FPSUncapMethod;  // Which uncap method is active (0=none, 1-6=method number)
 
 // Proximity Voice Chat
 var globalconfig float ProximityChatDistance;  // Distance in UU where players can hear each other
@@ -43,44 +43,155 @@ simulated event PostBeginPlay()
 	// FPS uncapping removed - use 'UncapFPS' console command manually if desired
 }
 
-// Exec command for players to manually uncap FPS
-exec function UncapFPS()
-{
-	local string Cmd;
-	local GameEngine GEngine;
-	local LocalPlayer LP;
-	
-	// Try obfuscated version
-	// Cmd = "Set" @ "Engine.GameEngine" @ "MaxSmoothedFrameRate" @ "0";
-	// ConsoleCommand(Cmd);
-	// ConsoleCommand("Set Engine.GameEngine MinSmoothedFrameRate 0");
-	// ConsoleCommand("Set Engine.GameEngine bSmoothFrameRate False");
-	// ClientDisplayConsoleMessage("FPS uncap attempted (check with 'stat fps')");
+// === FPS UNCAP TESTING ===
+// Multiple approaches to bypass the ~90fps clamp on dedicated servers.
+// Use UncapFPS1 through UncapFPS6 to test each independently.
+// Use RecapFPS to disable all methods and restore defaults.
+// Use FPSStatus to check current engine values.
 
-	// Method 1: Try to access GameEngine directly through the class hierarchy
+// Method 1: Direct GameEngine property set (the original approach)
+exec function UncapFPS1()
+{
+	local GameEngine GEngine;
+
 	GEngine = GameEngine(class'Engine'.static.GetEngine());
 	if (GEngine != None)
 	{
-		GEngine.MaxSmoothedFrameRate = 165.0;
-		bFPSUncapped = true;
-		ClientDisplayConsoleMessage("FPS uncap to 165 enabled (check with 'stat fps')");
+		GEngine.bSmoothFrameRate = false;
+		GEngine.MaxSmoothedFrameRate = 0.0;
+		GEngine.MinSmoothedFrameRate = 0.0;
+		FPSUncapMethod = 1;
+		ClientDisplayConsoleMessage("[Method 1] Direct property set: bSmooth=false, Max=0, Min=0");
 	}
 	else
 	{
-		// Method 2: Try through LocalPlayer
-		LP = LocalPlayer(Player);
-		if (LP != None && LP.ViewportClient != None && LP.ViewportClient.Outer != None)
-		{
-			GEngine = GameEngine(LP.ViewportClient.Outer);
-			if (GEngine != None)
-			{
-				GEngine.MaxSmoothedFrameRate = 165.0;
-				bFPSUncapped = true;
-				ClientDisplayConsoleMessage("FPS uncap to 165 enabled (check with 'stat fps')");
-			}
-		}
+		ClientDisplayConsoleMessage("[Method 1] FAILED - GameEngine is None");
 	}
-	
+}
+
+// Method 2: ConsoleCommand "Set" approach (bypasses property access, goes through native command handler)
+exec function UncapFPS2()
+{
+	ConsoleCommand("Set Engine.GameEngine bSmoothFrameRate False");
+	ConsoleCommand("Set Engine.GameEngine MaxSmoothedFrameRate 0");
+	ConsoleCommand("Set Engine.GameEngine MinSmoothedFrameRate 0");
+	FPSUncapMethod = 2;
+	ClientDisplayConsoleMessage("[Method 2] ConsoleCommand Set: bSmooth=false, Max=0, Min=0");
+}
+
+// Method 3: Set to very high cap instead of disabling (in case 0 triggers a fallback clamp)
+exec function UncapFPS3()
+{
+	local GameEngine GEngine;
+
+	GEngine = GameEngine(class'Engine'.static.GetEngine());
+	if (GEngine != None)
+	{
+		GEngine.bSmoothFrameRate = true;
+		GEngine.MaxSmoothedFrameRate = 999.0;
+		GEngine.MinSmoothedFrameRate = 0.0;
+		FPSUncapMethod = 3;
+		ClientDisplayConsoleMessage("[Method 3] High cap: bSmooth=true, Max=999, Min=0");
+	}
+	else
+	{
+		ClientDisplayConsoleMessage("[Method 3] FAILED - GameEngine is None");
+	}
+}
+
+// Method 4: Delayed one-shot via timer (5 seconds after command, in case server reconciliation
+// overwrites values during initial connection and we need to set them AFTER that window)
+exec function UncapFPS4()
+{
+	FPSUncapMethod = 4;
+	ClientDisplayConsoleMessage("[Method 4] Delayed uncap: will apply in 5 seconds...");
+	SetTimer(5.0f, false, 'DelayedUncapFPS');
+}
+
+function DelayedUncapFPS()
+{
+	local GameEngine GEngine;
+
+	GEngine = GameEngine(class'Engine'.static.GetEngine());
+	if (GEngine != None)
+	{
+		GEngine.bSmoothFrameRate = false;
+		GEngine.MaxSmoothedFrameRate = 0.0;
+		GEngine.MinSmoothedFrameRate = 0.0;
+		ClientDisplayConsoleMessage("[Method 4] Delayed apply done: bSmooth=false, Max=0, Min=0");
+	}
+
+	// Also fire the Set commands for belt-and-suspenders
+	ConsoleCommand("Set Engine.GameEngine bSmoothFrameRate False");
+	ConsoleCommand("Set Engine.GameEngine MaxSmoothedFrameRate 0");
+	ConsoleCommand("Set Engine.GameEngine MinSmoothedFrameRate 0");
+}
+
+// Method 5: Tick-based continuous enforcement (re-applies every frame so any engine re-clamp is immediately overwritten)
+exec function UncapFPS5()
+{
+	FPSUncapMethod = 5;
+	ClientDisplayConsoleMessage("[Method 5] Tick enforcement ON: re-applying every frame");
+}
+
+// Method 6: WorldInfo.TimeDilation approach (speeds up game time to effectively uncap;
+// this is a different vector entirely - if the 90fps clamp is frame-rate based, dilation won't help,
+// but if it's tied to time stepping it might reveal something)
+exec function UncapFPS6()
+{
+	local GameEngine GEngine;
+
+	GEngine = GameEngine(class'Engine'.static.GetEngine());
+	if (GEngine != None)
+	{
+		GEngine.bSmoothFrameRate = false;
+		GEngine.MaxSmoothedFrameRate = 0.0;
+	}
+	ConsoleCommand("Set Engine.GameEngine bSmoothFrameRate False");
+	ConsoleCommand("Set Engine.GameEngine MaxSmoothedFrameRate 0");
+	// Also try setting via Engine class directly
+	ConsoleCommand("Set Engine.Engine bSmoothFrameRate False");
+	ConsoleCommand("Set Engine.Engine MaxSmoothedFrameRate 0");
+	FPSUncapMethod = 6;
+	ClientDisplayConsoleMessage("[Method 6] Shotgun: property + Set GameEngine + Set Engine (all at once)");
+}
+
+// Disable all uncap methods and restore defaults
+exec function RecapFPS()
+{
+	local GameEngine GEngine;
+
+	FPSUncapMethod = 0;
+	ClearTimer('DelayedUncapFPS');
+
+	GEngine = GameEngine(class'Engine'.static.GetEngine());
+	if (GEngine != None)
+	{
+		GEngine.bSmoothFrameRate = true;
+		GEngine.MaxSmoothedFrameRate = 120.0;
+		GEngine.MinSmoothedFrameRate = 22.0;
+	}
+	ClientDisplayConsoleMessage("FPS uncap DISABLED - restored defaults (90fps cap)");
+}
+
+// Print current engine frame rate values for diagnostics
+exec function FPSStatus()
+{
+	local GameEngine GEngine;
+
+	GEngine = GameEngine(class'Engine'.static.GetEngine());
+	if (GEngine != None)
+	{
+		ClientDisplayConsoleMessage("--- FPS Status ---");
+		ClientDisplayConsoleMessage("bSmoothFrameRate:" @ GEngine.bSmoothFrameRate);
+		ClientDisplayConsoleMessage("MaxSmoothedFrameRate:" @ GEngine.MaxSmoothedFrameRate);
+		ClientDisplayConsoleMessage("MinSmoothedFrameRate:" @ GEngine.MinSmoothedFrameRate);
+		ClientDisplayConsoleMessage("Active UncapMethod:" @ FPSUncapMethod);
+	}
+	else
+	{
+		ClientDisplayConsoleMessage("GameEngine is None - cannot read values");
+	}
 }
 
 // Override ProcessViewRotation to remove turn cap during parry counters
@@ -340,13 +451,15 @@ simulated event tick(float DeltaTime)
 	local GameEngine GEngine;
 	super.tick(DeltaTime);
 	
-	// Continuously enforce FPS uncap when enabled
-	if (bFPSUncapped && IsLocalPlayerController())
+	// Method 5: Continuous tick-based FPS enforcement
+	if (FPSUncapMethod == 5 && IsLocalPlayerController())
 	{
 		GEngine = GameEngine(class'Engine'.static.GetEngine());
-		if (GEngine != None && GEngine.MaxSmoothedFrameRate < 200.0)
+		if (GEngine != None)
 		{
+			GEngine.bSmoothFrameRate = false;
 			GEngine.MaxSmoothedFrameRate = 0.0;
+			GEngine.MinSmoothedFrameRate = 0.0;
 		}
 	}
 	

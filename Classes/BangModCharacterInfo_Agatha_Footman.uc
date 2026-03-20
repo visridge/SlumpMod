@@ -1,4 +1,4 @@
-class BangModCharacterInfo_Agatha_Footman extends BangModCharacterInfo;
+class BangModCharacterInfo_Agatha_Footman extends AOCCharacterInfo;
 
 defaultproperties
 {
