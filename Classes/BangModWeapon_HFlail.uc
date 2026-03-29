@@ -129,7 +129,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'AOCWeaponAttachment_HFlail'
+	AttachmentClass=class'BangModWeaponAttachment_HFlail'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_HFlail'
 	AllowedShieldClass=class'BangModShield_Kite'
 	CurrentWeaponType=EWEP_HFlail
@@ -173,7 +173,7 @@ DefaultProperties
 	WindupAnimations(9)=(AnimationName=,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false,bPlayOnWeapon=false)
 	HoldAnimations[0]=(AnimationName=3p_flail_slashidle,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_attack_ready',bFullBody=False,bCombo=False,bLoop=True,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=1.5,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false,fShieldAnimLength=0.0,bPlayOnWeapon=false)
 	HoldAnimations[1]=(AnimationName=3p_flail_slashidle,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_attack_ready',bFullBody=False,bCombo=False,bLoop=True,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=1.5,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false,fShieldAnimLength=0.0,bPlayOnWeapon=false)
-	ReleaseAnimations(0)=(AnimationName=3p_flail_slash01release,ComboAnimation=3p_flail_slash011release,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_attack_01',bFullBody=true,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.575,fBlendInTime=0.1,fBlendOutTime=0.1,bLastAnimation=false,bPlayOnWeapon=false)
+	ReleaseAnimations(0)=(AnimationName=3p_flail_slash01release,ComboAnimation=3p_flail_slash011release,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_attack_01',bFullBody=true,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.55,fBlendInTime=0.1,fBlendOutTime=0.1,bLastAnimation=false,bPlayOnWeapon=false)
 	ReleaseAnimations(1)=(AnimationName=3p_flail_slash02release,ComboAnimation=3p_flail_slash021release,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_Attack_02',bFullBody=true,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.40,fBlendInTime=0.1,fBlendOutTime=0.1,bLastAnimation=false,bPlayOnWeapon=false)
 	ReleaseAnimations(2)=(AnimationName=3p_flail_stabrelease,ComboAnimation=3p_flail_stabrelease,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_Attack_03',bFullBody=true,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.325,fBlendInTime=0.1,fBlendOutTime=0.1,bLastAnimation=false,bPlayOnWeapon=false)
 	ReleaseAnimations(3)=(AnimationName=3p_flail_sattackrelease,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_sprint_attack',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.0,fBlendOutTime=0.0,bLastAnimation=false,bPlayOnWeapon=false,bUseAltBoneBranch=true)

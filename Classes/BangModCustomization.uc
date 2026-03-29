@@ -146,8 +146,9 @@ static function SCustomizationChoice LocalGetCustomizationChoices(int Faction, i
 
 	//Character
 	CustomizationInfo.Character = class'AOCCustomization'.static.LocalGetSelectedCharacter(Faction, PlayerClass);
-    // BangMod: Skip ownership check
-	// if(!IsCharacterOwnedBy(CustomizationInfo.Character, Faction, PlayerClass, PRI)) ...
+	// BangMod: Allow all characters except skeleton/peasant restrictions
+	if(!IsCharacterOwnedBy(CustomizationInfo.Character, Faction, PlayerClass, PRI))
+		CustomizationInfo.Character = 0;
 
 	//Helmet
 	TempID = class'AOCCustomization'.static.LocalGetSelectedHelmet(Faction, PlayerClass);

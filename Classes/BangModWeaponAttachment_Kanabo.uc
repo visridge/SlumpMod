@@ -46,9 +46,9 @@ DefaultProperties
 
 	bUseAlternativeKick=true
 
-	AttackTypeInfo(0)=(fBaseDamage=65.0, fForce=22500, cDamageType="AOC.AOCDmgType_PierceBlunt", iWorldHitLenience=6)
-	AttackTypeInfo(1)=(fBaseDamage=70, fForce=22500, cDamageType="AOC.AOCDmgType_PierceBlunt", iWorldHitLenience=6)
-	AttackTypeInfo(2)=(fBaseDamage=40, fForce=22500, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(0)=(fBaseDamage=70, fForce=22500, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=75, fForce=22500, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(2)=(fBaseDamage=40, fForce=22500, cDamageType="AOC.AOCDmgType_PierceBlunt", iWorldHitLenience=6)
 	AttackTypeInfo(3)=(fBaseDamage=0.0, fForce=22500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
 	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=32500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
 	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)

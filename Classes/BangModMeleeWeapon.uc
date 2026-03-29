@@ -726,7 +726,7 @@ simulated state ParryRelease
 	 */
 	simulated function DeferredShieldDrop()
 	{
-		GotoState('Recovery');
+		GotoState('Active');
 	}
 	
 	/** BANGMOD: Shields always go to Recovery after ParryRelease (no riposte).
