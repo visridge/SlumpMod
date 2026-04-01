@@ -120,27 +120,27 @@ static function SCustomizationChoice LocalGetCustomizationChoices(int Faction, i
 
 	//Emblem colors - Read from AOCCustomization config
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedEmblemColor(Faction, PlayerClass, 0);
-	CustomizationInfo.EmblemColor1 = class'AOCCustomization'.static.IsEmblemColorValid(ColIndex, Faction) ? ColIndex : 0;
+	CustomizationInfo.EmblemColor1 = class'BangModCustomization'.static.IsEmblemColorValid(ColIndex, Faction) ? ColIndex : 0;
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedEmblemColor(Faction, PlayerClass, 1);
-	CustomizationInfo.EmblemColor2 = class'AOCCustomization'.static.IsEmblemColorValid(ColIndex, Faction) ? ColIndex : 0;
+	CustomizationInfo.EmblemColor2 = class'BangModCustomization'.static.IsEmblemColorValid(ColIndex, Faction) ? ColIndex : 0;
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedEmblemColor(Faction, PlayerClass, 2);
-	CustomizationInfo.EmblemColor3 = class'AOCCustomization'.static.IsEmblemColorValid(ColIndex, Faction) ? ColIndex : 0;
+	CustomizationInfo.EmblemColor3 = class'BangModCustomization'.static.IsEmblemColorValid(ColIndex, Faction) ? ColIndex : 0;
 
 	//Tabard colors
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedTabardColor(Faction, PlayerClass, 0);
-	CustomizationInfo.TabardColor1 = class'AOCCustomization'.static.IsTabardColorValid(ColIndex, Faction, 0) ? ColIndex : 0;
+	CustomizationInfo.TabardColor1 = class'BangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 0) ? ColIndex : 0;
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedTabardColor(Faction, PlayerClass, 1);
-	CustomizationInfo.TabardColor2 = class'AOCCustomization'.static.IsTabardColorValid(ColIndex, Faction, 1) ? ColIndex : 0;
+	CustomizationInfo.TabardColor2 = class'BangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 1) ? ColIndex : 0;
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedTabardColor(Faction, PlayerClass, 2);
-	CustomizationInfo.TabardColor3 = class'AOCCustomization'.static.IsTabardColorValid(ColIndex, Faction, 2) ? ColIndex : 0;
+	CustomizationInfo.TabardColor3 = class'BangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 2) ? ColIndex : 0;
 
 	//Shield colors
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedShieldColor(Faction, PlayerClass, 0);
-	CustomizationInfo.ShieldColor1 = class'AOCCustomization'.static.IsTabardColorValid(ColIndex, Faction, 0) ? ColIndex : 0;
+	CustomizationInfo.ShieldColor1 = class'BangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 0) ? ColIndex : 0;
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedShieldColor(Faction, PlayerClass, 1);
-	CustomizationInfo.ShieldColor2 = class'AOCCustomization'.static.IsTabardColorValid(ColIndex, Faction, 1) ? ColIndex : 0;
+	CustomizationInfo.ShieldColor2 = class'BangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 1) ? ColIndex : 0;
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedShieldColor(Faction, PlayerClass, 2);
-	CustomizationInfo.ShieldColor3 = class'AOCCustomization'.static.IsTabardColorValid(ColIndex, Faction, 2) ? ColIndex : 0;
+	CustomizationInfo.ShieldColor3 = class'BangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 2) ? ColIndex : 0;
 
 	CustomizationInfo.Shield = class'AOCCustomization'.static.LocalGetSelectedShieldPattern(Faction, PlayerClass);
 

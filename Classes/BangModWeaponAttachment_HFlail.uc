@@ -1,21 +1,13 @@
 /**
 * Copyright 2010-2012, Torn Banner Studios, All rights reserved
 *
-* The weapon that is replicated to all clients: Heavy Flail (scaled up 10%).
+* The weapon that is replicated to all clients: Heavy Flail.
 */
 class BangModWeaponAttachment_HFlail extends AOCWeaponAttachment_HFlail;
 
 DefaultProperties
 {
 	`include(BangMod/Include/BangModWeaponAttachment.uci);
-
-	Begin Object Name=SkeletalMeshComponent0
-		Scale=1.32
-	End Object
-
-	Begin Object Name=SkeletalMeshComponent2
-		Scale=1.32
-	End Object
 
 	WeaponClass=class'BangModWeapon_HFlail'
 

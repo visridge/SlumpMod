@@ -153,7 +153,7 @@ DefaultProperties
 	ParryDrain(1)=26
 	ParryDrain(2)=10
 	WeaponFontSymbol="m"
-	WeaponReach=100
+	WeaponReach=110
 	WeaponLargePortrait="UI_WeaponImages_SWF.weapon_select_hflail"
 	WeaponSmallPortrait="UI_WeaponImages_SWF.icon_weapon_select_heavyflail_png"
 	HorizontalRotateSpeed=70000.0
