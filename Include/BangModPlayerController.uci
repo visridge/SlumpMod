@@ -802,8 +802,9 @@ exec function AdminToggleParryBox(optional bool bEnable = true)
 reliable server function S_AdminToggleParryBox(bool bEnable) {
 	if (!IsAdmin())
 		return;
-	bBangModParryBox = bEnable;
-	StaticSaveConfig();
+	// Must set on the class default — pawn reads class'BangModAOCDuelPlayerController'.default.bBangModParryBox
+	class'BangModAOCDuelPlayerController'.default.bBangModParryBox = bEnable;
+	class'BangModAOCDuelPlayerController'.static.StaticSaveConfig();
 	if (bEnable)
 		S_AdminBroadcastMessage("BangMod parry box ENABLED (respawn to apply)", false);
 	else

@@ -18,7 +18,7 @@ defaultproperties
 	TabardColorsPrimary.Add((R=0.529,G=0.808,B=0.922,A=1.0))      // Sky Blue (#87CEEB)
 	TabardColorsPrimary.Add((R=0.753,G=0.753,B=0.753,A=1.0))      // Silver (#C0C0C0)
 	TabardColorsPrimary.Add((R=0.255,G=0.412,B=0.882,A=1.0))      // Royal Blue (#4169E1)
-	TabardColorsPrimary.Add((R=0.910,G=0.835,B=0.639,A=1.0))      // Parchment (#E8D5A3)
+	// TabardColorsPrimary.Add((R=0.910,G=0.835,B=0.639,A=1.0))      // Parchment (#E8D5A3)
 	TabardColorsPrimary.Add((R=0.439,G=0.502,B=0.565,A=1.0))      // Slate Grey (#708090)
 
 	TabardColorsSecondary.Add((R=0.05,G=0.55,B=0.15,A=1.0))         // Green
