@@ -146,14 +146,14 @@ DefaultProperties
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_HFlail]
 	 */
 	iFeintStaminaCost=15
-	FeintTime=0.35
-	TertiaryFeintTime=0.45
+	FeintTime=0.3
+	TertiaryFeintTime=0.4
 	fParryNegation=14
 	ParryDrain(0)=25
 	ParryDrain(1)=26
 	ParryDrain(2)=10
 	WeaponFontSymbol="m"
-	WeaponReach=110
+	WeaponReach=100
 	WeaponLargePortrait="UI_WeaponImages_SWF.weapon_select_hflail"
 	WeaponSmallPortrait="UI_WeaponImages_SWF.icon_weapon_select_heavyflail_png"
 	HorizontalRotateSpeed=70000.0
@@ -163,9 +163,9 @@ DefaultProperties
 	SprintAttackVerticalRotateSpeed=20000.0
 	WindupAnimations(0)=(AnimationName=3p_flail_slash01downtoup,ComboAnimation=3p_flail_slash011downtoup,AlternateAnimation=3p_flail_slash011altdowntoup,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_windup',bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.55,fBlendInTime=0.10,fBlendOutTime=0.05,bLastAnimation=false,fShieldAnimLength=0.0,bPlayOnWeapon=false)
 	WindupAnimations(1)=(AnimationName=3p_flail_slash02downtoup,ComboAnimation=3p_flail_slash021downtoup,AlternateAnimation=3p_flail_slash021altdowntoup,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_windup',bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.525,fBlendInTime=0.10,fBlendOutTime=0.05,bLastAnimation=false,bPlayOnWeapon=false)
-	WindupAnimations(2)=(AnimationName=3p_flail_stabdowntoup,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_windup',bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false,bPlayOnWeapon=false)
+	WindupAnimations(2)=(AnimationName=3p_flail_stabdowntoup,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_windup',bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.375,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false,bPlayOnWeapon=false)
 	WindupAnimations(3)=(AnimationName=3p_flail_sattackdowntoup,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Footsteps.Vanguard_Dirt_Jump',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false,bPlayOnWeapon=false,bUseAltBoneBranch=true)
-	WindupAnimations(4)=(AnimationName=3p_1hsharp_parryib,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.Flail_Parry',bFullBody=False,bCombo=False,bLoop=False,bForce=false,fModifiedMovement=1.0,fAnimationLength=0.1,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
+	WindupAnimations(4)=(AnimationName=3p_flail_parryib,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_Parry',bFullBody=False,bCombo=False,bLoop=False,bForce=false,fModifiedMovement=1.0,fAnimationLength=0.1,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	WindupAnimations(5)=(AnimationName=3p_flail_shovestart,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_windup',bFullBody=True,bCombo=False,bLoop=False,UniqueShieldSound=none,fModifiedMovement=0.0,fAnimationLength=0.3,fBlendInTime=0.05,fBlendOutTime=0.00,bLastAnimation=false,bPlayOnWeapon=false,bUseAltNode=true,bUseAltBoneBranch=true)
 	WindupAnimations(6)=(AnimationName=,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false,bPlayOnWeapon=false)
 	WindupAnimations(7)=(AnimationName=,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false,bPlayOnWeapon=false)
@@ -177,7 +177,7 @@ DefaultProperties
 	ReleaseAnimations(1)=(AnimationName=3p_flail_slash02release,ComboAnimation=3p_flail_slash021release,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_Attack_02',bFullBody=true,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.40,fBlendInTime=0.1,fBlendOutTime=0.1,bLastAnimation=false,bPlayOnWeapon=false)
 	ReleaseAnimations(2)=(AnimationName=3p_flail_stabrelease,ComboAnimation=3p_flail_stabrelease,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_Attack_03',bFullBody=true,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.325,fBlendInTime=0.1,fBlendOutTime=0.1,bLastAnimation=false,bPlayOnWeapon=false)
 	ReleaseAnimations(3)=(AnimationName=3p_flail_sattackrelease,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_sprint_attack',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.0,fBlendOutTime=0.0,bLastAnimation=false,bPlayOnWeapon=false,bUseAltBoneBranch=true)
-	ReleaseAnimations(4)=(AnimationName=3p_1hsharp_parryup,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.Flail_Parry',bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
+	ReleaseAnimations(4)=(AnimationName=3p_flail_parryup,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.flail_Parry',bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=1.5,fBlendInTime=0.0,fBlendOutTime=0.00,bLastAnimation=false)
 	ReleaseAnimations(5)=(AnimationName=3p_flail_shoverelease,ComboAnimation=,AssociatedSoundCue=,bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.2,fBlendInTime=0.0,fBlendOutTime=0.0,bLastAnimation=false,bPlayOnWeapon=false,bUseAltNode=true,bUseAltBoneBranch=true)
 	ReleaseAnimations(6)=(AnimationName=,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.0,fBlendOutTime=0.0,bLastAnimation=false,bPlayOnWeapon=false)
 	ReleaseAnimations(7)=(AnimationName=,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.0,fBlendOutTime=0.0,bLastAnimation=false,bPlayOnWeapon=false)
@@ -187,7 +187,7 @@ DefaultProperties
 	RecoveryAnimations(1)=(AnimationName=3p_flail_slash02recover,ComboAnimation=3p_flail_slash021recover,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.7,fBlendInTime=0.10,fBlendOutTime=0.1,bLastAnimation=true)
 	RecoveryAnimations(2)=(AnimationName=3p_flail_stabrecover,ComboAnimation=3p_flail_stabrecover,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.525,fBlendInTime=0.10,fBlendOutTime=0.1,bLastAnimation=true)
 	RecoveryAnimations(3)=(AnimationName=3p_flail_sattackrecover,ComboAnimation=,AssociatedSoundCue=,bFullBody=true,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.0,bLastAnimation=true,bUseAltBoneBranch=true)
-	RecoveryAnimations(4)=(AnimationName=3p_1hsharp_parryrecover,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.0,bLastAnimation=true)
+	RecoveryAnimations(4)=(AnimationName=3p_flail_parryrecover,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.0,bLastAnimation=true)
 	RecoveryAnimations(5)=(AnimationName=3p_flail_shoverecover,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.4,fBlendInTime=0.10,fBlendOutTime=0.0,bLastAnimation=true,bUseAltNode=true,bUseAltBoneBranch=true)
 	RecoveryAnimations(6)=(AnimationName=,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.0,bLastAnimation=true)
 	RecoveryAnimations(7)=(AnimationName=,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.0,bLastAnimation=true)
