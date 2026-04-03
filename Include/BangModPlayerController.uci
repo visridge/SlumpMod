@@ -800,15 +800,40 @@ exec function AdminToggleParryBox(optional bool bEnable = true)
 }
 
 reliable server function S_AdminToggleParryBox(bool bEnable) {
+	local AOCPlayerController PC;
+	local BangModPawn P;
+
 	if (!IsAdmin())
 		return;
-	// Must set on the class default — pawn reads class'BangModAOCDuelPlayerController'.default.bBangModParryBox
+
+	// Update the server's class default (persists across restarts via SaveConfig)
 	class'BangModAOCDuelPlayerController'.default.bBangModParryBox = bEnable;
 	class'BangModAOCDuelPlayerController'.static.StaticSaveConfig();
+
+	// Broadcast to all currently alive pawns: update server-side ParryComponent and sync to clients
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+	{
+		P = BangModPawn(PC.Pawn);
+		if (P != none)
+		{
+			if (!bEnable)
+			{
+				P.ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
+				P.ParryComponent.SetTranslation(vect(30, 0, -30));
+			}
+			else if (P.PawnInfo != none && P.PawnInfo.myFamily != none)
+			{
+				P.ParryComponent.SetScale3D(P.PawnInfo.myFamily.default.ParryBoxScale);
+				P.ParryComponent.SetTranslation(P.PawnInfo.myFamily.default.ParryBoxTranslation);
+			}
+			P.ClientSetParryBox(bEnable);
+		}
+	}
+
 	if (bEnable)
-		S_AdminBroadcastMessage("BangMod parry box ENABLED (respawn to apply)", false);
+		S_AdminBroadcastMessage("BangMod parry box ENABLED", false);
 	else
-		S_AdminBroadcastMessage("BangMod parry box DISABLED - using vanilla AOC parry box (respawn to apply)", false);
+		S_AdminBroadcastMessage("BangMod parry box DISABLED - using vanilla AOC parry box", false);
 }
 
 reliable server function S_AdminTournamentMode(bool bEnable) {}

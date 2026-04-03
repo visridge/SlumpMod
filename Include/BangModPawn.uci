@@ -1433,6 +1433,28 @@ simulated function AOCSetCharacterClassFromInfo(AOCFamilyInfo Info)
 	}
 }
 
+// Server-to-client RPC: sync parry box setting to the owning client.
+// Called on PossessedBy (late joiners) and when admin toggles the parry box (immediate update).
+reliable client function ClientSetParryBox(bool bBangModParryBoxEnabled)
+{
+	// Update the client's class default so future AOCSetCharacterClassFromInfo calls read the correct value
+	class'BangModAOCDuelPlayerController'.default.bBangModParryBox = bBangModParryBoxEnabled;
+
+	// Immediately update the current pawn's ParryComponent
+	if (!bBangModParryBoxEnabled)
+	{
+		// Vanilla AOC parry box
+		ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
+		ParryComponent.SetTranslation(vect(30, 0, -30));
+	}
+	else if (PawnInfo != none && PawnInfo.myFamily != none)
+	{
+		// Restore BangMod FamilyInfo parry box
+		ParryComponent.SetScale3D(PawnInfo.myFamily.default.ParryBoxScale);
+		ParryComponent.SetTranslation(PawnInfo.myFamily.default.ParryBoxTranslation);
+	}
+}
+
 //netupdate
 function PossessedBy(Controller C, bool bVehicleTransition)
 {
@@ -1443,6 +1465,9 @@ function PossessedBy(Controller C, bool bVehicleTransition)
 		NetUpdateFrequency = 60.0;
 	else
 		NetUpdateFrequency = 120.0;
+
+	// Sync the server's parry box setting to the owning client (handles late joiners)
+	ClientSetParryBox(class'BangModAOCDuelPlayerController'.default.bBangModParryBox);
 }
 
 // Netcode optimization: Maximum performance for all pawns
