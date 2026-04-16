@@ -1,6 +1,30 @@
 // SlumpMod Team Objective gamemode-specific optimizations
 // This file is ONLY included by BangModTO.uc (the gamemode class)
 
+// Trigger a Kismet SeqEvent_Console by name (equivalent to "ce <EventName>" from PlayerController)
+// GameInfo can't use ConsoleCommand("ce ...") because "ce" is an exec function on PlayerController.
+function TriggerConsoleEvent(name EventName)
+{
+    local array<SequenceObject> AllConsoleEvents;
+    local SeqEvent_Console ConsoleEvt;
+    local Sequence GameSeq;
+    local int Idx;
+
+    GameSeq = WorldInfo.GetGameSequence();
+    if (GameSeq != None && EventName != '')
+    {
+        GameSeq.FindSeqObjectsByClass(class'SeqEvent_Console', true, AllConsoleEvents);
+        for (Idx = 0; Idx < AllConsoleEvents.Length; Idx++)
+        {
+            ConsoleEvt = SeqEvent_Console(AllConsoleEvents[Idx]);
+            if (ConsoleEvt != None && EventName == ConsoleEvt.ConsoleEventName)
+            {
+                ConsoleEvt.CheckActivate(self, self);
+            }
+        }
+    }
+}
+
 // Override Timer to only force net updates when scoreboard values actually change
 State AOCRoundInProgress
 {
@@ -15,12 +39,12 @@ State AOCRoundInProgress
         // CE Autoskip: fire "ce skip" when timer drops to 5s
         if (bCEAutoskipEnabled)
         {
-            if (TimeLeft <= 5 && TimeLeft > 0 && !bCEAutoskipFired)
+            if (TimeLeft <= 10 && TimeLeft > 0 && !bCEAutoskipFired)
             {
-                ConsoleCommand("ce skip");
+                TriggerConsoleEvent('skip');
                 bCEAutoskipFired = true;
             }
-            else if (TimeLeft > 5)
+            else if (TimeLeft > 10)
             {
                 // Timer went back up (new objective / bonus time), allow next autoskip
                 bCEAutoskipFired = false;
