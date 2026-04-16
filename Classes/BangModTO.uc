@@ -1,5 +1,9 @@
 class BangModTO extends AOCTeamObjective;
 
+// CE Autoskip: when enabled by admin, fires "ce skip" when objective timer reaches 5 seconds
+var bool bCEAutoskipEnabled;
+var bool bCEAutoskipFired;
+
 `include(BangMod/Include/BangModTO.uci)
 `include(BangMod/Include/BangModGame.uci)
 `include(BangMod/Include/BangModTOGamemode.uci)

@@ -11,6 +11,21 @@ State AOCRoundInProgress
         local bool bNeedsUpdate;
         
         super.Timer();
+
+        // CE Autoskip: fire "ce skip" when timer drops to 5s
+        if (bCEAutoskipEnabled)
+        {
+            if (TimeLeft <= 5 && TimeLeft > 0 && !bCEAutoskipFired)
+            {
+                ConsoleCommand("ce skip");
+                bCEAutoskipFired = true;
+            }
+            else if (TimeLeft > 5)
+            {
+                // Timer went back up (new objective / bonus time), allow next autoskip
+                bCEAutoskipFired = false;
+            }
+        }
         
         // Only update scoreboard text if values actually changed
         if (CurrentObjectiveStage >= 0 && AllObjSBText[CurrentObjectiveStage].bInUse)

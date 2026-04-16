@@ -813,6 +813,36 @@ reliable server function S_AdminToggleParryBox(bool bEnable) {
 
 reliable server function S_AdminTournamentMode(bool bEnable) {}
 
+// CE Autoskip: auto-fires "ce skip" when TO timer reaches 5 seconds
+exec function AdminCEAutoskip()
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminCEAutoskip();
+}
+
+reliable server function S_AdminCEAutoskip() {
+	local BangModTO TOGame;
+
+	if (!IsAdmin())
+		return;
+
+	TOGame = BangModTO(WorldInfo.Game);
+	if (TOGame == none) {
+		ClientDisplayConsoleMessage("CE Autoskip only works in Team Objective.");
+		return;
+	}
+
+	TOGame.bCEAutoskipEnabled = !TOGame.bCEAutoskipEnabled;
+	TOGame.bCEAutoskipFired = false;
+	if (TOGame.bCEAutoskipEnabled)
+		S_AdminBroadcastMessage("CE Autoskip ENABLED (auto-skip at 5s)", false);
+	else
+		S_AdminBroadcastMessage("CE Autoskip DISABLED", false);
+}
+
 // Option A: Reset ALL physics volumes to default friction (nuclear)
 exec function AdminResetAllTraction()
 {

@@ -67,6 +67,7 @@ DefaultProperties
 	bCanParry=False
 	bCanSwitchShield=false
 	bUseDirParryHitAnims=true
+	bNeverFlinch=true
 
 	WeaponIdentifier="javelin"
 
