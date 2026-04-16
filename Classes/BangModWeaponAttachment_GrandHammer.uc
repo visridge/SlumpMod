@@ -35,25 +35,25 @@ DefaultProperties
 
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'CHV_DeadliestPorts.Meshes.WEP_GrandHammer'
-		Scale=0.8
+		Scale=1.1
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
 		SkeletalMesh=SkeletalMesh'CHV_DeadliestPorts.Meshes.WEP_GrandHammer'
-		Scale=0.8
+		Scale=1.1
 	End Object
 
 	WeaponID=EWEP_WarHammer
 	WeaponClass=class'BangModWeapon_GrandHammer'
-	WeaponSocket=wep2hpoint
+	WeaponSocket=wepPolepoint
 
-	WeaponStaticMeshScale=0.8
+	WeaponStaticMeshScale=1.1
 
 	bUseAlternativeKick=true
 
-	AttackTypeInfo(0)=(fBaseDamage=75.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
-	AttackTypeInfo(1)=(fBaseDamage=78.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
-	AttackTypeInfo(2)=(fBaseDamage=40.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(0)=(fBaseDamage=72.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=75.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
+    AttackTypeInfo(2)=(fBaseDamage=30.0, fForce=18000, cDamageType="AOC.AOCDmgType_PierceBlunt", iWorldHitLenience=6)
 	AttackTypeInfo(3)=(fBaseDamage=0.0, fForce=22500, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
 	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=25500, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
 	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)

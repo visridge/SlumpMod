@@ -1,0 +1,38 @@
+/**
+* Copyright 2010-2012, Torn Banner Studios, All rights reserved
+* 
+* Original Author: Michael Bao
+* 
+* Weapon attachment: Katana (1H) - Mirrors Longsword1H values, uses DW-WP_SamuraiKatana mesh
+*/
+class BangModWeaponAttachment_Katana1H extends AOCWeaponAttachment_Longsword1H;
+
+DefaultProperties
+{
+	`include(BangMod/Include/BangModWeaponAttachment.uci);
+
+KickOffset=(X=50, Y=0, Z=-65)
+	KickSize=20.f
+
+	Begin Object Name=SkeletalMeshComponent0
+		SkeletalMesh=SkeletalMesh'DW-WP_SamuraiKatana.WEP_sm_katana'
+	End Object
+
+	Begin Object Name=SkeletalMeshComponent2
+		SkeletalMesh=SkeletalMesh'DW-WP_SamuraiKatana.WEP_sm_katana'
+	End Object
+
+	WeaponID=EWEP_Longsword
+	WeaponClass=class'BangModWeapon_Katana1H'
+	WeaponSocket=wep1hpoint
+	
+	bUseAlternativeKick=true
+
+	AttackTypeInfo(0)=(fBaseDamage=60.0, fForce=12000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=75.0, fForce=12000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(2)=(fBaseDamage=55.0, fForce=18000, cDamageType="AOC.AOCDmgType_Pierce", iWorldHitLenience=6)
+	AttackTypeInfo(3)=(fBaseDamage=0.0, fForce=22500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=22500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
+
+}

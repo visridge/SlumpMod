@@ -242,9 +242,9 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 		// Only lose stamina if it was a melee attack
 		if (!Info.DamageType.default.bIsProjectile) {
 
-			// BANGMOD: Shields take zero stamina drain from weapon blocks
+			// BANGMOD: Shields take reduced stamina drain from weapon blocks
 			// Kicks still flinch through shields (handled below)
-			StaminaDamage = 0;
+			StaminaDamage = 3;
 
 			// Enter stun state if the player is out of stamina
 			if (!Info.HitActor.HasEnoughStamina(StaminaDamage)) {

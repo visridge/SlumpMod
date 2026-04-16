@@ -623,14 +623,14 @@ simulated state ShieldUpIdle
 simulated state ParryRelease
 {
 	/** Shield uses ParryRelease for its active parry window.
-	 *  Keep bIsActiveShielding true so DetectSuccessfulParry uses shield branch (zero stamina drain).
+	 *  Keep bIsActiveShielding true so DetectSuccessfulParry uses shield branch (reduced stamina drain).
 	 */
 	simulated event BeginState(Name PreviousStateName)
 	{
 		super.BeginState(PreviousStateName);
 		
 		// For shields: maintain active shielding state during ParryRelease
-		// so that incoming hits are detected as shield blocks (zero stamina drain)
+		// so that incoming hits are detected as shield blocks (reduced stamina drain)
 		if (bEquipShield)
 		{
 			AOCOwner.StateVariables.bIsActiveShielding = true;
@@ -709,10 +709,12 @@ simulated state ParryRelease
 
 			AOCOwner.OnActionSucceeded(EACT_Block);
 			bSuccessfulParry = true;
-			// Defer shield drop to next tick so DetectSuccessfulParry can finish
+			// Defer shield drop so DetectSuccessfulParry can finish
 			// checking bIsActiveShielding and zeroing HitDamage first.
+			// 300ms window matches normal weapon parry-hit animation duration,
+			// allowing shields to block near-simultaneous hits.
 			ClearTimer('AllowLowerParry');
-			SetTimer(0.001, false, 'DeferredShieldDrop');
+			SetTimer(0.3, false, 'DeferredShieldDrop');
 		}
 		else
 		{

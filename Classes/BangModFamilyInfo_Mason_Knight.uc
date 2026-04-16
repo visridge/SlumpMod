@@ -2,8 +2,8 @@ class BangModFamilyInfo_Mason_Knight extends AOCFamilyInfo_Mason_Knight;
 
 DefaultProperties
 {
-	ParryBoxScale=(X=0.18,Y=0.17,Z=0.35)
-    ParryBoxTranslation=(X=10, Y=5, Z=-28)
+	// ParryBoxScale=(X=0.18,Y=0.17,Z=0.35)
+    // ParryBoxTranslation=(X=10, Y=5, Z=-28)
 
 	NewPrimaryWeapons.empty;
 	NewPrimaryWeapons(0)=(CWeapon=class'BangModWeapon_DoubleAxe',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
@@ -17,6 +17,7 @@ DefaultProperties
 	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Messer',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
 	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Flail',CForceTertiary=(class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
 	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_HFlail',CForceTertiary=(class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
+	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_GrandHammer',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
 
 
 	NewSecondaryWeapons.empty;

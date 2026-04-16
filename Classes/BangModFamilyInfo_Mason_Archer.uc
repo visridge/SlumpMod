@@ -2,8 +2,8 @@ class BangModFamilyInfo_Mason_Archer extends AOCFamilyInfo_Mason_Archer;
 
 DefaultProperties
 {
-	ParryBoxScale=(X=0.18,Y=0.17,Z=0.35)
-    ParryBoxTranslation=(X=10, Y=5, Z=-28)
+	// ParryBoxScale=(X=0.18,Y=0.17,Z=0.35)
+    // ParryBoxTranslation=(X=10, Y=5, Z=-28)
 
 	NewPrimaryWeapons.empty;
 	NewPrimaryWeapons(0)=(CWeapon=class'BangModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
@@ -12,23 +12,21 @@ DefaultProperties
 	NewPrimaryWeapons(3)=(CWeapon=class'BangModWeapon_Longbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(4)=(CWeapon=class'BangModWeapon_Shortbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(5)=(CWeapon=class'BangModWeapon_Warbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
-	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_GrandHammer')
-	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_Zweihander',CorrespondingDuelProp=EDUEL_ZweihanderUse)
-	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Bardiche',CorrespondingDuelProp=EDUEL_BardicheUse)
-	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Halberd',CorrespondingDuelProp=EDUEL_HalberdUse)
-	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
-	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_Nodachi',CorrespondingDuelProp=EDUEL_ZweihanderUse)
+	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_Zweihander',CorrespondingDuelProp=EDUEL_ZweihanderUse)
+	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_Bardiche',CorrespondingDuelProp=EDUEL_BardicheUse)
+	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Halberd',CorrespondingDuelProp=EDUEL_HalberdUse)
+	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
+	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_Nodachi',CorrespondingDuelProp=EDUEL_ZweihanderUse)
+	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_JavelinMelee',CForceTertiary=(class'BangModWeapon_Buckler_Mason'))
 
 	NewSecondaryWeapons.empty;
-	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_Saber')
-	NewSecondaryWeapons(1)=(CWeapon=class'BangModWeapon_Cudgel')
-	NewSecondaryWeapons(2)=(CWeapon=class'BangModWeapon_Hatchet')
-	NewSecondaryWeapons(3)=(CWeapon=class'BangModWeapon_Dagesse')
+	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
 
 
 	NewTertiaryWeapons.empty;
-	NewTertiaryWeapons(0)=(CWeapon=class'AOCWeapon_ProjBodkin'bEnabledDefault=false)
-	NewTertiaryWeapons(1)=(CWeapon=class'AOCWeapon_ProjBroadhead'bEnabledDefault=false)
+	NewTertiaryWeapons(0)=(CWeapon=class'AOCWeapon_ProjBodkin',bEnabledDefault=false)
+	NewTertiaryWeapons(1)=(CWeapon=class'AOCWeapon_ProjBroadhead',bEnabledDefault=false)
+	NewTertiaryWeapons(2)=(CWeapon=class'BangModWeapon_Buckler_Mason',bEnabledDefault=false)
 	
 
 

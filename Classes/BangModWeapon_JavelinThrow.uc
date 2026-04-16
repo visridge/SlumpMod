@@ -8,6 +8,23 @@
 
 class BangModWeapon_JavelinThrow extends AOCWeapon_JavelinThrow;
 
+// Auto-throw: javelin cannot be held drawn, fires immediately
+simulated state Hold
+{
+	simulated event BeginState(Name PreviousStateName)
+	{
+		super.BeginState(PreviousStateName);
+		SetTimer(0.01, false, 'AutoThrow');
+	}
+}
+
+simulated function AutoThrow()
+{
+	if (IsInState('Hold'))
+	{
+		GotoState('Release');
+	}
+}
 
 DefaultProperties
 {
@@ -16,8 +33,8 @@ DefaultProperties
 
 	CurrentWeaponType = EWEP_Javelin
 	// set maximum ammo
-	AmmoCount=8
-	MaxAmmoCount=8
+	AmmoCount=3
+	MaxAmmoCount=3
 	AIRange=5000
 
 	HorizontalRotateSpeed = 60000
@@ -106,7 +123,7 @@ DefaultProperties
 	ConfigProjectileBaseDamage[1]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	ConfigProjectileBaseDamage[2]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	ConfigProjectileBaseDamage[3]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
-	ConfigProjectileBaseDamage[4]=(Damage=70,InitialSpeed=2700.0,MaxSpeed=3200.0,AmmoCount=5,InitialGravityScale=0.8,Drag=0.000003,PitchCorrection=0)
+	ConfigProjectileBaseDamage[4]=(Damage=70,InitialSpeed=2700.0,MaxSpeed=3200.0,AmmoCount=3,InitialGravityScale=0.8,Drag=0.000003,PitchCorrection=0)
 	ConfigProjectileBaseDamage[5]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	iFeintStaminaCost=0
 	WeaponFontSymbol="z"
