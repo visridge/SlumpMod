@@ -8,6 +8,24 @@
 
 class BangModWeapon_HeavyJavelinThrow extends AOCWeapon_HeavyJavelinThrow;
 
+// Auto-throw: heavy javelin cannot be held drawn, fires immediately
+simulated state Hold
+{
+	simulated event BeginState(Name PreviousStateName)
+	{
+		super.BeginState(PreviousStateName);
+		SetTimer(0.01, false, 'AutoThrow');
+	}
+}
+
+simulated function AutoThrow()
+{
+	if (IsInState('Hold'))
+	{
+		GotoState('Release');
+	}
+}
+
 DefaultProperties
 {
 	FiringStatesArray(3)= Windup
@@ -15,8 +33,8 @@ DefaultProperties
 
 	CurrentWeaponType = EWEP_HeavyJavelin
 	// set maximum ammo
-	AmmoCount=8
-	MaxAmmoCount=8
+	AmmoCount=1
+	MaxAmmoCount=1
 	AIRange=5000
 
 	HorizontalRotateSpeed = 60000
@@ -43,6 +61,7 @@ DefaultProperties
 	bEquipShield=false
 	bCanParry=False
 	bCanSwitchShield=false
+	bNeverFlinch=true
 
 	WeaponIdentifier="javelin"
 
@@ -94,7 +113,7 @@ DefaultProperties
 	ConfigProjectileBaseDamage[1]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	ConfigProjectileBaseDamage[2]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	ConfigProjectileBaseDamage[3]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
-	ConfigProjectileBaseDamage[4]=(Damage=90,InitialSpeed=2600,MaxSpeed=3100,AmmoCount=4,InitialGravityScale=0.85,Drag=0.0000035,PitchCorrection=0)
+	ConfigProjectileBaseDamage[4]=(Damage=90,InitialSpeed=2600,MaxSpeed=3100,AmmoCount=1,InitialGravityScale=0.85,Drag=0.0000035,PitchCorrection=0)
 	ConfigProjectileBaseDamage[5]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	iFeintStaminaCost=0
 	WeaponFontSymbol="{"

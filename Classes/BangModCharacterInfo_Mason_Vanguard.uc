@@ -111,6 +111,10 @@ defaultproperties
 	Helmets.Add((SkeletalMeshPath="gaymask.hat_gaymask", 	StaticMeshPath="gaymask.gaymask_mesh", 	    MaterialPath="gaymask.redmaskmats",      GearData=(GearNameID=redgaymask)))
 	Helmets.Add((SkeletalMeshPath="crown.WEP_TheCrown", StaticMeshPath="crown.mesh_TheCrown", GearData=(GroupHexID="170000002B28C65", GearNameID=BKCrown, bVisibleInSelectorIfUnowned=false)))
 
+	Helmets.Add((SkeletalMeshPath="CH_AgathanKnight_PKG.models.SK_CH_AgathaKnight_Helm01", StaticMeshPath="CH_sm_helms.smhelms_SK_CH_Agathaknight_Helm02", MaterialPath="CH_PaintedHelms.Materials.M_AgathaKnight_PaintedHelm01_P01", GearData=(GearNameID=PaintedHelm01)))
+	Helmets.Add((SkeletalMeshPath="CH_AgathanKnight_PKG.models.SK_CH_AgathaKnight_Helm01", StaticMeshPath="CH_sm_helms.smhelms_SK_CH_Agathaknight_Helm02", MaterialPath="CH_PaintedHelms.Materials.M_AgathaKnight_PaintedHelm01_P02", GearData=(GearNameID=PaintedHelm02)))
+	Helmets.Add((SkeletalMeshPath="CH_AgathanKnight_PKG.models.SK_CH_AgathaKnight_Helm01", StaticMeshPath="CH_sm_helms.smhelms_SK_CH_Agathaknight_Helm02", MaterialPath="CH_PaintedHelms.Materials.M_AgathaKnight_PaintedHelm01_P03", GearData=(GearNameID=PaintedHelm03)))
+
 	Tabards.Add((Img=Texture2D'CH_A_Vanguard_PKG.Textures.3P_A_Vanguard_px', GearData=(GearNameID=Solid)))
 	Tabards.Add((Img=Texture2D'CH_A_Vanguard_PKG.Textures.3P_A_Vanguard_pq1', GearData=(GearNameID=Quadrant)))
 	Tabards.Add((Img=Texture2D'CH_A_Vanguard_PKG.Textures.3P_A_Vanguard_pq2', GearData=(GearNameID=Quadrant2)))

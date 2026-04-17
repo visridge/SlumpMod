@@ -89,7 +89,7 @@ defaultproperties
 	Helmets.Add((SkeletalMeshPath="CH_HP4_Mason_Alexd.Meshes.SK_FallenHelmet2",             StaticMeshPath="CH_HP4_Mason_Alexd.Meshes.SM_FallenHelmet2",              GearData=(GearNameID=FallenHelm2, GearStoreDescriptionID=Fallen_Set, bVisibleInSelectorIfUnowned=true, MicroTxID=, bPartOfBundle=false, BundleNameID=Fallen_Set_Bundle)))
 	Helmets.Add((SkeletalMeshPath="pd2_archer_hoxton.sk_hoxton_mason",             StaticMeshPath="pd2_archer_hoxton.sm_hoxton_mason",            GearData=(GearNameID=PD2_MasonHoxton, bVisibleInSelectorIfUnowned=true, AppidNoDLC=, GearStoreDescriptionID=PAYDAY2_Item_Set_Description)))
 
-		Helmets.Add((SkeletalMeshPath="CH_H_Veteran.m_v.sk_CH_MasonVanguard_Helmet_Basic",      StaticMeshPath="CH_H_Veteran.a_a.sm_CH_MasonVanguard_Helmet_Basic",         GearData=(GearNameID=DefaultHat)))
+	Helmets.Add((SkeletalMeshPath="CH_H_Veteran.m_v.sk_CH_MasonVanguard_Helmet_Basic",      StaticMeshPath="CH_H_Veteran.a_a.sm_CH_MasonVanguard_Helmet_Basic",         GearData=(GearNameID=DefaultHat)))
 	Helmets.Add((SkeletalMeshPath="CH_HP1_Mason.vanny.sk_HP1M_Vanguard",                    StaticMeshPath="CH_HP1_Mason.vanny.sm_HP1M_Vanguard",                    GearData=(GearNameID=Mason_Vanguard_DLC_Helmet_1, MicroTxID=, bPartOfBundle=false, BundleNameID=Mason_Bundle_DLC_Helmets_1, GearStoreDescriptionID=Mason_Bundle_DLC_Helmets_1)))
 	Helmets.Add((SkeletalMeshPath="CH_HP2_Mason.Vanguard.sk_HP2M_Vanguard",                StaticMeshPath="CH_HP2_Mason.Vanguard.sm_HP2M_Vanguard",               GearData=(GearNameID=Mason_Vanguard_DLC_Helmet_2, GearStoreDescriptionID=Mason_Vanguard_DLC_Helmets_2, MicroTxID=)))
 	Helmets.Add((SkeletalMeshPath="CH_MasonVanguard_DLC1.models.SK_CH_MasonVanguard_DLC1_Helm",      StaticMeshPath="CH_MasonVanguard_DLC1.models.S_CH_MasonVanguard_DLC1_Helm",         GearData=(GearNameID=MasonVanguardDLC1Helmet, GearStoreDescriptionID=Mason_Elite_Vanguard_Bundle_1, MicroTxID=, bPartOfBundle=false, BundleNameID=Mason_Elite_Vanguard_Bundle_1)))
@@ -116,6 +116,9 @@ defaultproperties
 	Helmets.Add((SkeletalMeshPath="gaymask.hat_gaymask", 	StaticMeshPath="gaymask.gaymask_mesh", 	    MaterialPath="gaymask.redmaskmats",      GearData=(GearNameID=redgaymask)))
 	Helmets.Add((SkeletalMeshPath="crown.WEP_TheCrown", StaticMeshPath="crown.mesh_TheCrown", GearData=(GroupHexID="170000002B28C65", GearNameID=BKCrown, bVisibleInSelectorIfUnowned=false)))
 
+	Helmets.Add((SkeletalMeshPath="CH_AgathanKnight_PKG.models.SK_CH_AgathaKnight_Helm01", StaticMeshPath="CH_sm_helms.smhelms_SK_CH_Agathaknight_Helm02", MaterialPath="CH_PaintedHelms.Materials.M_AgathaKnight_PaintedHelm01_P01", GearData=(GearNameID=PaintedHelm01)))
+	Helmets.Add((SkeletalMeshPath="CH_AgathanKnight_PKG.models.SK_CH_AgathaKnight_Helm01", StaticMeshPath="CH_sm_helms.smhelms_SK_CH_Agathaknight_Helm02", MaterialPath="CH_PaintedHelms.Materials.M_AgathaKnight_PaintedHelm01_P02", GearData=(GearNameID=PaintedHelm02)))
+	Helmets.Add((SkeletalMeshPath="CH_AgathanKnight_PKG.models.SK_CH_AgathaKnight_Helm01", StaticMeshPath="CH_sm_helms.smhelms_SK_CH_Agathaknight_Helm02", MaterialPath="CH_PaintedHelms.Materials.M_AgathaKnight_PaintedHelm01_P03", GearData=(GearNameID=PaintedHelm03)))
 	
 	Tabards=((GearData=(GearNameID=Default)))
 	

@@ -27,6 +27,49 @@ var float fRiposteGracePeriod;                  // Grace period after parry wher
 // 	}
 // }
 
+/** Apply shield color picker values to the helmet material's PatternColor params */
+simulated function ApplyShieldColorsToHelmet()
+{
+	local MaterialInstanceConstant HelmetMIC;
+	local LinearColor LinCol;
+	local EAOCFaction TeamID;
+
+	if (WorldInfo.NetMode == NM_DedicatedServer)
+		return;
+
+	if (HelmetMeshComp == none || HelmetMeshComp.GetMaterial(0) == none)
+		return;
+
+	HelmetMIC = HelmetMeshComp.CreateAndSetMaterialInstanceConstant(0);
+	if (HelmetMIC == none)
+		return;
+
+	TeamID = GetCustomizationFactionFromActualFaction(PawnFamily.FamilyFaction);
+
+	LinCol = CustomizationClass.static.ConvertTabardColorIndexToLinearColor(PawnInfo.myCustomization.ShieldColor1, TeamID, 0);
+	HelmetMIC.SetVectorParameterValue('PatternColor1', LinCol);
+
+	LinCol = CustomizationClass.static.ConvertTabardColorIndexToLinearColor(PawnInfo.myCustomization.ShieldColor2, TeamID, 1);
+	HelmetMIC.SetVectorParameterValue('PatternColor2', LinCol);
+
+	LinCol = CustomizationClass.static.ConvertTabardColorIndexToLinearColor(PawnInfo.myCustomization.ShieldColor3, TeamID, 2);
+	HelmetMIC.SetVectorParameterValue('PatternColor3', LinCol);
+}
+
+/** Override SetupHelmet to apply shield colors to painted helmet materials on spawn/asset load */
+simulated function SetupHelmet(int HelmetID, int CharacterID)
+{
+	super.SetupHelmet(HelmetID, CharacterID);
+	ApplyShieldColorsToHelmet();
+}
+
+/** Override to also refresh helmet colors whenever shield colors are updated (e.g. customization preview) */
+simulated function DisplayCustomizationInfoOnShield()
+{
+	super.DisplayCustomizationInfoOnShield();
+	ApplyShieldColorsToHelmet();
+}
+
 /** Check if a pawn is currently in a riposte (for flinch immunity) */
 simulated function bool IsInRiposte(Pawn CheckPawn) {
 	local AOCMeleeWeapon MeleeWep;

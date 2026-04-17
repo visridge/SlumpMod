@@ -12,15 +12,11 @@ DefaultProperties
 	NewPrimaryWeapons(3)=(CWeapon=class'BangModWeapon_Longbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(4)=(CWeapon=class'BangModWeapon_Shortbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(5)=(CWeapon=class'BangModWeapon_Warbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
-	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_Zweihander',CorrespondingDuelProp=EDUEL_ZweihanderUse)
-	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_Bardiche',CorrespondingDuelProp=EDUEL_BardicheUse)
-	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Halberd',CorrespondingDuelProp=EDUEL_HalberdUse)
-	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
-	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_Nodachi',CorrespondingDuelProp=EDUEL_ZweihanderUse)
-	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_JavelinMelee',CForceTertiary=(class'BangModWeapon_Buckler_Agatha'))
+	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_ShortSpearMelee',CForceTertiary=(class'BangModWeapon_Buckler_Agatha'))
+	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_HeavyJavelinMelee',CForceTertiary=(class'BangModWeapon_Buckler_Agatha'))
 
 	NewSecondaryWeapons.empty;
-	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
+	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_QuarterStaff',CorrespondingDuelProp=EDUEL_QStaffUse)
 
 	NewTertiaryWeapons.empty;
 	NewTertiaryWeapons(0)=(CWeapon=class'AOCWeapon_ProjBodkin',bEnabledDefault=false)

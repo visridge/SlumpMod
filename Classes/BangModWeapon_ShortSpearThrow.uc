@@ -8,6 +8,24 @@
 
 class BangModWeapon_ShortSpearThrow extends AOCWeapon_ShortSpearThrow;
 
+// Auto-throw: short spear cannot be held drawn, fires immediately
+simulated state Hold
+{
+	simulated event BeginState(Name PreviousStateName)
+	{
+		super.BeginState(PreviousStateName);
+		SetTimer(0.01, false, 'AutoThrow');
+	}
+}
+
+simulated function AutoThrow()
+{
+	if (IsInState('Hold'))
+	{
+		GotoState('Release');
+	}
+}
+
 DefaultProperties
 {
 	FiringStatesArray(3)= Windup
@@ -15,8 +33,8 @@ DefaultProperties
 
 	CurrentWeaponType = EWEP_ShortSpear
 	// set maximum ammo
-	AmmoCount=8
-	MaxAmmoCount=8
+	AmmoCount=2
+	MaxAmmoCount=2
 	AIRange=5000
 	
 	HorizontalRotateSpeed = 60000
@@ -44,6 +62,7 @@ DefaultProperties
 	bEquipShield=false
 	bCanParry=False
 	bCanSwitchShield=false
+	bNeverFlinch=true
 
 	WeaponIdentifier="javelin"
 
@@ -98,7 +117,7 @@ DefaultProperties
 	ConfigProjectileBaseDamage[1]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	ConfigProjectileBaseDamage[2]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	ConfigProjectileBaseDamage[3]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
-	ConfigProjectileBaseDamage[4]=(Damage=60,InitialSpeed=2800.0,MaxSpeed=3300.0,AmmoCount=6,InitialGravityScale=0.7,Drag=0.000003,PitchCorrection=0)
+	ConfigProjectileBaseDamage[4]=(Damage=60,InitialSpeed=2800.0,MaxSpeed=3300.0,AmmoCount=2,InitialGravityScale=0.7,Drag=0.000003,PitchCorrection=0)
 	ConfigProjectileBaseDamage[5]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	iFeintStaminaCost=0
 	WeaponFontSymbol="z"
