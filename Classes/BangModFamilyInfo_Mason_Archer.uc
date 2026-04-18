@@ -15,7 +15,7 @@ DefaultProperties
 	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_JavelinMelee',CForceTertiary=(class'BangModWeapon_Buckler_Mason'))
 
 	NewSecondaryWeapons.empty;
-	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_Dane',CorrespondingDuelProp=EDUEL_DaneUse)
+	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_HolyWaterSprinkler',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 
 
 	NewTertiaryWeapons.empty;

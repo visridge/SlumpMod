@@ -43,6 +43,41 @@ simulated state Release
 			}
 		}
 	}
+
+	simulated function PlayStateAnimation()
+	{
+		local AnimationInfo Info;
+		if (bIsInCombo)
+		{
+			iComboCount++;
+			AOCOwner.OnComboIncreased();
+
+			if (CurrentFireMode != Attack_Sprint && !AOCOwner.bIsCrouching && AOCOwner.Physics != PHYS_Falling)
+			{
+				if (VSize(AOCOwner.Velocity) > 2.0f && !Info.bUseRMM)
+					AOCOwner.Lunge(,,true);
+				else if (VSize(AOCOwner.Velocity) <= 2.f && !Info.bUseRMM)
+					Info.bFullBody = false;
+			}
+
+			AOCWepAttachment.ComboCount = iComboCount;
+
+			if (bJustPlayedCombo || ePreviousAttack == Attack_Stab)
+			{
+				AOCOwner.ReplicateCompressedAnimation(ReleaseAnimations[CurrentFireMode], EWST_Release, CurrentFireMode);
+				bJustPlayedCombo = false;
+			}
+			else
+			{
+				Info = ReleaseAnimations[CurrentFireMode];
+				Info.bCombo = true;
+				AOCOwner.ReplicateCompressedAnimation(Info, EWST_Release, CurrentFireMode);
+				bJustPlayedCombo = true;
+			}
+		}
+		else
+			super.PlayStateAnimation();
+	}
 }
 
 

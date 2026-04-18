@@ -40,6 +40,7 @@ DefaultProperties
 	bUseRMMDazed=true
 	bUseDirHitAnims=true
 	FlinchTime1H=1.05
+	bHaveShield=false
 
 	ImpactSounds(ESWINGSOUND_Slash)={(
 		light=SoundCue'A_Impacts_Melee.Light_Blunt_Average',
