@@ -15,7 +15,15 @@ DefaultProperties
 	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_JavelinMelee',CForceTertiary=(class'BangModWeapon_Buckler_Mason'))
 
 	NewSecondaryWeapons.empty;
-	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_HolyWaterSprinkler',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
+	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_Broadsword')
+	NewSecondaryWeapons(1)=(CWeapon=class'BangModWeapon_NorseSword')
+	NewSecondaryWeapons(2)=(CWeapon=class'BangModWeapon_Falchion',CorrespondingDuelProp=EDUEL_FalchionUse)
+	NewSecondaryWeapons(3)=(CWeapon=class'AOCWeapon_Cudgel',CorrespondingDuelProp=EDUEL_CudgelUse)
+	NewSecondaryWeapons(4)=(CWeapon=class'BangModWeapon_WarAxe',CorrespondingDuelProp=EDUEL_WarAxeUse)
+	NewSecondaryWeapons(5)=(CWeapon=class'BangModWeapon_Dane',CorrespondingDuelProp=EDUEL_DaneUse)
+	NewSecondaryWeapons(6)=(CWeapon=class'BangModWeapon_Mace',CorrespondingDuelProp=EDUEL_MaceUse)
+	NewSecondaryWeapons(7)=(CWeapon=class'BangModWeapon_MorningStar',CorrespondingDuelProp=EDUEL_MorningStarUse)
+	NewSecondaryWeapons(8)=(CWeapon=class'BangModWeapon_HolyWaterSprinkler',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 
 
 	NewTertiaryWeapons.empty;

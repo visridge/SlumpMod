@@ -35,19 +35,19 @@ DefaultProperties
 
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'CHV_DeadliestPorts.Meshes.WEP_GrandHammer'
-		Scale=1.1
+		Scale=1.2
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
 		SkeletalMesh=SkeletalMesh'CHV_DeadliestPorts.Meshes.WEP_GrandHammer'
-		Scale=1.1
+		Scale=1.2
 	End Object
 
 	WeaponID=EWEP_WarHammer
 	WeaponClass=class'BangModWeapon_GrandHammer'
 	WeaponSocket=wepPolepoint
 
-	WeaponStaticMeshScale=1.1
+	WeaponStaticMeshScale=1.2
 
 	bUseAlternativeKick=true
 
