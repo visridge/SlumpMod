@@ -12,11 +12,10 @@ DefaultProperties
 	NewPrimaryWeapons(3)=(CWeapon=class'BangModWeapon_Longbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(4)=(CWeapon=class'BangModWeapon_Shortbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(5)=(CWeapon=class'BangModWeapon_Warbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
-	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_ShortSpearMelee',CForceTertiary=(class'BangModWeapon_Buckler_Mason'))
-	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_HeavyJavelinMelee',CForceTertiary=(class'BangModWeapon_Buckler_Mason'))
+	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_JavelinMelee',CForceTertiary=(class'BangModWeapon_Buckler_Mason'))
 
 	NewSecondaryWeapons.empty;
-	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_QuarterStaff',CorrespondingDuelProp=EDUEL_QStaffUse)
+	NewSecondaryWeapons(0)=(CWeapon=class'AOCWeapon_Dane',CorrespondingDuelProp=EDUEL_DaneUse)
 
 
 	NewTertiaryWeapons.empty;
