@@ -24,6 +24,49 @@ simulated function string GetWeaponIdentifier()
 	return Identifier;
 }
 
+/**
+ * When the weapon identifier is remapped for dodge (e.g. doubleaxe -> qstaff), the skeleton
+ * drives wepQstaffpoint during the animation but the weapon is attached to wep2haxepoint,
+ * causing it to float. Reattach to the socket the animation actually drives.
+ */
+simulated function StartDodgeSM(byte direction, byte WeaponId)
+{
+	local name RemappedSocket;
+
+	super.StartDodgeSM(direction, WeaponId);
+
+	// If the identifier was remapped, reattach weapon to the socket the dodge anim drives
+	if (OwnerPawn.CurrentWeaponAttachment != none
+		&& super.GetWeaponIdentifier() != GetWeaponIdentifier())
+	{
+		RemappedSocket = 'wepQstaffpoint';
+		OwnerPawn.HandleSocketAttachment(false, OwnerPawn.CurrentWeaponAttachment.Mesh, RemappedSocket, OwnerPawn.CurrentWeaponAttachment);
+		if (OwnerPawn.CurrentWeaponAttachment.bIsAttachedOverlay)
+		{
+			OwnerPawn.HandleSocketAttachment(true, OwnerPawn.CurrentWeaponAttachment.OverlayMesh, RemappedSocket, OwnerPawn.CurrentWeaponAttachment);
+		}
+	}
+}
+
+/** Restore the weapon to its original socket after the dodge finishes. */
+simulated function StopDodgeSM()
+{
+	local name OrigSocket;
+
+	if (OwnerPawn.CurrentWeaponAttachment != none
+		&& super.GetWeaponIdentifier() != GetWeaponIdentifier())
+	{
+		OrigSocket = class<AOCWeaponAttachment>(OwnerPawn.CurrentWeaponAttachment.Class).default.WeaponSocket;
+		OwnerPawn.HandleSocketAttachment(false, OwnerPawn.CurrentWeaponAttachment.Mesh, OrigSocket, OwnerPawn.CurrentWeaponAttachment);
+		if (OwnerPawn.CurrentWeaponAttachment.bIsAttachedOverlay)
+		{
+			OwnerPawn.HandleSocketAttachment(true, OwnerPawn.CurrentWeaponAttachment.OverlayMesh, OrigSocket, OwnerPawn.CurrentWeaponAttachment);
+		}
+	}
+
+	super.StopDodgeSM();
+}
+
 defaultproperties
 {
 }
