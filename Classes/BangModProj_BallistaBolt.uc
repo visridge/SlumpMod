@@ -52,7 +52,7 @@ DefaultProperties
 	ProjFlightTemplate=ParticleSystem'CHV_Particles_01.Particles.P_ArrowTrail'
 	speed=8000.0f
 	MaxSpeed=8500.0f
-	Damage=300.0
+	Damage=50.0
 	DamageRadius=30.0
 	MomentumTransfer=0
 	LifeSpan=15.0f
