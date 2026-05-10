@@ -26,6 +26,7 @@ var array<AOCPRI> NearbyTalkers;  // List of PRIs currently talking within range
 
 // Parry box toggle
 var globalconfig bool bBangModParryBox;  // When true, use BangMod parry box values; when false, revert to vanilla AOC defaults
+var globalconfig bool bSkeletalParry;    // When true, parry hitbox wraps the full player model (skeletal parry) instead of directional shield-style
 
 // Unpause countdown
 var bool bIsPaused;  // Tracks whether the game is currently paused by an admin
@@ -809,6 +810,26 @@ reliable server function S_AdminToggleParryBox(bool bEnable) {
 		S_AdminBroadcastMessage("BangMod parry box ENABLED (respawn to apply)", false);
 	else
 		S_AdminBroadcastMessage("BangMod parry box DISABLED - using vanilla AOC parry box (respawn to apply)", false);
+}
+
+exec function AdminEnableSkeletalParry(optional bool bEnable = true)
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminEnableSkeletalParry(bEnable);
+}
+
+reliable server function S_AdminEnableSkeletalParry(bool bEnable) {
+	if (!IsAdmin())
+		return;
+	class'BangModAOCDuelPlayerController'.default.bSkeletalParry = bEnable;
+	class'BangModAOCDuelPlayerController'.static.StaticSaveConfig();
+	if (bEnable)
+		S_AdminBroadcastMessage("Skeletal parry ENABLED - parry box covers full body (respawn to apply)", false);
+	else
+		S_AdminBroadcastMessage("Skeletal parry DISABLED - using directional parry box (respawn to apply)", false);
 }
 
 reliable server function S_AdminTournamentMode(bool bEnable) {}
@@ -2068,6 +2089,8 @@ DefaultProperties
 
 	// Parry box toggle default (enabled = use BangMod values)
 	bBangModParryBox=true
+	// Skeletal parry default (disabled = use directional/shield-style parry box)
+	bSkeletalParry=false
 
 	// Unpause countdown
 	UnpauseCountdownTime=3
