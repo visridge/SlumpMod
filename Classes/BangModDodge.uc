@@ -28,6 +28,10 @@ simulated function string GetWeaponIdentifier()
  * When the weapon identifier is remapped for dodge (e.g. doubleaxe -> qstaff), the skeleton
  * drives wepQstaffpoint during the animation but the weapon is attached to wep2haxepoint,
  * causing it to float. Reattach to the socket the animation actually drives.
+ *
+ * NOTE: HandleSocketAttachment always detaches before checking if the target socket exists.
+ * If the socket is missing on a skeleton it returns early leaving the mesh unattached (floating).
+ * Guard each call with a socket existence check to prevent this.
  */
 simulated function StartDodgeSM(byte direction, byte WeaponId)
 {
@@ -40,8 +44,15 @@ simulated function StartDodgeSM(byte direction, byte WeaponId)
 		&& super.GetWeaponIdentifier() != GetWeaponIdentifier())
 	{
 		RemappedSocket = 'wepQstaffpoint';
-		OwnerPawn.HandleSocketAttachment(false, OwnerPawn.CurrentWeaponAttachment.Mesh, RemappedSocket, OwnerPawn.CurrentWeaponAttachment);
-		if (OwnerPawn.CurrentWeaponAttachment.bIsAttachedOverlay)
+		// Only reattach if the socket actually exists on this skeleton - HandleSocketAttachment
+		// detaches unconditionally and returns early on missing socket, leaving mesh floating.
+		if (OwnerPawn.Mesh.GetSocketByName(RemappedSocket) != none)
+		{
+			OwnerPawn.HandleSocketAttachment(false, OwnerPawn.CurrentWeaponAttachment.Mesh, RemappedSocket, OwnerPawn.CurrentWeaponAttachment);
+		}
+		if (OwnerPawn.CurrentWeaponAttachment.bIsAttachedOverlay
+			&& OwnerPawn.OwnerMesh != none
+			&& OwnerPawn.OwnerMesh.GetSocketByName(RemappedSocket) != none)
 		{
 			OwnerPawn.HandleSocketAttachment(true, OwnerPawn.CurrentWeaponAttachment.OverlayMesh, RemappedSocket, OwnerPawn.CurrentWeaponAttachment);
 		}
@@ -57,8 +68,13 @@ simulated function StopDodgeSM()
 		&& super.GetWeaponIdentifier() != GetWeaponIdentifier())
 	{
 		OrigSocket = class<AOCWeaponAttachment>(OwnerPawn.CurrentWeaponAttachment.Class).default.WeaponSocket;
-		OwnerPawn.HandleSocketAttachment(false, OwnerPawn.CurrentWeaponAttachment.Mesh, OrigSocket, OwnerPawn.CurrentWeaponAttachment);
-		if (OwnerPawn.CurrentWeaponAttachment.bIsAttachedOverlay)
+		if (OwnerPawn.Mesh.GetSocketByName(OrigSocket) != none)
+		{
+			OwnerPawn.HandleSocketAttachment(false, OwnerPawn.CurrentWeaponAttachment.Mesh, OrigSocket, OwnerPawn.CurrentWeaponAttachment);
+		}
+		if (OwnerPawn.CurrentWeaponAttachment.bIsAttachedOverlay
+			&& OwnerPawn.OwnerMesh != none
+			&& OwnerPawn.OwnerMesh.GetSocketByName(OrigSocket) != none)
 		{
 			OwnerPawn.HandleSocketAttachment(true, OwnerPawn.CurrentWeaponAttachment.OverlayMesh, OrigSocket, OwnerPawn.CurrentWeaponAttachment);
 		}
