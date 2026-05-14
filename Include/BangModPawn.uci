@@ -70,6 +70,23 @@ simulated function DisplayCustomizationInfoOnShield()
 	ApplyShieldColorsToHelmet();
 }
 
+simulated function WeaponAttachmentChanged()
+{
+	super.WeaponAttachmentChanged();
+
+	if (CurrentWeaponAttachment == none)
+		return;
+
+	if (CurrentWeaponAttachment.Class == class'AOCWeaponAttachment_HFlail')
+	{
+		CurrentWeaponAttachment.Mesh.SetScale(1.25f);
+		if (CurrentWeaponAttachment.OverlayMesh != none)
+		{
+			CurrentWeaponAttachment.OverlayMesh.SetScale(1.25f);
+		}
+	}
+}
+
 /** Check if a pawn is currently in a riposte (for flinch immunity) */
 simulated function bool IsInRiposte(Pawn CheckPawn) {
 	local AOCMeleeWeapon MeleeWep;
