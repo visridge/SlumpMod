@@ -32,6 +32,71 @@ var globalconfig bool bSkeletalParry;    // When true, parry hitbox wraps the fu
 var bool bIsPaused;  // Tracks whether the game is currently paused by an admin
 var int UnpauseCountdownTime;  // Countdown start value for unpause (default 3)
 
+simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
+{
+	class'BangModAOCDuelPlayerController'.default.bBangModParryBox = bEnableBangMod;
+	class'BangModAOCDuelPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'BangModCDWDuelPlayerController'.default.bBangModParryBox = bEnableBangMod;
+	class'BangModCDWDuelPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'BangModCTFPlayerController'.default.bBangModParryBox = bEnableBangMod;
+	class'BangModCTFPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'BangModFFAPlayerController'.default.bBangModParryBox = bEnableBangMod;
+	class'BangModFFAPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'BangModKOTHPlayerController'.default.bBangModParryBox = bEnableBangMod;
+	class'BangModKOTHPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'BangModLTSPlayerController'.default.bBangModParryBox = bEnableBangMod;
+	class'BangModLTSPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'BangModTDPlayerController'.default.bBangModParryBox = bEnableBangMod;
+	class'BangModTDPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'BangModTOPlayerController'.default.bBangModParryBox = bEnableBangMod;
+	class'BangModTOPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'BangModTUTPlayerController'.default.bBangModParryBox = bEnableBangMod;
+	class'BangModTUTPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+}
+
+simulated function ApplyParryBoxSettingsToCurrentPawn()
+{
+	local AOCPawn CurrentPawn;
+	local vector ParryBoxTranslation;
+
+	CurrentPawn = AOCPawn(Pawn);
+	if (CurrentPawn == none || CurrentPawn.ParryComponent == none || CurrentPawn.PawnFamily == none)
+	{
+		return;
+	}
+
+	if (!class'BangModAOCDuelPlayerController'.default.bBangModParryBox)
+	{
+		CurrentPawn.ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
+		CurrentPawn.ParryComponent.SetTranslation(vect(30, 0, -30));
+		return;
+	}
+
+	if (class'BangModAOCDuelPlayerController'.default.bSkeletalParry)
+	{
+		CurrentPawn.ParryComponent.SetScale3D(vect(0.18, 0.17, 0.35));
+		CurrentPawn.ParryComponent.SetTranslation(vect(10, 5, -28));
+		return;
+	}
+
+	ParryBoxTranslation = CurrentPawn.PawnFamily.ParryBoxTranslation;
+	if (AOCWeaponAttachment(CurrentPawn.CurrentWeaponAttachment) != none)
+	{
+		ParryBoxTranslation += AOCWeaponAttachment(CurrentPawn.CurrentWeaponAttachment).ParryBoxTranslation;
+	}
+
+	CurrentPawn.ParryComponent.SetScale3D(CurrentPawn.PawnFamily.ParryBoxScale);
+	CurrentPawn.ParryComponent.SetTranslation(ParryBoxTranslation);
+}
+
+reliable client function ClientSyncParryBoxSettings(bool bEnableBangMod, bool bEnableSkeletal)
+{
+	bBangModParryBox = bEnableBangMod;
+	bSkeletalParry = bEnableSkeletal;
+	SetAllParryBoxClassDefaults(bEnableBangMod, bEnableSkeletal);
+	ApplyParryBoxSettingsToCurrentPawn();
+}
+
 // Ensure BangMod uses its customization class everywhere
 simulated event PostBeginPlay()
 {
@@ -311,6 +376,15 @@ event Possess(Pawn inPawn, bool bVehicleTransition)
 	
 	// Force ragdolls disabled on every spawn (catches players with read-only configs)
 	ConsoleCommand("SetRagdollLimit 0");
+
+	// Parry box settings live on the server class default and are read on the client when
+	// pawns/attachments size the local debug box. Sync them on every possess so respawns and
+	// late joins don't keep stale client-side defaults.
+	if (Role == ROLE_Authority)
+	{
+		ClientSyncParryBoxSettings(class'BangModAOCDuelPlayerController'.default.bBangModParryBox,
+			class'BangModAOCDuelPlayerController'.default.bSkeletalParry);
+	}
 	
 	// Show optimization tip once when player first spawns
 	if (!bShownOptimizationTip && Role == ROLE_Authority)
@@ -806,6 +880,8 @@ reliable server function S_AdminToggleParryBox(bool bEnable) {
 	// Must set on the class default — pawn reads class'BangModAOCDuelPlayerController'.default.bBangModParryBox
 	class'BangModAOCDuelPlayerController'.default.bBangModParryBox = bEnable;
 	class'BangModAOCDuelPlayerController'.static.StaticSaveConfig();
+	ClientSyncParryBoxSettings(class'BangModAOCDuelPlayerController'.default.bBangModParryBox,
+		class'BangModAOCDuelPlayerController'.default.bSkeletalParry);
 	if (bEnable)
 		S_AdminBroadcastMessage("BangMod parry box ENABLED (respawn to apply)", false);
 	else
@@ -826,6 +902,8 @@ reliable server function S_AdminEnableSkeletalParry(bool bEnable) {
 		return;
 	class'BangModAOCDuelPlayerController'.default.bSkeletalParry = bEnable;
 	class'BangModAOCDuelPlayerController'.static.StaticSaveConfig();
+	ClientSyncParryBoxSettings(class'BangModAOCDuelPlayerController'.default.bBangModParryBox,
+		class'BangModAOCDuelPlayerController'.default.bSkeletalParry);
 	if (bEnable)
 		S_AdminBroadcastMessage("Skeletal parry ENABLED - parry box covers full body (respawn to apply)", false);
 	else
