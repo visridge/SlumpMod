@@ -10,22 +10,22 @@ DefaultProperties
 	`include(BangMod/Include/BangModWeaponAttachment.uci);
 
 	Begin Object Name=SkeletalMeshComponent0
-		Scale=1.25
+		Scale=1.5
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
-		Scale=1.25
+		Scale=1.5
 	End Object
 
 	WeaponClass=class'BangModWeapon_HFlail'
 
-	WeaponStaticMeshScale=1.25
+	WeaponStaticMeshScale=1.5
 
 	Skins(0)={(
 		SkeletalMeshPath="WP_DL1_Flail.WEP_H-Flail",
 		StaticMeshPath="WP_DL1_Flail.SM_H-Flail",
 		MaterialPath="",
-		StaticMeshScale=1.25,
+		StaticMeshScale=1.5,
 		ImagePath="ui_custweaponimages_swf.skin_flail_png"
 		)};
 
@@ -33,7 +33,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_DL1_Flail_Variant_01.WEP_RatFlail",
 		StaticMeshPath="WP_DL1_Flail_Variant_01.SM_RatFlail",
 		MaterialPath="",
-		StaticMeshScale=1.25,
+		StaticMeshScale=1.5,
 		ImagePath="ui_custweaponimages_swf.skin_rat_flail_png"
 		)};
 }
