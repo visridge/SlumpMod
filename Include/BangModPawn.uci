@@ -1051,6 +1051,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	local bool bOnFire;
 	local bool bPassiveBlock;
 	local AOCWeaponAttachment HitActorWeaponAttachment;
+	local BangModMeleeWeapon DefendingMeleeWeapon;
 	local class<AOCWeapon> UsedWeapon;
 	local TraceHitInfo THI;
 	local bool bEnemyWasBot;
@@ -1140,28 +1141,24 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 		UsedWeapon = TertiaryWeapon;
 
 	HitActorWeaponAttachment = AOCWeaponAttachment(Info.HitActor.CurrentWeaponAttachment);
+	DefendingMeleeWeapon = BangModMeleeWeapon(Info.HitActor.Weapon);
 
 	// Is the player on the same team?
 	bSameTeam = IsOnSameTeam(self, Info.HitActor);
 
 	bFlinch = false;
 
-	// Server-side parry validation - simple check if parry is currently active
+	// Server-side parry validation - honor either the live parry flags or a fresh
+	// authoritative Parry state whose booleans have not serialized yet.
 	bParryActive = Info.HitActor.StateVariables.bIsParrying || Info.HitActor.StateVariables.bIsActiveShielding;
-	
-	// Grace period check disabled - redundant when parry is already active
-	// True "through-parry" fix is the 60ms damage delay in Release state
-	// This gives defenders time for their parry to reach the server before attacker's damage activates
-	// if (bParryActive && Role == ROLE_Authority && BangModMeleeWeapon(Info.HitActor.Weapon) != none)
-	// {
-	// 	fTimeSinceParryStart = WorldInfo.TimeSeconds - BangModMeleeWeapon(Info.HitActor.Weapon).fServerParryStartTime;
-	// 	
-	// 	// If parry JUST started (within 100ms), always honor it
-	// 	if (fTimeSinceParryStart > 0 && fTimeSinceParryStart <= BangModMeleeWeapon(Info.HitActor.Weapon).fParryGracePeriod)
-	// 	{
-	// 		bParryActive = true;
-	// 	}
-	// }
+	if (!bParryActive && DefendingMeleeWeapon != none && Info.HitActor.Weapon.IsInState('Parry'))
+	{
+		fTimeSinceParryStart = WorldInfo.TimeSeconds - DefendingMeleeWeapon.fServerParryStartTime;
+		if (fTimeSinceParryStart > 0 && fTimeSinceParryStart <= DefendingMeleeWeapon.fParryGracePeriod)
+		{
+			bParryActive = true;
+		}
+	}
 	
 	bParry = (CheckProjectileParry(Info) || bBoxParrySuccess)
 			 && bParryActive

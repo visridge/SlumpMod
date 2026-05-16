@@ -16,60 +16,68 @@ var int MissCount;  // Track consecutive misses in combo for miss penalty
 
 // Parry buffer system - allows queuing parry input during recovery/flinch
 var float fLastParryInputTime;  // Game time when player last pressed parry
-var float fParryBufferWindow;   // How long to remember parry input (default 150ms)
+var float fParryBufferWindow;   // How long to remember parry input (default 125ms)
 
 // Server-side parry validation for ping normalization
 var float fServerParryStartTime;  // When parry became active on server
-var float fParryGracePeriod;      // Grace period for parry timing validation (60ms for RTT compensation)
+var float fParryGracePeriod;      // Grace period for parry timing validation (75ms for RTT compensation)
+var float fDamageTraceActivationDelay;  // Delay before release traces can deal damage
 
 // Minimum combo transition time for ping normalization
 var float fMinComboTransitionTime;  // Minimum time before combo can release (100ms floor)
 var float fComboTransitionStartTime;  // When transition state began
 
-/** Override BeginFire to track parry inputs for buffer system */
-// simulated function BeginFire(byte FireModeNum)
-// {
-// 	// Record parry input timestamp for buffer system
-// 	if (FireModeNum == Attack_Parry)
-// 	{
-// 		fLastParryInputTime = WorldInfo.TimeSeconds;
-// 	}
-	
-// 	// Call parent to handle normal logic
-// 	super.BeginFire(FireModeNum);
-// }
+simulated function BufferParryInput()
+{
+	fLastParryInputTime = WorldInfo.TimeSeconds;
+}
 
-// /** Check if player recently pressed parry (within buffer window) */
-// simulated function bool HasBufferedParryInput()
-// {
-// 	local float TimeSinceParryInput;
-	
-// 	if (fLastParryInputTime <= 0)
-// 		return false;
-		
-// 	TimeSinceParryInput = WorldInfo.TimeSeconds - fLastParryInputTime;
-// 	return (TimeSinceParryInput > 0 && TimeSinceParryInput <= fParryBufferWindow);
-// }
+simulated function bool HasBufferedParryInput()
+{
+	local float TimeSinceParryInput;
 
-// /** Clear the parry buffer (called when parry activates or buffer expires) */
-// simulated function ClearParryBuffer()
-// {
-// 	fLastParryInputTime = 0;
-// }
+	if (fLastParryInputTime <= 0)
+		return false;
 
-/** Override BeginFire to prevent kick during jump/fall */
-// simulated function BeginFire(byte FireModeNum)
-// {
-// 	// Block kick input if player is not grounded (same check used for dodge)
-// 	// Attack_Shove = 5 in the EAttack enum
-// 	// Velocity.Z ~= 0.0 means "approximately zero" (grounded)
-// 	if (FireModeNum == 5 && !(AOCOwner.Velocity.Z ~= 0.0))
-// 	{
-// 		return;
-// 	}
-	
-// 	super.BeginFire(FireModeNum);
-// }
+	TimeSinceParryInput = WorldInfo.TimeSeconds - fLastParryInputTime;
+	if (TimeSinceParryInput <= 0 || TimeSinceParryInput > fParryBufferWindow)
+		return false;
+
+	return true;
+}
+
+simulated function ClearParryBuffer()
+{
+	fLastParryInputTime = 0;
+}
+
+simulated function bool TryActivateBufferedParry()
+{
+	if (HasBufferedParryInput() && bCanParry)
+	{
+		ClearParryBuffer();
+		ActivateParry();
+		return true;
+	}
+
+	return false;
+}
+
+/** Track delayed parry inputs and keep aerial kicks blocked. */
+simulated function BeginFire(byte FireModeNum)
+{
+	if (FireModeNum == Attack_Parry && (!bCanParry || IsInState('Recovery') || IsInState('Deflect')))
+	{
+		BufferParryInput();
+	}
+
+	if (FireModeNum == Attack_Shove && AOCOwner != none && !(AOCOwner.Velocity.Z ~= 0.0))
+	{
+		return;
+	}
+
+	super.BeginFire(FireModeNum);
+}
 
 // simulated function float GetStaminaLossForMiss()
 // {
@@ -131,9 +139,16 @@ simulated state Feint
 
 	simulated function BeginFire(byte FireModeNum)
 	{
-		if (FireModeNum == Attack_Parry && AOCOwner.StateVariables.bCanParry)
+		if (FireModeNum == Attack_Parry)
 		{
-			ActivateParry();
+			BufferParryInput();
+			if (AOCOwner.StateVariables.bCanParry)
+			{
+				ClearParryBuffer();
+				ActivateParry();
+			}
+			else
+				AttackQueue = EAttack(FireModeNum);
 		}
 		else
 			AttackQueue = EAttack(FireModeNum);
@@ -156,10 +171,16 @@ simulated state Flinch
 	/** Go into Parry if we can */
 	simulated function BeginFire(byte FireModeNum)
 	{
-		if (FireModeNum == Attack_Parry && (!bGenericHit || !bFullBodyDazed))
+		if (FireModeNum == Attack_Parry)
 		{
-			// ClearParryBuffer();  // Consume the buffered input
-			ActivateParry();
+			BufferParryInput();
+			if (!bGenericHit || !bFullBodyDazed)
+			{
+				ClearParryBuffer();
+				ActivateParry();
+			}
+			else if (bManualAllowQueue)
+				AttackQueue = EAttack(FireModeNum);
 		}
 		else if (bManualAllowQueue)
 			AttackQueue = EAttack(FireModeNum);
@@ -223,10 +244,16 @@ simulated state Hit
 	/** Go into Parry if we can */
 	simulated function BeginFire(byte FireModeNum)
 	{
-		if (FireModeNum == Attack_Parry && (!bGenericHit || !bFullBodyDazed))
+		if (FireModeNum == Attack_Parry)
 		{
-			// ClearParryBuffer();  // Consume the buffered input
-			ActivateParry();
+			BufferParryInput();
+			if (!bGenericHit || !bFullBodyDazed)
+			{
+				ClearParryBuffer();
+				ActivateParry();
+			}
+			else if (bManualAllowQueue)
+				AttackQueue = EAttack(FireModeNum);
 		}
 		else if (bManualAllowQueue)
 			AttackQueue = EAttack(FireModeNum);
@@ -276,6 +303,12 @@ simulated state Hit
 /** Recovery state - Auto-activate parry if buffered */
 simulated state Recovery
 {
+	simulated event BeginState(Name PreviousStateName)
+	{
+		super.BeginState(PreviousStateName);
+		TryActivateBufferedParry();
+	}
+
 	/** Override HandleCombo to add server-side stamina validation */
 	simulated function HandleCombo(EAttack ComboAttack)
 	{
@@ -315,36 +348,16 @@ simulated state Recovery
 			AOCOwner.PlayerHUDStartRecovery();
 	}
 	
-	// simulated event BeginState(Name PreviousStateName)
-	// {
-	// 	super.BeginState(PreviousStateName);
-		
-	// 	// Check if player pressed parry during Release/Windup/Flinch
-	// 	// If so, auto-activate parry immediately (no spam needed!)
-	// 	if (HasBufferedParryInput() && bCanParry)
-	// 	{
-	// 		ClearParryBuffer();
-	// 		ActivateParry();
-	// 	}
-	// }
 }
 
-/** Active/Idle state - Auto-activate parry if buffered */
-// simulated state Active
-// {
-// 	simulated event BeginState(Name PreviousStateName)
-// 	{
-// 		super.BeginState(PreviousStateName);
-		
-// 		// Check if player pressed parry during a non-parryable state
-// 		// If so, auto-activate parry as soon as we return to Active
-// 		if (HasBufferedParryInput() && bCanParry)
-// 		{
-// 			ClearParryBuffer();
-// 			ActivateParry();
-// 		}
-// 	}
-// }
+simulated state Active
+{
+	simulated event BeginState(Name PreviousStateName)
+	{
+		super.BeginState(PreviousStateName);
+		TryActivateBufferedParry();
+	}
+}
 
 /** Transition state - Server validates stamina and enforces minimum combo timing */
 // simulated state Transition
@@ -449,22 +462,14 @@ simulated state Recovery
 // 	}
 // }
 
-// /** Deflect state - Auto-activate parry for quick parry-to-parry transitions */
-// simulated state Deflect
-// {
-// 	simulated event BeginState(Name PreviousStateName)
-// 	{
-// 		super.BeginState(PreviousStateName);
-		
-// 		// Check if player pressed parry during the successful parry animation
-// 		// This allows instant parry-to-parry for 1vX situations
-// 		if (HasBufferedParryInput() && bCanParry)
-// 		{
-// 			ClearParryBuffer();
-// 			ActivateParry();
-// 		}
-// 	}
-// }
+simulated state Deflect
+{
+	simulated event BeginState(Name PreviousStateName)
+	{
+		super.BeginState(PreviousStateName);
+		TryActivateBufferedParry();
+	}
+}
 
 // static function int CalculateParryDamage(AOCWeapon AttackingWeapon, EAttack AttackType)
 // {
@@ -644,6 +649,11 @@ simulated state ParryRelease
 	/** Block riposte for shields - only allow attack queueing */
 	simulated function BeginFire(byte FireModeNum)
 	{
+		if (FireModeNum == Attack_Parry)
+		{
+			BufferParryInput();
+		}
+
 		if (bEquipShield)
 		{
 			// Shields cannot riposte - queue attacks for after recovery instead
@@ -654,6 +664,10 @@ simulated state ParryRelease
 		{
 			// Non-shield weapons use normal ParryRelease logic (allows riposte)
 			super.BeginFire(FireModeNum);
+			if (FireModeNum == Attack_Parry && bSuccessfulParry && !bParryHitCounter)
+			{
+				ClearParryBuffer();
+			}
 		}
 	}
 	
@@ -831,23 +845,28 @@ simulated state Release
 		}
 	}
 	
-	/** Delay damage activation by 60ms for netcode fairness */
+	/** Delay damage activation for netcode fairness. */
 	simulated event BeginState(Name PreviousStateName)
 	{
 		super.BeginState(PreviousStateName);
 		
-		// Add 60ms delay before damage can be dealt
-		// This gives defenders time for their parry to register on server
-		// Covers average RTT (~30-40ms) + input lag (~10ms) + server processing (~10ms)
-		// This is the true fix for "through-parry" issues at typical competitive pings
+		// Delay damage before traces can deal hits.
+		// This gives a defending parry time to serialize on dedicated servers.
 		if (BangModWeaponAttachment(AOCWepAttachment) != none)
 		{
-			SetTimer(0.060, false, 'ActivateDamageTracing');
-			BangModWeaponAttachment(AOCWepAttachment).bCanDoDamage = false;
+			if (fDamageTraceActivationDelay > 0)
+			{
+				SetTimer(fDamageTraceActivationDelay, false, 'ActivateDamageTracing');
+				BangModWeaponAttachment(AOCWepAttachment).bCanDoDamage = false;
+			}
+			else
+			{
+				BangModWeaponAttachment(AOCWepAttachment).bCanDoDamage = true;
+			}
 		}
 	}
 	
-	/** Enable damage tracing after 40ms delay */
+	/** Enable damage tracing after the configured delay. */
 	simulated function ActivateDamageTracing()
 	{
 		if (BangModWeaponAttachment(AOCWepAttachment) != none)
@@ -1036,14 +1055,14 @@ DefaultProperties
 	
 	altRiposteExtraWindup = 0.89;
 	
-	// Parry buffer system - 150ms window (0.15 seconds) for better medium-ping support
-	fParryBufferWindow = 0.150;
+	// Parry buffer system - 125ms window to help medium ping without over-protecting.
+	fParryBufferWindow = 0.125;
 	fLastParryInputTime = 0;
 	
-	// Server-side parry validation - 100ms grace period for RTT compensation
-	// Covers: client input lag + network RTT + server processing + safety margin
+	// Server-side parry validation - small startup grace window for late booleans.
 	fServerParryStartTime = 0;
-	fParryGracePeriod = 0.100;
+	fParryGracePeriod = 0.075;
+	fDamageTraceActivationDelay = 0.075;
 	
 	// Minimum combo transition time - 100ms floor to normalize low-ping advantage
 	fMinComboTransitionTime = 0.100;
