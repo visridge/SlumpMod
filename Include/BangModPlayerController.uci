@@ -25,9 +25,8 @@ var array<AOCPRI> NearbyTalkers;  // List of PRIs currently talking within range
 var globalconfig bool bBangModParryBox;  // When true, use BangMod parry box values; when false, revert to vanilla AOC defaults
 var globalconfig bool bSkeletalParry;    // When true, parry hitbox wraps the full player model (skeletal parry) instead of directional shield-style
 
-// Unpause countdown
+// Admin pause state
 var bool bIsPaused;  // Tracks whether the game is currently paused by an admin
-var int UnpauseCountdownTime;  // Countdown start value for unpause (default 3)
 
 simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
 {
@@ -314,46 +313,29 @@ function bool SetPause(bool bPause, optional delegate<CanUnpause> CanUnpauseDele
 			bIsPaused = true;
 		}
 	} else if (IsAdmin() && bIsPaused) {
-		// Route through countdown instead of immediate unpause
-		S_StartUnpauseCountdown();
+		S_UnpauseGame();
 	}
 	return bResult;
 }
 
-// Explicit admin command to start unpause countdown
 exec function UnPause() {
 	if (!PlayerReplicationInfo.bAdmin) {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
 		return;
 	}
-	S_StartUnpauseCountdown();
+	S_UnpauseGame();
 }
 
-reliable server function S_StartUnpauseCountdown() {
+reliable server function S_UnpauseGame() {
 	if (!IsAdmin())
 		return;
 	if (!bIsPaused) {
 		ClientDisplayConsoleMessage("The game is not currently paused.");
 		return;
 	}
-	UnpauseCountdownTime = Default.UnpauseCountdownTime;
-	S_AdminBroadcastMessage("Unpausing in...", false);
-	// ClearPause first so SetTimer ticks run; countdown provides the delay before GO!
 	WorldInfo.Game.ClearPause();
 	PauseRumbleForAllPlayers(false);
 	bIsPaused = false;
-	UnpauseCountdownTick();
-	SetTimer(1.0f, true, 'UnpauseCountdownTick');
-}
-
-function UnpauseCountdownTick() {
-	if (UnpauseCountdownTime == 0) {
-		S_AdminBroadcastMessage("GO!", false);
-		ClearTimer('UnpauseCountdownTick');
-	} else {
-		S_AdminBroadcastMessage("    "$UnpauseCountdownTime$"...", false);
-		UnpauseCountdownTime--;
-	}
 }
 
 
@@ -444,77 +426,6 @@ exec function ShowAllParryBoxes()
 		P.ParryComponent.SetHidden(false);
 	}
 }
-
-/*function bool SetPause(bool bPause, optional delegate<CanUnpause> CanUnpauseDelegate=CanUnpause) {
-	local bool bResult;
-	bResult = false;
-	if (bPause)
-		bResult = ActualPause(CanUnpauseDelegate);
-	else
-		ClientDisplayConsoleMessage("Please use the command 'BangModUnpause' to unpause.");
-	return bResult;
-}
-
-exec function BangModPause() {
-	if (IsAdmin())
-		ActualPause();
-	else
-		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
-}
-
-exec function BangModUnpause() {
-	if (IsAdmin() && bPaused)
-		StartUnpauseCountdown();
-	else if (!bPaused)
-		ClientDisplayConsoleMessage("You cannot unpause at this time.");
-	else
-		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
-}
-
-reliable server function StartUnpauseCountdown() {
-	UnpauseCountdownTime = Default.UnpauseCountdownTime;
-	AdminBroadcastMessage("Unpausing in...");
-	CountdownTick();
-	SetTimer(1.0f, true, 'CountdownTick');
-}
-
-reliable server function CountdownTick() {
-	if (UnpauseCountdownTime == 0) {
-		ActualUnpause();
-		ClearTimer('CountdownTick');
-	} else {
-		AdminBroadcastMessage("    "@UnpauseCountdownTime@"...");
-		UnpauseCountdownTime--;
-	}
-}
-
-reliable server function bool ActualPause(delegate<CanUnpause> CanUnpauseDelegate=CanUnpause) {
-	local bool bResult;
-	bResult = false;
-	if (IsAdmin() && !bPaused) {
-		bFire = 0;
-		// Pause gamepad rumbling too if needed
-		bResult = WorldInfo.Game.SetPause(self,CanUnpauseDelegate);
-		if (bResult) {
-			PauseRumbleForAllPlayers();
-			bPaused = true;
-		}
-	}
-	return bResult;
-}
-
-reliable server function ActualUnpause() {
-	if (IsAdmin() && bPaused) {
-		WorldInfo.Game.ClearPause();
-		// If the unpause is complete, let rumble occur
-		if (WorldInfo.Pauser == None) {
-			// If we did a gameplay frame pause clear it out now
-			WorldInfo.bGameplayFramePause = false;
-			PauseRumbleForAllPlayers(false);
-		}
-		bPaused = false;
-	}
-}*/
 
 // Override ReplicateMove to set fixed 120Hz client movement updates (improves netcode smoothness)
 function ReplicateMove(float DeltaTime, vector NewAccel, eDoubleClickDir DoubleClickMove, rotator DeltaRot)
@@ -1999,7 +1910,5 @@ DefaultProperties
 	// Skeletal parry default (disabled = use directional/shield-style parry box)
 	bSkeletalParry=false
 
-	// Unpause countdown
-	UnpauseCountdownTime=3
 }
 
