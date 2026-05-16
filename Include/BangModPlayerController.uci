@@ -397,10 +397,8 @@ event Possess(Pawn inPawn, bool bVehicleTransition)
 // Send optimization tip as a server message that appears in chat
 function ShowOptimizationTip()
 {
-	ReceiveChatMessage("=== SlumpMod Performance Tip ===", EFAC_ALL, false, true, "#00FF00");
-	ReceiveChatMessage("For best experience, edit UDKEngine.ini and set:", EFAC_ALL, false, true, "#FFAA00");  
-	ReceiveChatMessage("  NetClientTicksPerSecond=120", EFAC_ALL, false, true, "#FFFFFF");
-	ReceiveChatMessage("File: Documents\\My Games\\Chivalry Medieval Warfare\\UDKGame\\Config\\UDKEngine.ini", EFAC_ALL, false, true, "#FFAA00");
+	ReceiveChatMessage("=== Welcome to SlumpMod ===", EFAC_ALL, false, true, "#00FF00");
+	ReceiveChatMessage("Join our discord at https://discord.gg/G4Zsm62z5J", EFAC_ALL, false, true, "#FFAA00");
 }
 
 reliable server function bool IsAdmin() {
