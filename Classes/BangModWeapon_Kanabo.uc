@@ -93,6 +93,7 @@ DefaultProperties
 	End Object
 
 	bTwoHander=true
+	bCanDodge=false
 	FlinchTime2H=1.10
 	bUseRMMDazed=true
 	bUseDirHitAnims=true

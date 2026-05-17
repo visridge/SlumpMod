@@ -12,6 +12,7 @@ var float fLastParrySuccessTime;                // Time when parry successfully 
 var float fRiposteGracePeriod;                  // Grace period after parry where flinch is disabled (default 200ms)
 var float BastardSwordSprintStartTime;
 var bool bWasBastardSwordSprinting;
+var bool bKanaboExtraJumpUsed;
 
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
@@ -244,6 +245,11 @@ simulated event Tick(float DeltaTime)
 	// Call parent first to do all normal tick logic
 	super.Tick(DeltaTime);
 
+	if (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider)
+	{
+		bKanaboExtraJumpUsed = false;
+	}
+
 	bUsingBastardSword = Weapon != none
 		&& Weapon.Class == class'BangModWeapon_BastardSword';
 
@@ -449,16 +455,40 @@ function int CalcDodgeCost() {
 }
 
 /** Override DoJump to reduce stamina cost from 7 to 4 */
+simulated function bool CanKanaboAirJump()
+{
+	return Weapon != none
+		&& Weapon.Class == class'BangModWeapon_Kanabo'
+		&& StateVariables.bCanJump
+		&& bJumpCapable
+		&& !bIsCrouching
+		&& Physics == PHYS_Falling
+		&& !bKanaboExtraJumpUsed
+		&& !(StateVariables.bIsAttacking && AOCWeapon(Weapon) != none && AOCWeapon(Weapon).CurrentFireMode == Attack_Shove)
+		&& PawnState != ESTATE_FROZEN
+		&& PawnState != ESTATE_SIEGEWEAPON
+		&& PawnState != ESTATE_DODGE
+		&& HasEnoughStamina(10);
+}
+
 function bool DoJump( bool bUpdating )
 {
 	local Vector VelocityXY;
-	if (StateVariables.bCanJump
+	local bool bCanNormalJump;
+	local bool bCanKanaboSecondJump;
+
+	bCanNormalJump = StateVariables.bCanJump
 		&& bJumpCapable
 		&& !bIsCrouching
 		&& (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider)
 		&& !(StateVariables.bIsAttacking && AOCWeapon(Weapon).CurrentFireMode == Attack_Shove)
-		&& (PawnState == ESTATE_IDLE || PawnState == ESTATE_RUN || PawnState == ESTATE_SPRINT))
+		&& (PawnState == ESTATE_IDLE || PawnState == ESTATE_RUN || PawnState == ESTATE_SPRINT);
+	bCanKanaboSecondJump = CanKanaboAirJump();
+
+	if (bCanNormalJump)
 	{
+		bKanaboExtraJumpUsed = false;
+
 		if(Role == Role_Authority)
 			ConsumeStamina(4);  // Reduced from 7 to 4
 
@@ -472,6 +502,19 @@ function bool DoJump( bool bUpdating )
 		Velocity.Y = VelocityXY.Y;
 
 		// update state
+		StateVariables.bIsManualJumpDodge = true;
+		StateVariables.bCanCrouch = false;
+
+		return true;
+	}
+
+	if (bCanKanaboSecondJump)
+	{
+		if (Role == Role_Authority)
+			ConsumeStamina(10);
+
+		Velocity.Z = PawnFamily.JumpZ;
+		bKanaboExtraJumpUsed = true;
 		StateVariables.bIsManualJumpDodge = true;
 		StateVariables.bCanCrouch = false;
 

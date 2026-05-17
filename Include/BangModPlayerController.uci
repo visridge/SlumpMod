@@ -1274,7 +1274,7 @@ state PlayerWalking
 				UpdateRotation( DeltaTime * AOCPawn(Pawn).ModAnimRate ); //update rotation !!!!!!!!!!!!!!! importantttttttttttttttttttttttttttttttttttttttttttttttttttttt!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			bDoubleJump = false;
 			bPressedJump = bPressedJump && !ScriptBlockedInputs[EINBLOCK_Jump];
-			if( bPressedJump && Pawn.CannotJumpNow() )
+			if( bPressedJump && Pawn.CannotJumpNow() && (BangModPawn(Pawn) == none || !BangModPawn(Pawn).CanKanaboAirJump()) )
 			{
 				bSaveJump = true;
 				bPressedJump = false;
