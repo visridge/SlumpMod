@@ -8,6 +8,9 @@
  */
 class BangModDodge extends AOCDodge;
 
+var bool bHasRemappedDodgeAttachment;
+var name OriginalWeaponSocket;
+
 simulated function string GetWeaponIdentifier()
 {
 	local string Identifier;
@@ -24,6 +27,55 @@ simulated function string GetWeaponIdentifier()
 	return Identifier;
 }
 
+simulated function bool IsUsingRemappedDodgeIdentifier()
+{
+	return super.GetWeaponIdentifier() != GetWeaponIdentifier();
+}
+
+simulated function name GetRemappedDodgeSocket()
+{
+	if (GetWeaponIdentifier() == "qstaff")
+	{
+		return class'AOCWeaponAttachment_QuarterStaff'.default.WeaponSocket;
+	}
+
+	return '';
+}
+
+simulated function ReattachCurrentWeaponToSocket(name SocketName)
+{
+	local AOCWeaponAttachment AOCAttach;
+
+	AOCAttach = AOCWeaponAttachment(OwnerPawn.CurrentWeaponAttachment);
+	if (AOCAttach == none || SocketName == '')
+	{
+		return;
+	}
+
+	if (OwnerPawn.Mesh.GetSocketByName(SocketName) != none)
+	{
+		OwnerPawn.HandleSocketAttachment(false, AOCAttach.Mesh, SocketName, AOCAttach);
+		AOCAttach.SetBase(OwnerPawn,, OwnerPawn.Mesh, SocketName);
+	}
+
+	if (AOCAttach.bIsAttachedOverlay
+		&& OwnerPawn.OwnerMesh != none
+		&& OwnerPawn.OwnerMesh.GetSocketByName(SocketName) != none)
+	{
+		OwnerPawn.HandleSocketAttachment(true, AOCAttach.OverlayMesh, SocketName, AOCAttach);
+	}
+}
+
+simulated function RestoreOriginalWeaponAttachment()
+{
+	if (bHasRemappedDodgeAttachment)
+	{
+		ReattachCurrentWeaponToSocket(OriginalWeaponSocket);
+		bHasRemappedDodgeAttachment = false;
+		OriginalWeaponSocket = '';
+	}
+}
+
 /**
  * When the weapon identifier is remapped for dodge (e.g. doubleaxe -> qstaff), the skeleton
  * drives wepQstaffpoint during the animation but the weapon is attached to wep2haxepoint,
@@ -36,51 +88,53 @@ simulated function string GetWeaponIdentifier()
 simulated function StartDodgeSM(byte direction, byte WeaponId)
 {
 	local name RemappedSocket;
+	local AOCWeaponAttachment AOCAttach;
+
+	OwnerPawn.ClearTimer('RestoreDodgeWeaponAttachment');
+	bHasRemappedDodgeAttachment = false;
+	OriginalWeaponSocket = '';
 
 	super.StartDodgeSM(direction, WeaponId);
 
+	AOCAttach = AOCWeaponAttachment(OwnerPawn.CurrentWeaponAttachment);
+
 	// If the identifier was remapped, reattach weapon to the socket the dodge anim drives
-	if (OwnerPawn.CurrentWeaponAttachment != none
-		&& super.GetWeaponIdentifier() != GetWeaponIdentifier())
+	if (AOCAttach != none
+		&& IsUsingRemappedDodgeIdentifier())
 	{
-		RemappedSocket = 'wepQstaffpoint';
-		// Only reattach if the socket actually exists on this skeleton - HandleSocketAttachment
-		// detaches unconditionally and returns early on missing socket, leaving mesh floating.
-		if (OwnerPawn.Mesh.GetSocketByName(RemappedSocket) != none)
-		{
-			OwnerPawn.HandleSocketAttachment(false, OwnerPawn.CurrentWeaponAttachment.Mesh, RemappedSocket, OwnerPawn.CurrentWeaponAttachment);
-		}
-		if (OwnerPawn.CurrentWeaponAttachment.bIsAttachedOverlay
-			&& OwnerPawn.OwnerMesh != none
-			&& OwnerPawn.OwnerMesh.GetSocketByName(RemappedSocket) != none)
-		{
-			OwnerPawn.HandleSocketAttachment(true, OwnerPawn.CurrentWeaponAttachment.OverlayMesh, RemappedSocket, OwnerPawn.CurrentWeaponAttachment);
-		}
+		RemappedSocket = GetRemappedDodgeSocket();
+		OriginalWeaponSocket = AOCAttach.default.WeaponSocket;
+		bHasRemappedDodgeAttachment = (RemappedSocket != '' && RemappedSocket != OriginalWeaponSocket);
+		ReattachCurrentWeaponToSocket(RemappedSocket);
 	}
 }
 
 /** Restore the weapon to its original socket after the dodge finishes. */
 simulated function StopDodgeSM()
 {
-	local name OrigSocket;
+	local float LandAnimLength;
+	local AnimationInfo Inf;
 
-	if (OwnerPawn.CurrentWeaponAttachment != none
-		&& super.GetWeaponIdentifier() != GetWeaponIdentifier())
+	if (bHasRemappedDodgeAttachment)
 	{
-		OrigSocket = class<AOCWeaponAttachment>(OwnerPawn.CurrentWeaponAttachment.Class).default.WeaponSocket;
-		if (OwnerPawn.Mesh.GetSocketByName(OrigSocket) != none)
-		{
-			OwnerPawn.HandleSocketAttachment(false, OwnerPawn.CurrentWeaponAttachment.Mesh, OrigSocket, OwnerPawn.CurrentWeaponAttachment);
-		}
-		if (OwnerPawn.CurrentWeaponAttachment.bIsAttachedOverlay
-			&& OwnerPawn.OwnerMesh != none
-			&& OwnerPawn.OwnerMesh.GetSocketByName(OrigSocket) != none)
-		{
-			OwnerPawn.HandleSocketAttachment(true, OwnerPawn.CurrentWeaponAttachment.OverlayMesh, OrigSocket, OwnerPawn.CurrentWeaponAttachment);
-		}
+		Inf = OwnerPawn.CreateAnimationInfo(name(AllDirAnimations[DodgeDir].DodgeAnims[1]), true, true, false,,true);
+		Inf.AnimationName = name(Repl(string(Inf.AnimationName), "REPL", GetWeaponIdentifier(), true));
+		LandAnimLength = OwnerPawn.Mesh.GetAnimLength(Inf.AnimationName);
 	}
 
 	super.StopDodgeSM();
+
+	if (bHasRemappedDodgeAttachment)
+	{
+		if (LandAnimLength > 0.f)
+		{
+			OwnerPawn.SetTimer(LandAnimLength, false, 'RestoreDodgeWeaponAttachment');
+		}
+		else
+		{
+			RestoreOriginalWeaponAttachment();
+		}
+	}
 }
 
 defaultproperties

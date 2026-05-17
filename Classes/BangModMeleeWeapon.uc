@@ -29,37 +29,25 @@ var float fComboTransitionStartTime;  // When transition state began
 
 simulated function BufferParryInput()
 {
-	fLastParryInputTime = WorldInfo.TimeSeconds;
+	// Parry buffer disabled.
+	// fLastParryInputTime = WorldInfo.TimeSeconds;
 }
 
 simulated function bool HasBufferedParryInput()
 {
-	local float TimeSinceParryInput;
-
-	if (fLastParryInputTime <= 0)
-		return false;
-
-	TimeSinceParryInput = WorldInfo.TimeSeconds - fLastParryInputTime;
-	if (TimeSinceParryInput <= 0 || TimeSinceParryInput > fParryBufferWindow)
-		return false;
-
-	return true;
+	// Parry buffer disabled.
+	return false;
 }
 
 simulated function ClearParryBuffer()
 {
-	fLastParryInputTime = 0;
+	// Parry buffer disabled.
+	// fLastParryInputTime = 0;
 }
 
 simulated function bool TryActivateBufferedParry()
 {
-	if (HasBufferedParryInput() && bCanParry)
-	{
-		ClearParryBuffer();
-		ActivateParry();
-		return true;
-	}
-
+	// Parry buffer disabled.
 	return false;
 }
 
@@ -68,7 +56,7 @@ simulated function BeginFire(byte FireModeNum)
 {
 	if (FireModeNum == Attack_Parry && (!bCanParry || IsInState('Recovery') || IsInState('Deflect')))
 	{
-		BufferParryInput();
+		// BufferParryInput();
 	}
 
 	if (FireModeNum == Attack_Shove && AOCOwner != none && !(AOCOwner.Velocity.Z ~= 0.0))
@@ -141,10 +129,10 @@ simulated state Feint
 	{
 		if (FireModeNum == Attack_Parry)
 		{
-			BufferParryInput();
+			// BufferParryInput();
 			if (AOCOwner.StateVariables.bCanParry)
 			{
-				ClearParryBuffer();
+				// ClearParryBuffer();
 				ActivateParry();
 			}
 			else
@@ -173,10 +161,10 @@ simulated state Flinch
 	{
 		if (FireModeNum == Attack_Parry)
 		{
-			BufferParryInput();
+			// BufferParryInput();
 			if (!bGenericHit || !bFullBodyDazed)
 			{
-				ClearParryBuffer();
+				// ClearParryBuffer();
 				ActivateParry();
 			}
 			else if (bManualAllowQueue)
@@ -246,10 +234,10 @@ simulated state Hit
 	{
 		if (FireModeNum == Attack_Parry)
 		{
-			BufferParryInput();
+			// BufferParryInput();
 			if (!bGenericHit || !bFullBodyDazed)
 			{
-				ClearParryBuffer();
+				// ClearParryBuffer();
 				ActivateParry();
 			}
 			else if (bManualAllowQueue)
@@ -306,7 +294,7 @@ simulated state Recovery
 	simulated event BeginState(Name PreviousStateName)
 	{
 		super.BeginState(PreviousStateName);
-		TryActivateBufferedParry();
+			// TryActivateBufferedParry();
 	}
 
 	/** Override HandleCombo to add server-side stamina validation */
@@ -340,12 +328,11 @@ simulated state Recovery
 				// {
 				// 	ServerValidateCombo(ComboStaminaCost);
 				// }
-			}
 		}
 
-		//not able to complete the combo...put the crosshair into a state of recovery
-		if(eNextAttack != ComboAttack)
-			AOCOwner.PlayerHUDStartRecovery();
+			if (eNextAttack != ComboAttack)
+				AOCOwner.PlayerHUDStartRecovery();
+		}
 	}
 	
 }
@@ -355,7 +342,7 @@ simulated state Active
 	simulated event BeginState(Name PreviousStateName)
 	{
 		super.BeginState(PreviousStateName);
-		TryActivateBufferedParry();
+		// TryActivateBufferedParry();
 	}
 }
 
@@ -364,10 +351,10 @@ simulated state Active
 // {
 // 	/** Override feint with server-side stamina validation */
 // 	simulated function DoFeintAttack()
-// 	{
+			// BufferParryInput();
 // 		if (bCanFeint && AOCOwner.HasEnoughStamina(iComboFeintStaminaCost))
 // 		{
-// 			if (AOCOwner.IsLocallyControlled())
+				// ClearParryBuffer();
 // 			{
 // 				AOCOwner.S_ConsumeStamina(iComboFeintStaminaCost);
 // 				// Ask server to validate - prevents phantom feint at low stamina
@@ -440,10 +427,10 @@ simulated state Active
 // {
 // 	/** Override feint with server-side stamina validation */
 // 	simulated function DoFeintAttack()
-// 	{
+			// BufferParryInput();
 // 		if (bCanFeint && AOCOwner.HasEnoughStamina(iFeintStaminaCost) && CurrentFireMode != Attack_Shove && CurrentFireMode != Attack_Sprint)
 // 		{
-// 			if (AOCOwner.IsLocallyControlled())
+				// ClearParryBuffer();
 // 			{
 // 				AOCOwner.S_ConsumeStamina(iFeintStaminaCost);
 // 				// Ask server to validate - prevents phantom feint at low stamina
@@ -467,17 +454,17 @@ simulated state Deflect
 	simulated event BeginState(Name PreviousStateName)
 	{
 		super.BeginState(PreviousStateName);
-		TryActivateBufferedParry();
+			// TryActivateBufferedParry();
 	}
 }
 
-// static function int CalculateParryDamage(AOCWeapon AttackingWeapon, EAttack AttackType)
+		// TryActivateBufferedParry();
 // {
 // 	local float fDrain, fNegation;
 // 	local int iDamage;
 	
 // 	if (AttackType == Attack_Sprint)
-// 	{
+			// TryActivateBufferedParry();
 // 		return 35;  // All sprint attack drain the same amount of stamina
 // 	}
 
@@ -651,12 +638,12 @@ simulated state ParryRelease
 	{
 		if (FireModeNum == Attack_Parry)
 		{
-			BufferParryInput();
+				// BufferParryInput();
 		}
 
 		if (bEquipShield)
 		{
-			// Shields cannot riposte - queue attacks for after recovery instead
+				// ClearParryBuffer();
 			if (bManualAllowQueue)
 				AttackQueue = EAttack(FireModeNum);
 		}
@@ -666,7 +653,7 @@ simulated state ParryRelease
 			super.BeginFire(FireModeNum);
 			if (FireModeNum == Attack_Parry && bSuccessfulParry && !bParryHitCounter)
 			{
-				ClearParryBuffer();
+				// ClearParryBuffer();
 			}
 		}
 	}
@@ -1056,8 +1043,9 @@ DefaultProperties
 	altRiposteExtraWindup = 0.89;
 	
 	// Parry buffer system - 125ms window to help medium ping without over-protecting.
-	fParryBufferWindow = 0.125;
-	fLastParryInputTime = 0;
+	// Parry buffer disabled.
+	// fParryBufferWindow = 0.125;
+	// fLastParryInputTime = 0;
 	
 	// Server-side parry validation - small startup grace window for late booleans.
 	fServerParryStartTime = 0;

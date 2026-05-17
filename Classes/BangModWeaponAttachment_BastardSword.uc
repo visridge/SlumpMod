@@ -7,84 +7,127 @@
 */
 class BangModWeaponAttachment_BastardSword extends BangModWeaponAttachment_Katana;
 
+simulated function float GetHandleTracerPercent(int i)
+{
+    local vector vStart, vMid, vEnd;
+    local float HandleLength, WeaponLength;
+
+    if (Mesh.GetSocketByName('TraceMid') == None)
+    {
+        return 0.0f;
+    }
+    Mesh.GetSocketWorldLocationAndRotation('TraceStart', vStart);
+    Mesh.GetSocketWorldLocationAndRotation('TraceMid', vMid);
+    Mesh.GetSocketWorldLocationAndRotation('TraceEnd', vEnd);
+
+    WeaponLength = VSize(vEnd - vStart);
+    HandleLength = VSize(vMid - vStart);
+
+    return (HandleLength / WeaponLength)/2;
+}
+
 DefaultProperties
 {
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'WP_1hs_Broadsword.WEP_Broadsword'
-		Scale=1.3
+		Scale=1.1
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
 		SkeletalMesh=SkeletalMesh'WP_1hs_Broadsword.WEP_Broadsword'
-		Scale=1.3
+		Scale=1.1
 	End Object
 
-	WeaponID=EWEP_Longsword
+	WeaponID=EWEP_Broadsword
 	WeaponClass=class'BangModWeapon_BastardSword'
 	WeaponSocket=wep2hpoint
-	WeaponStaticMeshScale=1.3
+	WeaponStaticMeshScale=1.1
+	bUseAlternativeKick=true
+
+	AttackTypeInfo(0)=(fBaseDamage=65.0, fForce=30000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=70.0, fForce=30000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(2)=(fBaseDamage=68.0, fForce=30000, cDamageType="AOC.AOCDmgType_Pierce", iWorldHitLenience=6)
+	AttackTypeInfo(3)=(fBaseDamage=65.0, fForce=65000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=32500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
 
 	Skins(0)={(
 		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
 		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.3,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(1)={(
-		SkeletalMeshPath="WP_1hs_Broadsword_variant_01.WEP_Broadsword",
-		StaticMeshPath="WP_1hs_Broadsword_variant_01.sm_Broadsword",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.3,
-		ImagePath="UI_CustWeaponImages_SWF.skin_oriental_broadsword_png"
+		StaticMeshScale=1.1,
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(2)={(
-		SkeletalMeshPath="WP_1hs_Broadsword_Variant_02.sk_bsword2",
-		StaticMeshPath="WP_1hs_Broadsword_Variant_02.sm_bsword2",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.3,
-		ImagePath="UI_CustWeaponImages_SWF.skin_temujins_broadsword_png"
+		StaticMeshScale=1.1,
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(3)={(
-		SkeletalMeshPath="WP_1hs_Broadsword_Variant_03.WEP_KinSlayer",
-		StaticMeshPath="WP_1hs_Broadsword_Variant_03.SM_KinSlayer",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.3,
-		ImagePath="UI_CustWeaponImages_SWF.skin_kinslayer_png"
+		StaticMeshScale=1.1,
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(4)={(
-		SkeletalMeshPath="WP_1hs_Broadsword_Variant_04.WEP_Bohemiansword",
-		StaticMeshPath="WP_1hs_Broadsword_Variant_04.SM_Bohemiansword",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.3,
-		ImagePath="ui_custweaponimages_swf.skin_bohemian_broadsword_png"
+		StaticMeshScale=1.1,
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(5)={(
-		SkeletalMeshPath="WP_1hs_Broadsword_Variant_06.WEP_Broadsword",
-		StaticMeshPath="WP_1hs_Broadsword_Variant_06.sm_Broadsword",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.3,
-		ImagePath="ui_custweaponimages_swf.skin_ice_breaker_png"
+		StaticMeshScale=1.1,
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(6)={(
-		SkeletalMeshPath="WP_1hs_Broadsword_Variant_05.WEP_Tsword",
-		StaticMeshPath="StaticMesh'WP_1hs_Broadsword_Variant_05.SM_Tsword'",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.3,
-		ImagePath="ui_custweaponimages_swf.skin_squire_trainer_png"
+		StaticMeshScale=1.1,
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(7)={(
-		SkeletalMeshPath="WP_1hs_Broadsword_Variant_07.WEP_XIIBroadsword",
-		StaticMeshPath="WP_1hs_Broadsword_Variant_07.SM_XIIBroadsword",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.3,
-		ImagePath="ui_custweaponimages_swf.skin_xiibroadsword_png"
+		StaticMeshScale=1.1,
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
+		)};
+
+	Skins(8)={(
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
+		MaterialPath="",
+		StaticMeshScale=1.1,
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
+		)};
+
+	Skins(9)={(
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
+		MaterialPath="",
+		StaticMeshScale=1.1,
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 }

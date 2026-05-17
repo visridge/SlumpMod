@@ -10,6 +10,8 @@ var float fLastReleaseStartTime;
 var bool bShowHitTime;
 var float fLastParrySuccessTime;                // Time when parry successfully activated (for riposte grace period)
 var float fRiposteGracePeriod;                  // Grace period after parry where flinch is disabled (default 200ms)
+var float BastardSwordSprintStartTime;
+var bool bWasBastardSwordSprinting;
 
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
@@ -107,11 +109,11 @@ simulated function bool IsInRiposte(Pawn CheckPawn) {
 	if (CheckPawn.Weapon.IsInState('ParryRelease') && MeleeWep.bParryHitCounter)
 		return true;
 	
-	// Check grace period after successful parry (network desync protection)
-	BangPawn = BangModPawn(CheckPawn);
-	if (BangPawn != none && MeleeWep.bParryHitCounter 
-		&& (WorldInfo.TimeSeconds - BangPawn.fLastParrySuccessTime) <= BangPawn.fRiposteGracePeriod)
-		return true;
+	// Damage grace period disabled.
+	// BangPawn = BangModPawn(CheckPawn);
+	// if (BangPawn != none && MeleeWep.bParryHitCounter 
+	// 	&& (WorldInfo.TimeSeconds - BangPawn.fLastParrySuccessTime) <= BangPawn.fRiposteGracePeriod)
+	// 	return true;
 	
 	return false;
 }
@@ -143,15 +145,13 @@ simulated function bool ShouldActivateFlinch(HitInfo Info, class<AOCWeapon> Used
 	)
 		return false;
 
-	// Extended riposte flinch immunity - grace period after successful parry
-	// This prevents flinch during the Parry->ParryRelease state transition window (network desync)
-	// Uses broader check to catch all pawn types, not just BangModPawn
-	if (AOCMeleeWeapon(Info.HitActor.Weapon) != none
-		&& AOCMeleeWeapon(Info.HitActor.Weapon).bParryHitCounter == true
-		&& BangModPawn(Info.HitActor) != none
-		&& (WorldInfo.TimeSeconds - BangModPawn(Info.HitActor).fLastParrySuccessTime) <= BangModPawn(Info.HitActor).fRiposteGracePeriod
-	)
-		return false;
+	// Damage grace period disabled.
+	// if (AOCMeleeWeapon(Info.HitActor.Weapon) != none
+	// 	&& AOCMeleeWeapon(Info.HitActor.Weapon).bParryHitCounter == true
+	// 	&& BangModPawn(Info.HitActor) != none
+	// 	&& (WorldInfo.TimeSeconds - BangModPawn(Info.HitActor).fLastParrySuccessTime) <= BangModPawn(Info.HitActor).fRiposteGracePeriod
+	// )
+	// 	return false;
 	
 	// Fallback: If bParryHitCounter is true, always grant immunity (strongest protection)
 	// This catches edge cases where grace period fails or pawn cast fails
@@ -238,8 +238,41 @@ function StartSprintRecovery() {
 // Override Tick to ensure panting starts at 20 stamina or below
 simulated event Tick(float DeltaTime)
 {
+	local bool bCanUseBastardSwordSprintAttack;
+	local bool bUsingBastardSword;
+
 	// Call parent first to do all normal tick logic
 	super.Tick(DeltaTime);
+
+	bUsingBastardSword = Weapon != none
+		&& Weapon.Class == class'BangModWeapon_BastardSword';
+
+	if (bUsingBastardSword)
+	{
+		if (StateVariables.bIsSprinting && !bWasBastardSwordSprinting)
+		{
+			BastardSwordSprintStartTime = WorldInfo.TimeSeconds;
+		}
+
+		bWasBastardSwordSprinting = StateVariables.bIsSprinting;
+	}
+	else
+	{
+		bWasBastardSwordSprinting = false;
+		BastardSwordSprintStartTime = WorldInfo.TimeSeconds;
+	}
+
+	bCanUseBastardSwordSprintAttack = bUsingBastardSword
+		&& StateVariables.bIsSprinting
+		&& WorldInfo.TimeSeconds - BastardSwordSprintStartTime > 4.f
+		&& WorldInfo.TimeSeconds - fLastAttackTime > 2.f
+		&& Weapon.Class != TertiaryWeapon
+		&& Weapon.Class != class'AOCWeapon_Torch';
+
+	if (bUsingBastardSword)
+	{
+		bIsSprintMaxSpeed = bCanUseBastardSwordSprintAttack;
+	}
 	
 	// Override the PlayLowStaminaLoop call with fixed threshold
 	// Original used MaxStamina * 0.2f which is correct, but we hardcode to 20 for consistency
@@ -291,9 +324,9 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 	// Opponent has a successful parry
 	AOCWeapon(Info.HitActor.Weapon).NotifySuccessfulParry(Info.AttackType, ParryLR);
 	
-	// Set timestamp for riposte grace period (prevents flinch during state transitions)
-	if (BangModPawn(Info.HitActor) != none)
-		BangModPawn(Info.HitActor).fLastParrySuccessTime = WorldInfo.TimeSeconds;
+	// Damage grace period disabled.
+	// if (BangModPawn(Info.HitActor) != none)
+	// 	BangModPawn(Info.HitActor).fLastParrySuccessTime = WorldInfo.TimeSeconds;
 
 	// If it hit the shield
 	if(Info.HitActor.StateVariables.bIsActiveShielding) {
@@ -549,6 +582,14 @@ simulated function FinishDodgeFlinch() {
 
 	// Start a queued attack
 	DodgeSM.StartQueuedAttack();
+}
+
+simulated function RestoreDodgeWeaponAttachment()
+{
+	if (BangModDodge(DodgeSM) != none)
+	{
+		BangModDodge(DodgeSM).RestoreOriginalWeaponAttachment();
+	}
 }
 
 /** Override to use BangModDodge which remaps WeaponIdentifiers that lack MaA dodge animations */
@@ -1063,6 +1104,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	local float fFairTradeWindow;
 	local bool bParryActive;
 	local float fTimeSinceParryStart;
+	local bool bBallistaBolt;
 
 	// Initialise player replication information
 	if (PlayerReplicationInfo == none)
@@ -1071,6 +1113,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 		PRI = PlayerReplicationInfo;
 
 	Info.PRI = PRI;
+	bBallistaBolt = (Info.DamageType == class'AOCDmgType_BallistaBolt');
 	
 	LogHitTime(WorldInfo.TimeSeconds - fLastReleaseStartTime - 0.0087);
 
@@ -1233,6 +1276,14 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 
 	// Finally, round the result and finish up
 	ActualDamage = float(Round(ActualDamage));
+
+	// Ballista damage set on the map/siege actor overrides projectile defaults, so clamp it here
+	// in the shared pawn hit path where the final damage is actually applied.
+	if (bBallistaBolt)
+	{
+		ActualDamage = FMin(ActualDamage, 1.0f);
+		Info.HitForce = vect(0.0f, 0.0f, 0.0f);
+	}
 
 	// Stun if the parry costs too much stamina
 	if (bParry && !bPassiveBlock && Info.HitActor.Stamina <= 0) {
@@ -1542,7 +1593,8 @@ DefaultProperties
 	// Riposte flinch immunity grace period - 300ms after successful parry
 	// Prevents flinch during Parry->ParryRelease state transition (network desync)
 	// Increased from 200ms to 300ms for better high-ping protection
-	fRiposteGracePeriod=0.300
+	// Damage grace period disabled.
+	// fRiposteGracePeriod=0.300
 
 	// Netcode optimization: 120Hz server->client pawn updates (matches server tickrate and ReplicateMove rate)
 	NetUpdateFrequency=120

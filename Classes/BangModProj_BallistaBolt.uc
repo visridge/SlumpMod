@@ -53,7 +53,7 @@ DefaultProperties
 	speed=8000.0f
 	MaxSpeed=8500.0f
 	Damage=50.0
-	DamageRadius=30.0
+	DamageRadius=1.0
 	MomentumTransfer=0
 	LifeSpan=15.0f
 	bCollideWorld=true

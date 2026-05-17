@@ -103,6 +103,100 @@ simulated event PostBeginPlay()
 	}
 }
 
+simulated function bool CanBastardSwordSprintAttack(AOCPawn AOCP)
+{
+	if (AOCP == none || AOCP.Weapon == none)
+	{
+		return false;
+	}
+
+	return AOCP.Weapon.Class == class'BangModWeapon_BastardSword'
+		&& AOCP.bIsSprintMaxSpeed;
+}
+
+// Allow sprint attack for the bastard sword without enabling it for the rest of Man at Arms.
+exec function StartFire(optional byte FireModeNum)
+{
+	local AOCPawn AOCP;
+	local bool bCanUseSprintAttack;
+
+	AOCP = AOCPawn(Pawn);
+
+	if (WorldInfo.Pauser == PlayerReplicationInfo)
+	{
+		SetPause(false);
+		return;
+	}
+
+	if (AOCP != none)
+	{
+		bCanUseSprintAttack = AOCP.StateVariables.bIsSprinting
+			&& !AOCP.StateVariables.bIsManualJumpDodge
+			&& FireModeNum == Attack_Sprint
+			&& !AOCP.StateVariables.bIsAttacking
+			&& AOCP.StateVariables.bCanSprintAttack
+			&& !ScriptBlockedInputs[EINBLOCK_AttackSprint]
+			&& ((AOCP.bIsSprintMaxSpeed && AOCP.PawnFamily.bCanSprintAttack) || CanBastardSwordSprintAttack(AOCP));
+
+		if (bCanUseSprintAttack)
+		{
+			if (!AOCP.HasEnoughStamina(20))
+			{
+				return;
+			}
+		}
+		else
+		{
+			if (FireModeNum == Attack_Sprint)
+			{
+				return;
+			}
+		}
+
+		if (FireModeNum == Attack_Parry && ScriptBlockedInputs[EINBLOCK_Block]
+		  || FireModeNum == Attack_Slash && ScriptBlockedInputs[EINBLOCK_AttackSlash]
+		  || FireModeNum == Attack_Stab && ScriptBlockedInputs[EINBLOCK_AttackStab]
+		  || FireModeNum == Attack_Overhead && ScriptBlockedInputs[EINBLOCK_AttackOverhead]
+		  || FireModeNum == Attack_Shove && ScriptBlockedInputs[EINBLOCK_AttackShove])
+		{
+			return;
+		}
+
+		if (AOCP.StateVariables.bCanParry && FireModeNum == Attack_Parry)
+		{
+			LastAttack = Attack_Parry;
+			LastFireTime = WorldInfo.TimeSeconds;
+			AOCP.StartFire(Attack_Parry);
+			return;
+		}
+
+		if (FireModeNum == Attack_Shove && !AOCP.HasEnoughStamina(AOCP.PawnFamily.iKickcost))
+		{
+			AOCP.PlayLowStaminaGrunt();
+			return;
+		}
+
+		if (AOCP.DodgeSM.bQueueDodgeAttack)
+		{
+			LastAttack = EAttack(FireModeNum);
+			LastFireTime = WorldInfo.TimeSeconds;
+			AOCP.DodgeSM.QueueAttack(FireModeNum);
+			return;
+		}
+
+		if (!bCinematicMode && AOCP.StateVariables.bCanAttack)
+		{
+			LastAttack = EAttack(FireModeNum);
+			LastFireTime = WorldInfo.TimeSeconds;
+			AOCP.StartFire(FireModeNum);
+		}
+
+		return;
+	}
+
+	super.StartFire(FireModeNum);
+}
+
 // Override ProcessViewRotation to remove turn cap during parry counters
 function ProcessViewRotation( float DeltaTime, out Rotator out_ViewRotation, Rotator DeltaRot )
 {
@@ -807,7 +901,7 @@ exec function AdminGotoDuel() {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
 		return;
 	}
-	ServerChangeMap("aocffa-SlumYard_p");
+	ServerChangeMap("AOCFFA-YeedYard_p");
 }
 
 exec function AdminGotoMoor() {
@@ -1049,7 +1143,7 @@ function DrawTextOverHead(string DebugText)
 function bool IsSprintAngle(int fInputAngle) //checks if the player should be allowed to sprint or not
 {
 	//DrawTextOverHead(string(fInputAngle));
-	return ((fInputAngle < 27079) && (fInputAngle > 7892)); //24576, 8192, //27079 and 7892 work but i'm loosening them slightly so that controller players can sprint at 45 degrees more consistently
+	return ((fInputAngle < 25486) && (fInputAngle > 7282)); //24576, 8192, //27079 and 7892 work but i'm loosening them slightly so that controller players can sprint at 45 degrees more consistently
 }
 
 // Player movement.
