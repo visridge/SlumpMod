@@ -30,24 +30,24 @@ DefaultProperties
 {
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'WP_1hs_Broadsword.WEP_Broadsword'
-		Scale=1.0
+		Scale=1.1
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
 		SkeletalMesh=SkeletalMesh'WP_1hs_Broadsword.WEP_Broadsword'
-		Scale=1.0
+		Scale=1.1
 	End Object
 
 	WeaponID=EWEP_Broadsword
 	WeaponClass=class'BangModWeapon_BastardSword'
 	WeaponSocket=wep2hpoint
-	WeaponStaticMeshScale=1.0
+	WeaponStaticMeshScale=1.1
 	bUseAlternativeKick=true
 
-	AttackTypeInfo(0)=(fBaseDamage=70.0, fForce=30000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
-	AttackTypeInfo(1)=(fBaseDamage=70.0, fForce=30000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
-	AttackTypeInfo(2)=(fBaseDamage=60.0, fForce=30000, cDamageType="AOC.AOCDmgType_Pierce", iWorldHitLenience=6)
-	AttackTypeInfo(3)=(fBaseDamage=65.0, fForce=65000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(0)=(fBaseDamage=83.0, fForce=30000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=83.0, fForce=30000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(2)=(fBaseDamage=66.0, fForce=30000, cDamageType="AOC.AOCDmgType_Pierce", iWorldHitLenience=6)
+	AttackTypeInfo(3)=(fBaseDamage=70.0, fForce=65000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
 	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=32500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
 	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
 
@@ -55,7 +55,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
 		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
@@ -63,7 +63,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
 		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
@@ -71,7 +71,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
 		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
@@ -79,7 +79,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
 		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
@@ -87,7 +87,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
 		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
@@ -95,7 +95,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
 		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
@@ -103,7 +103,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
 		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
@@ -111,7 +111,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
 		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
@@ -119,7 +119,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
 		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
@@ -127,7 +127,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
 		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 }

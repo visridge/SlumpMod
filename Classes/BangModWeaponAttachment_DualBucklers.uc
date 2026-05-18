@@ -20,14 +20,14 @@ simulated function EnsureLeftHandComponents()
 	{
 		LeftHandMesh = new(self) class'SkeletalMeshComponent';
 		LeftHandMesh.SetSkeletalMesh(Mesh.SkeletalMesh);
-		LeftHandMesh.Scale = Mesh.Scale;
+		LeftHandMesh.SetScale(Mesh.Scale);
 	}
 
 	if (LeftHandOverlayMesh == none)
 	{
 		LeftHandOverlayMesh = new(self) class'SkeletalMeshComponent';
 		LeftHandOverlayMesh.SetSkeletalMesh(OverlayMesh.SkeletalMesh);
-		LeftHandOverlayMesh.Scale = OverlayMesh.Scale;
+		LeftHandOverlayMesh.SetScale(OverlayMesh.Scale);
 		LeftHandOverlayMesh.SetHidden(true);
 	}
 }
