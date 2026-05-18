@@ -51,7 +51,7 @@ simulated function bool TryActivateBufferedParry()
 	return false;
 }
 
-/** Track delayed parry inputs and keep aerial kicks blocked. */
+/** Track delayed parry inputs. */
 simulated function BeginFire(byte FireModeNum)
 {
 	if (FireModeNum == Attack_Parry && (!bCanParry || IsInState('Recovery') || IsInState('Deflect')))
@@ -59,10 +59,12 @@ simulated function BeginFire(byte FireModeNum)
 		// BufferParryInput();
 	}
 
+	/*
 	if (FireModeNum == Attack_Shove && AOCOwner != none && !(AOCOwner.Velocity.Z ~= 0.0))
 	{
 		return;
 	}
+	*/
 
 	super.BeginFire(FireModeNum);
 }
