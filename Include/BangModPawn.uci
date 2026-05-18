@@ -1623,6 +1623,16 @@ event Bump( Actor Other, PrimitiveComponent OtherComp, Vector HitNormal )
 	}
 }
 
+simulated function SetThirdPersonCamera(bool bNewBehindView)
+{
+	super.SetThirdPersonCamera(bNewBehindView);
+
+	if (BangModWeaponAttachment_DualBucklers(CurrentWeaponAttachment) != none)
+	{
+		BangModWeaponAttachment_DualBucklers(CurrentWeaponAttachment).UpdateLeftHandVisibility(bNewBehindView);
+	}
+}
+
 
 // Default class properties
 DefaultProperties
