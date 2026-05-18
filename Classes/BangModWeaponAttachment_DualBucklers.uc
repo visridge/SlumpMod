@@ -150,7 +150,7 @@ defaultproperties
 	WeaponSocket=RightHand
 	LeftHandSocket=LeftHand
 	WeaponWidth=5.0
-	FistExtention=30.0
+	FistExtention=42.0
 
 	WeaponStaticMesh=StaticMesh'WP_shld_Buckler_Variant_01.SM_Buckler_variant_01'
 	WeaponStaticMeshScale=0.7

@@ -270,7 +270,7 @@ DefaultProperties
 	ParryDrain(1)=13
 	ParryDrain(2)=9
 	WeaponFontSymbol="6"
-	WeaponReach=100
+	WeaponReach=112
 	WeaponLargePortrait="UI_CustWeaponImages_SWF.skin_vicomte_buckler_png"
 	WeaponSmallPortrait="UI_WeaponImages_SWF.icon_weapon_select_buckler_png"
 	HorizontalRotateSpeed=60000.0
