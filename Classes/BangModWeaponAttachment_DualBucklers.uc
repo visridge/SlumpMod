@@ -136,13 +136,13 @@ simulated function SetSkin(Material NewMaterial)
 defaultproperties
 {
 	Begin Object Name=SkeletalMeshComponent0
-		SkeletalMesh=SkeletalMesh'WP_shld_Buckler_Variant_01.WEP_Buckler_variant_01'
-		Scale=0.7
+		SkeletalMesh=SkeletalMesh'WP_dag_HuntingKnife_Variant_01.WEP_FarmsToArmsSickle'
+		Scale=1.0
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
-		SkeletalMesh=SkeletalMesh'WP_shld_Buckler_Variant_01.WEP_Buckler_variant_01'
-		Scale=0.7
+		SkeletalMesh=SkeletalMesh'WP_dag_HuntingKnife_Variant_01.WEP_FarmsToArmsSickle'
+		Scale=1.0
 	End Object
 
 	WeaponID=EWEP_Fists
@@ -152,8 +152,8 @@ defaultproperties
 	WeaponWidth=5.0
 	FistExtention=42.0
 
-	WeaponStaticMesh=StaticMesh'WP_shld_Buckler_Variant_01.SM_Buckler_variant_01'
-	WeaponStaticMeshScale=0.7
+	WeaponStaticMesh=StaticMesh'WP_dag_HuntingKnife_Variant_01.SM_FarmsToArmsSickle_HuntingKnife'
+	WeaponStaticMeshScale=1.0
 
 	RightHandTranslation=(X=0.0,Y=0.0,Z=0.0)
 	LeftHandTranslation=(X=0.0,Y=0.0,Z=0.0)
@@ -166,15 +166,10 @@ defaultproperties
 	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
 
 	Skins(0)={(
-		SkeletalMeshPath="WP_shld_Buckler_Variant_01.WEP_Buckler_variant_01",
-		StaticMeshPath="WP_shld_Buckler_Variant_01.SM_Buckler_variant_01",
+		SkeletalMeshPath="WP_dag_HuntingKnife_Variant_01.WEP_FarmsToArmsSickle",
+		StaticMeshPath="WP_dag_HuntingKnife_Variant_01.SM_FarmsToArmsSickle_HuntingKnife",
 		MaterialPath="",
-		StaticMeshScale=0.7,
-		ImagePath="UI_CustWeaponImages_SWF.skin_vicomte_buckler_png",
-		ShieldPatterns=(
-			(PatternName="Solid", TexturePath="WP_shld_Buckler_Variant_01.T_buckler_p03"),
-			(PatternName="Quadrant", TexturePath="WP_shld_Buckler_Variant_01.T_buckler_p01"),
-			(PatternName="Stripes", TexturePath="WP_shld_Buckler_Variant_01.T_buckler_p02"),
-			(PatternName="Checkers", TexturePath="WP_shld_Buckler_Variant_01.T_buckler_p04"))
+		StaticMeshScale=1.0,
+		ImagePath="UI_CustWeaponImages_SWF.skin_farms_sickle_png"
 		)};
 }
