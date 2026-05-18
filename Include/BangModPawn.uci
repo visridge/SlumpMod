@@ -10,8 +10,8 @@ var float fLastReleaseStartTime;
 var bool bShowHitTime;
 var float fLastParrySuccessTime;                // Time when parry successfully activated (for riposte grace period)
 var float fRiposteGracePeriod;                  // Grace period after parry where flinch is disabled (default 200ms)
-var float BastardSwordSprintStartTime;
-var bool bWasBastardSwordSprinting;
+// var float BastardSwordSprintStartTime;
+// var bool bWasBastardSwordSprinting;
 var bool bKanaboExtraJumpUsed;
 
 /** Adjust mesh scale for Man at Arms class to make them smaller */
@@ -239,8 +239,8 @@ function StartSprintRecovery() {
 // Override Tick to ensure panting starts at 20 stamina or below
 simulated event Tick(float DeltaTime)
 {
-	local bool bCanUseBastardSwordSprintAttack;
-	local bool bUsingBastardSword;
+	// local bool bCanUseBastardSwordSprintAttack;
+	// local bool bUsingBastardSword;
 
 	// Call parent first to do all normal tick logic
 	super.Tick(DeltaTime);
@@ -250,6 +250,7 @@ simulated event Tick(float DeltaTime)
 		bKanaboExtraJumpUsed = false;
 	}
 
+	/*
 	bUsingBastardSword = Weapon != none
 		&& Weapon.Class == class'BangModWeapon_BastardSword';
 
@@ -279,6 +280,7 @@ simulated event Tick(float DeltaTime)
 	{
 		bIsSprintMaxSpeed = bCanUseBastardSwordSprintAttack;
 	}
+	*/
 	
 	// Override the PlayLowStaminaLoop call with fixed threshold
 	// Original used MaxStamina * 0.2f which is correct, but we hardcode to 20 for consistency
@@ -457,6 +459,7 @@ function int CalcDodgeCost() {
 /** Override DoJump to reduce stamina cost from 7 to 4 */
 simulated function bool CanKanaboAirJump()
 {
+	/*
 	return Weapon != none
 		&& Weapon.Class == class'BangModWeapon_Kanabo'
 		&& StateVariables.bCanJump
@@ -469,6 +472,9 @@ simulated function bool CanKanaboAirJump()
 		&& PawnState != ESTATE_SIEGEWEAPON
 		&& PawnState != ESTATE_DODGE
 		&& HasEnoughStamina(10);
+	*/
+
+	return false;
 }
 
 function bool DoJump( bool bUpdating )
@@ -1630,6 +1636,11 @@ simulated function SetThirdPersonCamera(bool bNewBehindView)
 	if (BangModWeaponAttachment_DualBucklers(CurrentWeaponAttachment) != none)
 	{
 		BangModWeaponAttachment_DualBucklers(CurrentWeaponAttachment).UpdateLeftHandVisibility(bNewBehindView);
+	}
+
+	if (BangModWeaponAttachment_WarHammer(CurrentWeaponAttachment) != none)
+	{
+		BangModWeaponAttachment_WarHammer(CurrentWeaponAttachment).UpdateLeftHandVisibility(bNewBehindView);
 	}
 }
 

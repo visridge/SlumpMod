@@ -103,6 +103,7 @@ simulated event PostBeginPlay()
 	}
 }
 
+/*
 simulated function bool CanBastardSwordSprintAttack(AOCPawn AOCP)
 {
 	if (AOCP == none || AOCP.Weapon == none)
@@ -113,6 +114,7 @@ simulated function bool CanBastardSwordSprintAttack(AOCPawn AOCP)
 	return AOCP.Weapon.Class == class'BangModWeapon_BastardSword'
 		&& AOCP.bIsSprintMaxSpeed;
 }
+*/
 
 // Allow sprint attack for the bastard sword without enabling it for the rest of Man at Arms.
 exec function StartFire(optional byte FireModeNum)
@@ -136,7 +138,9 @@ exec function StartFire(optional byte FireModeNum)
 			&& !AOCP.StateVariables.bIsAttacking
 			&& AOCP.StateVariables.bCanSprintAttack
 			&& !ScriptBlockedInputs[EINBLOCK_AttackSprint]
-			&& ((AOCP.bIsSprintMaxSpeed && AOCP.PawnFamily.bCanSprintAttack) || CanBastardSwordSprintAttack(AOCP));
+			// && ((AOCP.bIsSprintMaxSpeed && AOCP.PawnFamily.bCanSprintAttack) || CanBastardSwordSprintAttack(AOCP));
+			&& AOCP.bIsSprintMaxSpeed
+			&& AOCP.PawnFamily.bCanSprintAttack;
 
 		if (bCanUseSprintAttack)
 		{
