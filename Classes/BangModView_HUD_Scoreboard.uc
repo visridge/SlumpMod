@@ -76,7 +76,7 @@ function GrabCurrentUpdatedValues(optional bool bInitialView = true)
 	if(bIsFFAMode)
 		AOCBaseHUD(Manager.PlayerOwner.myHUD).AllPRI.Sort(PRISortKills);
 	else
-		AOCBaseHUD(Manager.PlayerOwner.myHUD).AllPRI.Sort(PRISortDamage);
+		AOCBaseHUD(Manager.PlayerOwner.myHUD).AllPRI.Sort(PRISortKills);
 
 	foreach AOCBaseHUD(Manager.PlayerOwner.myHUD).AllPRI(TempPRI)
 	{

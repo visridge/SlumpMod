@@ -14,6 +14,7 @@ DefaultProperties
 	NewPrimaryWeapons(5)=(CWeapon=class'BangModWeapon_Warbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_JavelinMelee',CForceTertiary=(class'BangModWeapon_Buckler_Agatha'))
 	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_DualBucklers')
+	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Gladius',CorrespondingDuelProp=EDUEL_DagesseUse)
 
 	NewSecondaryWeapons.empty;
 	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_Broadsword')
