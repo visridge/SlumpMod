@@ -17,7 +17,6 @@ DefaultProperties
 	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_HolyWaterSprinkler',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_QuarterStaff',CorrespondingDuelProp=EDUEL_QStaffUse)
 	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_Kanabo',CorrespondingDuelProp=EDUEL_GrandMaceUse)
-	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_BastardSword',CorrespondingDuelProp=EDUEL_LongswordUse)
 	
 	
 	NewSecondaryWeapons.empty;
