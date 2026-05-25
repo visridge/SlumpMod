@@ -5,38 +5,72 @@
 *
 * Weapon attachment: Gladius - Bastard Sword behavior with scaled shortsword visuals
 */
-class BangModWeaponAttachment_Gladius extends BangModWeaponAttachment_BastardSword;
+class BangModWeaponAttachment_Gladius extends BangModWeaponAttachment_Messer;
+
+simulated function float GetHandleTracerPercent(int i)
+{
+	local vector vStart, vMid, vEnd;
+	local float HandleLength, WeaponLength;
+	local float HandleTracerPercent;
+
+	if (Mesh.GetSocketByName('TraceMid') == None)
+	{
+		return 0.40f;
+	}
+	Mesh.GetSocketWorldLocationAndRotation('TraceStart', vStart);
+	Mesh.GetSocketWorldLocationAndRotation('TraceMid', vMid);
+	Mesh.GetSocketWorldLocationAndRotation('TraceEnd', vEnd);
+
+	WeaponLength = VSize(vEnd - vStart);
+	HandleLength = VSize(vMid - vStart);
+	HandleTracerPercent = (HandleLength / WeaponLength) * 3;
+
+	if (HandleTracerPercent < 0.40f)
+	{
+		return 0.40f;
+	}
+
+	return HandleTracerPercent;
+}
 
 DefaultProperties
 {
 	Begin Object Name=SkeletalMeshComponent0
-		SkeletalMesh=SkeletalMesh'WP_aux_Shortsword.wep_shortsword'
-		Scale=2.0
+		SkeletalMesh=SkeletalMesh'WP_aux_saber_variant_03.WEP_Scimitar'
+		Scale=1.6
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
-		SkeletalMesh=SkeletalMesh'WP_aux_Shortsword.wep_shortsword'
-		Scale=2.0
+		SkeletalMesh=SkeletalMesh'WP_aux_saber_variant_03.WEP_Scimitar'
+		Scale=1.6
 	End Object
 
 	WeaponID=EWEP_Dagesse
 	WeaponClass=class'BangModWeapon_Gladius'
 	WeaponSocket=wep2hpoint
-	WeaponStaticMeshScale=2.0
+	WeaponStaticMeshScale=1.6
 
 	Skins(0)={(
-		SkeletalMeshPath="WP_aux_Shortsword.wep_shortsword",
-		StaticMeshPath="WP_aux_Shortsword.SM_Short_Sword",
+		SkeletalMeshPath="WP_aux_saber_variant_03.WEP_Scimitar",
+		StaticMeshPath="WP_aux_saber_variant_03.SM_Scimitar",
 		MaterialPath="",
-		StaticMeshScale=2.0,
-		ImagePath="ui_custweaponimages_swf.skin_shortsword_png"
+		StaticMeshScale=1.6,
+		ImagePath="UI_CustWeaponImages_SWF.skin_vypress_scimitar_png"
 		)};
 
 	Skins(1)={(
-		SkeletalMeshPath="WP_aux_Shortsword_Variant_01.wep_shortsword_variant_01",
-		StaticMeshPath="WP_aux_Shortsword_Variant_01.SM_Shortsword_Variant_01",
+		SkeletalMeshPath="WP_aux_saber_variant_03.WEP_Scimitar",
+		StaticMeshPath="WP_aux_saber_variant_03.SM_Scimitar",
 		MaterialPath="",
-		StaticMeshScale=2.0,
-		ImagePath="ui_custweaponimages_swf.skin_seax_png"
+		StaticMeshScale=1.6,
+		ImagePath="UI_CustWeaponImages_SWF.skin_vypress_scimitar_png"
+		)};
+
+	Skins(2)={(
+		SkeletalMeshPath="WP_aux_saber_variant_03.WEP_Scimitar",
+		StaticMeshPath="WP_aux_saber_variant_03.SM_Scimitar",
+		MaterialPath="",
+		StaticMeshScale=1.6,
+		ImagePath="UI_CustWeaponImages_SWF.skin_vypress_scimitar_png"
 		)};
 }

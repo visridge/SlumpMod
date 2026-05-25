@@ -17,6 +17,7 @@ DefaultProperties
 	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Gladius',CorrespondingDuelProp=EDUEL_DagesseUse)
 	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_BastardSword',CorrespondingDuelProp=EDUEL_LongswordUse)
 	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_SpikedMace',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
+	// NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_BoStaff',CorrespondingDuelProp=EDUEL_BillUse)
 
 	NewSecondaryWeapons.empty;
 	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_Broadsword')
@@ -32,7 +33,8 @@ DefaultProperties
 	NewTertiaryWeapons.empty;
 	NewTertiaryWeapons(0)=(CWeapon=class'AOCWeapon_ProjBodkin',bEnabledDefault=false)
 	NewTertiaryWeapons(1)=(CWeapon=class'AOCWeapon_ProjBroadhead',bEnabledDefault=false)
-	NewTertiaryWeapons(2)=(CWeapon=class'BangModWeapon_Buckler_Agatha',bEnabledDefault=false)
+	NewTertiaryWeapons(2)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
+	NewTertiaryWeapons(3)=(CWeapon=class'BangModWeapon_Buckler_Agatha',bEnabledDefault=false)
 
 
 	ProjectileLocationModifiers(EHIT_Head) = 2.5

@@ -7,130 +7,8 @@
 */
 class BangModWeaponAttachment_WarHammer extends AOCWeaponAttachment_WarHammer;
 
-var SkeletalMeshComponent LeftHandMesh;
-var SkeletalMeshComponent LeftHandOverlayMesh;
-var bool bLeftOverlayAttached;
-var name LeftHandSocket;
-var vector LeftHandTranslation;
-
-simulated function EnsureLeftHandComponents()
-{
-	if (LeftHandMesh == none)
-	{
-		LeftHandMesh = new(self) class'SkeletalMeshComponent';
-		LeftHandMesh.SetSkeletalMesh(SkeletalMesh'WP_dag_HuntingKnife_Variant_01.WEP_FarmsToArmsSickle');
-		LeftHandMesh.SetScale(1.0);
-	}
-
-	if (LeftHandOverlayMesh == none)
-	{
-		LeftHandOverlayMesh = new(self) class'SkeletalMeshComponent';
-		LeftHandOverlayMesh.SetSkeletalMesh(SkeletalMesh'WP_dag_HuntingKnife_Variant_01.WEP_FarmsToArmsSickle');
-		LeftHandOverlayMesh.SetScale(1.0);
-		LeftHandOverlayMesh.SetHidden(true);
-	}
-}
-
-simulated function AttachTo(UTPawn OwnerPawn)
-{
-	local bool bBehindView;
-
-	super.AttachTo(OwnerPawn);
-
-	AOCOwner = AOCPawn(OwnerPawn);
-	EnsureLeftHandComponents();
-
-	if (AOCOwner != none && OwnerPawn.Mesh != none)
-	{
-		LeftHandMesh.SetShadowParent(OwnerPawn.Mesh);
-		LeftHandMesh.SetLightEnvironment(OwnerPawn.LightEnvironment);
-		AOCOwner.HandleSocketAttachment(false, LeftHandMesh, LeftHandSocket, self);
-		LeftHandMesh.SetTranslation(LeftHandTranslation);
-	}
-
-	if (OwnerPawn.IsLocallyControlled())
-	{
-		bBehindView = AOCPlayerController(OwnerPawn.Controller).bBehindView;
-		UpdateLeftHandVisibility(bBehindView);
-		if (!bBehindView)
-		{
-			ForceAttachOverlay();
-		}
-		ChangeOverlayMeshVisibility(bBehindView);
-	}
-	else if (AOCPawn(OwnerPawn).bIsBeingFPObserved)
-	{
-		bBehindView = AOCPlayerController(GetALocalPlayerController()).bBehindView;
-		UpdateLeftHandVisibility(bBehindView);
-		if (!bBehindView)
-		{
-			ForceAttachOverlay();
-		}
-		ChangeOverlayMeshVisibility(bBehindView);
-	}
-	else
-	{
-		UpdateLeftHandVisibility(true);
-	}
-}
-
-simulated function ForceAttachOverlay()
-{
-	super.ForceAttachOverlay();
-
-	EnsureLeftHandComponents();
-
-	if (!bLeftOverlayAttached)
-	{
-		LeftHandOverlayMesh.SetLightEnvironment(AOCOwner.LightEnvironment);
-		LeftHandOverlayMesh.SetHidden(false);
-		LeftHandOverlayMesh.SetIgnoreOwnerHidden(true);
-		AOCOwner.HandleSocketAttachment(true, LeftHandOverlayMesh, LeftHandSocket, self);
-		LeftHandOverlayMesh.SetTranslation(LeftHandTranslation);
-		bLeftOverlayAttached = true;
-	}
-}
-
-simulated function ChangeOverlayMeshVisibility(bool bVis)
-{
-	super.ChangeOverlayMeshVisibility(bVis);
-
-	if (LeftHandOverlayMesh != none)
-		LeftHandOverlayMesh.SetHidden(bVis);
-}
-
 simulated function UpdateLeftHandVisibility(bool bBehindView)
 {
-	if (LeftHandMesh != none)
-		LeftHandMesh.SetOwnerNoSee(!bBehindView);
-}
-
-simulated function DetachFrom(SkeletalMeshComponent MeshCpnt)
-{
-	if (AOCOwner != none && LeftHandMesh != none)
-	{
-		AOCOwner.Mesh.DetachComponent(LeftHandMesh);
-	}
-
-	if (AOCOwner != none && LeftHandOverlayMesh != none && ((AOCOwner.IsLocallyControlled() && !AOCOwner.bIsBot) || AOCOwner.bIsBeingFPObserved))
-	{
-		AOCOwner.OwnerMesh.DetachComponent(LeftHandOverlayMesh);
-	}
-
-	bLeftOverlayAttached = false;
-
-	super.DetachFrom(MeshCpnt);
-}
-
-simulated function SetSkin(Material NewMaterial)
-{
-	super.SetSkin(NewMaterial);
-
-	if (LeftHandMesh != none)
-		LeftHandMesh.CreateAndSetMaterialInstanceConstant(0);
-
-	if (LeftHandOverlayMesh != none && AOCOwner != none && ((AOCOwner.IsLocallyControlled() && !AOCOwner.bIsBot) || AOCOwner.bIsBeingFPObserved))
-		LeftHandOverlayMesh.CreateAndSetMaterialInstanceConstant(0);
 }
 
 simulated function float GetHandleTracerPercent(int i)
@@ -170,10 +48,8 @@ KickOffset=(X=50, Y=0, Z=-65)
 	WeaponID=EWEP_WarHammer
 	WeaponClass=class'BangModWeapon_WarHammer'
 	WeaponSocket=wep1hpoint
-	LeftHandSocket=LeftHand
 
 	WeaponStaticMeshScale=1
-	LeftHandTranslation=(X=0.0,Y=0.0,Z=0.0)
 
 	AttackTypeInfo(0)=(fBaseDamage=75.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
 	AttackTypeInfo(1)=(fBaseDamage=82.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)

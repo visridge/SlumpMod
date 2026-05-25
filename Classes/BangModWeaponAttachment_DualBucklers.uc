@@ -136,13 +136,13 @@ simulated function SetSkin(Material NewMaterial)
 defaultproperties
 {
 	Begin Object Name=SkeletalMeshComponent0
-		SkeletalMesh=SkeletalMesh'WP_dag_HuntingKnife_Variant_01.WEP_FarmsToArmsSickle'
-		Scale=1.0
+		SkeletalMesh=SkeletalMesh'WP_shld_Buckler.WEP_Buckler_a'
+		Scale=0.6
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
-		SkeletalMesh=SkeletalMesh'WP_dag_HuntingKnife_Variant_01.WEP_FarmsToArmsSickle'
-		Scale=1.0
+		SkeletalMesh=SkeletalMesh'WP_shld_Buckler.WEP_Buckler_a'
+		Scale=0.6
 	End Object
 
 	WeaponID=EWEP_Fists
@@ -152,8 +152,8 @@ defaultproperties
 	WeaponWidth=5.0
 	FistExtention=42.0
 
-	WeaponStaticMesh=StaticMesh'WP_dag_HuntingKnife_Variant_01.SM_FarmsToArmsSickle_HuntingKnife'
-	WeaponStaticMeshScale=1.0
+	WeaponStaticMesh=StaticMesh'WP_shld_Buckler.sm_Buckler_a'
+	WeaponStaticMeshScale=0.6
 
 	RightHandTranslation=(X=0.0,Y=0.0,Z=0.0)
 	LeftHandTranslation=(X=0.0,Y=0.0,Z=0.0)
@@ -166,10 +166,10 @@ defaultproperties
 	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
 
 	Skins(0)={(
-		SkeletalMeshPath="WP_dag_HuntingKnife_Variant_01.WEP_FarmsToArmsSickle",
-		StaticMeshPath="WP_dag_HuntingKnife_Variant_01.SM_FarmsToArmsSickle_HuntingKnife",
+		SkeletalMeshPath="WP_shld_Buckler.WEP_Buckler_a",
+		StaticMeshPath="WP_shld_Buckler.sm_Buckler_a",
 		MaterialPath="",
-		StaticMeshScale=1.0,
-		ImagePath="UI_CustWeaponImages_SWF.skin_farms_sickle_png"
+		StaticMeshScale=0.6,
+		ImagePath="UI_CustWeaponImages_SWF.skin_bucklerDefault_png"
 		)};
 }
