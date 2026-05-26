@@ -14,7 +14,7 @@ event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
 
 	if (WidgetName == 'rank_title')
 	{
-		Widget.SetText("Prys");
+		Widget.SetText("TDmg");
 		bResult = true;
 	}
 
@@ -136,7 +136,7 @@ function GrabCurrentUpdatedValues(optional bool bInitialView = true)
 		TmpObj.SetString("assist", string(AOCPRI(TempPRI).NumAssists));
 		TmpObj.SetBool("muted", AOCPlayerController(Manager.PlayerOwner).AllMutePlayerList.Find('Uid', TempPRI.UniqueId.Uid) != INDEX_NONE);
 
-		TmpObj.SetString("rank", string(AOCPRI(TempPRI).Parries));
+			TmpObj.SetString("rank", string(AOCPRI(TempPRI).TeamDamageDealt));
 		if(AOCPRI(TempPRI).GetCurrentTeam() == EFAC_NONE)
 		{
 			TmpObj.SetInt("teamIndex", EFAC_None);
