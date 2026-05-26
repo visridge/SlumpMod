@@ -8,7 +8,19 @@ event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
 
 	if (WidgetName == 'score_title')
 	{
-		Widget.SetText("Damage");
+		Widget.SetText("Dmg");
+		bResult = true;
+	}
+
+	if (WidgetName == 'rank_title')
+	{
+		Widget.SetText("Prys");
+		bResult = true;
+	}
+
+	if (WidgetName == 'ping_title')
+	{
+		Widget.SetText("Miss");
 		bResult = true;
 	}
 
@@ -23,6 +35,19 @@ delegate int PRISortDamage(PlayerReplicationInfo A, PlayerReplicationInfo B)
 	}
 
 	return AOCPRI(A).EnemyDamageDealt < AOCPRI(B).EnemyDamageDealt ? -1 : 0;
+}
+
+delegate int PRISortELO(PlayerReplicationInfo A, PlayerReplicationInfo B)
+{
+	local float EloA, EloB;
+
+	EloA = (100.0 * AOCPRI(A).NumKills + 33.0 * AOCPRI(A).NumAssists + 0.2 * AOCPRI(A).EnemyDamageDealt) / FMax(float(AOCPRI(A).Deaths), 1.0);
+	EloB = (100.0 * AOCPRI(B).NumKills + 33.0 * AOCPRI(B).NumAssists + 0.2 * AOCPRI(B).EnemyDamageDealt) / FMax(float(AOCPRI(B).Deaths), 1.0);
+
+	if (EloA == EloB)
+		return 0;
+
+	return EloA < EloB ? -1 : 1;
 }
 
 function GrabCurrentUpdatedValues(optional bool bInitialView = true)
@@ -74,9 +99,9 @@ function GrabCurrentUpdatedValues(optional bool bInitialView = true)
 	}
 
 	if(bIsFFAMode)
-		AOCBaseHUD(Manager.PlayerOwner.myHUD).AllPRI.Sort(PRISortKills);
+		AOCBaseHUD(Manager.PlayerOwner.myHUD).AllPRI.Sort(PRISortELO);
 	else
-		AOCBaseHUD(Manager.PlayerOwner.myHUD).AllPRI.Sort(PRISortKills);
+		AOCBaseHUD(Manager.PlayerOwner.myHUD).AllPRI.Sort(PRISortELO);
 
 	foreach AOCBaseHUD(Manager.PlayerOwner.myHUD).AllPRI(TempPRI)
 	{
@@ -91,27 +116,27 @@ function GrabCurrentUpdatedValues(optional bool bInitialView = true)
 		{
 			if(AOCPRI(TempPRI).bTournamentReady)
 			{
-				TmpObj.SetString("this_name", "[ready]"@TempPRI.GetPlayerNameForMarkup());
+				TmpObj.SetString("this_name", "[ready]"@TempPRI.GetPlayerNameForMarkup()@"- "$string(Round(TempPRI.Ping * 4.f))$"ms");
 			}
 			else
 			{
-				TmpObj.SetString("this_name", "[NOT ready]"@TempPRI.GetPlayerNameForMarkup());
+				TmpObj.SetString("this_name", "[NOT ready]"@TempPRI.GetPlayerNameForMarkup()@"- "$string(Round(TempPRI.Ping * 4.f))$"ms");
 			}
 		}
 		else
 		{
-			TmpObj.SetString("this_name", TempPRI.GetPlayerNameForMarkup());
+			TmpObj.SetString("this_name", TempPRI.GetPlayerNameForMarkup()@"- "$string(Round(TempPRI.Ping * 4.f))$"ms");
 		}
 		TmpObj.SetInt("classIndex", AOCPRI(TempPRI).GetCurrentClass());
 		TmpObj.SetString("score", string(AOCPRI(TempPRI).EnemyDamageDealt));
-		TmpObj.SetString("ping", string(Round(TempPRI.Ping * 4.f)));
+		TmpObj.SetString("ping", string(AOCPRI(TempPRI).NumAttacks - AOCPRI(TempPRI).NumHits));
 		TmpObj.SetBool("dead", AOCPRI(TempPRI).CurrentHealth <= 0);
 		TmpObj.SetString("kill", string(AOCPRI(TempPRI).NumKills));
 		TmpObj.SetString("death", string(AOCPRI(TempPRI).Deaths));
 		TmpObj.SetString("assist", string(AOCPRI(TempPRI).NumAssists));
 		TmpObj.SetBool("muted", AOCPlayerController(Manager.PlayerOwner).AllMutePlayerList.Find('Uid', TempPRI.UniqueId.Uid) != INDEX_NONE);
 
-		TmpObj.SetString("rank", string(AOCPRI(TempPRI).MyRank));
+		TmpObj.SetString("rank", string(AOCPRI(TempPRI).Parries));
 		if(AOCPRI(TempPRI).GetCurrentTeam() == EFAC_NONE)
 		{
 			TmpObj.SetInt("teamIndex", EFAC_None);
