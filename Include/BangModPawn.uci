@@ -13,6 +13,7 @@ var float fRiposteGracePeriod;                  // Grace period after parry wher
 // var float BastardSwordSprintStartTime;
 // var bool bWasBastardSwordSprinting;
 var bool bKanaboExtraJumpUsed;
+var CylinderComponent OuterCylinderComp; // Reference to the OuterCylinder component (player collision bubble)
 
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
@@ -1592,6 +1593,12 @@ simulated function AOCSetCharacterClassFromInfo(AOCFamilyInfo Info)
 		// Skeletal parry scale (translation applied in BangModWeaponAttachment.AttachTo)
 		ParryComponent.SetScale3D(vect(0.18, 0.17, 0.35));
 	}
+
+	// Apply admin-controlled collision bubble radius (OuterCylinder)
+	if (OuterCylinderComp != none)
+	{
+		OuterCylinderComp.SetCylinderSize(class'BangModAOCDuelPlayerController'.default.fBangModCollisionRadius, 65.0);
+	}
 }
 
 //netupdate
@@ -1664,6 +1671,8 @@ DefaultProperties
 	NetUpdateFrequency=120
 
 	CustomizationClass=class'BangModCustomization'
+
+	OuterCylinderComp=OuterCylinder
 
 	Begin Object Name=OuterCylinder
 	    CollisionRadius=+0039.000000
