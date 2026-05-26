@@ -25,6 +25,9 @@ var array<AOCPRI> NearbyTalkers;  // List of PRIs currently talking within range
 var globalconfig bool bBangModParryBox;  // When true, use BangMod parry box values; when false, revert to vanilla AOC defaults
 var globalconfig bool bSkeletalParry;    // When true, parry hitbox wraps the full player model (skeletal parry) instead of directional shield-style
 
+// Collision bubble radius (OuterCylinder)
+var globalconfig float fBangModCollisionRadius;  // Radius of the player collision bubble; vanilla AOC default is 39.0
+
 // Admin pause state
 var bool bIsPaused;  // Tracks whether the game is currently paused by an admin
 
@@ -91,6 +94,37 @@ reliable client function ClientSyncParryBoxSettings(bool bEnableBangMod, bool bE
 	bSkeletalParry = bEnableSkeletal;
 	SetAllParryBoxClassDefaults(bEnableBangMod, bEnableSkeletal);
 	ApplyParryBoxSettingsToCurrentPawn();
+}
+
+simulated function SetAllCollisionRadiusClassDefaults(float Radius)
+{
+	class'BangModAOCDuelPlayerController'.default.fBangModCollisionRadius = Radius;
+	class'BangModCDWDuelPlayerController'.default.fBangModCollisionRadius = Radius;
+	class'BangModCTFPlayerController'.default.fBangModCollisionRadius = Radius;
+	class'BangModFFAPlayerController'.default.fBangModCollisionRadius = Radius;
+	class'BangModKOTHPlayerController'.default.fBangModCollisionRadius = Radius;
+	class'BangModLTSPlayerController'.default.fBangModCollisionRadius = Radius;
+	class'BangModTDPlayerController'.default.fBangModCollisionRadius = Radius;
+	class'BangModTOPlayerController'.default.fBangModCollisionRadius = Radius;
+	class'BangModTUTPlayerController'.default.fBangModCollisionRadius = Radius;
+}
+
+simulated function ApplyCollisionRadiusToCurrentPawn()
+{
+	local BangModAOCDuelPawn BMP;
+
+	BMP = BangModAOCDuelPawn(Pawn);
+	if (BMP == none || BMP.OuterCylinderComp == none)
+		return;
+
+	BMP.OuterCylinderComp.SetCylinderSize(class'BangModAOCDuelPlayerController'.default.fBangModCollisionRadius, 65.0);
+}
+
+reliable client function ClientSyncCollisionRadius(float Radius)
+{
+	fBangModCollisionRadius = Radius;
+	SetAllCollisionRadiusClassDefaults(Radius);
+	ApplyCollisionRadiusToCurrentPawn();
 }
 
 // Ensure BangMod uses its customization class everywhere
@@ -325,6 +359,7 @@ event Possess(Pawn inPawn, bool bVehicleTransition)
 	{
 		ClientSyncParryBoxSettings(class'BangModAOCDuelPlayerController'.default.bBangModParryBox,
 			class'BangModAOCDuelPlayerController'.default.bSkeletalParry);
+		ClientSyncCollisionRadius(class'BangModAOCDuelPlayerController'.default.fBangModCollisionRadius);
 	}
 	
 	// Show optimization tip once when player first spawns
@@ -749,6 +784,37 @@ reliable server function S_AdminEnableSkeletalParry(bool bEnable) {
 }
 
 reliable server function S_AdminTournamentMode(bool bEnable) {}
+
+exec function AdminSetCollisionRadius(float NewRadius)
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminSetCollisionRadius(NewRadius);
+}
+
+reliable server function S_AdminSetCollisionRadius(float NewRadius) {
+	local AOCPlayerController PC;
+
+	if (!IsAdmin())
+		return;
+
+	// Clamp to a sane range to prevent griefing (1 to 200)
+	NewRadius = FClamp(NewRadius, 1.0, 200.0);
+
+	class'BangModAOCDuelPlayerController'.default.fBangModCollisionRadius = NewRadius;
+	class'BangModAOCDuelPlayerController'.static.StaticSaveConfig();
+
+	// Sync all connected players
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+	{
+		if (BangModAOCDuelPlayerController(PC) != none)
+			BangModAOCDuelPlayerController(PC).ClientSyncCollisionRadius(NewRadius);
+	}
+
+	S_AdminBroadcastMessage("Collision bubble radius set to" @ NewRadius @ "(respawn to apply)", false);
+}
 
 // CE Autoskip: auto-fires "ce skip" when TO timer reaches 5 seconds
 exec function AdminCEAutoskip()
@@ -2003,10 +2069,13 @@ DefaultProperties
 	bEnableProximityChat=true
 	bIsTalking=false
 
-	// Parry box toggle default (enabled = use BangMod values)
-	bBangModParryBox=true
+	// Parry box toggle default (disabled = use vanilla AOC values until an admin enables BangMod parry)
+	bBangModParryBox=false
 	// Skeletal parry default (disabled = use directional/shield-style parry box)
 	bSkeletalParry=false
+
+	// Collision bubble radius default (39.0 = vanilla AOC OuterCylinder radius)
+	fBangModCollisionRadius=39.0
 
 }
 
