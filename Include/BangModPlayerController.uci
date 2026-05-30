@@ -445,7 +445,7 @@ function bool SetPause(bool bPause, optional delegate<CanUnpause> CanUnpauseDele
 			PauseRumbleForAllPlayers();
 			bIsPaused = true;
 		}
-	} else if (IsAdmin() && bIsPaused) {
+	} else if (IsAdmin() && WorldInfo.Pauser != none) {
 		S_UnpauseGame();
 	}
 	return bResult;
@@ -462,7 +462,7 @@ exec function UnPause() {
 reliable server function S_UnpauseGame() {
 	if (!IsAdmin())
 		return;
-	if (!bIsPaused) {
+	if (WorldInfo.Pauser == none) {
 		ClientDisplayConsoleMessage("The game is not currently paused.");
 		return;
 	}
@@ -1213,7 +1213,7 @@ function DrawTextOverHead(string DebugText)
 function bool IsSprintAngle(int fInputAngle) //checks if the player should be allowed to sprint or not
 {
 	//DrawTextOverHead(string(fInputAngle));
-	return ((fInputAngle < 25486) && (fInputAngle > 7282)); //24576, 8192, //27079 and 7892 work but i'm loosening them slightly so that controller players can sprint at 45 degrees more consistently
+	return ((fInputAngle < 24576) && (fInputAngle > 8192)); // ±45° from forward (16384 ± 8192)
 }
 
 // Player movement.

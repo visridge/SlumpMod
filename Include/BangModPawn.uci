@@ -1583,16 +1583,22 @@ simulated function AOCSetCharacterClassFromInfo(AOCFamilyInfo Info)
 {
 	super.AOCSetCharacterClassFromInfo(Info);
 
-	if (Controller != none && !class'BangModAOCDuelPlayerController'.default.bBangModParryBox)
+	// NOTE: Do NOT guard on Controller != none here. This function fires during pawn setup,
+	// before the controller is associated, so that check would always fail and the reset
+	// would never run on the server.
+	if (!class'BangModAOCDuelPlayerController'.default.bBangModParryBox)
 	{
-		// Revert scale to vanilla AOC (translation is handled in BangModWeaponAttachment.AttachTo)
+		// Revert to vanilla AOC parry box dimensions
 		ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
+		ParryComponent.SetTranslation(vect(30, 0, -30));
 	}
 	else if (class'BangModAOCDuelPlayerController'.default.bSkeletalParry)
 	{
-		// Skeletal parry scale (translation applied in BangModWeaponAttachment.AttachTo)
+		// Skeletal parry: full-body coverage
 		ParryComponent.SetScale3D(vect(0.18, 0.17, 0.35));
+		ParryComponent.SetTranslation(vect(10, 5, -28));
 	}
+	// else: BangMod parry enabled, non-skeletal — super already applied FamilyInfo values
 
 	// Apply admin-controlled collision bubble radius (OuterCylinder)
 	if (OuterCylinderComp != none)

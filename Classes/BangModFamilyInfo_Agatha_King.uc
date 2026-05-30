@@ -9,8 +9,8 @@ class BangModFamilyInfo_Agatha_King extends AOCFamilyInfo_Agatha_King;
 
 DefaultProperties
 {
-	ParryBoxScale=(X=0.18,Y=0.17,Z=0.35)
-    ParryBoxTranslation=(X=10, Y=5, Z=-28)
+	// ParryBoxScale=(X=0.18,Y=0.17,Z=0.35)
+    // ParryBoxTranslation=(X=10, Y=5, Z=-28)
 
 	FamilyID="King"
 	Health=1000

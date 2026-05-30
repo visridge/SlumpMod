@@ -14,13 +14,13 @@ event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
 
 	if (WidgetName == 'rank_title')
 	{
-		Widget.SetText("TDmg");
+		Widget.SetText("Ping");
 		bResult = true;
 	}
 
 	if (WidgetName == 'ping_title')
 	{
-		Widget.SetText("Miss");
+		Widget.SetText("TDmg");
 		bResult = true;
 	}
 
@@ -116,27 +116,27 @@ function GrabCurrentUpdatedValues(optional bool bInitialView = true)
 		{
 			if(AOCPRI(TempPRI).bTournamentReady)
 			{
-				TmpObj.SetString("this_name", "[ready]"@TempPRI.GetPlayerNameForMarkup()@"- "$string(Round(TempPRI.Ping * 4.f))$"ms");
+				TmpObj.SetString("this_name", "[ready]"@TempPRI.GetPlayerNameForMarkup());
 			}
 			else
 			{
-				TmpObj.SetString("this_name", "[NOT ready]"@TempPRI.GetPlayerNameForMarkup()@"- "$string(Round(TempPRI.Ping * 4.f))$"ms");
+				TmpObj.SetString("this_name", "[NOT ready]"@TempPRI.GetPlayerNameForMarkup());
 			}
 		}
 		else
 		{
-			TmpObj.SetString("this_name", TempPRI.GetPlayerNameForMarkup()@"- "$string(Round(TempPRI.Ping * 4.f))$"ms");
+			TmpObj.SetString("this_name", TempPRI.GetPlayerNameForMarkup());
 		}
 		TmpObj.SetInt("classIndex", AOCPRI(TempPRI).GetCurrentClass());
 		TmpObj.SetString("score", string(AOCPRI(TempPRI).EnemyDamageDealt));
-		TmpObj.SetString("ping", string(AOCPRI(TempPRI).NumAttacks - AOCPRI(TempPRI).NumHits));
+		TmpObj.SetString("ping", string(AOCPRI(TempPRI).TeamDamageDealt));
 		TmpObj.SetBool("dead", AOCPRI(TempPRI).CurrentHealth <= 0);
 		TmpObj.SetString("kill", string(AOCPRI(TempPRI).NumKills));
 		TmpObj.SetString("death", string(AOCPRI(TempPRI).Deaths));
 		TmpObj.SetString("assist", string(AOCPRI(TempPRI).NumAssists));
 		TmpObj.SetBool("muted", AOCPlayerController(Manager.PlayerOwner).AllMutePlayerList.Find('Uid', TempPRI.UniqueId.Uid) != INDEX_NONE);
 
-			TmpObj.SetString("rank", string(AOCPRI(TempPRI).TeamDamageDealt));
+			TmpObj.SetString("rank", string(Round(TempPRI.Ping * 4.f)));
 		if(AOCPRI(TempPRI).GetCurrentTeam() == EFAC_NONE)
 		{
 			TmpObj.SetInt("teamIndex", EFAC_None);
