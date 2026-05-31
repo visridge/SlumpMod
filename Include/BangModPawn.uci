@@ -286,7 +286,7 @@ simulated event Tick(float DeltaTime)
 	// Override the PlayLowStaminaLoop call with fixed threshold
 	// Original used MaxStamina * 0.2f which is correct, but we hardcode to 20 for consistency
 	// This ensures all classes pant at the same absolute stamina level (20 or below)
-	PlayLowStaminaLoop(Stamina <= 20.0f && Health > 0.0f);
+	PlayLowStaminaLoop(Stamina <= 10.0f && Health > 0.0f);
 }
 
 simulated function bool CheckProjectileParry(HitInfo Info) {
@@ -478,58 +478,58 @@ simulated function bool CanKanaboAirJump()
 	return false;
 }
 
-function bool DoJump( bool bUpdating )
-{
-	local Vector VelocityXY;
-	local bool bCanNormalJump;
-	local bool bCanKanaboSecondJump;
+// function bool DoJump( bool bUpdating )
+// {
+// 	local Vector VelocityXY;
+// 	local bool bCanNormalJump;
+// 	local bool bCanKanaboSecondJump;
 
-	bCanNormalJump = StateVariables.bCanJump
-		&& bJumpCapable
-		&& !bIsCrouching
-		&& (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider)
-		&& !(StateVariables.bIsAttacking && AOCWeapon(Weapon).CurrentFireMode == Attack_Shove)
-		&& (PawnState == ESTATE_IDLE || PawnState == ESTATE_RUN || PawnState == ESTATE_SPRINT);
-	bCanKanaboSecondJump = CanKanaboAirJump();
+// 	bCanNormalJump = StateVariables.bCanJump
+// 		&& bJumpCapable
+// 		&& !bIsCrouching
+// 		&& (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider)
+// 		&& !(StateVariables.bIsAttacking && AOCWeapon(Weapon).CurrentFireMode == Attack_Shove)
+// 		&& (PawnState == ESTATE_IDLE || PawnState == ESTATE_RUN || PawnState == ESTATE_SPRINT);
+// 	bCanKanaboSecondJump = CanKanaboAirJump();
 
-	if (bCanNormalJump)
-	{
-		bKanaboExtraJumpUsed = false;
+// 	if (bCanNormalJump)
+// 	{
+// 		bKanaboExtraJumpUsed = false;
 
-		if(Role == Role_Authority)
-			ConsumeStamina(4);  // Reduced from 7 to 4
+// 		// super.DoJump (AOCPawn) always charges 7 stamina; refund 3 to achieve net cost of 4
+// 		super.DoJump(bUpdating);
+// 		if (Role == Role_Authority)
+// 			ConsumeStamina(-3);  // Net cost: 7 - 3 = 4
 
-		super.DoJump(bUpdating);
+// 		//Cap velocity X/Y
+// 		VelocityXY.X = Velocity.X;
+// 		VelocityXY.Y = Velocity.Y;
+// 		VelocityXY = Normal(VelocityXY) * Min(VSize(VelocityXY), GroundSpeed);
+// 		Velocity.X = VelocityXY.X;
+// 		Velocity.Y = VelocityXY.Y;
 
-		//Cap velocity X/Y
-		VelocityXY.X = Velocity.X;
-		VelocityXY.Y = Velocity.Y;
-		VelocityXY = Normal(VelocityXY) * Min(VSize(VelocityXY), GroundSpeed);
-		Velocity.X = VelocityXY.X;
-		Velocity.Y = VelocityXY.Y;
+// 		// update state
+// 		StateVariables.bIsManualJumpDodge = true;
+// 		StateVariables.bCanCrouch = false;
 
-		// update state
-		StateVariables.bIsManualJumpDodge = true;
-		StateVariables.bCanCrouch = false;
+// 		return true;
+// 	}
 
-		return true;
-	}
+// 	if (bCanKanaboSecondJump)
+// 	{
+// 		if (Role == Role_Authority)
+// 			ConsumeStamina(10);
 
-	if (bCanKanaboSecondJump)
-	{
-		if (Role == Role_Authority)
-			ConsumeStamina(10);
+// 		Velocity.Z = PawnFamily.JumpZ;
+// 		bKanaboExtraJumpUsed = true;
+// 		StateVariables.bIsManualJumpDodge = true;
+// 		StateVariables.bCanCrouch = false;
 
-		Velocity.Z = PawnFamily.JumpZ;
-		bKanaboExtraJumpUsed = true;
-		StateVariables.bIsManualJumpDodge = true;
-		StateVariables.bCanCrouch = false;
+// 		return true;
+// 	}
 
-		return true;
-	}
-
-	return false;
-}
+// 	return false;
+// }
 
 // This gets called whenever the server initiates a dodge
 reliable server function ServerStartDodge(byte direction, byte WeaponId) {
@@ -1466,7 +1466,8 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 		else
 			if (Info.HitActor.PawnInfo.myFamily.ClassReference != ECLASS_Peasant
 				&& Info.HitActor.PlayerReplicationInfo != PRI) {
-				AOCPRI(PRI).TeamDamageDealt += ActualDamage;
+				// TeamDamageDealt is repurposed for successful parry counting (scoreboard "Prys" column)
+				// AOCPlayerController.TeamDamageDealt still tracks TDmg for the penalty system
 				AOCPlayerController(Controller).TeamDamageDealt += ActualDamage;
 			}
 
