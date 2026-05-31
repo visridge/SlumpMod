@@ -28,8 +28,6 @@ var globalconfig bool bSkeletalParry;    // When true, parry hitbox wraps the fu
 // Collision bubble radius (OuterCylinder)
 var globalconfig float fBangModCollisionRadius;  // Radius of the player collision bubble; vanilla AOC default is 39.0
 
-// Admin pause state
-var bool bIsPaused;  // Tracks whether the game is currently paused by an admin
 
 simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
 {
@@ -433,42 +431,6 @@ exec function AdminReadyAll() {
 	}
 	S_AdminBroadcastMessage("AdminReadyAll");
 	super.AdminReadyAll();
-}
-
-function bool SetPause(bool bPause, optional delegate<CanUnpause> CanUnpauseDelegate=CanUnpause) {
-	local bool bResult;
-	if (bPause) {
-		bFire = 0;
-		// Pause gamepad rumbling too if needed
-		bResult = WorldInfo.Game.SetPause(self,CanUnpauseDelegate);
-		if (bResult) {
-			PauseRumbleForAllPlayers();
-			bIsPaused = true;
-		}
-	} else if (IsAdmin() && WorldInfo.Pauser != none) {
-		S_UnpauseGame();
-	}
-	return bResult;
-}
-
-exec function UnPause() {
-	if (!PlayerReplicationInfo.bAdmin) {
-		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
-		return;
-	}
-	S_UnpauseGame();
-}
-
-reliable server function S_UnpauseGame() {
-	if (!IsAdmin())
-		return;
-	if (WorldInfo.Pauser == none) {
-		ClientDisplayConsoleMessage("The game is not currently paused.");
-		return;
-	}
-	WorldInfo.Game.ClearPause();
-	PauseRumbleForAllPlayers(false);
-	bIsPaused = false;
 }
 
 
@@ -1213,7 +1175,7 @@ function DrawTextOverHead(string DebugText)
 function bool IsSprintAngle(int fInputAngle) //checks if the player should be allowed to sprint or not
 {
 	//DrawTextOverHead(string(fInputAngle));
-	return ((fInputAngle < 24576) && (fInputAngle > 8192)); // ±45° from forward (16384 ± 8192)
+	return ((fInputAngle < 25486) && (fInputAngle > 7282)); //24576, 8192, //27079 and 7892 work but i'm loosening them slightly so that controller players can sprint at 45 degrees more consistently
 }
 
 // Player movement.
