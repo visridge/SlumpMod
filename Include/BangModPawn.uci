@@ -321,6 +321,12 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 	bParry = 1;
 	StaminaDamage = 0;
 
+	// Count this as a successful parry for the defender's scoreboard "Prys" column
+	if (Info.HitActor.PlayerReplicationInfo != none) {
+		AOCPRI(Info.HitActor.PlayerReplicationInfo).TeamDamageDealt++;
+		AOCPRI(Info.HitActor.PlayerReplicationInfo).bForceNetUpdate = true;
+	}
+
 	// Make the weapon (and thus the pawn) go into a deflect state
 	if (!Info.DamageType.default.bIsProjectile) {
 		AOCWeapon(Weapon).ActivateDeflect(Info.HitActor.StateVariables.bIsParrying);
@@ -478,58 +484,56 @@ simulated function bool CanKanaboAirJump()
 	return false;
 }
 
-// function bool DoJump( bool bUpdating )
-// {
-// 	local Vector VelocityXY;
-// 	local bool bCanNormalJump;
-// 	local bool bCanKanaboSecondJump;
+function bool DoJump( bool bUpdating )
+{
+	local Vector VelocityXY;
+	local bool bCanNormalJump;
+	local bool bCanKanaboSecondJump;
 
-// 	bCanNormalJump = StateVariables.bCanJump
-// 		&& bJumpCapable
-// 		&& !bIsCrouching
-// 		&& (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider)
-// 		&& !(StateVariables.bIsAttacking && AOCWeapon(Weapon).CurrentFireMode == Attack_Shove)
-// 		&& (PawnState == ESTATE_IDLE || PawnState == ESTATE_RUN || PawnState == ESTATE_SPRINT);
-// 	bCanKanaboSecondJump = CanKanaboAirJump();
+	bCanNormalJump = StateVariables.bCanJump
+		&& bJumpCapable
+		&& !bIsCrouching
+		&& (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider)
+		&& !(StateVariables.bIsAttacking && AOCWeapon(Weapon).CurrentFireMode == Attack_Shove)
+		&& (PawnState == ESTATE_IDLE || PawnState == ESTATE_RUN || PawnState == ESTATE_SPRINT);
+	bCanKanaboSecondJump = CanKanaboAirJump();
 
-// 	if (bCanNormalJump)
-// 	{
-// 		bKanaboExtraJumpUsed = false;
+	if (bCanNormalJump)
+	{
+		bKanaboExtraJumpUsed = false;
 
-// 		// super.DoJump (AOCPawn) always charges 7 stamina; refund 3 to achieve net cost of 4
-// 		super.DoJump(bUpdating);
-// 		if (Role == Role_Authority)
-// 			ConsumeStamina(-3);  // Net cost: 7 - 3 = 4
+		super.DoJump(bUpdating);
 
-// 		//Cap velocity X/Y
-// 		VelocityXY.X = Velocity.X;
-// 		VelocityXY.Y = Velocity.Y;
-// 		VelocityXY = Normal(VelocityXY) * Min(VSize(VelocityXY), GroundSpeed);
-// 		Velocity.X = VelocityXY.X;
-// 		Velocity.Y = VelocityXY.Y;
 
-// 		// update state
-// 		StateVariables.bIsManualJumpDodge = true;
-// 		StateVariables.bCanCrouch = false;
+		//Cap velocity X/Y
+		VelocityXY.X = Velocity.X;
+		VelocityXY.Y = Velocity.Y;
+		VelocityXY = Normal(VelocityXY) * Min(VSize(VelocityXY), GroundSpeed);
+		Velocity.X = VelocityXY.X;
+		Velocity.Y = VelocityXY.Y;
 
-// 		return true;
-// 	}
+		// update state
+		StateVariables.bIsManualJumpDodge = true;
+		StateVariables.bCanCrouch = false;
 
-// 	if (bCanKanaboSecondJump)
-// 	{
-// 		if (Role == Role_Authority)
-// 			ConsumeStamina(10);
+		return true;
+	}
 
-// 		Velocity.Z = PawnFamily.JumpZ;
-// 		bKanaboExtraJumpUsed = true;
-// 		StateVariables.bIsManualJumpDodge = true;
-// 		StateVariables.bCanCrouch = false;
+	if (bCanKanaboSecondJump)
+	{
+		if (Role == Role_Authority)
+			ConsumeStamina(10);
 
-// 		return true;
-// 	}
+		Velocity.Z = PawnFamily.JumpZ;
+		bKanaboExtraJumpUsed = true;
+		StateVariables.bIsManualJumpDodge = true;
+		StateVariables.bCanCrouch = false;
 
-// 	return false;
-// }
+		return true;
+	}
+
+	return false;
+}
 
 // This gets called whenever the server initiates a dodge
 reliable server function ServerStartDodge(byte direction, byte WeaponId) {
