@@ -20,7 +20,7 @@ event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
 
 	if (WidgetName == 'ping_title')
 	{
-		Widget.SetText("TDmg");
+		Widget.SetText("Prys");
 		bResult = true;
 	}
 
@@ -41,8 +41,8 @@ delegate int PRISortELO(PlayerReplicationInfo A, PlayerReplicationInfo B)
 {
 	local float EloA, EloB;
 
-	EloA = (100.0 * AOCPRI(A).NumKills + 33.0 * AOCPRI(A).NumAssists + 0.2 * AOCPRI(A).EnemyDamageDealt) / FMax(float(AOCPRI(A).Deaths), 1.0);
-	EloB = (100.0 * AOCPRI(B).NumKills + 33.0 * AOCPRI(B).NumAssists + 0.2 * AOCPRI(B).EnemyDamageDealt) / FMax(float(AOCPRI(B).Deaths), 1.0);
+	EloA = 100.0 * AOCPRI(A).NumKills + 33.0 * AOCPRI(A).NumAssists + 0.2 * AOCPRI(A).EnemyDamageDealt + 15.0 * AOCPRI(A).TeamDamageDealt;
+	EloB = 100.0 * AOCPRI(B).NumKills + 33.0 * AOCPRI(B).NumAssists + 0.2 * AOCPRI(B).EnemyDamageDealt + 15.0 * AOCPRI(B).TeamDamageDealt;
 
 	if (EloA == EloB)
 		return 0;
