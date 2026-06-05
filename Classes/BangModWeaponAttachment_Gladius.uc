@@ -36,12 +36,12 @@ simulated function float GetHandleTracerPercent(int i)
 DefaultProperties
 {
 	Begin Object Name=SkeletalMeshComponent0
-		SkeletalMesh=SkeletalMesh'WP_aux_saber_variant_03.WEP_Scimitar'
+		SkeletalMesh=SkeletalMesh'WP_aux_Shortsword.wep_shortsword'
 		Scale=1.6
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
-		SkeletalMesh=SkeletalMesh'WP_aux_saber_variant_03.WEP_Scimitar'
+		SkeletalMesh=SkeletalMesh'WP_aux_Shortsword.wep_shortsword'
 		Scale=1.6
 	End Object
 
@@ -51,26 +51,26 @@ DefaultProperties
 	WeaponStaticMeshScale=1.6
 
 	Skins(0)={(
-		SkeletalMeshPath="WP_aux_saber_variant_03.WEP_Scimitar",
-		StaticMeshPath="WP_aux_saber_variant_03.SM_Scimitar",
+		SkeletalMeshPath="WP_aux_Shortsword.wep_shortsword",
+		StaticMeshPath="WP_aux_Shortsword.SM_Short_Sword",
 		MaterialPath="",
 		StaticMeshScale=1.6,
-		ImagePath="UI_CustWeaponImages_SWF.skin_vypress_scimitar_png"
+		ImagePath="UI_CustWeaponImages_SWF.skin_shortsword_png"
 		)};
 
 	Skins(1)={(
-		SkeletalMeshPath="WP_aux_saber_variant_03.WEP_Scimitar",
-		StaticMeshPath="WP_aux_saber_variant_03.SM_Scimitar",
+		SkeletalMeshPath="WP_aux_Shortsword.wep_shortsword",
+		StaticMeshPath="WP_aux_Shortsword.SM_Short_Sword",
 		MaterialPath="",
 		StaticMeshScale=1.6,
-		ImagePath="UI_CustWeaponImages_SWF.skin_vypress_scimitar_png"
+		ImagePath="UI_CustWeaponImages_SWF.skin_shortsword_png"
 		)};
 
 	Skins(2)={(
-		SkeletalMeshPath="WP_aux_saber_variant_03.WEP_Scimitar",
-		StaticMeshPath="WP_aux_saber_variant_03.SM_Scimitar",
+		SkeletalMeshPath="WP_aux_Shortsword.wep_shortsword",
+		StaticMeshPath="WP_aux_Shortsword.SM_Short_Sword",
 		MaterialPath="",
 		StaticMeshScale=1.6,
-		ImagePath="UI_CustWeaponImages_SWF.skin_vypress_scimitar_png"
+		ImagePath="UI_CustWeaponImages_SWF.skin_shortsword_png"
 		)};
 }

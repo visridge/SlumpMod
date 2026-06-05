@@ -36,12 +36,12 @@ simulated function float GetHandleTracerPercent(int i)
 DefaultProperties
 {
 	Begin Object Name=SkeletalMeshComponent0
-		SkeletalMesh=SkeletalMesh'WP_1hs_Norse_Sword_Variant_05.WEP_Germanic_Spatha'
+		SkeletalMesh=SkeletalMesh'WP_1hs_Broadsword.WEP_Broadsword'
 		Scale=1.2
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
-		SkeletalMesh=SkeletalMesh'WP_1hs_Norse_Sword_Variant_05.WEP_Germanic_Spatha'
+		SkeletalMesh=SkeletalMesh'WP_1hs_Broadsword.WEP_Broadsword'
 		Scale=1.2
 	End Object
 
@@ -59,82 +59,82 @@ DefaultProperties
 	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
 
 	Skins(0)={(
-		SkeletalMeshPath="WP_aux_Shortsword.wep_shortsword",
-		StaticMeshPath="WP_aux_Shortsword.SM_Short_Sword",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
-		StaticMeshScale=1.0,
-		ImagePath="ui_custweaponimages_swf.skin_shortsword_png"
+		StaticMeshScale=1.2,
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(1)={(
-		SkeletalMeshPath="WP_1hs_Norse_Sword_Variant_05.WEP_Germanic_Spatha",
-		StaticMeshPath="WP_1hs_Norse_Sword_Variant_05.SM_Germanic_Spatha",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
 		StaticMeshScale=1.2,
-		ImagePath="ui_custweaponimages_swf.skin_chieftansSpatha_png"
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(2)={(
-		SkeletalMeshPath="WP_1hs_Norse_Sword_Variant_05.WEP_Germanic_Spatha",
-		StaticMeshPath="WP_1hs_Norse_Sword_Variant_05.SM_Germanic_Spatha",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
 		StaticMeshScale=1.2,
-		ImagePath="ui_custweaponimages_swf.skin_chieftansSpatha_png"
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(3)={(
-		SkeletalMeshPath="WP_1hs_Norse_Sword_Variant_05.WEP_Germanic_Spatha",
-		StaticMeshPath="WP_1hs_Norse_Sword_Variant_05.SM_Germanic_Spatha",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
 		StaticMeshScale=1.2,
-		ImagePath="ui_custweaponimages_swf.skin_chieftansSpatha_png"
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(4)={(
-		SkeletalMeshPath="WP_1hs_Norse_Sword_Variant_05.WEP_Germanic_Spatha",
-		StaticMeshPath="WP_1hs_Norse_Sword_Variant_05.SM_Germanic_Spatha",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
 		StaticMeshScale=1.2,
-		ImagePath="ui_custweaponimages_swf.skin_chieftansSpatha_png"
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(5)={(
-		SkeletalMeshPath="WP_1hs_Norse_Sword_Variant_05.WEP_Germanic_Spatha",
-		StaticMeshPath="WP_1hs_Norse_Sword_Variant_05.SM_Germanic_Spatha",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
 		StaticMeshScale=1.2,
-		ImagePath="ui_custweaponimages_swf.skin_chieftansSpatha_png"
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(6)={(
-		SkeletalMeshPath="WP_1hs_Norse_Sword_Variant_05.WEP_Germanic_Spatha",
-		StaticMeshPath="WP_1hs_Norse_Sword_Variant_05.SM_Germanic_Spatha",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
 		StaticMeshScale=1.2,
-		ImagePath="ui_custweaponimages_swf.skin_chieftansSpatha_png"
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(7)={(
-		SkeletalMeshPath="WP_1hs_Norse_Sword_Variant_05.WEP_Germanic_Spatha",
-		StaticMeshPath="WP_1hs_Norse_Sword_Variant_05.SM_Germanic_Spatha",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
 		StaticMeshScale=1.2,
-		ImagePath="ui_custweaponimages_swf.skin_chieftansSpatha_png"
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(8)={(
-		SkeletalMeshPath="WP_1hs_Norse_Sword_Variant_05.WEP_Germanic_Spatha",
-		StaticMeshPath="WP_1hs_Norse_Sword_Variant_05.SM_Germanic_Spatha",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
 		StaticMeshScale=1.2,
-		ImagePath="ui_custweaponimages_swf.skin_chieftansSpatha_png"
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 
 	Skins(9)={(
-		SkeletalMeshPath="WP_1hs_Norse_Sword_Variant_05.WEP_Germanic_Spatha",
-		StaticMeshPath="WP_1hs_Norse_Sword_Variant_05.SM_Germanic_Spatha",
+		SkeletalMeshPath="WP_1hs_Broadsword.WEP_Broadsword",
+		StaticMeshPath="WP_1hs_Broadsword.sm_Broadsword",
 		MaterialPath="",
 		StaticMeshScale=1.2,
-		ImagePath="ui_custweaponimages_swf.skin_chieftansSpatha_png"
+		ImagePath="UI_CustWeaponImages_SWF.skin_broadsword_png"
 		)};
 }
