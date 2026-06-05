@@ -161,7 +161,7 @@ DefaultProperties
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Claymore]
 	 */
 	iFeintStaminaCost=15
-	FeintTime=0.28
+	FeintTime=0.325
 	TertiaryFeintTime=0.46
 	fParryNegation=37
 	ParryDrain(0)=24
