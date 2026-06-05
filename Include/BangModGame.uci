@@ -212,6 +212,32 @@ function int GetActualPlayersCount()
     return PlayerCount;
 }
 
+function ResetParryScoreboardCounts()
+{
+    local int i;
+    local AOCPRI PRI;
+
+    if (WorldInfo == none || WorldInfo.GRI == none)
+    {
+        return;
+    }
+
+    for (i = 0; i < WorldInfo.GRI.PRIArray.Length; ++i)
+    {
+        PRI = AOCPRI(WorldInfo.GRI.PRIArray[i]);
+        if (PRI != none)
+        {
+            PRI.TeamDamageDealt = 0;
+        }
+    }
+}
+
+function StartMatch()
+{
+    ResetParryScoreboardCounts();
+    super.StartMatch();
+}
+
 
 exec function TournamentMode(bool bEnable)
 {
