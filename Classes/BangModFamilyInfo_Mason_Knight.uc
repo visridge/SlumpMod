@@ -26,9 +26,9 @@ DefaultProperties
 	NewSecondaryWeapons(2)=(CWeapon=class'BangModWeapon_HolyWaterSprinkler')
 	NewSecondaryWeapons(3)=(CWeapon=class'BangModWeapon_Saber')
 	NewSecondaryWeapons(4)=(CWeapon=class'BangModWeapon_Falchion')
-	NewSecondaryWeapons(6)=(CWeapon=class'BangModWeapon_WarAxe')
-	NewSecondaryWeapons(7)=(CWeapon=class'BangModWeapon_Dane')
-	NewSecondaryWeapons(8)=(CWeapon=class'BangModWeapon_Cudgel')
+	NewSecondaryWeapons(5)=(CWeapon=class'BangModWeapon_WarAxe')
+	NewSecondaryWeapons(6)=(CWeapon=class'BangModWeapon_Dane')
+	NewSecondaryWeapons(7)=(CWeapon=class'BangModWeapon_Cudgel')
 
 	NewTertiaryWeapons.empty;
 	NewTertiaryWeapons(0)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)

@@ -17,7 +17,8 @@ DefaultProperties
 	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Gladius',CorrespondingDuelProp=EDUEL_DagesseUse)
 	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_BastardSword',CorrespondingDuelProp=EDUEL_LongswordUse)
 	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_SpikedMace',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
-	// NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_BoStaff',CorrespondingDuelProp=EDUEL_BillUse)
+	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_Firebug')
+	// NewPrimaryWeapons(12)=(CWeapon=class'BangModWeapon_BoStaff',CorrespondingDuelProp=EDUEL_BillUse)
 
 	NewSecondaryWeapons.empty;
 	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_Broadsword')
