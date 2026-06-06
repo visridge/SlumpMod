@@ -31,6 +31,25 @@ simulated function AttachTo(UTPawn OwnerPawn)
 	}
 }
 
+// Strip parry box hit if the attacker is behind the defender's lateral plane.
+// dot < 0.0 = exactly 90 degrees — attacker must be in the front hemisphere to parry.
+// Increase the threshold (e.g. 0.342 for 70 degrees) to narrow the parryable cone further.
+simulated function HandleHitPawn(AOCPawn HitPawn, Vector HitLocation, Vector HitNormal, TraceHitInfo HitInfoTrace, Vector HitForce, optional ETracerType TracerType)
+{
+	local vector AttackerDir;
+
+	if (HitPawn != none && HitInfoTrace.HitComponent == HitPawn.ParryComponent)
+	{
+		AttackerDir = Normal(AOCOwner.Location - HitPawn.Location);
+		if ((AttackerDir dot vector(HitPawn.Rotation)) < 0.0)
+		{
+			HitInfoTrace.HitComponent = HitPawn.Mesh;
+		}
+	}
+
+	super.HandleHitPawn(HitPawn, HitLocation, HitNormal, HitInfoTrace, HitForce, TracerType);
+}
+
 // Default properties
 NetUpdateFrequency=120
 ParryTracersLength=67.0
