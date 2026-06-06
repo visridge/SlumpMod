@@ -1335,8 +1335,8 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// in the shared pawn hit path where the final damage is actually applied.
 	if (bBallistaBolt)
 	{
-		ActualDamage = FMin(ActualDamage, 1.0f);
-		Info.HitForce = vect(0.0f, 0.0f, 0.0f);
+		ActualDamage = 0.0f;
+		// Info.HitForce = vect(0.0f, 0.0f, 0.0f);
 	}
 
 	// Stun if the parry costs too much stamina
@@ -1582,6 +1582,15 @@ function Set_bShowHitTime(bool set)
 }
 
 
+
+// Block all ballista bolt damage (direct and splash) at the TakeDamage level.
+// Splash damage from HurtRadius bypasses AttackOtherPawn entirely, so this is the only reliable intercept.
+event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
+{
+	if (DamageType == class'AOCDmgType_BallistaBolt')
+		return;
+	super.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
+}
 
 // Override to reset parry box to AOC defaults when BangMod parry box is disabled
 simulated function AOCSetCharacterClassFromInfo(AOCFamilyInfo Info)
