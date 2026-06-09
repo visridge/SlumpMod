@@ -31,9 +31,10 @@ simulated function AttachTo(UTPawn OwnerPawn)
 	}
 }
 
-// Strip parry box hit if the attacker is behind the defender's lateral plane.
-// dot < 0.0 = exactly 90 degrees — attacker must be in the front hemisphere to parry.
-// Increase the threshold (e.g. 0.342 for 70 degrees) to narrow the parryable cone further.
+// Secondary filter: strip the parry-box component flag if the attacker is behind the defender.
+// This prevents the pawn from being added to ParryPawns via the ETracerType_ParryImmediately path.
+// NOTE: The primary butt-parry fix is in DetectSuccessfulParry (BangModPawn.uci), which covers
+// both parry-box hits AND body hits on a parrying pawn. This filter only handles the box-hit path.
 simulated function HandleHitPawn(AOCPawn HitPawn, Vector HitLocation, Vector HitNormal, TraceHitInfo HitInfoTrace, Vector HitForce, optional ETracerType TracerType)
 {
 	local vector AttackerDir;
