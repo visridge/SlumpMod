@@ -27,6 +27,39 @@ var float fDamageTraceActivationDelay;  // Delay before release traces can deal 
 var float fMinComboTransitionTime;  // Minimum time before combo can release (100ms floor)
 var float fComboTransitionStartTime;  // When transition state began
 
+// Returns true when the weapon is in a riposte flow and should ignore flinch.
+simulated function bool IsRiposteFlinchProtected()
+{
+	return bParryHitCounter && (IsInState('ParryRelease') || IsInState('Release'));
+}
+
+// Suppress flinch on the owning client during a riposte.
+simulated function ActivateFlinch(bool bFullBody, EDirection Direction, bool bGeneric, bool bSpecial, bool bHitFromTwoHander)
+{
+	if (IsRiposteFlinchProtected())
+		return;
+
+	super.ActivateFlinch(bFullBody, Direction, bGeneric, bSpecial, bHitFromTwoHander);
+}
+
+// Suppress flinch RPC received by the client during a riposte.
+reliable client function ClientActivateFlinch(bool bFullBody, int Dir, bool bGeneric, bool bSpecial, bool bHitFromTwoHander)
+{
+	if (IsRiposteFlinchProtected())
+		return;
+
+	super.ClientActivateFlinch(bFullBody, Dir, bGeneric, bSpecial, bHitFromTwoHander);
+}
+
+// Suppress flinch RPC from server during a riposte.
+reliable server function ServerActivateFlinch(bool bSpecial)
+{
+	if (IsRiposteFlinchProtected())
+		return;
+
+	super.ServerActivateFlinch(bSpecial);
+}
+
 simulated function BufferParryInput()
 {
 	// Parry buffer disabled.
