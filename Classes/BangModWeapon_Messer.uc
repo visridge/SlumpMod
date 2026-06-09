@@ -182,7 +182,7 @@ Begin Object class=AnimNodeSequence Name=MeshSequenceA
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Messer]
 	 */
 	iFeintStaminaCost=15
-	FeintTime=0.325
+	FeintTime=0.35
 	TertiaryFeintTime=0.45
 	ComboFeintTime=0.575
 	fParryNegation=25

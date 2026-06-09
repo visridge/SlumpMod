@@ -313,9 +313,18 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 	local bool bOutOfStamina;
 	local float fParryTimeSeconds;
 	local bool bRewardableParry;
+	local vector AttackerDir;
 
 	// Don't (non-shield) parry oil pots or smoke pots
 	if (!Info.HitActor.StateVariables.bIsActiveShielding && (AOCWeapon_OilPot(Info.Instigator.Weapon) != none || BangModWeapon_SmokePot(Info.Instigator.Weapon) != none))
+		return false;
+
+	// Prevent butt-parrying: attacker must be in the front hemisphere of the defender.
+	// self = attacker, Info.HitActor = defender.
+	// AttackerDir points from defender toward attacker; defender.Rotation is their forward vector.
+	// If dot < 0 the attacker is behind the defender — strip the parry entirely.
+	AttackerDir = Normal(Location - Info.HitActor.Location);
+	if ((AttackerDir dot vector(Info.HitActor.Rotation)) < 0.0)
 		return false;
 
 	bParry = 1;
@@ -1267,8 +1276,11 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 		bParry = false;
 
 	// Cause pawn to lose stamina, get stunned etc
+	// If DetectSuccessfulParry returns false (e.g. butt-parry blocked), treat as a normal hit
+	// so that damage and flinch are applied as if the defender wasn't parrying.
 	if (bParry)
-			DetectSuccessfulParry(Info, i, bCheckParryOnly, 0);
+		if (!DetectSuccessfulParry(Info, i, bCheckParryOnly, 0))
+			bParry = false;
 
 	if (Info.DamageType.default.bIsProjectile && !bParry)
 		AOCPRI(PlayerReplicationInfo).NumHits += 1;
