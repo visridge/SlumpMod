@@ -625,6 +625,32 @@ function bool StartDodge(int direction)
 	return false;
 }
 
+// Override lunge to use camera yaw only, so looking up/down does not affect
+// horizontal lunge direction or strength.
+function bool Lunge(optional bool bManualFlag = false, optional bool bReverseDirection = false, optional bool bCombo = false)
+{
+	local vector X, Y, Z;
+	local rotator ViewRot;
+
+	if (Physics == PHYS_Falling || PawnState == ESTATE_PUSH || PawnState == ESTATE_BATTERING || PawnState == ESTATE_DODGE)
+		return false;
+
+	ViewRot = GetViewRotation();
+	ViewRot.Pitch = 0;
+	ViewRot.Roll = 0;
+	GetAxes(ViewRot, X, Y, Z);
+
+	X.Z = 0.0f;
+	Y.Z = 0.0f;
+	X = Normal(X);
+	Y = Normal(Y);
+
+	if (bReverseDirection)
+		X *= -1;
+
+	return PerformLunge(X, Y, bManualFlag, bCombo);
+}
+
 // This gets called when the dodge queue ends
 simulated function EndDodgeQueue() {
 	if (DodgeSM.AttackQueue != Attack_Parry) {
