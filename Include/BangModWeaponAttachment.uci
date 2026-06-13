@@ -35,21 +35,21 @@ simulated function AttachTo(UTPawn OwnerPawn)
 // This prevents the pawn from being added to ParryPawns via the ETracerType_ParryImmediately path.
 // NOTE: The primary butt-parry fix is in DetectSuccessfulParry (BangModPawn.uci), which covers
 // both parry-box hits AND body hits on a parrying pawn. This filter only handles the box-hit path.
-simulated function HandleHitPawn(AOCPawn HitPawn, Vector HitLocation, Vector HitNormal, TraceHitInfo HitInfoTrace, Vector HitForce, optional ETracerType TracerType)
-{
-	local vector AttackerDir;
+// simulated function HandleHitPawn(AOCPawn HitPawn, Vector HitLocation, Vector HitNormal, TraceHitInfo HitInfoTrace, Vector HitForce, optional ETracerType TracerType)
+// {
+// 	local vector AttackerDir;
 
-	if (HitPawn != none && HitInfoTrace.HitComponent == HitPawn.ParryComponent)
-	{
-		AttackerDir = Normal(AOCOwner.Location - HitPawn.Location);
-		if ((AttackerDir dot vector(HitPawn.Rotation)) < 0.0)
-		{
-			HitInfoTrace.HitComponent = HitPawn.Mesh;
-		}
-	}
+// 	if (HitPawn != none && HitInfoTrace.HitComponent == HitPawn.ParryComponent)
+// 	{
+// 		AttackerDir = Normal(AOCOwner.Location - HitPawn.Location);
+// 		if ((AttackerDir dot vector(HitPawn.Rotation)) < 0.0)
+// 		{
+// 			HitInfoTrace.HitComponent = HitPawn.Mesh;
+// 		}
+// 	}
 
-	super.HandleHitPawn(HitPawn, HitLocation, HitNormal, HitInfoTrace, HitForce, TracerType);
-}
+// 	super.HandleHitPawn(HitPawn, HitLocation, HitNormal, HitInfoTrace, HitForce, TracerType);
+// }
 
 // Default properties
 NetUpdateFrequency=120

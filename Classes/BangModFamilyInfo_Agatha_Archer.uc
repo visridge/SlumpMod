@@ -2,13 +2,13 @@ class BangModFamilyInfo_Agatha_Archer extends AOCFamilyInfo_Agatha_Archer;
 
 DefaultProperties
 {
-	ParryBoxScale=(X=0.18,Y=0.17,Z=0.35)
-    ParryBoxTranslation=(X=10, Y=5, Z=-28)
+	// ParryBoxScale=(X=0.18,Y=0.17,Z=0.35)
+    // ParryBoxTranslation=(X=10, Y=5, Z=-28)
 
 	NewPrimaryWeapons.empty;
 	NewPrimaryWeapons(0)=(CWeapon=class'BangModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
 	NewPrimaryWeapons(1)=(CWeapon=class'BangModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)
-	NewPrimaryWeapons(2)=(CWeapon=class'BangModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
+	NewPrimaryWeapons(2)=(CWeapon=class'AOCWeapon_AgathaFlag')
 	NewPrimaryWeapons(3)=(CWeapon=class'BangModWeapon_Longbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(4)=(CWeapon=class'BangModWeapon_Shortbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(5)=(CWeapon=class'BangModWeapon_Warbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))

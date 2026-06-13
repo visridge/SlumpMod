@@ -323,12 +323,12 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 	// self = attacker, Info.HitActor = defender.
 	// AttackerDir points from defender toward attacker; defender.Rotation is their forward vector.
 	// If dot < 0 the attacker is behind the defender — strip the parry entirely.
-	AttackerDir = Normal(Location - Info.HitActor.Location);
-	if ((AttackerDir dot vector(Info.HitActor.Rotation)) < 0.0)
-		return false;
+	// AttackerDir = Normal(Location - Info.HitActor.Location);
+	// if ((AttackerDir dot vector(Info.HitActor.Rotation)) < 0.0)
+	// 	return false;
 
-	bParry = 1;
-	StaminaDamage = 0;
+	// bParry = 1;
+	// StaminaDamage = 0;
 
 	// Count this as a successful parry for the defender's scoreboard "Prys" column
 	if (Info.HitActor.PlayerReplicationInfo != none) {
@@ -1534,6 +1534,14 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 
 	// Call take damage on the targeted pawn
 	Info.HitActor.TakeDamage(ActualDamage, Controller != none ? Controller : CurrentSiegeWeapon.Controller, Info.HitLocation, Info.HitForce, Info.DamageType, THI);
+
+	// Firebug: set hit pawn on fire only when damage was confirmed (not parried, not SSSC-rejected).
+	if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
+		&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
+		&& Info.HitActor.IsAliveAndWell())
+	{
+		Info.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
+	}
 
 	// Was the enemy killed?
 	bWasKilled = (Info.HitActor == none || Info.HitActor.Health <= 0);
