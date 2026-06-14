@@ -286,3 +286,24 @@ DefaultProperties
     bDisableTeamDamagePenalty = true
 
 }
+
+// BANGMOD: Nerf catapults — zero out horizontal velocity on all catapult rocks.
+// Destructible objectives count hits not damage values, so we can't just zero the damage type.
+// Instead we make every rock fly straight up and fall back down, rendering catapults useless.
+function Tick(float DeltaTime)
+{
+	local AOCProj_CatapultRock Rock;
+
+	super.Tick(DeltaTime);
+
+	foreach WorldInfo.AllActors(class'AOCProj_CatapultRock', Rock)
+	{
+		if (Rock.Velocity.X != 0 || Rock.Velocity.Y != 0)
+		{
+			Rock.Velocity.X = 0;
+			Rock.Velocity.Y = 0;
+			Rock.Acceleration.X = 0;
+			Rock.Acceleration.Y = 0;
+		}
+	}
+}

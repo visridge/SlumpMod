@@ -197,7 +197,7 @@ simulated state Flinch
 		if (FireModeNum == Attack_Parry)
 		{
 			// BufferParryInput();
-			if (!bGenericHit || !bFullBodyDazed)
+			if (!bFullBodyDazed)
 			{
 				// ClearParryBuffer();
 				ActivateParry();
@@ -241,6 +241,11 @@ simulated state Flinch
 		{
 			AOCOwner.StateVariables.bCanDodge = false;
 		}
+		else
+		{
+			// BANGMOD: Ensure parry is always allowed during flinch except stam-out dazes
+			AOCOwner.StateVariables.bCanParry = true;
+		}
 
 		StartManualQueueTimer(GetFlinchAnimLength(bFullBodyDazed, bGenericHit, bSpecialDazed));
 	}
@@ -270,7 +275,7 @@ simulated state Hit
 		if (FireModeNum == Attack_Parry)
 		{
 			// BufferParryInput();
-			if (!bGenericHit || !bFullBodyDazed)
+			if (!bFullBodyDazed)
 			{
 				// ClearParryBuffer();
 				ActivateParry();
@@ -309,6 +314,11 @@ simulated state Hit
 		if (bSpecialDazed)
 		{
 			AOCOwner.StateVariables.bCanDodge = false;
+		}
+		else
+		{
+			// BANGMOD: Ensure parry is always allowed during hit except stam-out dazes
+			AOCOwner.StateVariables.bCanParry = true;
 		}
 
 		StartManualQueueTimer(GetFlinchAnimLength(bFullBodyDazed, bGenericHit, bSpecialDazed));

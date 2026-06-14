@@ -8,7 +8,7 @@ DefaultProperties
 	NewPrimaryWeapons.empty;
 	NewPrimaryWeapons(0)=(CWeapon=class'BangModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
 	NewPrimaryWeapons(1)=(CWeapon=class'BangModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)
-	NewPrimaryWeapons(2)=(CWeapon=class'AOCWeapon_MasonFlag')
+	NewPrimaryWeapons(2)=(CWeapon=class'BangModWeapon_MasonFlag')
 	NewPrimaryWeapons(3)=(CWeapon=class'BangModWeapon_Longbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(4)=(CWeapon=class'BangModWeapon_Shortbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
 	NewPrimaryWeapons(5)=(CWeapon=class'BangModWeapon_Warbow',CForceTertiary=(class'AOCWeapon_ProjBodkin', class'AOCWeapon_ProjBroadhead'))
@@ -16,8 +16,8 @@ DefaultProperties
 	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_DualBucklers')
 	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Gladius',CorrespondingDuelProp=EDUEL_DagesseUse)
 	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_BastardSword',CorrespondingDuelProp=EDUEL_LongswordUse)
-	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_SpikedMace',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
-	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_Firebug')
+	// NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_SpikedMace',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
+	// NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_Firebug')
 	// NewPrimaryWeapons(12)=(CWeapon=class'BangModWeapon_BoStaff',CorrespondingDuelProp=EDUEL_BillUse)
 
 	NewSecondaryWeapons.empty;

@@ -13,11 +13,14 @@ DefaultProperties
 
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'CHV_DeadliestPorts.Meshes.WEP_Nodachi'
+		RelativeLocation=(X=0,Y=0,Z=15)
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
 		SkeletalMesh=SkeletalMesh'CHV_DeadliestPorts.Meshes.WEP_Nodachi'
+		RelativeLocation=(X=0,Y=0,Z=15)
 	End Object
+
 
 	WeaponID=EWEP_Zweihander
 	WeaponClass=class'BangModWeapon_Nodachi'

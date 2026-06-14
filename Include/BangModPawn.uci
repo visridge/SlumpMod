@@ -1533,14 +1533,15 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	bEnemyWasBot = Info.HitActor.bIsBot || Info.HitActor.PlayerReplicationInfo.bBot || AOCPRI(Info.HitActor.PlayerReplicationInfo).bIsBot || AOCAIController(Info.HitActor.Controller) != none;
 
 	// Call take damage on the targeted pawn
-	Info.HitActor.TakeDamage(ActualDamage, Controller != none ? Controller : CurrentSiegeWeapon.Controller, Info.HitLocation, Info.HitForce, Info.DamageType, THI);
+	Info.HitActor.TakeDamage(ActualDamage, Controller != none ? Controller : CurrentSiegeWeapon.Controller, Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
 
 	// Firebug: set hit pawn on fire only when damage was confirmed (not parried, not SSSC-rejected).
+	// Moved to TakeDamage to ensure blunt hit sound plays before fire ignition.
 	if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
 		&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
 		&& Info.HitActor.IsAliveAndWell())
 	{
-		Info.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
+		// Info.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
 	}
 
 	// Was the enemy killed?
@@ -1635,7 +1636,23 @@ event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector
 {
 	if (DamageType == class'AOCDmgType_BallistaBolt')
 		return;
+
+	// Firebug: ignite target after blunt hit sound has played in AttackOtherPawn.
+	// DamageCauser is the attacking pawn (passed as 'self' from AttackOtherPawn).
+	// Fire DoT ticks won't re-ignite because bIsBurning prevents it.
+	if (DamageCauser != none && DamageCauser != self
+		&& BangModWeapon_Firebug(DamageCauser.Weapon) != none
+		&& Damage > 0.0f && !bIsBurning && IsAliveAndWell())
+	{
+		SetPawnOnFire(none, InstigatedBy, DamageCauser, class'BangModDmgType_TorchBurn');
+	}
+
 	super.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
+}
+
+// BANGMOD: Suppress burning scream voice lines. Fire crackle SFX still plays via ActivateFireSFX.
+simulated function ActivateBurnScream()
+{
 }
 
 // Override to reset parry box to AOC defaults when BangMod parry box is disabled

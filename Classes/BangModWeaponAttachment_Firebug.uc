@@ -63,13 +63,16 @@ DefaultProperties
 {
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'WP_Torches.Skelmeshes.torch01'
+		Scale=1.1
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
 		SkeletalMesh=SkeletalMesh'WP_Torches.Skelmeshes.torch01'
+		Scale=1.1
 	End Object
 
 	WeaponClass=class'BangModWeapon_Firebug'
+	WeaponStaticMeshScale=1.1
 
 	WeaponPSSocket=Flame
 	WeaponPS=ParticleSystem'CHV_PartiPack.Particles.P_torchfire2'
@@ -78,21 +81,21 @@ DefaultProperties
 		SkeletalMeshPath="WP_Torches.Skelmeshes.torch01",
 		StaticMeshPath="WP_Torches.Meshes.torch01_static",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(1)={(
 		SkeletalMeshPath="WP_Torches.Skelmeshes.torch01",
 		StaticMeshPath="WP_Torches.Meshes.torch01_static",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(2)={(
 		SkeletalMeshPath="WP_Torches.Skelmeshes.torch01",
 		StaticMeshPath="WP_Torches.Meshes.torch01_static",
 		MaterialPath="",
-		StaticMeshScale=1.0,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 }
