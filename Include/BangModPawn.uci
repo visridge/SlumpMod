@@ -1641,7 +1641,7 @@ event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector
 	// DamageCauser is the attacking pawn (passed as 'self' from AttackOtherPawn).
 	// Fire DoT ticks won't re-ignite because bIsBurning prevents it.
 	if (DamageCauser != none && DamageCauser != self
-		&& BangModWeapon_Firebug(DamageCauser.Weapon) != none
+		&& BangModWeapon_Firebug(AOCPawn(DamageCauser).Weapon) != none
 		&& Damage > 0.0f && !bIsBurning && IsAliveAndWell())
 	{
 		SetPawnOnFire(none, InstigatedBy, DamageCauser, class'BangModDmgType_TorchBurn');
@@ -1758,7 +1758,7 @@ DefaultProperties
 	OuterCylinderComp=OuterCylinder
 
 	Begin Object Name=OuterCylinder
-	    CollisionRadius=+0036.000000
+	    CollisionRadius=+0039.000000
 	    CollisionHeight=+0065.000000
 	    BlockNonZeroExtent=true
 	    BlockZeroExtent=false

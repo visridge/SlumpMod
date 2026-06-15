@@ -197,7 +197,11 @@ simulated state Flinch
 		if (FireModeNum == Attack_Parry)
 		{
 			// BufferParryInput();
-			if (!bFullBodyDazed)
+			// BANGMOD: Use bSpecialDazed instead of bFullBodyDazed — bFullBodyDazed is always
+			// true because ActivateFlinch is always called with bFullBody=true.
+			// bSpecialDazed=true only for stamina-out dazes, which matches the BeginState intent:
+			// "Ensure parry is always allowed during flinch except stam-out dazes"
+			if (!bSpecialDazed)
 			{
 				// ClearParryBuffer();
 				ActivateParry();
@@ -275,7 +279,8 @@ simulated state Hit
 		if (FireModeNum == Attack_Parry)
 		{
 			// BufferParryInput();
-			if (!bFullBodyDazed)
+			// BANGMOD: Use bSpecialDazed instead of bFullBodyDazed (same fix as Flinch.BeginFire)
+			if (!bSpecialDazed)
 			{
 				// ClearParryBuffer();
 				ActivateParry();
