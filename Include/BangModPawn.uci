@@ -15,6 +15,17 @@ var float fRiposteGracePeriod;                  // Grace period after parry wher
 var bool bKanaboExtraJumpUsed;
 var CylinderComponent OuterCylinderComp; // Reference to the OuterCylinder component (player collision bubble)
 
+// BANGMOD: Parry rollback buffer — stores recent unparried hits so we can undo them
+// if a parry starts within the rollback window (80ms).
+struct RecentHitEntry
+{
+    var float fHitTime;
+    var float fDamage;
+    var AOCPawn InstigatorPawn;
+};
+var array<RecentHitEntry> RecentUnparriedHits;
+var float fParryRollbackWindowSeconds;   // How far back to check for rollback eligibility
+
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
 // {
@@ -323,12 +334,12 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 	// self = attacker, Info.HitActor = defender.
 	// AttackerDir points from defender toward attacker; defender.Rotation is their forward vector.
 	// If dot < 0 the attacker is behind the defender — strip the parry entirely.
-	// AttackerDir = Normal(Location - Info.HitActor.Location);
-	// if ((AttackerDir dot vector(Info.HitActor.Rotation)) < 0.0)
-	// 	return false;
+	AttackerDir = Normal(Location - Info.HitActor.Location);
+	if ((AttackerDir dot vector(Info.HitActor.Rotation)) < 0.0)
+		return false;
 
-	// bParry = 1;
-	// StaminaDamage = 0;
+	bParry = 1;
+	StaminaDamage = 0;
 
 	// Count this as a successful parry for the defender's scoreboard "Prys" column
 	if (Info.HitActor.PlayerReplicationInfo != none) {
@@ -1194,6 +1205,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	local bool bParryActive;
 	local float fTimeSinceParryStart;
 	local bool bBallistaBolt;
+	local RecentHitEntry RollbackEntry;  // BANGMOD: for parry rollback buffer
 
 	// Initialise player replication information
 	if (PlayerReplicationInfo == none)
@@ -1535,6 +1547,15 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// Call take damage on the targeted pawn
 	Info.HitActor.TakeDamage(ActualDamage, Controller != none ? Controller : CurrentSiegeWeapon.Controller, Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
 
+	// BANGMOD: Buffer unparried hits for parry rollback
+	if (!bParry && ActualDamage > 0.0f && BangModPawn(Info.HitActor) != none)
+	{
+		RollbackEntry.fHitTime = WorldInfo.TimeSeconds;
+		RollbackEntry.fDamage = ActualDamage;
+		RollbackEntry.InstigatorPawn = self;
+		BangModPawn(Info.HitActor).RecentUnparriedHits.AddItem(RollbackEntry);
+	}
+
 	// Firebug: set hit pawn on fire only when damage was confirmed (not parried, not SSSC-rejected).
 	// Moved to TakeDamage to ensure blunt hit sound plays before fire ignition.
 	if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
@@ -1650,6 +1671,73 @@ event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector
 	super.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
 }
 
+// BANGMOD: Parry rollback — undo recent unparried hits if a parry starts within the window.
+// Called from BangModMeleeWeapon.Parry.BeginState on the server.
+function RollbackRecentHits(float RollbackWindowSeconds)
+{
+    local int i;
+    local RecentHitEntry Entry;
+    local float fNow;
+    local AOCWeapon AttackerWeapon;
+    local AOCWeaponAttachment AttackerWepAttachment;
+
+    if (RecentUnparriedHits.Length == 0)
+        return;
+
+    fNow = WorldInfo.TimeSeconds;
+
+    // Iterate backwards since we may remove entries
+    for (i = RecentUnparriedHits.Length - 1; i >= 0; i--)
+    {
+        Entry = RecentUnparriedHits[i];
+
+        // Remove stale entries outside the window
+        if (fNow - Entry.fHitTime > RollbackWindowSeconds)
+        {
+            RecentUnparriedHits.Remove(i, 1);
+            continue;
+        }
+
+        // Hit within window — roll it back
+        // Restore health
+        Health = Min(Health + Entry.fDamage, HealthMax);
+
+        // Cancel flinch if we got flinched by this hit
+        if (Weapon != none && Weapon.IsInState('Flinch'))
+            Weapon.GotoState('Active');
+
+        // Put attacker into deflect state (as if they were parried)
+        if (Entry.InstigatorPawn != none && Entry.InstigatorPawn.Weapon != none)
+        {
+            AttackerWeapon = AOCWeapon(Entry.InstigatorPawn.Weapon);
+            if (AttackerWeapon != none)
+            {
+                AttackerWeapon.ActivateDeflect(true);
+                AttackerWepAttachment = AOCWeaponAttachment(Entry.InstigatorPawn.CurrentWeaponAttachment);
+                if (AttackerWepAttachment != none)
+                    AttackerWepAttachment.PlayParriedSound();
+                Entry.InstigatorPawn.DisableSprint(true);
+                Entry.InstigatorPawn.StartSprintRecovery();
+            }
+        }
+
+        // Count as successful parry for scoreboard
+        if (PlayerReplicationInfo != none)
+        {
+            AOCPRI(PlayerReplicationInfo).TeamDamageDealt++;
+            AOCPRI(PlayerReplicationInfo).bForceNetUpdate = true;
+        }
+
+        RecentUnparriedHits.Remove(i, 1);
+    }
+    // Clean up any remaining stale entries that are too old
+    for (i = RecentUnparriedHits.Length - 1; i >= 0; i--)
+    {
+        if (fNow - RecentUnparriedHits[i].fHitTime > 0.3)
+            RecentUnparriedHits.Remove(i, 1);
+    }
+}
+
 // BANGMOD: Suppress burning scream voice lines. Fire crackle SFX still plays via ActivateFireSFX.
 simulated function ActivateBurnScream()
 {
@@ -1743,6 +1831,9 @@ DefaultProperties
 
 	fSuccessiveParryStaminaReward=30
     fSuccessiveParryThresholdSeconds=1
+
+	// Parry rollback window — undo recent hits if parry starts within this time
+	fParryRollbackWindowSeconds=0.080
 
 	// Riposte flinch immunity grace period - 300ms after successful parry
 	// Prevents flinch during Parry->ParryRelease state transition (network desync)

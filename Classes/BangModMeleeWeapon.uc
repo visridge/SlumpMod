@@ -62,25 +62,30 @@ reliable server function ServerActivateFlinch(bool bSpecial)
 
 simulated function BufferParryInput()
 {
-	// Parry buffer disabled.
-	// fLastParryInputTime = WorldInfo.TimeSeconds;
+	fLastParryInputTime = WorldInfo.TimeSeconds;
 }
 
 simulated function bool HasBufferedParryInput()
 {
-	// Parry buffer disabled.
-	return false;
+	return fLastParryInputTime > 0 && (WorldInfo.TimeSeconds - fLastParryInputTime) <= fParryBufferWindow;
 }
 
 simulated function ClearParryBuffer()
 {
-	// Parry buffer disabled.
-	// fLastParryInputTime = 0;
+	fLastParryInputTime = 0;
 }
 
 simulated function bool TryActivateBufferedParry()
 {
-	// Parry buffer disabled.
+	if (HasBufferedParryInput())
+	{
+		ClearParryBuffer();
+		if (AOCOwner != none && AOCOwner.StateVariables.bCanParry)
+		{
+			ActivateParry();
+			return true;
+		}
+	}
 	return false;
 }
 
@@ -89,7 +94,7 @@ simulated function BeginFire(byte FireModeNum)
 {
 	if (FireModeNum == Attack_Parry && (!bCanParry || IsInState('Recovery') || IsInState('Deflect')))
 	{
-		// BufferParryInput();
+		BufferParryInput();
 	}
 
 	/*
@@ -164,10 +169,10 @@ simulated state Feint
 	{
 		if (FireModeNum == Attack_Parry)
 		{
-			// BufferParryInput();
+			BufferParryInput();
 			if (AOCOwner.StateVariables.bCanParry)
 			{
-				// ClearParryBuffer();
+				ClearParryBuffer();
 				ActivateParry();
 			}
 			else
@@ -203,7 +208,7 @@ simulated state Flinch
 			// "Ensure parry is always allowed during flinch except stam-out dazes"
 			if (!bSpecialDazed)
 			{
-				// ClearParryBuffer();
+				ClearParryBuffer();
 				ActivateParry();
 			}
 			else if (bManualAllowQueue)
@@ -282,7 +287,7 @@ simulated state Hit
 			// BANGMOD: Use bSpecialDazed instead of bFullBodyDazed (same fix as Flinch.BeginFire)
 			if (!bSpecialDazed)
 			{
-				// ClearParryBuffer();
+				ClearParryBuffer();
 				ActivateParry();
 			}
 			else if (bManualAllowQueue)
@@ -392,7 +397,7 @@ simulated state Active
 	simulated event BeginState(Name PreviousStateName)
 	{
 		super.BeginState(PreviousStateName);
-		// TryActivateBufferedParry();
+		TryActivateBufferedParry();
 	}
 }
 
@@ -574,6 +579,12 @@ simulated state Parry
 		if (Role == ROLE_Authority)
 		{
 			fServerParryStartTime = WorldInfo.TimeSeconds;
+
+			// BANGMOD: Check hit buffer for recent unparried hits that should be rolled back.
+			// If the defender's parry crossed paths with an attacker's hit RPC during the
+			// network round-trip, undo the damage and treat it as a successful parry.
+			if (AOCOwner != none && BangModPawn(AOCOwner) != none)
+				BangModPawn(AOCOwner).RollbackRecentHits(fParryGracePeriod);
 		}
 		
 		// Call parent to handle all normal parry logic
@@ -688,12 +699,12 @@ simulated state ParryRelease
 	{
 		if (FireModeNum == Attack_Parry)
 		{
-				// BufferParryInput();
+				BufferParryInput();
 		}
 
 		if (bEquipShield)
 		{
-				// ClearParryBuffer();
+				ClearParryBuffer();
 			if (bManualAllowQueue)
 				AttackQueue = EAttack(FireModeNum);
 		}
@@ -703,7 +714,7 @@ simulated state ParryRelease
 			super.BeginFire(FireModeNum);
 			if (FireModeNum == Attack_Parry && bSuccessfulParry && !bParryHitCounter)
 			{
-				// ClearParryBuffer();
+				ClearParryBuffer();
 			}
 		}
 	}
@@ -1092,15 +1103,14 @@ DefaultProperties
 	
 	altRiposteExtraWindup = 0.89;
 	
-	// Parry buffer system - 125ms window to help medium ping without over-protecting.
-	// Parry buffer disabled.
-	// fParryBufferWindow = 0.125;
-	// fLastParryInputTime = 0;
+	// Parry buffer system - remembers parry input during locked-out states
+	fParryBufferWindow = 0.100;
+	fLastParryInputTime = 0;
 	
 	// Server-side parry validation - small startup grace window for late booleans.
 	fServerParryStartTime = 0;
-	fParryGracePeriod = 0.075;
-	fDamageTraceActivationDelay = 0.075;
+	fParryGracePeriod = 0.100;
+	fDamageTraceActivationDelay = 0.000;
 	
 	// Minimum combo transition time - 100ms floor to normalize low-ping advantage
 	fMinComboTransitionTime = 0.100;
