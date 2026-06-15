@@ -43,7 +43,7 @@ DefaultProperties
 	AttachmentClass=class'BangModWeaponAttachment_HeavyJavelinThrow'
 	// should never be part of inventory attachment
 	InventoryAttachmentClass=class'AOCInventoryAttachment_HeavyJavelin'
-	AllowedShieldClass=class'AOCShield_Buckler'
+	AllowedShieldClass=class'AOCShield_Heatshield'
 	bHaveShield=true
 
 	ImpactBloodTemplates(0)=ParticleSystem'CHV_Particles_01.Player.Impact.P_1HSwordHit'

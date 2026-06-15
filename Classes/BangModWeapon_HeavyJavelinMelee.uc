@@ -7,6 +7,151 @@
 */
 class BangModWeapon_HeavyJavelinMelee extends AOCWeapon_HeavyJavelinMelee;
 
+// BANGMOD: Timed shield parry for heater (matches BangModMeleeWeapon shield behavior)
+// Without these overrides, shields use vanilla held-block instead of timed parry.
+
+simulated state Parry
+{
+	simulated event BeginState(Name PreviousStateName)
+	{
+		super.BeginState(PreviousStateName);
+		if (bEquipShield)
+			bCanParryHitCounter = false;
+	}
+
+	simulated function OnStateAnimationEnd()
+	{
+		if (bEquipShield && bShieldRaised)
+		{
+			if (bSuccessfulParry)
+				GotoState('Recovery');
+			else
+				GotoState('ParryRelease');
+		}
+		else
+		{
+			super.OnStateAnimationEnd();
+		}
+	}
+
+	simulated function SuccessfulParry(EAttack Type, int Dir)
+	{
+		if (bEquipShield)
+		{
+			if (bSuccessfulParry)
+				return;
+			AOCOwner.OnActionSucceeded(EACT_Block);
+			bSuccessfulParry = true;
+		}
+		else
+		{
+			super.SuccessfulParry(Type, Dir);
+		}
+	}
+}
+
+simulated state ShieldUpIdle
+{
+	simulated event BeginState(Name PreviousStateName)
+	{
+		bShieldRaised = false;
+		AOCOwner.StateVariables.bIsActiveShielding = false;
+		AOCOwner.StateVariables.bIsParrying = false;
+		GotoState('Recovery');
+	}
+}
+
+simulated state ParryRelease
+{
+	simulated event BeginState(Name PreviousStateName)
+	{
+		super.BeginState(PreviousStateName);
+		if (bEquipShield)
+		{
+			AOCOwner.StateVariables.bIsActiveShielding = true;
+			bCanParryHitCounter = false;
+			ClearTimer('AllowLowerParry');
+			SetTimer(0.4f, false, 'AllowLowerParry');
+		}
+	}
+
+	simulated function BeginFire(byte FireModeNum)
+	{
+		if (bEquipShield)
+		{
+			if (bManualAllowQueue)
+				AttackQueue = EAttack(FireModeNum);
+		}
+		else
+		{
+			super.BeginFire(FireModeNum);
+		}
+	}
+
+	simulated function AllowLowerParry()
+	{
+		if (bEquipShield)
+		{
+			bShieldRaised = false;
+			AOCOwner.StateVariables.bIsActiveShielding = false;
+			AOCOwner.StateVariables.bIsParrying = false;
+			GotoState('Recovery');
+		}
+		else
+		{
+			super.AllowLowerParry();
+		}
+	}
+
+	simulated function LowerShield()
+	{
+		if (bEquipShield)
+			return;
+		super.LowerShield();
+	}
+
+	simulated function SuccessfulParry(EAttack Type, int Dir)
+	{
+		if (bEquipShield)
+		{
+			if (bSuccessfulParry)
+				return;
+			AOCOwner.OnActionSucceeded(EACT_Block);
+			bSuccessfulParry = true;
+			ClearTimer('AllowLowerParry');
+			SetTimer(0.3, false, 'DeferredShieldDrop');
+		}
+		else
+		{
+			super.SuccessfulParry(Type, Dir);
+		}
+	}
+
+	simulated function DeferredShieldDrop()
+	{
+		GotoState('Active');
+	}
+
+	simulated function OnStateAnimationEnd()
+	{
+		if (bEquipShield)
+			GotoState('Recovery');
+		else
+			super.OnStateAnimationEnd();
+	}
+
+	simulated event EndState(Name NextStateName)
+	{
+		if (bEquipShield)
+		{
+			AOCOwner.StateVariables.bIsActiveShielding = false;
+			AOCOwner.RemoveDebuff(EDEBF_ANIMATION);
+			AOCOwner.RemoveDebuff(EDEBF_ANIMATION);
+		}
+		super.EndState(NextStateName);
+	}
+}
+
 DefaultProperties
 {
 	CurrentWeaponType = EWEP_HeavyJavelin
@@ -16,7 +161,7 @@ DefaultProperties
 	AttachmentClass=class'BangModWeaponAttachment_HeavyJavelin'
 	// should never be part of inventory attachment
 	InventoryAttachmentClass=class'AOCInventoryAttachment_HeavyJavelin'
-	AllowedShieldClass=class'AOCShield_Buckler'
+	AllowedShieldClass=class'AOCShield_Heatshield'
 	bHaveShield=true
 	ImpactBloodTemplates(0)=ParticleSystem'CHV_Particles_01.Player.Impact.P_1HSwordHit'
 	ImpactBloodTemplates(1)=ParticleSystem'CHV_Particles_01.Player.Impact.P_1HSwordHit'
