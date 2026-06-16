@@ -93,7 +93,7 @@ DefaultProperties
 {
 	AlternativeMode=none
 	bTwoHander=true
-	FlinchTime2H=1.1
+	FlinchTime2H=1.05
 	AttachmentClass=class'BangModWeaponAttachment_Bearded'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Bearded'
 	AllowedShieldClass=none

@@ -94,7 +94,7 @@ DefaultProperties
 
 	bTwoHander=true
 	bCanDodge=false
-	FlinchTime2H=1.10
+	FlinchTime2H=1.00
 	bUseRMMDazed=true
 	bUseDirHitAnims=true
 	EncircleRadius=25.0f

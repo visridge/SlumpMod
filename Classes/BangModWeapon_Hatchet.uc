@@ -53,7 +53,7 @@ DefaultProperties
 	bUseRMMDazed=true
 	bUseDirHitAnims=true
 	bUseSprintLeanAnims=true
-	FlinchTime1H=1.05
+	FlinchTime1H=1.00
 
 	AttachmentClass=class'BangModWeaponAttachment_Hatchet'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Hatchet'

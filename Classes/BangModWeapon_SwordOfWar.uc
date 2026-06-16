@@ -52,7 +52,7 @@ DefaultProperties
 	End Object
 
 	bTwoHander=true
-	FlinchTime2H=1.10
+	FlinchTime2H=1.05
 	EncircleRadius=25.0f
 	EffectiveDistance=200.0f
 

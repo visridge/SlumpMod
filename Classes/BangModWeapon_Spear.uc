@@ -99,7 +99,7 @@ DefaultProperties
 	EncircleRadius=30.0f
 	EffectiveDistance=300.0f
 	bTwoHander=true
-	FlinchTime2H=1.05
+	FlinchTime2H=1.00
 	bCanCombo=false
 
 	ImpactSounds(ESWINGSOUND_Slash)={(

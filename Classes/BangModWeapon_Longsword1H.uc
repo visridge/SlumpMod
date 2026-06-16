@@ -40,7 +40,7 @@ DefaultProperties
 	VerticalRotateSpeed = 50000
 	EncircleRadius=25.0f
 	EffectiveDistance=200.0f
-	FlinchTime1H=1.00
+	FlinchTime1H=0.95
 
 	ImpactSounds(ESWINGSOUND_Slash)={(
 		light=SoundCue'A_Impacts_Melee.Light_Slash_large',
