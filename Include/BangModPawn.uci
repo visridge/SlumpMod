@@ -39,6 +39,14 @@ var bool bPendingFlinchSpecial;    // Flinch bSpecial param
 var bool bPendingFlinchTwoHander;  // Flinch bTwoHander param
 var EDirection bPendingFlinchDir;  // Flinch direction param
 
+// BANGMOD: Deferred damage — delays TakeDamage so a rollback can prevent death
+var float fDeferredDamage;
+var class<DamageType> DeferredDamageType;
+var vector DeferredHitLocation;
+var vector DeferredHitForce;
+var TraceHitInfo DeferredHitInfo;
+var Actor DeferredDamageCauser;
+
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
 // {
@@ -1230,6 +1238,8 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	local float fTimeSinceParryStart;
 	local bool bBallistaBolt;
 	local RecentHitEntry RollbackEntry;  // BANGMOD: for parry rollback buffer
+	local float LethalPortion;
+	local float ImmediateDamage;
 
 	// Initialise player replication information
 	if (PlayerReplicationInfo == none)
@@ -1633,8 +1643,35 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// Was the target a bot?
 	bEnemyWasBot = Info.HitActor.bIsBot || Info.HitActor.PlayerReplicationInfo.bBot || AOCPRI(Info.HitActor.PlayerReplicationInfo).bIsBot || AOCAIController(Info.HitActor.Controller) != none;
 
-	// Call take damage on the targeted pawn
-	Info.HitActor.TakeDamage(ActualDamage, Controller != none ? Controller : CurrentSiegeWeapon.Controller, Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
+	// BANGMOD: Delay the lethal portion of rollback-eligible hits so a parry rollback
+	// can restore health before PlayDying() triggers an irreversible death.
+	if (!bParry && ActualDamage > 0.0f && ActualDamage >= Info.HitActor.Health
+		&& BangModPawn(Info.HitActor) != none)
+	{
+		ImmediateDamage = Max(Info.HitActor.Health - 1, 0);
+		LethalPortion = ActualDamage - ImmediateDamage;
+
+		// Apply non-lethal portion immediately (victim left at 1 HP)
+		Info.HitActor.TakeDamage(ImmediateDamage,
+			Controller != none ? Controller : CurrentSiegeWeapon.Controller,
+			Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
+
+		// Defer the lethal portion — RollbackRecentHits can cancel it
+		BangModPawn(Info.HitActor).fDeferredDamage = LethalPortion;
+		BangModPawn(Info.HitActor).DeferredDamageType = Info.DamageType;
+		BangModPawn(Info.HitActor).DeferredHitLocation = Info.HitLocation;
+		BangModPawn(Info.HitActor).DeferredHitForce = Info.HitForce;
+		BangModPawn(Info.HitActor).DeferredHitInfo = THI;
+		BangModPawn(Info.HitActor).DeferredDamageCauser = self;
+		BangModPawn(Info.HitActor).SetTimer(fParryRollbackWindowSeconds, false, 'ApplyDeferredDeath');
+	}
+	else
+	{
+		// Non-lethal hit — apply normally
+		Info.HitActor.TakeDamage(ActualDamage,
+			Controller != none ? Controller : CurrentSiegeWeapon.Controller,
+			Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
+	}
 
 	// BANGMOD: Buffer unparried hits for parry rollback
 	if (!bParry && ActualDamage > 0.0f && BangModPawn(Info.HitActor) != none)
@@ -1739,10 +1776,10 @@ function Set_bShowHitTime(bool set)
 	bShowHitTime = set;
 }
 
-// BANGMOD: Play deferred hit sounds — only if the hit wasn't rolled back
+// BANGMOD: Play deferred hit feedback — only if the hit wasn't rolled back
 function PlayDeferredHitFeedback()
-{
-	// Activate deferred flinch first (so it's visible when sounds play)
+{	
+	// Activate deferred flinch next
 	if (bPendingFlinchActive && Weapon != none)
 	{
 		AOCWeapon(Weapon).ActivateFlinch(
@@ -1759,10 +1796,26 @@ function PlayDeferredHitFeedback()
 		if (PendingHitAttacker != none)
 			PendingHitAttacker.PlayMeleeHit();
 	}
-	// Clear pending state regardless (defense against double-fire)
+	// Clear pending state regardless
 	fPendingHitDamage = 0.0f;
 	PendingHitAttacker = none;
 	bPendingFlinchActive = false;
+}
+
+// BANGMOD: Apply deferred death — called 80ms after a rollback-eligible lethal hit.
+// If RollbackRecentHits restored health in the meantime, this is a no-op.
+// Otherwise, finish the kill (health was already dropped by the deferred-damage logic).
+function ApplyDeferredDeath()
+{
+	if (fDeferredDamage > 0.0f)
+	{
+		// Re-apply the fatal portion: drop health back to lethal, triggering death
+		TakeDamage(fDeferredDamage,
+			Controller != none ? Controller : CurrentSiegeWeapon.Controller,
+			DeferredHitLocation, DeferredHitForce, DeferredDamageType,
+			DeferredHitInfo, DeferredDamageCauser);
+		fDeferredDamage = 0.0f;
+	}
 }
 
 
@@ -1797,11 +1850,13 @@ function RollbackRecentHits(float RollbackWindowSeconds)
     if (RecentUnparriedHits.Length == 0)
         return;
 
-    // BANGMOD: Cancel any deferred hit sounds and flinch — we're rolling back this hit
+    // BANGMOD: Cancel any deferred hit sounds, flinch, and death — we're rolling back this hit
     ClearTimer('PlayDeferredHitFeedback');
+    ClearTimer('ApplyDeferredDeath');
     fPendingHitDamage = 0.0f;
     PendingHitAttacker = none;
     bPendingFlinchActive = false;
+    fDeferredDamage = 0.0f;
 
     fNow = WorldInfo.TimeSeconds;
 
