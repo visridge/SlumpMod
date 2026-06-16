@@ -15,17 +15,6 @@ var float fRiposteGracePeriod;                  // Grace period after parry wher
 var bool bKanaboExtraJumpUsed;
 var CylinderComponent OuterCylinderComp; // Reference to the OuterCylinder component (player collision bubble)
 
-// BANGMOD: Parry rollback buffer — stores recent unparried hits so we can undo them
-// if a parry starts within the rollback window (80ms).
-struct RecentHitEntry
-{
-    var float fHitTime;
-    var float fDamage;
-    var AOCPawn InstigatorPawn;
-};
-var array<RecentHitEntry> RecentUnparriedHits;
-var float fParryRollbackWindowSeconds;   // How far back to check for rollback eligibility
-
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
 // {
@@ -1556,15 +1545,6 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 		BangModPawn(Info.HitActor).RecentUnparriedHits.AddItem(RollbackEntry);
 	}
 
-	// Firebug: set hit pawn on fire only when damage was confirmed (not parried, not SSSC-rejected).
-	// Moved to TakeDamage to ensure blunt hit sound plays before fire ignition.
-	if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
-		&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
-		&& Info.HitActor.IsAliveAndWell())
-	{
-		// Info.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
-	}
-
 	// Was the enemy killed?
 	bWasKilled = (Info.HitActor == none || Info.HitActor.Health <= 0);
 	Info.HitActor.ReplicatedHitInfo.bWasKilled = bWasKilled;
@@ -1634,6 +1614,16 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// Manually do the replication if we're on the standalone
 	if (WorldInfo.NetMode == NM_Standalone || Worldinfo.NetMode == NM_ListenServer)
 		Info.HitActor.HandlePawnGetHit();
+
+	// Firebug: set target on fire AFTER blunt hit sound has been played via HandlePawnGetHit.
+	// Must run after HandlePawnGetHit so that PlaySound(ReplicatedHitInfo.HitSound) fires
+	// the weapon impact sound before the fire SFX starts.
+	if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
+		&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
+		&& Info.HitActor.IsAliveAndWell())
+	{
+		Info.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
+	}
 }
 
 
@@ -1658,26 +1648,23 @@ event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector
 	if (DamageType == class'AOCDmgType_BallistaBolt')
 		return;
 
-	// Firebug: ignite target after blunt hit sound has played in AttackOtherPawn.
-	// DamageCauser is the attacking pawn (passed as 'self' from AttackOtherPawn).
-	// Fire DoT ticks won't re-ignite because bIsBurning prevents it.
-	if (DamageCauser != none && DamageCauser != self
-		&& BangModWeapon_Firebug(AOCPawn(DamageCauser).Weapon) != none
-		&& Damage > 0.0f && !bIsBurning && IsAliveAndWell())
-	{
-		SetPawnOnFire(none, InstigatedBy, DamageCauser, class'BangModDmgType_TorchBurn');
-	}
+	// Firebug ignition moved to end of AttackOtherPawn (after HandlePawnGetHit)
+	// so that the blunt impact sound plays before the fire sound.
 
 	super.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
 }
 
 // BANGMOD: Parry rollback — undo recent unparried hits if a parry starts within the window.
+// Only triggers when the hit-to-parry gap is ≤ the defender's ping (prevents rollback
+// on LAN/0-ping where there's no network crossing to compensate for).
 // Called from BangModMeleeWeapon.Parry.BeginState on the server.
 function RollbackRecentHits(float RollbackWindowSeconds)
 {
     local int i;
     local RecentHitEntry Entry;
     local float fNow;
+    local float fPingSec;
+    local float fMaxGapSec;
     local AOCWeapon AttackerWeapon;
     local AOCWeaponAttachment AttackerWepAttachment;
 
@@ -1686,19 +1673,35 @@ function RollbackRecentHits(float RollbackWindowSeconds)
 
     fNow = WorldInfo.TimeSeconds;
 
+    // Derive max hit-to-parry gap from defender's ping.
+    // UE3 stores ping as Min(Round(PingMs / 4), 255), so convert: Ping * 0.004 = seconds.
+    // On LAN (ping ≈ 0), fMaxGapSec ≈ 0.015s (15ms floor), effectively disabling rollback.
+    // On a 100ms-ping player, fMaxGapSec ≈ 0.115s (100ms + 15ms buffer).
+    if (PlayerReplicationInfo != none)
+        fPingSec = float(PlayerReplicationInfo.Ping) * 0.004;
+    fMaxGapSec = FClamp(fPingSec + 0.015, 0.015, RollbackWindowSeconds);
+
     // Iterate backwards since we may remove entries
     for (i = RecentUnparriedHits.Length - 1; i >= 0; i--)
     {
         Entry = RecentUnparriedHits[i];
 
-        // Remove stale entries outside the window
+        // Remove stale entries outside the absolute window
         if (fNow - Entry.fHitTime > RollbackWindowSeconds)
         {
             RecentUnparriedHits.Remove(i, 1);
             continue;
         }
 
-        // Hit within window — roll it back
+        // Only roll back hits whose arrival-to-parry gap fits within the
+        // defender's ping window. Larger gaps are human reactions, not network crossings.
+        if (fNow - Entry.fHitTime > fMaxGapSec)
+        {
+            RecentUnparriedHits.Remove(i, 1);
+            continue;
+        }
+
+        // Hit within window AND within ping gap — roll it back
         // Restore health
         Health = Min(Health + Entry.fDamage, HealthMax);
 
