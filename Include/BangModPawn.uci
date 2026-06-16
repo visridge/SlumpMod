@@ -31,6 +31,14 @@ var float fPendingHitDamage;       // Damage value for deferred PlayHitSounds
 var bool bPendingHitFlinch;        // Flinch flag for deferred PlayHitSounds
 var AOCPawn PendingHitAttacker;    // Attacker whose PlayMeleeHit is deferred
 
+// BANGMOD: Deferred flinch — delays flinch activation by rollback window so it can be cancelled
+var bool bPendingFlinchActive;     // Whether a flinch is waiting to be activated
+var bool bPendingFlinchFullBody;   // Flinch bFullBody param
+var bool bPendingFlinchGeneric;    // Flinch bGeneric param
+var bool bPendingFlinchSpecial;    // Flinch bSpecial param
+var bool bPendingFlinchTwoHander;  // Flinch bTwoHander param
+var EDirection bPendingFlinchDir;  // Flinch direction param
+
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
 // {
@@ -1408,7 +1416,16 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// Stun if the parry costs too much stamina
 	if (bParry && !bPassiveBlock && Info.HitActor.Stamina <= 0) {
 		bFlinch = true;
-		AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), true, true, AOCWeapon(Weapon).bTwoHander);
+		// BANGMOD: Flinch deferred to allow rollback cancellation
+		if (BangModPawn(Info.HitActor) != none)
+		{
+			BangModPawn(Info.HitActor).bPendingFlinchActive = true;
+			BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
+			BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
+			BangModPawn(Info.HitActor).bPendingFlinchGeneric = true;
+			BangModPawn(Info.HitActor).bPendingFlinchSpecial = true;
+			BangModPawn(Info.HitActor).bPendingFlinchTwoHander = AOCWeapon(Weapon).bTwoHander;
+		}
 	}
 
 	// If the other pawn is currently attacking, we just conducted a counter-attack
@@ -1417,10 +1434,27 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 			if (Info.Instigator.StateVariables.bShieldEquipped && Info.HitActor.StateVariables.bIsActiveShielding && !bQuickKick) {
 				// If it was a heavy shield bash against raised shield, do full stun
 				bFlinch = true;
-				AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location),true, true, false);
+				// BANGMOD: Flinch deferred to allow rollback cancellation
+				if (BangModPawn(Info.HitActor) != none)
+				{
+					BangModPawn(Info.HitActor).bPendingFlinchActive = true;
+					BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
+					BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
+					BangModPawn(Info.HitActor).bPendingFlinchGeneric = true;
+					BangModPawn(Info.HitActor).bPendingFlinchSpecial = true;
+					BangModPawn(Info.HitActor).bPendingFlinchTwoHander = false;
+				}
 			} else if (!Info.HitActor.StateVariables.bIsActiveShielding)
-				// If they aren't active shielding, activate normal kick flinch
-				AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), false, false, true);
+				// BANGMOD: Flinch deferred to allow rollback cancellation
+				if (BangModPawn(Info.HitActor) != none)
+				{
+					BangModPawn(Info.HitActor).bPendingFlinchActive = true;
+					BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
+					BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
+					BangModPawn(Info.HitActor).bPendingFlinchGeneric = false;
+					BangModPawn(Info.HitActor).bPendingFlinchSpecial = false;
+					BangModPawn(Info.HitActor).bPendingFlinchTwoHander = true;
+				}
 
 			// If they got stamina stunned, regain stamina
 			if (Info.HitActor.StateVariables.bIsActiveShielding && Info.HitActor.Stamina <= 0)
@@ -1430,18 +1464,52 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// If they weren't parrying or shielding, apply flinch (but not during riposte)
 	else if ((Info.HitActor.StateVariables.bIsParrying || Info.HitActor.StateVariables.bIsActiveShielding) && !bParry && !IsInRiposte(Info.HitActor)) {
 		bFlinch = true;
-		AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), false, false, AOCWeapon(Weapon).bTwoHander);
+		// BANGMOD: Flinch deferred to allow rollback cancellation
+		if (BangModPawn(Info.HitActor) != none)
+		{
+			BangModPawn(Info.HitActor).bPendingFlinchActive = true;
+			BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
+			BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
+			BangModPawn(Info.HitActor).bPendingFlinchGeneric = false;
+			BangModPawn(Info.HitActor).bPendingFlinchSpecial = false;
+			BangModPawn(Info.HitActor).bPendingFlinchTwoHander = AOCWeapon(Weapon).bTwoHander;
+		}
 	}
 	// If flinch needs to be activated...
 	else if ((ShouldActivateFlinch(Info, UsedWeapon) || AOCWeapon_Fists(Info.Instigator.Weapon) != none) && !bParry) {
 		// Flinch victim on enemy hits, flinch both attacker and victim on team hits
 		if (bSameTeam) {
-			// Custom: Flinch both attacker and teammate (punishment for team damage)
-			AOCWeapon(Weapon).ActivateFlinch(true, GetHitDirection(Info.HitActor.Location), false, false, AOCWeapon(Info.HitActor.Weapon).bTwoHander);
-			AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), false, false, AOCWeapon(Weapon).bTwoHander);
+			// BANGMOD: Team flinch — attacker flinch deferred
+			if (BangModPawn(self) != none)
+			{
+				BangModPawn(self).bPendingFlinchActive = true;
+				BangModPawn(self).bPendingFlinchFullBody = true;
+				BangModPawn(self).bPendingFlinchDir = GetHitDirection(Info.HitActor.Location);
+				BangModPawn(self).bPendingFlinchGeneric = false;
+				BangModPawn(self).bPendingFlinchSpecial = false;
+				BangModPawn(self).bPendingFlinchTwoHander = AOCWeapon(Info.HitActor.Weapon).bTwoHander;
+			}
+			// BANGMOD: Victim flinch deferred
+			if (BangModPawn(Info.HitActor) != none)
+			{
+				BangModPawn(Info.HitActor).bPendingFlinchActive = true;
+				BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
+				BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
+				BangModPawn(Info.HitActor).bPendingFlinchGeneric = false;
+				BangModPawn(Info.HitActor).bPendingFlinchSpecial = false;
+				BangModPawn(Info.HitActor).bPendingFlinchTwoHander = AOCWeapon(Weapon).bTwoHander;
+			}
 		} else {
-			// Flinch enemy victim normally
-			AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), false, false, AOCWeapon(Weapon).bTwoHander);
+			// BANGMOD: Victim flinch deferred
+			if (BangModPawn(Info.HitActor) != none)
+			{
+				BangModPawn(Info.HitActor).bPendingFlinchActive = true;
+				BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
+				BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
+				BangModPawn(Info.HitActor).bPendingFlinchGeneric = false;
+				BangModPawn(Info.HitActor).bPendingFlinchSpecial = false;
+				BangModPawn(Info.HitActor).bPendingFlinchTwoHander = AOCWeapon(Weapon).bTwoHander;
+			}
 		}
 	}
 	// Otherwise we landed a hit on the enemy, play hit animation
@@ -1674,6 +1742,17 @@ function Set_bShowHitTime(bool set)
 // BANGMOD: Play deferred hit sounds — only if the hit wasn't rolled back
 function PlayDeferredHitFeedback()
 {
+	// Activate deferred flinch first (so it's visible when sounds play)
+	if (bPendingFlinchActive && Weapon != none)
+	{
+		AOCWeapon(Weapon).ActivateFlinch(
+			bPendingFlinchFullBody,
+			bPendingFlinchDir,
+			bPendingFlinchGeneric,
+			bPendingFlinchSpecial,
+			bPendingFlinchTwoHander);
+	}
+	
 	if (fPendingHitDamage > 0.0f)
 	{
 		PlayHitSounds(fPendingHitDamage, bPendingHitFlinch);
@@ -1683,6 +1762,7 @@ function PlayDeferredHitFeedback()
 	// Clear pending state regardless (defense against double-fire)
 	fPendingHitDamage = 0.0f;
 	PendingHitAttacker = none;
+	bPendingFlinchActive = false;
 }
 
 
@@ -1717,10 +1797,11 @@ function RollbackRecentHits(float RollbackWindowSeconds)
     if (RecentUnparriedHits.Length == 0)
         return;
 
-    // BANGMOD: Cancel any deferred hit sounds — we're rolling back this hit
+    // BANGMOD: Cancel any deferred hit sounds and flinch — we're rolling back this hit
     ClearTimer('PlayDeferredHitFeedback');
     fPendingHitDamage = 0.0f;
     PendingHitAttacker = none;
+    bPendingFlinchActive = false;
 
     fNow = WorldInfo.TimeSeconds;
 
