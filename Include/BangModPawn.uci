@@ -15,6 +15,22 @@ var float fRiposteGracePeriod;                  // Grace period after parry wher
 var bool bKanaboExtraJumpUsed;
 var CylinderComponent OuterCylinderComp; // Reference to the OuterCylinder component (player collision bubble)
 
+// BANGMOD: Parry rollback buffer — stores recent unparried hits so we can undo them
+// if a parry starts within the rollback window (80ms).
+struct RecentHitEntry
+{
+    var float fHitTime;
+    var float fDamage;
+    var AOCPawn InstigatorPawn;
+};
+var array<RecentHitEntry> RecentUnparriedHits;
+var float fParryRollbackWindowSeconds;   // How far back to check for rollback eligibility
+
+// BANGMOD: Deferred hit audio — delays sounds by rollback window so they can be cancelled
+var float fPendingHitDamage;       // Damage value for deferred PlayHitSounds
+var bool bPendingHitFlinch;        // Flinch flag for deferred PlayHitSounds
+var AOCPawn PendingHitAttacker;    // Attacker whose PlayMeleeHit is deferred
+
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
 // {
@@ -88,6 +104,17 @@ simulated function WeaponAttachmentChanged()
 		{
 			CurrentWeaponAttachment.OverlayMesh.SetScale(1.25f);
 		}
+	}
+
+	// BANGMOD: Fix heater shield orientation for javelin — javelin animations
+	// hold the arm differently, causing the heater to face skyward like a saucer.
+	// Rotate it 90° outward (along the X axis) so the shield faces sideways.
+	if (Weapon != none && BangModWeapon_JavelinMelee(Weapon) != none
+		&& StateVariables.bShieldEquipped)
+	{
+		ShieldMesh.SetRotation(rot(0, 0, 16384));  // 90° CCW in Unreal rotator units
+		if (OverlayShieldMesh != none)
+			OverlayShieldMesh.SetRotation(rot(0, 0, 16384));
 	}
 }
 
@@ -1439,13 +1466,18 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 		if (Info.DamageType.default.bIsProjectile)
 			PlayRangedHitSound();
 		else {
-			if(!bSameTeam)
-				PlayMeleeHit();
+			// BANGMOD: PlayMeleeHit deferred to allow rollback cancellation
+			if (!bSameTeam && BangModPawn(Info.HitActor) != none)
+				BangModPawn(Info.HitActor).PendingHitAttacker = self;
 		}
 
-		// If the pawn is still alive, play sounds for everyone
-		if (Info.HitActor.Health - ActualDamage > 0.0f)
-			Info.HitActor.PlayHitSounds(ActualDamage, bFlinch);
+		// BANGMOD: Defer victim pain sounds by rollback window so they can be cancelled
+		if (Info.HitActor.Health - ActualDamage > 0.0f && BangModPawn(Info.HitActor) != none)
+		{
+			BangModPawn(Info.HitActor).fPendingHitDamage = ActualDamage;
+			BangModPawn(Info.HitActor).bPendingHitFlinch = bFlinch;
+			BangModPawn(Info.HitActor).SetTimer(fParryRollbackWindowSeconds, false, 'PlayDeferredHitFeedback');
+		}
 
 		// Register the hit on the player countroller
 		if (AOCPlayerController(Controller) != none)
@@ -1639,6 +1671,20 @@ function Set_bShowHitTime(bool set)
 	bShowHitTime = set;
 }
 
+// BANGMOD: Play deferred hit sounds — only if the hit wasn't rolled back
+function PlayDeferredHitFeedback()
+{
+	if (fPendingHitDamage > 0.0f)
+	{
+		PlayHitSounds(fPendingHitDamage, bPendingHitFlinch);
+		if (PendingHitAttacker != none)
+			PendingHitAttacker.PlayMeleeHit();
+	}
+	// Clear pending state regardless (defense against double-fire)
+	fPendingHitDamage = 0.0f;
+	PendingHitAttacker = none;
+}
+
 
 
 // Block all ballista bolt damage (direct and splash) at the TakeDamage level.
@@ -1670,6 +1716,11 @@ function RollbackRecentHits(float RollbackWindowSeconds)
 
     if (RecentUnparriedHits.Length == 0)
         return;
+
+    // BANGMOD: Cancel any deferred hit sounds — we're rolling back this hit
+    ClearTimer('PlayDeferredHitFeedback');
+    fPendingHitDamage = 0.0f;
+    PendingHitAttacker = none;
 
     fNow = WorldInfo.TimeSeconds;
 
@@ -1708,6 +1759,14 @@ function RollbackRecentHits(float RollbackWindowSeconds)
         // Cancel flinch if we got flinched by this hit
         if (Weapon != none && Weapon.IsInState('Flinch'))
             Weapon.GotoState('Active');
+
+        // BANGMOD: If the attacker was using Firebug, extinguish the fire — the hit was rolled back
+        if (bIsBurning && Entry.InstigatorPawn != none
+            && BangModWeapon_Firebug(Entry.InstigatorPawn.Weapon) != none)
+        {
+            bIsBurning = false;
+            StopPawnOnFire();
+        }
 
         // Put attacker into deflect state (as if they were parried)
         if (Entry.InstigatorPawn != none && Entry.InstigatorPawn.Weapon != none)
