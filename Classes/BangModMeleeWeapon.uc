@@ -776,7 +776,7 @@ simulated state ParryRelease
 			// 300ms window matches normal weapon parry-hit animation duration,
 			// allowing shields to block near-simultaneous hits.
 			ClearTimer('AllowLowerParry');
-			SetTimer(0.3, false, 'DeferredShieldDrop');
+			SetTimer(0.1, false, 'DeferredShieldDrop');
 		}
 		else
 		{

@@ -119,7 +119,7 @@ simulated state ParryRelease
 			AOCOwner.OnActionSucceeded(EACT_Block);
 			bSuccessfulParry = true;
 			ClearTimer('AllowLowerParry');
-			SetTimer(0.3, false, 'DeferredShieldDrop');
+			SetTimer(0.1, false, 'DeferredShieldDrop');
 		}
 		else
 		{
