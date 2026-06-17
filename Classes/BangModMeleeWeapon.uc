@@ -1109,7 +1109,7 @@ DefaultProperties
 	
 	// Server-side parry validation - small startup grace window for late booleans.
 	fServerParryStartTime = 0;
-	fParryGracePeriod = 0.100;
+	fParryGracePeriod = 0.060;
 	fDamageTraceActivationDelay = 0.000;
 	
 	// Minimum combo transition time - 100ms floor to normalize low-ping advantage
