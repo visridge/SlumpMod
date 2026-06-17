@@ -47,6 +47,11 @@ var vector DeferredHitForce;
 var TraceHitInfo DeferredHitInfo;
 var Actor DeferredDamageCauser;
 
+// BANGMOD: Unified hit feedback deferral — one timer for ReplicatedHitInfo
+// controls all client-side feedback (blood, sound, flinch rendering) atomically
+var HitInfo PendingHitInfo;
+var bool bHasPendingHitInfo;
+
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
 // {
@@ -1549,13 +1554,12 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 				BangModPawn(Info.HitActor).PendingHitAttacker = self;
 		}
 
-		// BANGMOD: Defer victim pain sounds by rollback window so they can be cancelled
-		if (Info.HitActor.Health - ActualDamage > 0.0f && BangModPawn(Info.HitActor) != none)
+// BANGMOD: Defer victim hit feedback by rollback window so it can be cancelled
+		if (!bParry && BangModPawn(Info.HitActor) != none)
 		{
 			BangModPawn(Info.HitActor).fPendingHitDamage = ActualDamage;
 			BangModPawn(Info.HitActor).bPendingHitFlinch = bFlinch;
-			BangModPawn(Info.HitActor).SetTimer(fParryRollbackWindowSeconds, false, 'PlayDeferredHitFeedback');
-		}
+			BangModPawn(Info.HitActor).SetTimer(fParryRollbackWindowSeconds, false, 'ApplyDeferredReplication');
 
 		// Register the hit on the player countroller
 		if (AOCPlayerController(Controller) != none)
@@ -1602,7 +1606,17 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	}
 
 	// Fill out the rest of the values
-	Info.HitActor.ReplicatedHitInfo = Info;
+	// BANGMOD: Defer replication so rollback can cancel all hit feedback atomically (blood, sound, flinch)
+	if (!bParry && BangModPawn(Info.HitActor) != none)
+	{
+		BangModPawn(Info.HitActor).PendingHitInfo = Info;
+		BangModPawn(Info.HitActor).bHasPendingHitInfo = true;
+		BangModPawn(Info.HitActor).SetTimer(fParryRollbackWindowSeconds, false, 'ApplyDeferredReplication');
+	}
+	else
+	{
+		Info.HitActor.ReplicatedHitInfo = Info;
+	}
 	Info.HitDamage = ActualDamage;
 	Info.HitForce *= int(PawnState != ESTATE_PUSH && PawnState != ESTATE_BATTERING);
 	Info.HitForce *= int(!bFlinch);
@@ -1663,7 +1677,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 		BangModPawn(Info.HitActor).DeferredHitForce = Info.HitForce;
 		BangModPawn(Info.HitActor).DeferredHitInfo = THI;
 		BangModPawn(Info.HitActor).DeferredDamageCauser = self;
-		BangModPawn(Info.HitActor).SetTimer(fParryRollbackWindowSeconds, false, 'ApplyDeferredDeath');
+		BangModPawn(Info.HitActor).SetTimer(fParryRollbackWindowSeconds, false, 'ApplyDeferredReplication');
 	}
 	else
 	{
@@ -1748,18 +1762,19 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 			AIList.NotifyPawnSuccessBlock(Info.HitActor, self);
 	}
 
-	// Manually do the replication if we're on the standalone
-	if (WorldInfo.NetMode == NM_Standalone || Worldinfo.NetMode == NM_ListenServer)
-		Info.HitActor.HandlePawnGetHit();
-
-	// Firebug: set target on fire AFTER blunt hit sound has been played via HandlePawnGetHit.
-	// Must run after HandlePawnGetHit so that PlaySound(ReplicatedHitInfo.HitSound) fires
-	// the weapon impact sound before the fire SFX starts.
-	if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
-		&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
-		&& Info.HitActor.IsAliveAndWell())
+	// BANGMOD: HandlePawnGetHit and Firebug are handled in ApplyDeferredReplication()
+	// for non-parried hits. Only run locally for parried hits or non-BangMod pawns.
+	if (bParry || BangModPawn(Info.HitActor) == none)
 	{
-		Info.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
+		if (WorldInfo.NetMode == NM_Standalone || Worldinfo.NetMode == NM_ListenServer)
+			Info.HitActor.HandlePawnGetHit();
+
+		if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
+			&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
+			&& Info.HitActor.IsAliveAndWell())
+		{
+			Info.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
+		}
 	}
 }
 
@@ -1776,46 +1791,34 @@ function Set_bShowHitTime(bool set)
 	bShowHitTime = set;
 }
 
-// BANGMOD: Play deferred hit feedback — only if the hit wasn't rolled back
-function PlayDeferredHitFeedback()
-{	
-	// Activate deferred flinch next
-	if (bPendingFlinchActive && Weapon != none)
-	{
-		AOCWeapon(Weapon).ActivateFlinch(
-			bPendingFlinchFullBody,
-			bPendingFlinchDir,
-			bPendingFlinchGeneric,
-			bPendingFlinchSpecial,
-			bPendingFlinchTwoHander);
-	}
-	
-	if (fPendingHitDamage > 0.0f)
-	{
-		PlayHitSounds(fPendingHitDamage, bPendingHitFlinch);
-		if (PendingHitAttacker != none)
-			PendingHitAttacker.PlayMeleeHit();
-	}
-	// Clear pending state regardless
-	fPendingHitDamage = 0.0f;
-	PendingHitAttacker = none;
-	bPendingFlinchActive = false;
-}
-
-// BANGMOD: Apply deferred death — called 80ms after a rollback-eligible lethal hit.
-// If RollbackRecentHits restored health in the meantime, this is a no-op.
-// Otherwise, finish the kill (health was already dropped by the deferred-damage logic).
-function ApplyDeferredDeath()
+// BANGMOD: Unified deferred hit feedback — one timer defers all client-side
+// hit feedback (blood, sound, flinch) via ReplicatedHitInfo replication.
+// Called 80ms after a rollback-eligible hit.
+function ApplyDeferredReplication()
 {
+	local HitInfo StoredInfo;
+
+	// Apply deferred lethal damage first (so health is correct when ReplicatedHitInfo replicates)
 	if (fDeferredDamage > 0.0f)
 	{
-		// Re-apply the fatal portion: drop health back to lethal, triggering death
 		TakeDamage(fDeferredDamage,
 			Controller != none ? Controller : CurrentSiegeWeapon.Controller,
 			DeferredHitLocation, DeferredHitForce, DeferredDamageType,
 			DeferredHitInfo, DeferredDamageCauser);
 		fDeferredDamage = 0.0f;
 	}
+
+	if (!bHasPendingHitInfo) return;
+	StoredInfo = PendingHitInfo;
+	bHasPendingHitInfo = false;
+	ReplicatedHitInfo = StoredInfo;
+	if (WorldInfo.NetMode == NM_Standalone || Worldinfo.NetMode == NM_ListenServer)
+		HandlePawnGetHit();
+	if (BangModWeapon_Firebug(Weapon) != none && StoredInfo.HitActor != none
+		&& StoredInfo.HitDamage > 0.0f && !StoredInfo.bParry
+		&& !StoredInfo.HitActor.bIsBurning && StoredInfo.HitActor.IsAliveAndWell()
+		&& !IsOnSameTeam(self, StoredInfo.HitActor))
+		StoredInfo.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
 }
 
 
@@ -1851,8 +1854,8 @@ function RollbackRecentHits(float RollbackWindowSeconds)
         return;
 
     // BANGMOD: Cancel any deferred hit sounds, flinch, and death — we're rolling back this hit
-    ClearTimer('PlayDeferredHitFeedback');
-    ClearTimer('ApplyDeferredDeath');
+    ClearTimer('ApplyDeferredReplication');
+    bHasPendingHitInfo = false;
     fPendingHitDamage = 0.0f;
     PendingHitAttacker = none;
     bPendingFlinchActive = false;
@@ -1891,6 +1894,10 @@ function RollbackRecentHits(float RollbackWindowSeconds)
         // Hit within window AND within ping gap — roll it back
         // Restore health
         Health = Min(Health + Entry.fDamage, HealthMax);
+
+        // Cancel all deferred feedback for this rolled-back hit
+        ClearTimer('ApplyDeferredReplication');
+        bHasPendingHitInfo = false;
 
         // Cancel flinch if we got flinched by this hit
         if (Weapon != none && Weapon.IsInState('Flinch'))
@@ -2031,7 +2038,7 @@ DefaultProperties
     fSuccessiveParryThresholdSeconds=1
 
 	// Parry rollback window — undo recent hits if parry starts within this time
-	fParryRollbackWindowSeconds=0.080
+	fParryRollbackWindowSeconds=0.060
 
 	// Riposte flinch immunity grace period - 300ms after successful parry
 	// Prevents flinch during Parry->ParryRelease state transition (network desync)
