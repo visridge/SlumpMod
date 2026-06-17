@@ -9,28 +9,7 @@ class BangModWeaponAttachment_SpikedMace extends BangModWeaponAttachment_Bastard
 
 simulated function float GetHandleTracerPercent(int i)
 {
-	local vector vStart, vMid, vEnd;
-	local float HandleLength, WeaponLength;
-	local float HandleTracerPercent;
-
-	if (Mesh.GetSocketByName('TraceMid') == None)
-	{
-		return 0.30f;
-	}
-	Mesh.GetSocketWorldLocationAndRotation('TraceStart', vStart);
-	Mesh.GetSocketWorldLocationAndRotation('TraceMid', vMid);
-	Mesh.GetSocketWorldLocationAndRotation('TraceEnd', vEnd);
-
-	WeaponLength = VSize(vEnd - vStart);
-	HandleLength = VSize(vMid - vStart);
-	HandleTracerPercent = (HandleLength / WeaponLength);
-
-	if (HandleTracerPercent < 0.30f)
-	{
-		return 0.30f;
-	}
-
-	return HandleTracerPercent;
+	return 0.20f;
 }
 
 DefaultProperties
