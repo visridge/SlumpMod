@@ -129,13 +129,13 @@ simulated function WeaponAttachmentChanged()
 
 	// BANGMOD: Fix heater shield orientation for javelin — javelin animations
 	// hold the arm differently, causing the heater to face skyward like a saucer.
-	// Rotate it 90° outward (along the X axis) so the shield faces sideways.
-	if (Weapon != none && BangModWeapon_JavelinMelee(Weapon) != none
-		&& StateVariables.bShieldEquipped)
+	// Rotate it 90° around Y (yaw) so the shield face points outward instead of upward.
+	if (Weapon != none && StateVariables.bShieldEquipped
+		&& (BangModWeapon_JavelinMelee(Weapon) != none || BangModWeapon_HeavyJavelinMelee(Weapon) != none))
 	{
-		ShieldMesh.SetRotation(rot(0, 0, 16384));  // 90° CCW in Unreal rotator units
+		ShieldMesh.SetRotation(rot(0, 16384, 0));  // 90° yaw — rotates shield face outward
 		if (OverlayShieldMesh != none)
-			OverlayShieldMesh.SetRotation(rot(0, 0, 16384));
+			OverlayShieldMesh.SetRotation(rot(0, 16384, 0));
 	}
 }
 
