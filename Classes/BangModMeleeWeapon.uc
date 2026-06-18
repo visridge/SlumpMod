@@ -563,6 +563,17 @@ simulated function LowerShield()
 	}
 }
 
+/** BANGMOD: Stamp the client-side moment the parry goes active so the server can order it
+ *  against incoming hits (hit-vs-parry trade priority). The stamp rides the pawn channel; the
+ *  server's Parry.BeginState reads it back via GetParryActionServerTime(). */
+simulated function ActivateParry()
+{
+	if (AOCOwner != none && AOCOwner.IsLocallyControlled() && BangModPawn(AOCOwner) != none)
+		BangModPawn(AOCOwner).ServerStampParryTime(WorldInfo.TimeSeconds);
+
+	super.ActivateParry();
+}
+
 /** 
  * BANGMOD: Override Parry state to track server-side timestamp for grace period validation
  * This fixes "through-parry" issues by giving the server accurate timing information
@@ -573,23 +584,21 @@ simulated state Parry
 	/** Track when parry becomes active on server for grace period validation */
 	simulated event BeginState(Name PreviousStateName)
 	{
-		// Server tracks when parry became active for grace period validation
-		// This timestamp is checked in BangModPawn.uci AttackOtherPawn() to give
-		// 100ms grace period for startup lag (covers replication + processing time)
+		// Server records when the parry became active (grace-period validation for hits that
+		// arrive just after this point).
 		if (Role == ROLE_Authority)
-		{
 			fServerParryStartTime = WorldInfo.TimeSeconds;
 
-			// BANGMOD: Check hit buffer for recent unparried hits that should be rolled back.
-			// If the defender's parry crossed paths with an attacker's hit RPC during the
-			// network round-trip, undo the damage and treat it as a successful parry.
-			if (AOCOwner != none && BangModPawn(AOCOwner) != none)
-				BangModPawn(AOCOwner).RollbackRecentHits(fParryGracePeriod);
-		}
-		
-		// Call parent to handle all normal parry logic
+		// Call parent first so bIsParrying / bIsActiveShielding are set before we resolve.
 		super.BeginState(PreviousStateName);
-		
+
+		// BANGMOD: Suppress any swings currently HELD on us — resolve them as parries before
+		// any hit feedback plays. Must run AFTER super so parry validation sees the parry state.
+		// Pass when the parry went active (server timeline) so swings the parry was clearly too
+		// late for fall through and commit as hits instead.
+		if (Role == ROLE_Authority && AOCOwner != none && BangModPawn(AOCOwner) != none)
+			BangModPawn(AOCOwner).ResolvePendingHitsAsParry(BangModPawn(AOCOwner).GetParryActionServerTime());
+
 		// BANGMOD: Disable riposte for shields - must come AFTER super because
 		// AOCMeleeWeapon.Parry.BeginState resets bCanParryHitCounter = true
 		if (bEquipShield)
@@ -897,6 +906,11 @@ simulated state Release
 	simulated event BeginState(Name PreviousStateName)
 	{
 		super.BeginState(PreviousStateName);
+		
+		// BANGMOD: Record when the swing's release began (server clock) for the optional hit-time
+		// debug readout (Set_bShowHitTime -> LogHitTime in AttackOtherPawn). Authority only.
+		if (Role == ROLE_Authority && AOCOwner != none && BangModPawn(AOCOwner) != none)
+			BangModPawn(AOCOwner).Set_fLastReleaseStartTime(WorldInfo.TimeSeconds);
 		
 		// Delay damage before traces can deal hits.
 		// This gives a defending parry time to serialize on dedicated servers.

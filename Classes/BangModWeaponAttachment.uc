@@ -61,6 +61,16 @@ simulated function HandleHitPawn(AOCPawn HitPawn, Vector HitLocation, Vector Hit
 	}
 	
 	// Normal hit processing (damage enabled OR non-parry after delay)
+	// BANGMOD: Stamp the client-side moment this swing connected so the server can order it
+	// against the target's swing for trade priority. Sent on the (pawn) channel right before
+	// AttackOtherPawn fires inside super, so it arrives first (reliable -> ordered).
+	if (AOCPawn(Owner) != none && BangModPawn(Owner) != none
+		&& (Owner.Role < ROLE_Authority || WorldInfo.NetMode == NM_Standalone
+			|| WorldInfo.NetMode == NM_ListenServer || AOCPawn(Owner).bIsBot))
+	{
+		BangModPawn(Owner).ServerStampHitTime(WorldInfo.TimeSeconds);
+	}
+
 	super.HandleHitPawn(HitPawn, HitLocation, HitNormal, HitInfo, HitForce, TracerType);
 }
 

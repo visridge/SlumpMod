@@ -15,19 +15,20 @@ var float fRiposteGracePeriod;                  // Grace period after parry wher
 var bool bKanaboExtraJumpUsed;
 var CylinderComponent OuterCylinderComp; // Reference to the OuterCylinder component (player collision bubble)
 
-// BANGMOD: Deferred hit — delays all hit effects by the rollback window (60ms)
-// so that RollbackRecentHits can cancel them before they reach the client.
-var float fDeferredDamage;            // Damage to apply after window expires
-var class<DamageType> DeferredDamageType;
-var vector DeferredHitLocation;
-var vector DeferredHitForce;
-var TraceHitInfo DeferredHitInfo;
-var Actor DeferredDamageCauser;
-var bool bHasDeferredDamage;          // Whether the above fields are populated
-var float fDeferredHitDamage;         // Copy of ActualDamage for deferred PlayHitSounds
-var bool bDeferredHitFlinch;          // Copy of bFlinch for deferred PlayHitSounds
-var HitInfo DeferredHitInfoFull;      // Full HitInfo for deferred ReplicatedHitInfo
-var bool bHasDeferredHitInfo;         // Whether DeferredHitInfoFull is populated
+// (Deferred-hit state removed — replaced by the PendingHits hold model in BangModPawn.uc)
+
+// BANGMOD: Client-timestamp hit-trade priority state/tunables (see RecentIncomingHit in
+// BangModPawn.uc and the helpers/arbitration further down).
+var float fClientClockOffset;          // EMA of (serverTime - oneWayPing - clientStamp)
+var bool  bClientClockOffsetInit;      // has the offset EMA been seeded yet?
+var float fPendingHitClientTime;       // last client hit-moment stamp received (their clock); consumed by AttackOtherPawn
+var float fLastParryActionServerTime;  // last parry-active moment mapped to server time
+var float fLastParryStampServerTime;   // server time when that parry stamp arrived (freshness check)
+var float fTradeWindowSeconds;         // hits within this gap (normalized) still trade; staggered ones drop
+var float fParryTradeGraceSeconds;     // a parry counts unless it went active later than the swing by more than this
+var float fMaxPlausibleLatency;        // clamp for reconstructed action times (anti-spoof / one-way ping cap)
+var float fRecentHitTTL;               // how long a taken hit stays eligible to cancel a trade swing
+var float fClockOffsetAlpha;           // EMA weight for new clock-offset samples
 
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
@@ -270,6 +271,10 @@ simulated event Tick(float DeltaTime)
 
 	// Call parent first to do all normal tick logic
 	super.Tick(DeltaTime);
+
+	// BANGMOD: commit any held swings whose latency window elapsed without a parry.
+	if (Role == ROLE_Authority)
+		ProcessPendingHits();
 
 	if (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider)
 	{
@@ -1192,7 +1197,81 @@ unreliable client function LogHitTime(float funcTime)
 		AOCPlayerController(Controller).ClientDisplayConsoleMessage("Your swing hit " @string(funcTime) @"seconds after release");
 }
 
-reliable server function AttackOtherPawn(HitInfo Info, string DamageString, optional bool bCheckParryOnly = false, optional bool bBoxParrySuccess, optional bool bHitShield = false, optional SwingTypeImpactSound LastHit = ESWINGSOUND_Slash, optional bool bQuickKick = false) {
+// BANGMOD: Thin dispatcher. Validates the swing once on RPC arrival, then either holds it
+// (so an in-flight parry can suppress it before any feedback plays) or resolves it immediately.
+// 'self' is the ATTACKER; Info.HitActor is the defender.
+reliable server function AttackOtherPawn(HitInfo Info, string DamageString, optional bool bCheckParryOnly = false, optional bool bBoxParrySuccess, optional bool bHitShield = false, optional SwingTypeImpactSound LastHit = ESWINGSOUND_Slash, optional bool bQuickKick = false)
+{
+	local PlayerReplicationInfo PRI;
+	local BangModPawn DefenderBM;
+	local float fHold;
+	local PendingHit NewPending;
+	local float fHitActionServerTime;
+
+	if (PlayerReplicationInfo == none)
+		PRI = Info.PRI;
+	else
+		PRI = PlayerReplicationInfo;
+	Info.PRI = PRI;
+
+	// BANGMOD: Map this swing's client hit-moment stamp (sent just before us by ServerStampHitTime)
+	// onto our timeline for trade ordering, then consume it so a later stampless swing falls back
+	// to ping reconstruction instead of reusing a stale value.
+	fHitActionServerTime = ReconstructActionTime(fPendingHitClientTime);
+	fPendingHitClientTime = 0.0;
+
+	LogHitTime(WorldInfo.TimeSeconds - fLastReleaseStartTime - 0.0087);
+
+	// Block attacks while the attacker is flinched (no trade window)
+	if (BangModMeleeWeapon(Weapon) != none && BangModMeleeWeapon(Weapon).IsInState('Flinch'))
+		return;
+
+	// Authority / lag-comp validation happens once, when the swing RPC arrives.
+	if (!PerformAttackSSSC(Info) && WorldInfo.NetMode != NM_Standalone)
+		return;
+
+	// Decide whether to HOLD this swing so an in-flight parry can suppress it before any
+	// feedback plays. Only enemy melee swings that would land as a hit are eligible; the hold
+	// length is the defender's one-way latency (0 at 0 ping -> instant, vanilla behavior).
+	DefenderBM = BangModPawn(Info.HitActor);
+	fHold = 0.0;
+	if (!bCheckParryOnly
+		&& DefenderBM != none
+		&& !Info.DamageType.default.bIsProjectile
+		&& Info.AttackType != Attack_Shove
+		&& !IsOnSameTeam(self, Info.HitActor)
+		&& !Info.HitActor.StateVariables.bIsParrying
+		&& !Info.HitActor.StateVariables.bIsActiveShielding)
+	{
+		fHold = DefenderBM.GetParryHoldSeconds();
+	}
+
+	if (fHold > 0.0)
+	{
+		NewPending.fCommitTime = WorldInfo.TimeSeconds + fHold;
+		NewPending.Attacker = self;
+		NewPending.Info = Info;
+		NewPending.DamageString = DamageString;
+		NewPending.bBoxParrySuccess = bBoxParrySuccess;
+		NewPending.bHitShield = bHitShield;
+		NewPending.LastHit = LastHit;
+		NewPending.bQuickKick = bQuickKick;
+		NewPending.fActionServerTime = fHitActionServerTime;
+		DefenderBM.PendingHits.AddItem(NewPending);
+		return;
+	}
+
+	ProcessResolvedAttack(Info, DamageString, bCheckParryOnly, bBoxParrySuccess, bHitShield, LastHit, bQuickKick, false, fHitActionServerTime);
+}
+
+// BANGMOD: The single commit path for a swing — damage, feedback, and replication applied at
+// once. Called directly from AttackOtherPawn (no hold needed), or from ProcessPendingHits /
+// ResolvePendingHitsAsParry once a held swing's fate is decided. 'self' is the ATTACKER.
+// When bForceParry is true the swing resolves as a parry (the defender parried while this swing
+// was held); DetectSuccessfulParry still rejects illegal parries (e.g. back hits), which then
+// fall through to a normal hit. Nothing is ever played and then undone.
+function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool bCheckParryOnly = false, optional bool bBoxParrySuccess = false, optional bool bHitShield = false, optional SwingTypeImpactSound LastHit = ESWINGSOUND_Slash, optional bool bQuickKick = false, optional bool bForceParry = false, optional float fActionServerTime = 0.0)
+{
 	local bool bParry;
 	local float ActualDamage;
 	local bool bSameTeam;
@@ -1212,16 +1291,9 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	local bool bEnemyWasBot;
 	local bool bWasKilled;
 	local float StaminaAtKill;
-	local float fFlinchDuration;
-	local float fAttackerPing;
-	local float fDefenderPing;
-	local float fFairTradeWindow;
 	local bool bParryActive;
 	local float fTimeSinceParryStart;
 	local bool bBallistaBolt;
-	local RecentHitEntry RollbackEntry;  // BANGMOD: for parry rollback buffer
-	local float ImmediateDamage;         // BANGMOD: deferred damage split
-	local float LethalPortion;           // BANGMOD: deferred damage split
 
 	// Initialise player replication information
 	if (PlayerReplicationInfo == none)
@@ -1231,8 +1303,27 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 
 	Info.PRI = PRI;
 	bBallistaBolt = (Info.DamageType == class'AOCDmgType_BallistaBolt');
-	
-	LogHitTime(WorldInfo.TimeSeconds - fLastReleaseStartTime - 0.0087);
+
+	// BANGMOD: Client-timestamp trade priority. If THIS opponent hit us (or has a swing held on
+	// us that will hit) clearly before our own swing landed — beyond fTradeWindowSeconds — the
+	// trade is too staggered, so drop our swing and let whoever connected first win. Swings
+	// within the window still trade. Only real enemy melee swings are eligible; parries (those
+	// resolve via bForceParry), kicks, projectiles and team hits are never cancelled. Replaces
+	// the disabled ping-estimate "Fair trade window" block below.
+	if (!bCheckParryOnly
+		&& !bForceParry
+		&& fActionServerTime > 0.0
+		&& Info.HitActor != none
+		&& BangModPawn(Info.HitActor) != none
+		&& !Info.DamageType.default.bIsProjectile
+		&& Info.AttackType != Attack_Shove
+		&& !IsOnSameTeam(self, Info.HitActor)
+		&& ShouldCancelTradeSwing(BangModPawn(Info.HitActor), fActionServerTime))
+	{
+		if (bShowHitTime && AOCPlayerController(Controller) != none)
+			AOCPlayerController(Controller).ClientDisplayConsoleMessage("Trade swing cancelled (opponent hit first)");
+		return;
+	}
 
 	// BangMod: Ping-normalized trade window for fair competitive play
 	// Goal: Remove ping advantage for players under 70ms
@@ -1286,12 +1377,6 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// 	// simultaneous considering network latency - allow the trade
 	// }
 
-	// // Block attacks while flinched (no trade window)
-	if (BangModMeleeWeapon(Weapon) != none && BangModMeleeWeapon(Weapon).IsInState('Flinch'))
-    	return; // Always block, no window
-
-	if (!PerformAttackSSSC(Info) && WorldInfo.NetMode != NM_Standalone)
-		return;
 	// Select weapon (not sure this is necessary...?)
 	if (Info.UsedWeapon == 0)
 		UsedWeapon = PrimaryWeapon;
@@ -1320,7 +1405,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 		}
 	}
 	
-	bParry = (CheckProjectileParry(Info) || bBoxParrySuccess)
+	bParry = (CheckProjectileParry(Info) || bBoxParrySuccess || bForceParry)
 			 && bParryActive
 			 && class<AOCDmgType_Generic>(Info.DamageType) == none
 			 && Info.DamageType != class'AOCDmgType_SiegeWeapon';
@@ -1465,60 +1550,12 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 		// Play a ping sound if we hit a player when shooting (ranged is immediate)
 		if (Info.DamageType.default.bIsProjectile)
 			PlayRangedHitSound();
+		else if (!bSameTeam)
+			PlayMeleeHit();
 
-		// BANGMOD: Defer ALL hit feedback — store in the hit actor so
-		// ApplyDeferredReplication can fire it after the rollback window,
-		// and RollbackRecentHits can cancel it if a parry crosses paths.
-		if (BangModPawn(Info.HitActor) != none && !bParry)
-		{
-			BangModPawn(Info.HitActor).fDeferredHitDamage = ActualDamage;
-			BangModPawn(Info.HitActor).bDeferredHitFlinch = bFlinch;
-			BangModPawn(Info.HitActor).DeferredHitInfoFull = Info;
-			BangModPawn(Info.HitActor).bHasDeferredHitInfo = true;
-
-			// Lethal portion is deferred to prevent irreversible PlayDying()
-			if (ActualDamage >= Info.HitActor.Health)
-			{
-				ImmediateDamage = Max(Info.HitActor.Health - 1, 0);
-				LethalPortion = ActualDamage - ImmediateDamage;
-				// Apply non-lethal portion immediately (victim left at 1 HP)
-				Info.HitActor.TakeDamage(ImmediateDamage,
-					Controller != none ? Controller : CurrentSiegeWeapon.Controller,
-					Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
-				BangModPawn(Info.HitActor).fDeferredDamage = LethalPortion;
-				BangModPawn(Info.HitActor).DeferredDamageType = Info.DamageType;
-				BangModPawn(Info.HitActor).DeferredHitLocation = Info.HitLocation;
-				BangModPawn(Info.HitActor).DeferredHitForce = Info.HitForce;
-				BangModPawn(Info.HitActor).DeferredHitInfo = THI;
-				BangModPawn(Info.HitActor).DeferredDamageCauser = self;
-				BangModPawn(Info.HitActor).bHasDeferredDamage = true;
-			}
-			else
-			{
-				// Non-lethal: defer entire damage
-				BangModPawn(Info.HitActor).fDeferredDamage = ActualDamage;
-				BangModPawn(Info.HitActor).DeferredDamageType = Info.DamageType;
-				BangModPawn(Info.HitActor).DeferredHitLocation = Info.HitLocation;
-				BangModPawn(Info.HitActor).DeferredHitForce = Info.HitForce;
-				BangModPawn(Info.HitActor).DeferredHitInfo = THI;
-				BangModPawn(Info.HitActor).DeferredDamageCauser = self;
-				BangModPawn(Info.HitActor).bHasDeferredDamage = true;
-			}
-
-			// Single unified timer for all deferred effects
-			BangModPawn(Info.HitActor).SetTimer(fParryRollbackWindowSeconds, false, 'ApplyDeferredReplication');
-		}
-		else
-		{
-			// Parried hit or non-BangMod pawn — apply immediately
-			if (!bSameTeam)
-				PlayMeleeHit();
-			if (Info.HitActor.Health - ActualDamage > 0.0f)
-				Info.HitActor.PlayHitSounds(ActualDamage, bFlinch);
-			Info.HitActor.TakeDamage(ActualDamage,
-				Controller != none ? Controller : CurrentSiegeWeapon.Controller,
-				Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
-		}
+		// Read health BEFORE TakeDamage so the death scream isn't doubled with the hit grunt.
+		if (Info.HitActor.Health - ActualDamage > 0.0f)
+			Info.HitActor.PlayHitSounds(ActualDamage, bFlinch);
 
 		// Register the hit on the player countroller
 		if (AOCPlayerController(Controller) != none)
@@ -1565,11 +1602,8 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	}
 
 	// Fill out the rest of the values
-	// BANGMOD: Deferred — for non-parried BangMod pawns, HitInfo is stored in
-	// DeferredHitInfoFull and replicated by ApplyDeferredReplication.  For parried
-	// hits and non-BangMod pawns, replicate immediately.
-	if (bParry || BangModPawn(Info.HitActor) == none)
-		Info.HitActor.ReplicatedHitInfo = Info;
+	// Replicate to clients (repnotify -> HandlePawnGetHit: blood, impact sound, crosshair).
+	Info.HitActor.ReplicatedHitInfo = Info;
 	Info.HitDamage = ActualDamage;
 	Info.HitForce *= int(PawnState != ESTATE_PUSH && PawnState != ESTATE_BATTERING);
 	Info.HitForce *= int(!bFlinch);
@@ -1610,22 +1644,8 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// Was the target a bot?
 	bEnemyWasBot = Info.HitActor.bIsBot || Info.HitActor.PlayerReplicationInfo.bBot || AOCPRI(Info.HitActor.PlayerReplicationInfo).bIsBot || AOCAIController(Info.HitActor.Controller) != none;
 
-	// BANGMOD: Deferred — TakeDamage is handled by ApplyDeferredReplication for non-parried
-	// BangMod pawns. Apply immediately for parried hits or non-BangMod pawns.
-	if (bParry || BangModPawn(Info.HitActor) == none)
-	{
-		// Call take damage on the targeted pawn
-		Info.HitActor.TakeDamage(ActualDamage, Controller != none ? Controller : CurrentSiegeWeapon.Controller, Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
-	}
-
-	// BANGMOD: Buffer unparried hits for parry rollback
-	if (!bParry && ActualDamage > 0.0f && BangModPawn(Info.HitActor) != none)
-	{
-		RollbackEntry.fHitTime = WorldInfo.TimeSeconds;
-		RollbackEntry.fDamage = ActualDamage;
-		RollbackEntry.InstigatorPawn = self;
-		BangModPawn(Info.HitActor).RecentUnparriedHits.AddItem(RollbackEntry);
-	}
+	// Apply damage once.
+	Info.HitActor.TakeDamage(ActualDamage, Controller != none ? Controller : CurrentSiegeWeapon.Controller, Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
 
 	// Was the enemy killed?
 	bWasKilled = (Info.HitActor == none || Info.HitActor.Health <= 0);
@@ -1693,23 +1713,31 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 			AIList.NotifyPawnSuccessBlock(Info.HitActor, self);
 	}
 
-	// BANGMOD: Deferred — HandlePawnGetHit and Firebug are handled by
-	// ApplyDeferredReplication for non-parried BangMod pawns.
+	// Standalone/listen: replicate the hit reaction locally.
 	if (WorldInfo.NetMode == NM_Standalone || Worldinfo.NetMode == NM_ListenServer)
 	{
-		if (bParry || BangModPawn(Info.HitActor) == none)
-			Info.HitActor.HandlePawnGetHit();
+		Info.HitActor.HandlePawnGetHit();
 	}
 
-	// Firebug ignition deferred for non-parried BangMod pawns
-	if (bParry || BangModPawn(Info.HitActor) == none)
+	// Firebug ignition (after the blunt impact sound).
+	if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
+		&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
+		&& Info.HitActor.IsAliveAndWell())
 	{
-		if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
-			&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
-			&& Info.HitActor.IsAliveAndWell())
-		{
-			Info.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
-		}
+		Info.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
+	}
+
+	// BANGMOD: Remember this hit on the victim so, if their counter-swing is still in flight, the
+	// server can see it landed clearly later and drop it (trade priority). Real enemy melee hits
+	// only — parries, kicks, projectiles and team hits don't gate a trade.
+	if (!bParry && !bSameTeam
+		&& fActionServerTime > 0.0
+		&& Info.HitActor != none
+		&& BangModPawn(Info.HitActor) != none
+		&& !Info.DamageType.default.bIsProjectile
+		&& Info.AttackType != Attack_Shove)
+	{
+		BangModPawn(Info.HitActor).RecordIncomingHit(self, fActionServerTime);
 	}
 }
 
@@ -1726,52 +1754,236 @@ function Set_bShowHitTime(bool set)
 	bShowHitTime = set;
 }
 
-// BANGMOD: Unified deferred hit feedback — processes all deferred effects
-// (damage, sound, HitInfo replication, Firebug) atomically after the
-// rollback window expires.  Called by SetTimer from AttackOtherPawn.
-function ApplyDeferredReplication()
+// ===========================================================================================
+// BANGMOD: Client-timestamp hit-trade priority — helpers + client->server stamp RPCs.
+// ===========================================================================================
+
+// One-way latency in seconds. ExactPing is round-trip (seconds), so halve it. Capped so a
+// spoofed/garbage ping can't push reconstructed action times arbitrarily far into the past.
+function float GetOneWayPingSeconds()
 {
-	// 1. Apply deferred damage (lethal or non-lethal)
-	if (bHasDeferredDamage)
+	if (PlayerReplicationInfo != none)
+		return FMin(PlayerReplicationInfo.ExactPing * 0.5, fMaxPlausibleLatency);
+
+	return 0.0;
+}
+
+// Smooth the client->server clock offset from each stamped RPC. A stamp made ~one-way-ping ago
+// in the client's clock should map to (now - oneWay) on the server timeline; the difference is
+// the offset. EMA-smoothed so per-message queue jitter doesn't swing the estimate around.
+function UpdateClockOffset(float fClientStamp)
+{
+	local float fSample;
+
+	if (fClientStamp <= 0.0)
+		return;
+
+	fSample = (WorldInfo.TimeSeconds - GetOneWayPingSeconds()) - fClientStamp;
+
+	if (!bClientClockOffsetInit)
 	{
-		TakeDamage(fDeferredDamage,
-			Controller != none ? Controller : CurrentSiegeWeapon.Controller,
-			DeferredHitLocation, DeferredHitForce, DeferredDamageType,
-			DeferredHitInfo, DeferredDamageCauser);
-		bHasDeferredDamage = false;
-		fDeferredDamage = 0.0f;
+		fClientClockOffset = fSample;
+		bClientClockOffsetInit = true;
+	}
+	else
+	{
+		fClientClockOffset = fClientClockOffset * (1.0 - fClockOffsetAlpha) + fSample * fClockOffsetAlpha;
+	}
+}
+
+// Map a client timestamp onto the server timeline. Falls back to pure ping reconstruction when
+// no usable stamp/offset exists (bots, missing stamp). Clamped to a physically plausible window
+// so a forged early/late stamp can't claim priority it didn't earn.
+function float ReconstructActionTime(float fClientStamp)
+{
+	local float fResult, fNow;
+
+	fNow = WorldInfo.TimeSeconds;
+
+	if (fClientStamp <= 0.0 || !bClientClockOffsetInit)
+		return fNow - GetOneWayPingSeconds();
+
+	fResult = fClientStamp + fClientClockOffset;
+
+	if (fResult > fNow)
+		fResult = fNow;                              // can't have happened in the server's future
+	else if (fResult < fNow - fMaxPlausibleLatency)
+		fResult = fNow - fMaxPlausibleLatency;       // can't be older than max plausible latency
+
+	return fResult;
+}
+
+// Drop taken-hit records older than the TTL so the trade window only sees recent hits.
+function PruneRecentIncomingHits()
+{
+	local int i;
+	local float fCutoff;
+
+	fCutoff = WorldInfo.TimeSeconds - fRecentHitTTL;
+
+	for (i = RecentIncomingHits.Length - 1; i >= 0; i--)
+	{
+		if (RecentIncomingHits[i].fActionServerTime < fCutoff)
+			RecentIncomingHits.Remove(i, 1);
+	}
+}
+
+// Remember a hit we just took (on the victim pawn) so a counter-swing still in flight can be
+// recognised as a staggered trade and dropped.
+function RecordIncomingHit(BangModPawn FromPawn, float fActionServerTime)
+{
+	local RecentIncomingHit NewEntry;
+
+	if (FromPawn == none || fActionServerTime <= 0.0)
+		return;
+
+	PruneRecentIncomingHits();
+
+	NewEntry.Attacker = FromPawn;
+	NewEntry.fActionServerTime = fActionServerTime;
+	RecentIncomingHits.AddItem(NewEntry);
+}
+
+// True when OUR swing should be dropped: this opponent hit us (or has a swing held on us that
+// will hit) clearly earlier than our swing landed — beyond the trade window. Checking held
+// swings too means the rollback hold can never let a staggered hit slip through as a trade.
+function bool ShouldCancelTradeSwing(BangModPawn Opponent, float fSwingActionTime)
+{
+	local int i;
+
+	if (Opponent == none || fSwingActionTime <= 0.0)
+		return false;
+
+	PruneRecentIncomingHits();
+
+	for (i = 0; i < RecentIncomingHits.Length; i++)
+	{
+		if (RecentIncomingHits[i].Attacker == Opponent
+			&& RecentIncomingHits[i].fActionServerTime > 0.0
+			&& fSwingActionTime - RecentIncomingHits[i].fActionServerTime > fTradeWindowSeconds)
+			return true;
 	}
 
-	// 2. Play deferred hit sounds and crosshair flash
-	if (bHasDeferredHitInfo)
+	for (i = 0; i < PendingHits.Length; i++)
 	{
-		if (!IsOnSameTeam(self, DeferredHitInfoFull.HitActor))
-			PlayMeleeHit();
-		if (Health - fDeferredHitDamage > 0.0f)
-			PlayHitSounds(fDeferredHitDamage, bDeferredHitFlinch);
+		if (PendingHits[i].Attacker == Opponent
+			&& PendingHits[i].fActionServerTime > 0.0
+			&& fSwingActionTime - PendingHits[i].fActionServerTime > fTradeWindowSeconds)
+			return true;
 	}
 
-	// 3. Replicate HitInfo to clients (triggers HandlePawnGetHit → blood, impact sound)
-	if (bHasDeferredHitInfo)
-	{
-		ReplicatedHitInfo = DeferredHitInfoFull;
-		if (WorldInfo.NetMode == NM_Standalone || Worldinfo.NetMode == NM_ListenServer)
-			HandlePawnGetHit();
-	}
+	return false;
+}
 
-	// 4. Firebug ignition
-	if (bHasDeferredHitInfo && BangModWeapon_Firebug(Weapon) != none
-		&& DeferredHitInfoFull.HitActor != none
-		&& DeferredHitInfoFull.HitDamage > 0.0f && !DeferredHitInfoFull.bParry
-		&& !DeferredHitInfoFull.HitActor.bIsBurning
-		&& DeferredHitInfoFull.HitActor.IsAliveAndWell()
-		&& !IsOnSameTeam(self, DeferredHitInfoFull.HitActor))
-	{
-		DeferredHitInfoFull.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
-	}
+// Best estimate (server timeline) of when this pawn's parry went active: the fresh client stamp
+// if one just arrived, otherwise ping reconstruction from now.
+function float GetParryActionServerTime()
+{
+	if (bClientClockOffsetInit
+		&& fLastParryActionServerTime > 0.0
+		&& WorldInfo.TimeSeconds - fLastParryStampServerTime < 0.25)
+		return fLastParryActionServerTime;
 
-	// 5. Clean up
-	bHasDeferredHitInfo = false;
+	return WorldInfo.TimeSeconds - GetOneWayPingSeconds();
+}
+
+// Client reports the moment (its own clock) its swing connected. Sent on the pawn channel just
+// before AttackOtherPawn (reliable -> ordered), so AttackOtherPawn reads a fresh stamp.
+reliable server function ServerStampHitTime(float fClientHitTime)
+{
+	UpdateClockOffset(fClientHitTime);
+	fPendingHitClientTime = fClientHitTime;
+}
+
+// Client reports the moment (its own clock) its parry went active, mapped + stored for the
+// hit-vs-parry decision in ResolvePendingHitsAsParry.
+reliable server function ServerStampParryTime(float fClientParryTime)
+{
+	UpdateClockOffset(fClientParryTime);
+	fLastParryActionServerTime = ReconstructActionTime(fClientParryTime);
+	fLastParryStampServerTime = WorldInfo.TimeSeconds;
+}
+
+// BANGMOD: How long to hold an incoming swing on THIS (defender) pawn so an in-flight parry
+// can still reach the server and suppress it. Equals the defender's one-way latency, capped.
+// Returns 0 on LAN/bots (no network crossing to compensate) -> swings resolve instantly.
+function float GetParryHoldSeconds()
+{
+	local float fPingSec;
+	local float fHold;
+
+	if (PlayerReplicationInfo != none)
+		fPingSec = float(PlayerReplicationInfo.Ping) * 0.004; // UE3 stores ping as ms/4
+
+	fHold = FMin(fPingSec, fParryRollbackMaxHoldSeconds);
+
+	if (fHold < fParryRollbackMinHoldSeconds)
+		return 0.0;
+
+	return fHold;
+}
+
+// BANGMOD: Commit held swings whose hold window elapsed without a parry. Runs on the defender
+// (self) from Tick. Each commits exactly once through the normal hit path.
+function ProcessPendingHits()
+{
+	local int i;
+	local PendingHit Entry;
+	local float fNow;
+
+	if (PendingHits.Length == 0)
+		return;
+
+	fNow = WorldInfo.TimeSeconds;
+
+	for (i = 0; i < PendingHits.Length; i++)
+	{
+		if (fNow >= PendingHits[i].fCommitTime)
+		{
+			Entry = PendingHits[i];
+			PendingHits.Remove(i, 1);
+			i--;
+
+			if (Entry.Attacker != none && Entry.Attacker.Weapon != none)
+				Entry.Attacker.ProcessResolvedAttack(Entry.Info, Entry.DamageString, false, Entry.bBoxParrySuccess, Entry.bHitShield, Entry.LastHit, Entry.bQuickKick, false, Entry.fActionServerTime);
+		}
+	}
+}
+
+// BANGMOD: A parry landed while swings were still held on us — resolve every one as a parry
+// BEFORE any hit feedback plays (decide-once). DetectSuccessfulParry still rejects illegal
+// parries (e.g. back hits), which then fall through to a normal hit. Runs on the defender (self)
+// from BangModMeleeWeapon.Parry.BeginState, after super sets bIsParrying/bIsActiveShielding.
+// fParryActionServerTime is when the parry went active (server timeline); a held swing is only
+// resolved as a parry if the parry wasn't clearly later than the swing (timestamp gate). Swings
+// that the parry was too late for stay held and commit as normal hits when their hold expires.
+function ResolvePendingHitsAsParry(optional float fParryActionServerTime = 0.0)
+{
+	local int i;
+	local PendingHit Entry;
+
+	if (PendingHits.Length == 0)
+		return;
+
+	for (i = 0; i < PendingHits.Length; i++)
+	{
+		Entry = PendingHits[i];
+
+		// Timestamp gate: a genuine block is up before/around the hit; a panic parry fired well
+		// after the hit landed (more than the grace) does not save the held swing.
+		if (fParryActionServerTime > 0.0
+			&& Entry.fActionServerTime > 0.0
+			&& fParryActionServerTime - Entry.fActionServerTime > fParryTradeGraceSeconds)
+		{
+			continue;
+		}
+
+		if (Entry.Attacker != none && Entry.Attacker.Weapon != none)
+			Entry.Attacker.ProcessResolvedAttack(Entry.Info, Entry.DamageString, false, Entry.bBoxParrySuccess, Entry.bHitShield, Entry.LastHit, Entry.bQuickKick, true, Entry.fActionServerTime);
+
+		PendingHits.Remove(i, 1);
+		i--;
+	}
 }
 
 
@@ -1787,99 +1999,6 @@ event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector
 	// so that the blunt impact sound plays before the fire sound.
 
 	super.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
-}
-
-// BANGMOD: Parry rollback — undo recent unparried hits if a parry starts within the window.
-// Only triggers when the hit-to-parry gap is ≤ the defender's ping (prevents rollback
-// on LAN/0-ping where there's no network crossing to compensate for).
-// Called from BangModMeleeWeapon.Parry.BeginState on the server.
-function RollbackRecentHits(float RollbackWindowSeconds)
-{
-    local int i;
-    local RecentHitEntry Entry;
-    local float fNow;
-    local float fPingSec;
-    local float fMaxGapSec;
-    local AOCWeapon AttackerWeapon;
-    local AOCWeaponAttachment AttackerWepAttachment;
-
-    if (RecentUnparriedHits.Length == 0)
-        return;
-
-    fNow = WorldInfo.TimeSeconds;
-
-    // Derive max hit-to-parry gap from defender's ping.
-    // UE3 stores ping as Min(Round(PingMs / 4), 255), so convert: Ping * 0.004 = seconds.
-    // On LAN (ping ≈ 0), fMaxGapSec ≈ 0.015s (15ms floor), effectively disabling rollback.
-    // On a 100ms-ping player, fMaxGapSec ≈ 0.115s (100ms + 15ms buffer).
-    if (PlayerReplicationInfo != none)
-        fPingSec = float(PlayerReplicationInfo.Ping) * 0.004;
-    fMaxGapSec = FClamp(fPingSec + 0.015, 0.015, RollbackWindowSeconds);
-
-    // Iterate backwards since we may remove entries
-    for (i = RecentUnparriedHits.Length - 1; i >= 0; i--)
-    {
-        Entry = RecentUnparriedHits[i];
-
-        // Remove stale entries outside the absolute window
-        if (fNow - Entry.fHitTime > RollbackWindowSeconds)
-        {
-            RecentUnparriedHits.Remove(i, 1);
-            continue;
-        }
-
-        // Only roll back hits whose arrival-to-parry gap fits within the
-        // defender's ping window. Larger gaps are human reactions, not network crossings.
-        if (fNow - Entry.fHitTime > fMaxGapSec)
-        {
-            RecentUnparriedHits.Remove(i, 1);
-            continue;
-        }
-
-        // Hit within window AND within ping gap — roll it back
-        // Cancel ALL deferred effects for this hit — it should never have happened
-        ClearTimer('ApplyDeferredReplication');
-        bHasDeferredHitInfo = false;
-        bHasDeferredDamage = false;
-        fDeferredDamage = 0.0f;
-
-        // Restore health
-        Health = Min(Health + Entry.fDamage, HealthMax);
-
-        // Cancel flinch if we got flinched by this hit
-        if (Weapon != none && Weapon.IsInState('Flinch'))
-            Weapon.GotoState('Active');
-
-        // Put attacker into deflect state (as if they were parried)
-        if (Entry.InstigatorPawn != none && Entry.InstigatorPawn.Weapon != none)
-        {
-            AttackerWeapon = AOCWeapon(Entry.InstigatorPawn.Weapon);
-            if (AttackerWeapon != none)
-            {
-                AttackerWeapon.ActivateDeflect(true);
-                AttackerWepAttachment = AOCWeaponAttachment(Entry.InstigatorPawn.CurrentWeaponAttachment);
-                if (AttackerWepAttachment != none)
-                    AttackerWepAttachment.PlayParriedSound();
-                Entry.InstigatorPawn.DisableSprint(true);
-                Entry.InstigatorPawn.StartSprintRecovery();
-            }
-        }
-
-        // Count as successful parry for scoreboard
-        if (PlayerReplicationInfo != none)
-        {
-            AOCPRI(PlayerReplicationInfo).TeamDamageDealt++;
-            AOCPRI(PlayerReplicationInfo).bForceNetUpdate = true;
-        }
-
-        RecentUnparriedHits.Remove(i, 1);
-    }
-    // Clean up any remaining stale entries that are too old
-    for (i = RecentUnparriedHits.Length - 1; i >= 0; i--)
-    {
-        if (fNow - RecentUnparriedHits[i].fHitTime > 0.3)
-            RecentUnparriedHits.Remove(i, 1);
-    }
 }
 
 // BANGMOD: Suppress burning scream voice lines. Fire crackle SFX still plays via ActivateFireSFX.
@@ -1976,8 +2095,18 @@ DefaultProperties
 	fSuccessiveParryStaminaReward=30
     fSuccessiveParryThresholdSeconds=1
 
-	// Parry rollback window — undo recent hits if parry starts within this time
-	fParryRollbackWindowSeconds=0.060
+	// Parry rollback: hold an incoming swing up to this long (capped at defender one-way ping)
+	// so an in-flight parry can suppress it before any feedback plays. 0 hold at 0 ping.
+	fParryRollbackMaxHoldSeconds=0.060
+	fParryRollbackMinHoldSeconds=0.013
+
+	// Client-timestamp hit-trade priority (see helpers/arbitration in this include).
+	// Larger fTradeWindowSeconds keeps MORE trades; smaller cancels more staggered ones.
+	fTradeWindowSeconds=0.060      // hits within 60ms (normalized) still trade
+	fParryTradeGraceSeconds=0.060  // a parry counts unless it went active >60ms after the swing landed
+	fMaxPlausibleLatency=0.500     // clamp for reconstructed client timestamps / one-way ping
+	fRecentHitTTL=0.300            // how long a taken hit can still cancel an incoming trade swing
+	fClockOffsetAlpha=0.10         // EMA weight for per-message clock-offset samples
 
 	// Riposte flinch immunity grace period - 300ms after successful parry
 	// Prevents flinch during Parry->ParryRelease state transition (network desync)
