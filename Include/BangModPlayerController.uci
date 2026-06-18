@@ -245,6 +245,7 @@ function ProcessViewRotation( float DeltaTime, out Rotator out_ViewRotation, Rot
 {
 	local float MaxTurnSpeed;
 	local float MaxVertTurnSpeed;
+	local bool bInAttackFlow;
 
 	if( PreventTurning )
         return;
@@ -261,10 +262,41 @@ function ProcessViewRotation( float DeltaTime, out Rotator out_ViewRotation, Rot
 	}
 	else if ( AOCPawn(Pawn) != None )
 	{	
-		if ( AOCPawn(Pawn).StateVariables.bIsAttacking && LimitTurnSpeed  && Pawn.Weapon != none && AOCWeapon(Pawn.Weapon) != none)
+		// BANGMOD turncap desync fix. StateVariables is a *replicated* struct, so on a dedicated
+		// server the server's snapshot of bIsAttacking periodically clobbers the owning client's
+		// locally-predicted value. During rapid combos that bool can read false for a frame or two
+		// between chained attacks; on those frames the gate below skipped the yaw clamp entirely
+		// and an uncapped mouse delta was applied and then sent to (and trusted by) the server ->
+		// the "turncap comes unbound / spin" desync. The weapon's simulated state
+		// (Windup/Release/Transition) is driven by the client's own animation timers and does NOT
+		// suffer that clobber, so use it as a stable fallback to keep the cap bound for the whole
+		// combo. Melee only (ranged draw/reload has its own handling below).
+		bInAttackFlow = Pawn.Weapon != none && AOCMeleeWeapon(Pawn.Weapon) != none
+			&& (AOCWeapon(Pawn.Weapon).IsInState('Windup')
+				|| AOCWeapon(Pawn.Weapon).IsInState('Release')
+				|| AOCWeapon(Pawn.Weapon).IsInState('Transition'));
+
+		if ( (AOCPawn(Pawn).StateVariables.bIsAttacking || bInAttackFlow) && LimitTurnSpeed  && Pawn.Weapon != none && AOCWeapon(Pawn.Weapon) != none)
 		{
 			MaxTurnSpeed = AOCWeapon(Pawn.Weapon).GetHorizontalRotateSpeed();
 			MaxVertTurnSpeed = AOCWeapon(Pawn.Weapon).GetVerticalRotateSpeed();
+
+			// If the replicated bool flickered false mid-combo, GetHorizontalRotateSpeed() returns
+			// the *free-look* speed (its !bIsAttacking branch). Force the real attack cap straight
+			// from the weapon so the flicker can't briefly uncap the turn.
+			if (bInAttackFlow && !AOCPawn(Pawn).StateVariables.bIsAttacking)
+			{
+				if (AOCWeapon(Pawn.Weapon).CurrentFireMode == Attack_Sprint)
+				{
+					MaxTurnSpeed = AOCWeapon(Pawn.Weapon).SprintAttackHorizRotateSpeed;
+					MaxVertTurnSpeed = AOCWeapon(Pawn.Weapon).SprintAttackVerticalRotateSpeed;
+				}
+				else
+				{
+					MaxTurnSpeed = AOCWeapon(Pawn.Weapon).AttackHorizRotateSpeed;
+					MaxVertTurnSpeed = AOCWeapon(Pawn.Weapon).VerticalRotateSpeed;
+				}
+			}
 			
 			// BANGMOD: Loosen turn cap during parry animation - use Holy Water Sprinkler esque speeds
 			if (AOCPawn(Pawn).StateVariables.bIsParrying)
