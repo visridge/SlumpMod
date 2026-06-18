@@ -318,11 +318,19 @@ DefaultProperties
 function DisableCatapultRespawns()
 {
 	local AOCSWCatapult Catapult;
+    local AOCSWBallista Ballista;
 
 	foreach WorldInfo.AllActors(class'AOCSWCatapult', Catapult)
 	{
 		Catapult.RepairTime = 1000000.0;
 		if (Catapult.bDestroyed)
 			Catapult.ClearTimer('Repair');
+	}
+
+	foreach WorldInfo.AllActors(class'AOCSWBallista', Ballista)
+	{
+		Ballista.RepairTime = 1000000.0;
+		if (Ballista.bDestroyed)
+			Ballista.ClearTimer('Repair');
 	}
 }

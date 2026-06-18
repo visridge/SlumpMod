@@ -1484,11 +1484,11 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 
 	// Ballista damage set on the map/siege actor overrides projectile defaults, so clamp it here
 	// in the shared pawn hit path where the final damage is actually applied.
-	if (bBallistaBolt)
-	{
-		ActualDamage = 0.0f;
-		// Info.HitForce = vect(0.0f, 0.0f, 0.0f);
-	}
+	// if (bBallistaBolt)
+	// {
+	// 	ActualDamage = 0.0f;
+	// 	// Info.HitForce = vect(0.0f, 0.0f, 0.0f);
+	// }
 
 	// Stun if the parry costs too much stamina
 	if (bParry && !bPassiveBlock && Info.HitActor.Stamina <= 0) {
@@ -2002,8 +2002,8 @@ function ResolvePendingHitsAsParry(optional float fParryActionServerTime = 0.0)
 // Splash damage from HurtRadius bypasses AttackOtherPawn entirely, so this is the only reliable intercept.
 event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
 {
-	if (DamageType == class'AOCDmgType_BallistaBolt')
-		return;
+	// if (DamageType == class'AOCDmgType_BallistaBolt')
+	// 	return;
 
 	// Firebug ignition moved to end of AttackOtherPawn (after HandlePawnGetHit)
 	// so that the blunt impact sound plays before the fire sound.
