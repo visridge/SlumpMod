@@ -1484,11 +1484,11 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 
 	// Ballista damage set on the map/siege actor overrides projectile defaults, so clamp it here
 	// in the shared pawn hit path where the final damage is actually applied.
-	// if (bBallistaBolt)
-	// {
-	// 	ActualDamage = 0.0f;
-	// 	// Info.HitForce = vect(0.0f, 0.0f, 0.0f);
-	// }
+	if (bBallistaBolt)
+	{
+		ActualDamage = 50.0f;
+		// Info.HitForce = vect(0.0f, 0.0f, 0.0f);
+	}
 
 	// Stun if the parry costs too much stamina
 	if (bParry && !bPassiveBlock && Info.HitActor.Stamina <= 0) {
@@ -2107,15 +2107,15 @@ DefaultProperties
 
 	// Parry rollback: hold an incoming swing up to this long (capped at defender one-way ping)
 	// so an in-flight parry can suppress it before any feedback plays. 0 hold at 0 ping.
-	fParryRollbackMaxHoldSeconds=0.060
+	fParryRollbackMaxHoldSeconds=0.034
 	fParryRollbackMinHoldSeconds=0.013
 
 	// Client-timestamp hit-trade priority (see helpers/arbitration in this include).
 	// Larger fTradeWindowSeconds keeps MORE trades; smaller cancels more staggered ones.
-	fTradeWindowSeconds=0.060      // hits within 60ms (normalized) still trade
-	fParryTradeGraceSeconds=0.060  // a parry counts unless it went active >60ms after the swing landed
+	fTradeWindowSeconds=0.034      // hits within 60ms (normalized) still trade
+	fParryTradeGraceSeconds=0.034  // a parry counts unless it went active >60ms after the swing landed
 	fMaxPlausibleLatency=0.500     // clamp for reconstructed client timestamps / one-way ping
-	fRecentHitTTL=0.300            // how long a taken hit can still cancel an incoming trade swing
+	fRecentHitTTL=0.80            // how long a taken hit can still cancel an incoming trade swing
 	fClockOffsetAlpha=0.10         // EMA weight for per-message clock-offset samples
 
 	// Riposte flinch immunity grace period - 300ms after successful parry
