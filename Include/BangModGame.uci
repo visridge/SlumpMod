@@ -236,6 +236,12 @@ function StartMatch()
 {
     ResetParryScoreboardCounts();
     super.StartMatch();
+
+    // BANGMOD: make catapults permanently destructible (see DisableCatapultRespawns). One
+    // immediate pass covers catapults already on the map, and a low-frequency looping sweep
+    // catches any destroyed or Kismet-spawned later in the round.
+    DisableCatapultRespawns();
+    SetTimer(3.0, true, 'DisableCatapultRespawns');
 }
 
 
@@ -291,23 +297,32 @@ DefaultProperties
 
 }
 
-// BANGMOD: Nerf catapults — zero out horizontal velocity on all catapult rocks.
-// Destructible objectives count hits not damage values, so we can't just zero the damage type.
-// Instead we make every rock fly straight up and fall back down, rendering catapults useless.
-function Tick(float DeltaTime)
+// BANGMOD: Make catapults permanently destructible — once broken they stay a broken wreck for
+// the rest of the round instead of self-repairing.
+//
+// Catapults (AOCSWCatapult) are placed directly in maps as the AOC class, so we can't subclass
+// them without editing every map. Instead we reach the live instances from the game mode. In
+// AOCSW_Base.TakeDamage a destroyed siege weapon schedules its own respawn via
+// SetTimer(RepairTime, false, 'Repair'); Repair() then clears bDestroyed, restores Health and
+// returns it to Idle. We defeat that two ways:
+//   (a) push RepairTime far out so any FUTURE destruction won't repair within a round, and
+//   (b) ClearTimer('Repair') on any catapult that is ALREADY destroyed, cancelling an in-flight
+//       respawn (RepairTime captured at SetTimer time, so bumping it isn't enough on its own).
+// A destroyed catapult's bDestroyed stays true, so TakeDamage no-ops and clients keep showing
+// the broken-down wreck. Scoped to catapults only; ballistae keep vanilla respawn behaviour.
+//
+// This replaces the old per-frame Tick that zeroed catapult-rock velocity — that hack mutated a
+// replicated projectile server-side every frame, which is what produced the "invisible shot
+// lands next to the catapult" desync. Rocks now fly their normal arc; catapults are balanced by
+// staying dead once destroyed instead.
+function DisableCatapultRespawns()
 {
-	local AOCProj_CatapultRock Rock;
+	local AOCSWCatapult Catapult;
 
-	super.Tick(DeltaTime);
-
-	foreach WorldInfo.AllActors(class'AOCProj_CatapultRock', Rock)
+	foreach WorldInfo.AllActors(class'AOCSWCatapult', Catapult)
 	{
-		if (Rock.Velocity.X != 0 || Rock.Velocity.Y != 0)
-		{
-			Rock.Velocity.X = 0;
-			Rock.Velocity.Y = 0;
-			Rock.Acceleration.X = 0;
-			Rock.Acceleration.Y = 0;
-		}
+		Catapult.RepairTime = 1000000.0;
+		if (Catapult.bDestroyed)
+			Catapult.ClearTimer('Repair');
 	}
 }
