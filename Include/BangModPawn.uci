@@ -1791,6 +1791,16 @@ function UpdateClockOffset(float fClientStamp)
 	}
 }
 
+// BANGMOD: Seed this pawn's client-clock offset from the controller's persisted value (carried
+// from the player's previous pawn before it died). Lets the hit-trade timestamp system start
+// warm on respawn instead of cold-starting into pure ping reconstruction. Called from
+// BangModPlayerController.Possess. Server-only.
+function SeedClockOffset(float fOffset)
+{
+	fClientClockOffset = fOffset;
+	bClientClockOffsetInit = true;
+}
+
 // Map a client timestamp onto the server timeline. Falls back to pure ping reconstruction when
 // no usable stamp/offset exists (bots, missing stamp). Clamped to a physically plausible window
 // so a forged early/late stamp can't claim priority it didn't earn.
@@ -2128,7 +2138,7 @@ DefaultProperties
 	    BlockZeroExtent=false
 	    BlockActors=true
 	    CollideActors=true
-	    bDrawBoundingBox=true
+	    bDrawBoundingBox=false
 	    BlockNonTeamActors=true
 	End Object
 

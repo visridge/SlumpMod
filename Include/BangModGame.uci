@@ -266,6 +266,10 @@ DefaultProperties
     HUDType=class'`{GAMEMODE}HUD'
     PlayerReplicationInfoClass=class'`{GAMEMODE}PRI'
 
+    // "addbots" bot AI: smarter melee bots (skill floor + better threat awareness).
+    // See BangMod/Classes/BangModAOCCombatBot.uc. Shared by every BangMod game mode.
+    DefaultAIControllerClass=class'BangModAOCCombatBot'
+
     //This is the name that shows in the server browser for this mod:
     ModDisplayString="SlumpMod 2.4.2"
 

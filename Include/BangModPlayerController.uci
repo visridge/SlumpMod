@@ -28,6 +28,13 @@ var globalconfig bool bSkeletalParry;    // When true, parry hitbox wraps the fu
 // Collision bubble radius (OuterCylinder)
 var globalconfig float fBangModCollisionRadius;  // Radius of the player collision bubble; vanilla AOC default is 39.0
 
+// BANGMOD: Persisted client-clock offset (server-only) for the hit-trade timestamp system.
+// The offset is accumulated on the pawn (BangModPawn.fClientClockOffset); we stash it here when
+// the pawn dies and re-seed the next pawn on Possess, so the system isn't cold (falling back to
+// pure ping reconstruction) for the first hit or two after every respawn.
+var float fPersistedClientClockOffset;
+var bool  bPersistedClockOffsetInit;
+
 
 simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
 {
@@ -346,6 +353,12 @@ function AddRagdolledPawn(AOCPawn RagdolledPawn)
 event Possess(Pawn inPawn, bool bVehicleTransition)
 {
 	super.Possess(inPawn, bVehicleTransition);
+
+	// BANGMOD: Re-seed the client-clock offset carried from this player's previous pawn so the
+	// hit-trade timestamp system starts warm instead of cold (pure ping reconstruction) for the
+	// first hit or two after respawn. Offset is captured in PawnDied below. Server-only.
+	if (Role == ROLE_Authority && bPersistedClockOffsetInit && BangModPawn(inPawn) != none)
+		BangModPawn(inPawn).SeedClockOffset(fPersistedClientClockOffset);
 	
 	// Force ragdolls disabled on every spawn (catches players with read-only configs)
 	ConsoleCommand("SetRagdollLimit 0");
@@ -366,6 +379,19 @@ event Possess(Pawn inPawn, bool bVehicleTransition)
 		bShownOptimizationTip = true;
 		SetTimer(2.0f, false, 'ShowOptimizationTip');
 	}
+}
+
+// BANGMOD: Capture the dying pawn's accumulated client-clock offset so the next pawn can start
+// warm (re-seeded in Possess). Runs before super so the pawn is still valid. Server-only.
+function PawnDied(Pawn P)
+{
+	if (Role == ROLE_Authority && BangModPawn(P) != none && BangModPawn(P).bClientClockOffsetInit)
+	{
+		fPersistedClientClockOffset = BangModPawn(P).fClientClockOffset;
+		bPersistedClockOffsetInit = true;
+	}
+
+	super.PawnDied(P);
 }
 
 // Send optimization tip as a server message that appears in chat
