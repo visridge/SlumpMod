@@ -166,7 +166,7 @@ DefaultProperties
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Javelin'
 	//PermanentAttachmentClass(0)=class'AOCInventoryAttachment_JavelinQuiver'
 	//PermanentAttachmentClass(1)=class'AOCInventoryAttachment_JavelinQuiver'
-	AllowedShieldClass=class'AOCShield_Heatshield'
+	AllowedShieldClass=class'AOCShield_Buckler'
 	bHaveShield=true
 	ImpactBloodTemplates(0)=ParticleSystem'CHV_Particles_01.Player.Impact.P_1HSwordHit'
 	ImpactBloodTemplates(1)=ParticleSystem'CHV_Particles_01.Player.Impact.P_1HSwordHit'

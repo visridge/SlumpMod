@@ -1,194 +1,249 @@
-# BangMod Parry Rollback System
+# BangMod Parry Rollback & Deferred Hit System
 
 ## Purpose
 
-Compensates for network latency where a defender's parry RPC arrives at the server slightly after the attacker's hit RPC. If the parry was already in-flight from the defender's client when the hit landed (a "crossed wires" scenario), the system undoes the hit damage and treats it as a successful parry.
+Compensates for network latency where a defender's parry RPC arrives at the server slightly after the attacker's hit RPC. All hit effects (damage, flinch, sound, blood) are deferred by a configurable rollback window (`fParryRollbackWindowSeconds`, default 60ms). If a parry arrives within that window, the hit is cancelled entirely. If the window expires without a parry, the hit is committed.
 
 ## Files Involved
 
 | File | Role |
 |------|------|
-| `BangMod\Classes\BangModPawn.uc` | Struct def + array decl (`RecentHitEntry`, `RecentUnparriedHits`) |
-| `BangMod\Include\BangModPawn.uci` | Hit buffer code in `AttackOtherPawn` + `RollbackRecentHits()` function |
+| `BangMod\Classes\BangModPawn.uc` | Struct def + array decl (`RecentHitEntry`, `RecentUnparriedHits`, `fParryRollbackWindowSeconds`) |
+| `BangMod\Include\BangModPawn.uci` | Deferred variable decls, `AttackOtherPawn` deferral logic, `ApplyDeferredReplication()`, `RollbackRecentHits()` |
 | `BangMod\Classes\BangModMeleeWeapon.uc` | Call to `RollbackRecentHits()` in `Parry.BeginState` |
 
 ## Data Structures
 
-### `RecentHitEntry` struct (BangModPawn.uc lines ~4-9)
+### `RecentHitEntry` struct (BangModPawn.uc)
 ```unrealscript
 struct RecentHitEntry
 {
-    var float fHitTime;        // WorldInfo.TimeSeconds when hit was processed
-    var float fDamage;         // Actual damage dealt
-    var AOCPawn InstigatorPawn; // The attacker's pawn
+    var float fHitTime;           // WorldInfo.TimeSeconds when hit was buffered
+    var float fDamage;            // Actual damage dealt
+    var AOCPawn InstigatorPawn;   // The attacker's pawn
 };
+var array<RecentHitEntry> RecentUnparriedHits;   // Per-pawn hit buffer
+var float fParryRollbackWindowSeconds;            // 0.060 (60ms) — hit deferral delay
 ```
 
-### Variables (BangModPawn.uc lines ~11-12)
+### Deferred state variables (BangModPawn.uci ~line 17-42)
 ```unrealscript
-var array<RecentHitEntry> RecentUnparriedHits;  // Hit buffer (per-pawn)
-var float fParryRollbackWindowSeconds;           // Max rollback window (unused currently, use fParryGracePeriod)
+// Deferred hit audio
+var float fPendingHitDamage;       // Damage for deferred PlayHitSounds
+var bool bPendingHitFlinch;        // Flinch flag for deferred PlayHitSounds
+var AOCPawn PendingHitAttacker;    // Attacker whose PlayMeleeHit is deferred
+
+// Deferred flinch
+var bool bPendingFlinchActive;     // Whether a flinch is waiting
+var bool bPendingFlinchFullBody;
+var bool bPendingFlinchGeneric;
+var bool bPendingFlinchSpecial;
+var bool bPendingFlinchTwoHander;
+var EDirection bPendingFlinchDir;
+
+// Deferred damage (lethal portion)
+var float fDeferredDamage;
+var class<DamageType> DeferredDamageType;
+var vector DeferredHitLocation;
+var vector DeferredHitForce;
+var TraceHitInfo DeferredHitInfo;
+var Actor DeferredDamageCauser;
+
+// Deferred replication
+var HitInfo PendingHitInfo;
+var bool bHasPendingHitInfo;
 ```
 
 ## Flow
 
-### Step 1 — Buffer hits (`AttackOtherPawn` in BangModPawn.uci ~line 1550)
+### Step 1 — Attacker hits defender (`AttackOtherPawn`)
 
-Every time an unparried hit deals damage, the hit is pushed into the defender's buffer:
-
+#### A) Flinch is deferred
+Instead of calling `AOCWeapon(...).ActivateFlinch(...)` immediately, flinch parameters are stored:
 ```unrealscript
-if (!bParry && ActualDamage > 0.0f && BangModPawn(Info.HitActor) != none)
+BangModPawn(Info.HitActor).bPendingFlinchActive = true;
+BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
+BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
+// ... etc
+```
+
+#### B) Hit audio is deferred
+`PlayMeleeHit` and `PlayHitSounds` are replaced with deferred storage:
+```unrealscript
+BangModPawn(Info.HitActor).fPendingHitDamage = ActualDamage;
+BangModPawn(Info.HitActor).bPendingHitFlinch = bFlinch;
+BangModPawn(Info.HitActor).PendingHitAttacker = self;
+```
+
+#### C) HitInfo replication is deferred
+```unrealscript
+BangModPawn(Info.HitActor).PendingHitInfo = Info;
+BangModPawn(Info.HitActor).bHasPendingHitInfo = true;
+```
+
+#### D) Lethal damage is split and deferred
+To prevent `PlayDying()` from making death irreversible before rollback can intervene:
+```unrealscript
+if (ActualDamage >= Info.HitActor.Health)
 {
-    RollbackEntry.fHitTime = WorldInfo.TimeSeconds;
-    RollbackEntry.fDamage = ActualDamage;
-    RollbackEntry.InstigatorPawn = self;
-    BangModPawn(Info.HitActor).RecentUnparriedHits.AddItem(RollbackEntry);
+    ImmediateDamage = Max(Info.HitActor.Health - 1, 0);  // leaves 1 HP
+    LethalPortion = ActualDamage - ImmediateDamage;
+    Info.HitActor.TakeDamage(ImmediateDamage, ...);       // immediate non-lethal
+    BangModPawn(Info.HitActor).fDeferredDamage = LethalPortion;  // deferred lethal
+}
+else
+{
+    Info.HitActor.TakeDamage(ActualDamage, ...);          // immediate full damage
 }
 ```
 
-### Step 2 — Check buffer on parry (`Parry.BeginState` in BangModMeleeWeapon.uc ~line 585)
+#### E) Unified deferred timer
+All deferrals are committed via a single timer:
+```unrealscript
+BangModPawn(Info.HitActor).SetTimer(fParryRollbackWindowSeconds, false, 'ApplyDeferredReplication');
+```
 
-When a parry starts on the server, the hit buffer is checked for recent hits that should be rolled back:
+#### F) Hit buffered for rollback
+```unrealscript
+RollbackEntry.fHitTime = WorldInfo.TimeSeconds;
+RollbackEntry.fDamage = ActualDamage;
+RollbackEntry.InstigatorPawn = self;
+BangModPawn(Info.HitActor).RecentUnparriedHits.AddItem(RollbackEntry);
+```
+
+### Step 2 — Timer fires: `ApplyDeferredReplication()` (60ms later)
+
+If no parry interrupted within the window:
 
 ```unrealscript
-if (Role == ROLE_Authority)
+function ApplyDeferredReplication()
 {
-    fServerParryStartTime = WorldInfo.TimeSeconds;
-    if (AOCOwner != none && BangModPawn(AOCOwner) != none)
-        BangModPawn(AOCOwner).RollbackRecentHits(fParryGracePeriod);
+    // 1. Apply deferred lethal damage
+    if (fDeferredDamage > 0.0f)
+    {
+        TakeDamage(fDeferredDamage, ...);
+        fDeferredDamage = 0.0f;
+    }
+
+    // 2. Replicate HitInfo to clients (triggers HandlePawnGetHit → blood, impact sound)
+    if (!bHasPendingHitInfo) return;
+    StoredInfo = PendingHitInfo;
+    bHasPendingHitInfo = false;
+    ReplicatedHitInfo = StoredInfo;
+    if (WorldInfo.NetMode == NM_Standalone || Worldinfo.NetMode == NM_ListenServer)
+        HandlePawnGetHit();
+
+    // 3. Apply deferred Firebug ignition
+    if (BangModWeapon_Firebug(Weapon) != none && ...)
+        StoredInfo.HitActor.SetPawnOnFire(...);
 }
 ```
 
-### Step 3 — `RollbackRecentHits()` (BangModPawn.uci ~line 1660)
-
-This function runs on the **server** (called from `Role == ROLE_Authority`).
+### Step 3 — Defender parries: `RollbackRecentHits()` (called from `Parry.BeginState`)
 
 #### Ping-gated gap check
-
-The defender's ping is used to compute a maximum allowable hit-to-parry time gap:
+The defender's ping determines the allowable hit-to-parry gap. Only hits that arrived within the defender's ping window are eligible for rollback (preventing LAN/0-ping rollback of legitimate reactions):
 
 ```unrealscript
-// UE3 stores ping as Min(Round(PingMs / 4), 255)
-// Convert: Ping * 0.004 = seconds
-fPingSec = float(PlayerReplicationInfo.Ping) * 0.004;
+fPingSec = float(PlayerReplicationInfo.Ping) * 0.004;  // UE3 stores Ping/4
 fMaxGapSec = FClamp(fPingSec + 0.015, 0.015, RollbackWindowSeconds);
 ```
 
 | Defender Ping | fMaxGapSec | Behavior |
 |---------------|-----------|----------|
-| 0 ms (LAN/bots) | 0.015s (15ms floor) | Effectively **disabled** — human reactions always exceed 15ms |
-| 50 ms | ~0.065s (65ms) | Rolls back genuine network crossings |
-| 100 ms | ~0.115s (115ms) | Rolls back crossings ≤ fParryGracePeriod |
-| 150+ ms | Capped at `RollbackWindowSeconds` (~100ms) | Limited by grace period |
+| 0 ms (LAN/bots) | 15ms | Effectively **disabled** |
+| 50 ms | ~65ms | Rolls back network crossings |
+| 100 ms | ~115ms | Rolls back crossings ≤ window |
+| 150+ ms | Capped at fParryGracePeriod | Limited by grace period |
 
-#### Iteration logic
-
+#### Cancellation of deferred effects
+When a parry fires (and buffer is non-empty), ALL deferred timers and state are cleared:
 ```unrealscript
-for (i = RecentUnparriedHits.Length - 1; i >= 0; i--)
-{
-    // 1. Remove hits outside the absolute rollback window (>RollbackWindowSeconds)
-    if (fNow - Entry.fHitTime > RollbackWindowSeconds)
-        { Remove & continue; }
-
-    // 2. Skip hits where gap exceeds defender's ping window
-    //    (these are human reactions, not network crossings)
-    if (fNow - Entry.fHitTime > fMaxGapSec)
-        { Remove & continue; }
-
-    // 3. Hit is within both windows → ROLL BACK
-    //    - Restore health
-    //    - Cancel flinch state
-    //    - Put attacker into deflect state
-    //    - Play parried sound
-    //    - Increment scoreboard parry counter
-}
+ClearTimer('ApplyDeferredReplication');
+bHasPendingHitInfo = false;
+fPendingHitDamage = 0.0f;
+PendingHitAttacker = none;
+bPendingFlinchActive = false;
+fDeferredDamage = 0.0f;
 ```
 
-#### Cleanup
-
-After the main loop, any remaining entries older than 0.3s are purged:
-
+#### Per-hit rollback
 ```unrealscript
-for (i = RecentUnparriedHits.Length - 1; i >= 0; i--)
+for each buffered hit:
+    if (too old OR gap exceeds ping window):
+        remove from buffer
+    else:
+        Health += fDamage  (restore health, capped at HealthMax)
+        cancel flinch state
+        put attacker into deflect
+        play parried sound
+        increment scoreboard parry count
+```
+
+### Step 4 — Firebug rollback extinguishing
+If the attacker used Firebug and the defender was burning, the fire is extinguished on rollback:
+```unrealscript
+if (bIsBurning && Entry.InstigatorPawn != none
+    && BangModWeapon_Firebug(Entry.InstigatorPawn.Weapon) != none)
 {
-    if (fNow - RecentUnparriedHits[i].fHitTime > 0.3)
-        RecentUnparriedHits.Remove(i, 1);
+    bIsBurning = false;
+    StopFireOnPawn();
 }
 ```
 
 ## Configuration
 
-### Key variables
-
 | Variable | Class | Default | Purpose |
 |----------|-------|---------|---------|
-| `fParryGracePeriod` | `BangModMeleeWeapon` | **0.100** (100ms) | Passed as `RollbackWindowSeconds` — max hit age for rollback |
-| `fParryRollbackWindowSeconds` | `BangModPawn` | N/A | Declared but unused currently |
+| `fParryRollbackWindowSeconds` | `BangModPawn` | **0.060** (60ms) | Hit deferral delay and max rollback window |
+| `fParryGracePeriod` | `BangModMeleeWeapon` | **0.100** (100ms) | Server-side parry startup grace, passed as `RollbackWindowSeconds` |
 | `PlayerReplicationInfo.Ping` | UE3 built-in | Varies | Defender's ping (stored as `PingMs/4`, max 255) |
 
 ### To adjust the rollback window
-
-Change `fParryGracePeriod` in `BangModMeleeWeapon` DefaultProperties:
-
+Change `fParryRollbackWindowSeconds` in `BangModPawn.uci` DefaultProperties:
 ```unrealscript
-fParryGracePeriod = 0.100;  // 100ms (current)
-// fParryGracePeriod = 0.075;  // 75ms (tighter)
-// fParryGracePeriod = 0.150;  // 150ms (looser, more forgiving for high ping)
+fParryRollbackWindowSeconds=0.060  // 60ms (current)
+// fParryRollbackWindowSeconds=0.080  // 80ms (looser)
+// fParryRollbackWindowSeconds=0.040  // 40ms (tighter)
 ```
-
-### To disable the entire system
-
-Three pieces must be commented out:
-
-1. **Hit buffer** in `BangModPawn.uci` `AttackOtherPawn` (~line 1550): wrap the `if (!bParry...AddItem)` block in `/* */`
-2. **Rollback call** in `BangModMeleeWeapon.uc` `Parry.BeginState` (~line 585): comment out the `RollbackRecentHits` call
-3. **Function body** in `BangModPawn.uci` (~line 1660): wrap the `function RollbackRecentHits(...) { ... }` in `/* */`
 
 ## Diagram
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                     ATTACK FLOW                           │
-│                                                          │
-│  Attacker hits Defender                                   │
-│       │                                                   │
-│       ▼                                                   │
-│  AttackOtherPawn() on Defender                            │
-│       │                                                   │
-│       ├─ Damage applied                                   │
-│       │                                                   │
-│       └─ Hit buffered:                                    │
-│          RecentUnparriedHits.AddItem(hitTime, dmg, atkr)  │
-│                                                          │
-└──────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                        ATTACK FLOW                                │
+│                                                                  │
+│  Attacker hits Defender                                           │
+│       │                                                           │
+│       ▼                                                           │
+│  AttackOtherPawn() on Server                                      │
+│       │                                                           │
+│       ├─ Flinch params stored (bPendingFlinch*)                   │
+│       ├─ Sound params stored (fPendingHitDamage, PendingHitAtkr)  │
+│       ├─ HitInfo stored (PendingHitInfo, bHasPendingHitInfo)      │
+│       ├─ Non-lethal damage applied immediately                    │
+│       ├─ Lethal damage split: 1 HP now, rest deferred             │
+│       ├─ Hit buffered for rollback                                │
+│       │                                                           │
+│       └─ SetTimer(60ms, 'ApplyDeferredReplication')              │
+│                                                                  │
+└──────────────────────────────────────────────────────────────────┘
 
-┌──────────────────────────────────────────────────────────┐
-│                     PARRY FLOW                            │
-│                                                          │
-│  Defender parries                                         │
-│       │                                                   │
-│       ▼                                                   │
-│  Parry.BeginState() on Server                             │
-│       │                                                   │
-│       ├─ fServerParryStartTime = now                      │
-│       │                                                   │
-│       └─ RollbackRecentHits(fParryGracePeriod)            │
-│            │                                              │
-│            ├─ Compute fMaxGapSec from defender ping       │
-│            │                                              │
-│            └─ For each buffered hit:                      │
-│                 │                                         │
-│                 ├─ Is gap > RollbackWindowSeconds?        │
-│                 │  └─ YES → remove (too old)              │
-│                 │                                         │
-│                 ├─ Is gap > fMaxGapSec?                   │
-│                 │  └─ YES → remove (human reaction)       │
-│                 │                                         │
-│                 └─ NO → ROLLBACK:                         │
-│                      • Restore health                     │
-│                      • Cancel flinch                      │
-│                      • Deflect attacker                   │
-│                      • Scoreboard credit                  │
-│                                                          │
-└──────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────┐
+│                     WINDOW (0-60ms)                               │
+│                                                                  │
+│  ┌─ Defender parries?                                            │
+│  │   YES → RollbackRecentHits()                                  │
+│  │          • Cancel ApplyDeferredReplication timer              │
+│  │          • Clear all deferred state                           │
+│  │          • Restore health (undo non-lethal damage)            │
+│  │          • Deflect attacker                                   │
+│  │          • Extinguish Firebug burn                            │
+│  │   NO (60ms passes) → ApplyDeferredReplication()              │
+│  │          • Apply deferred lethal damage                       │
+│  │          • Replicate HitInfo to clients                       │
+│  │          • HandlePawnGetHit (blood, impact sound)             │
+│  │          • Firebug ignition                                   │
+│  │                                                               │
+└──────────────────────────────────────────────────────────────────┘
 ```

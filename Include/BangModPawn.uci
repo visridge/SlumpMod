@@ -15,42 +15,19 @@ var float fRiposteGracePeriod;                  // Grace period after parry wher
 var bool bKanaboExtraJumpUsed;
 var CylinderComponent OuterCylinderComp; // Reference to the OuterCylinder component (player collision bubble)
 
-// BANGMOD: Parry rollback buffer — stores recent unparried hits so we can undo them
-// if a parry starts within the rollback window (80ms).
-struct RecentHitEntry
-{
-    var float fHitTime;
-    var float fDamage;
-    var AOCPawn InstigatorPawn;
-};
-var array<RecentHitEntry> RecentUnparriedHits;
-var float fParryRollbackWindowSeconds;   // How far back to check for rollback eligibility
-
-// BANGMOD: Deferred hit audio — delays sounds by rollback window so they can be cancelled
-var float fPendingHitDamage;       // Damage value for deferred PlayHitSounds
-var bool bPendingHitFlinch;        // Flinch flag for deferred PlayHitSounds
-var AOCPawn PendingHitAttacker;    // Attacker whose PlayMeleeHit is deferred
-
-// BANGMOD: Deferred flinch — delays flinch activation by rollback window so it can be cancelled
-var bool bPendingFlinchActive;     // Whether a flinch is waiting to be activated
-var bool bPendingFlinchFullBody;   // Flinch bFullBody param
-var bool bPendingFlinchGeneric;    // Flinch bGeneric param
-var bool bPendingFlinchSpecial;    // Flinch bSpecial param
-var bool bPendingFlinchTwoHander;  // Flinch bTwoHander param
-var EDirection bPendingFlinchDir;  // Flinch direction param
-
-// BANGMOD: Deferred damage — delays TakeDamage so a rollback can prevent death
-var float fDeferredDamage;
+// BANGMOD: Deferred hit — delays all hit effects by the rollback window (60ms)
+// so that RollbackRecentHits can cancel them before they reach the client.
+var float fDeferredDamage;            // Damage to apply after window expires
 var class<DamageType> DeferredDamageType;
 var vector DeferredHitLocation;
 var vector DeferredHitForce;
 var TraceHitInfo DeferredHitInfo;
 var Actor DeferredDamageCauser;
-
-// BANGMOD: Unified hit feedback deferral — one timer for ReplicatedHitInfo
-// controls all client-side feedback (blood, sound, flinch rendering) atomically
-var HitInfo PendingHitInfo;
-var bool bHasPendingHitInfo;
+var bool bHasDeferredDamage;          // Whether the above fields are populated
+var float fDeferredHitDamage;         // Copy of ActualDamage for deferred PlayHitSounds
+var bool bDeferredHitFlinch;          // Copy of bFlinch for deferred PlayHitSounds
+var HitInfo DeferredHitInfoFull;      // Full HitInfo for deferred ReplicatedHitInfo
+var bool bHasDeferredHitInfo;         // Whether DeferredHitInfoFull is populated
 
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
@@ -130,13 +107,13 @@ simulated function WeaponAttachmentChanged()
 	// BANGMOD: Fix heater shield orientation for javelin — javelin animations
 	// hold the arm differently, causing the heater to face skyward like a saucer.
 	// Rotate it 90° around Y (yaw) so the shield face points outward instead of upward.
-	if (Weapon != none && StateVariables.bShieldEquipped
-		&& (BangModWeapon_JavelinMelee(Weapon) != none || BangModWeapon_HeavyJavelinMelee(Weapon) != none))
-	{
-		ShieldMesh.SetRotation(rot(0, 16384, 0));  // 90° yaw — rotates shield face outward
-		if (OverlayShieldMesh != none)
-			OverlayShieldMesh.SetRotation(rot(0, 16384, 0));
-	}
+	// if (Weapon != none && StateVariables.bShieldEquipped
+	// 	&& (BangModWeapon_JavelinMelee(Weapon) != none || BangModWeapon_HeavyJavelinMelee(Weapon) != none))
+	// {
+	// 	ShieldMesh.SetRotation(rot(16384, 0, 0));  // 90° yaw — rotates shield face outward
+	// 	if (OverlayShieldMesh != none)
+	// 		OverlayShieldMesh.SetRotation(rot(16384, 0, 0));
+	// }
 }
 
 /** Check if a pawn is currently in a riposte (for flinch immunity) */
@@ -371,12 +348,12 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 	// self = attacker, Info.HitActor = defender.
 	// AttackerDir points from defender toward attacker; defender.Rotation is their forward vector.
 	// If dot < 0 the attacker is behind the defender — strip the parry entirely.
-	AttackerDir = Normal(Location - Info.HitActor.Location);
-	if ((AttackerDir dot vector(Info.HitActor.Rotation)) < 0.0)
-		return false;
+	// AttackerDir = Normal(Location - Info.HitActor.Location);
+	// if ((AttackerDir dot vector(Info.HitActor.Rotation)) < 0.0)
+	// 	return false;
 
-	bParry = 1;
-	StaminaDamage = 0;
+	// bParry = 1;
+	// StaminaDamage = 0;
 
 	// Count this as a successful parry for the defender's scoreboard "Prys" column
 	if (Info.HitActor.PlayerReplicationInfo != none) {
@@ -1243,8 +1220,8 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	local float fTimeSinceParryStart;
 	local bool bBallistaBolt;
 	local RecentHitEntry RollbackEntry;  // BANGMOD: for parry rollback buffer
-	local float LethalPortion;
-	local float ImmediateDamage;
+	local float ImmediateDamage;         // BANGMOD: deferred damage split
+	local float LethalPortion;           // BANGMOD: deferred damage split
 
 	// Initialise player replication information
 	if (PlayerReplicationInfo == none)
@@ -1431,16 +1408,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// Stun if the parry costs too much stamina
 	if (bParry && !bPassiveBlock && Info.HitActor.Stamina <= 0) {
 		bFlinch = true;
-		// BANGMOD: Flinch deferred to allow rollback cancellation
-		if (BangModPawn(Info.HitActor) != none)
-		{
-			BangModPawn(Info.HitActor).bPendingFlinchActive = true;
-			BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
-			BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
-			BangModPawn(Info.HitActor).bPendingFlinchGeneric = true;
-			BangModPawn(Info.HitActor).bPendingFlinchSpecial = true;
-			BangModPawn(Info.HitActor).bPendingFlinchTwoHander = AOCWeapon(Weapon).bTwoHander;
-		}
+		AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), true, true, AOCWeapon(Weapon).bTwoHander);
 	}
 
 	// If the other pawn is currently attacking, we just conducted a counter-attack
@@ -1449,27 +1417,10 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 			if (Info.Instigator.StateVariables.bShieldEquipped && Info.HitActor.StateVariables.bIsActiveShielding && !bQuickKick) {
 				// If it was a heavy shield bash against raised shield, do full stun
 				bFlinch = true;
-				// BANGMOD: Flinch deferred to allow rollback cancellation
-				if (BangModPawn(Info.HitActor) != none)
-				{
-					BangModPawn(Info.HitActor).bPendingFlinchActive = true;
-					BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
-					BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
-					BangModPawn(Info.HitActor).bPendingFlinchGeneric = true;
-					BangModPawn(Info.HitActor).bPendingFlinchSpecial = true;
-					BangModPawn(Info.HitActor).bPendingFlinchTwoHander = false;
-				}
+				AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location),true, true, false);
 			} else if (!Info.HitActor.StateVariables.bIsActiveShielding)
-				// BANGMOD: Flinch deferred to allow rollback cancellation
-				if (BangModPawn(Info.HitActor) != none)
-				{
-					BangModPawn(Info.HitActor).bPendingFlinchActive = true;
-					BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
-					BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
-					BangModPawn(Info.HitActor).bPendingFlinchGeneric = false;
-					BangModPawn(Info.HitActor).bPendingFlinchSpecial = false;
-					BangModPawn(Info.HitActor).bPendingFlinchTwoHander = true;
-				}
+				// If they aren't active shielding, activate normal kick flinch
+				AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), false, false, true);
 
 			// If they got stamina stunned, regain stamina
 			if (Info.HitActor.StateVariables.bIsActiveShielding && Info.HitActor.Stamina <= 0)
@@ -1479,52 +1430,18 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// If they weren't parrying or shielding, apply flinch (but not during riposte)
 	else if ((Info.HitActor.StateVariables.bIsParrying || Info.HitActor.StateVariables.bIsActiveShielding) && !bParry && !IsInRiposte(Info.HitActor)) {
 		bFlinch = true;
-		// BANGMOD: Flinch deferred to allow rollback cancellation
-		if (BangModPawn(Info.HitActor) != none)
-		{
-			BangModPawn(Info.HitActor).bPendingFlinchActive = true;
-			BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
-			BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
-			BangModPawn(Info.HitActor).bPendingFlinchGeneric = false;
-			BangModPawn(Info.HitActor).bPendingFlinchSpecial = false;
-			BangModPawn(Info.HitActor).bPendingFlinchTwoHander = AOCWeapon(Weapon).bTwoHander;
-		}
+		AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), false, false, AOCWeapon(Weapon).bTwoHander);
 	}
 	// If flinch needs to be activated...
 	else if ((ShouldActivateFlinch(Info, UsedWeapon) || AOCWeapon_Fists(Info.Instigator.Weapon) != none) && !bParry) {
 		// Flinch victim on enemy hits, flinch both attacker and victim on team hits
 		if (bSameTeam) {
-			// BANGMOD: Team flinch — attacker flinch deferred
-			if (BangModPawn(self) != none)
-			{
-				BangModPawn(self).bPendingFlinchActive = true;
-				BangModPawn(self).bPendingFlinchFullBody = true;
-				BangModPawn(self).bPendingFlinchDir = GetHitDirection(Info.HitActor.Location);
-				BangModPawn(self).bPendingFlinchGeneric = false;
-				BangModPawn(self).bPendingFlinchSpecial = false;
-				BangModPawn(self).bPendingFlinchTwoHander = AOCWeapon(Info.HitActor.Weapon).bTwoHander;
-			}
-			// BANGMOD: Victim flinch deferred
-			if (BangModPawn(Info.HitActor) != none)
-			{
-				BangModPawn(Info.HitActor).bPendingFlinchActive = true;
-				BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
-				BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
-				BangModPawn(Info.HitActor).bPendingFlinchGeneric = false;
-				BangModPawn(Info.HitActor).bPendingFlinchSpecial = false;
-				BangModPawn(Info.HitActor).bPendingFlinchTwoHander = AOCWeapon(Weapon).bTwoHander;
-			}
+			// Custom: Flinch both attacker and teammate (punishment for team damage)
+			AOCWeapon(Weapon).ActivateFlinch(true, GetHitDirection(Info.HitActor.Location), false, false, AOCWeapon(Info.HitActor.Weapon).bTwoHander);
+			AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), false, false, AOCWeapon(Weapon).bTwoHander);
 		} else {
-			// BANGMOD: Victim flinch deferred
-			if (BangModPawn(Info.HitActor) != none)
-			{
-				BangModPawn(Info.HitActor).bPendingFlinchActive = true;
-				BangModPawn(Info.HitActor).bPendingFlinchFullBody = true;
-				BangModPawn(Info.HitActor).bPendingFlinchDir = Info.HitActor.GetHitDirection(Location);
-				BangModPawn(Info.HitActor).bPendingFlinchGeneric = false;
-				BangModPawn(Info.HitActor).bPendingFlinchSpecial = false;
-				BangModPawn(Info.HitActor).bPendingFlinchTwoHander = AOCWeapon(Weapon).bTwoHander;
-			}
+			// Flinch enemy victim normally
+			AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), false, false, AOCWeapon(Weapon).bTwoHander);
 		}
 	}
 	// Otherwise we landed a hit on the enemy, play hit animation
@@ -1545,21 +1462,63 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 		Info.HitActor.DisableSprint(true);
 		Info.HitActor.StartSprintRecovery();
 
-		// Play a ping sound if we hit a player when shooting
+		// Play a ping sound if we hit a player when shooting (ranged is immediate)
 		if (Info.DamageType.default.bIsProjectile)
 			PlayRangedHitSound();
-		else {
-			// BANGMOD: PlayMeleeHit deferred to allow rollback cancellation
-			if (!bSameTeam && BangModPawn(Info.HitActor) != none)
-				BangModPawn(Info.HitActor).PendingHitAttacker = self;
-		}
 
-// BANGMOD: Defer victim hit feedback by rollback window so it can be cancelled
-		if (!bParry && BangModPawn(Info.HitActor) != none)
+		// BANGMOD: Defer ALL hit feedback — store in the hit actor so
+		// ApplyDeferredReplication can fire it after the rollback window,
+		// and RollbackRecentHits can cancel it if a parry crosses paths.
+		if (BangModPawn(Info.HitActor) != none && !bParry)
 		{
-			BangModPawn(Info.HitActor).fPendingHitDamage = ActualDamage;
-			BangModPawn(Info.HitActor).bPendingHitFlinch = bFlinch;
+			BangModPawn(Info.HitActor).fDeferredHitDamage = ActualDamage;
+			BangModPawn(Info.HitActor).bDeferredHitFlinch = bFlinch;
+			BangModPawn(Info.HitActor).DeferredHitInfoFull = Info;
+			BangModPawn(Info.HitActor).bHasDeferredHitInfo = true;
+
+			// Lethal portion is deferred to prevent irreversible PlayDying()
+			if (ActualDamage >= Info.HitActor.Health)
+			{
+				ImmediateDamage = Max(Info.HitActor.Health - 1, 0);
+				LethalPortion = ActualDamage - ImmediateDamage;
+				// Apply non-lethal portion immediately (victim left at 1 HP)
+				Info.HitActor.TakeDamage(ImmediateDamage,
+					Controller != none ? Controller : CurrentSiegeWeapon.Controller,
+					Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
+				BangModPawn(Info.HitActor).fDeferredDamage = LethalPortion;
+				BangModPawn(Info.HitActor).DeferredDamageType = Info.DamageType;
+				BangModPawn(Info.HitActor).DeferredHitLocation = Info.HitLocation;
+				BangModPawn(Info.HitActor).DeferredHitForce = Info.HitForce;
+				BangModPawn(Info.HitActor).DeferredHitInfo = THI;
+				BangModPawn(Info.HitActor).DeferredDamageCauser = self;
+				BangModPawn(Info.HitActor).bHasDeferredDamage = true;
+			}
+			else
+			{
+				// Non-lethal: defer entire damage
+				BangModPawn(Info.HitActor).fDeferredDamage = ActualDamage;
+				BangModPawn(Info.HitActor).DeferredDamageType = Info.DamageType;
+				BangModPawn(Info.HitActor).DeferredHitLocation = Info.HitLocation;
+				BangModPawn(Info.HitActor).DeferredHitForce = Info.HitForce;
+				BangModPawn(Info.HitActor).DeferredHitInfo = THI;
+				BangModPawn(Info.HitActor).DeferredDamageCauser = self;
+				BangModPawn(Info.HitActor).bHasDeferredDamage = true;
+			}
+
+			// Single unified timer for all deferred effects
 			BangModPawn(Info.HitActor).SetTimer(fParryRollbackWindowSeconds, false, 'ApplyDeferredReplication');
+		}
+		else
+		{
+			// Parried hit or non-BangMod pawn — apply immediately
+			if (!bSameTeam)
+				PlayMeleeHit();
+			if (Info.HitActor.Health - ActualDamage > 0.0f)
+				Info.HitActor.PlayHitSounds(ActualDamage, bFlinch);
+			Info.HitActor.TakeDamage(ActualDamage,
+				Controller != none ? Controller : CurrentSiegeWeapon.Controller,
+				Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
+		}
 
 		// Register the hit on the player countroller
 		if (AOCPlayerController(Controller) != none)
@@ -1606,17 +1565,11 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	}
 
 	// Fill out the rest of the values
-	// BANGMOD: Defer replication so rollback can cancel all hit feedback atomically (blood, sound, flinch)
-	if (!bParry && BangModPawn(Info.HitActor) != none)
-	{
-		BangModPawn(Info.HitActor).PendingHitInfo = Info;
-		BangModPawn(Info.HitActor).bHasPendingHitInfo = true;
-		BangModPawn(Info.HitActor).SetTimer(fParryRollbackWindowSeconds, false, 'ApplyDeferredReplication');
-	}
-	else
-	{
+	// BANGMOD: Deferred — for non-parried BangMod pawns, HitInfo is stored in
+	// DeferredHitInfoFull and replicated by ApplyDeferredReplication.  For parried
+	// hits and non-BangMod pawns, replicate immediately.
+	if (bParry || BangModPawn(Info.HitActor) == none)
 		Info.HitActor.ReplicatedHitInfo = Info;
-	}
 	Info.HitDamage = ActualDamage;
 	Info.HitForce *= int(PawnState != ESTATE_PUSH && PawnState != ESTATE_BATTERING);
 	Info.HitForce *= int(!bFlinch);
@@ -1657,34 +1610,12 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// Was the target a bot?
 	bEnemyWasBot = Info.HitActor.bIsBot || Info.HitActor.PlayerReplicationInfo.bBot || AOCPRI(Info.HitActor.PlayerReplicationInfo).bIsBot || AOCAIController(Info.HitActor.Controller) != none;
 
-	// BANGMOD: Delay the lethal portion of rollback-eligible hits so a parry rollback
-	// can restore health before PlayDying() triggers an irreversible death.
-	if (!bParry && ActualDamage > 0.0f && ActualDamage >= Info.HitActor.Health
-		&& BangModPawn(Info.HitActor) != none)
+	// BANGMOD: Deferred — TakeDamage is handled by ApplyDeferredReplication for non-parried
+	// BangMod pawns. Apply immediately for parried hits or non-BangMod pawns.
+	if (bParry || BangModPawn(Info.HitActor) == none)
 	{
-		ImmediateDamage = Max(Info.HitActor.Health - 1, 0);
-		LethalPortion = ActualDamage - ImmediateDamage;
-
-		// Apply non-lethal portion immediately (victim left at 1 HP)
-		Info.HitActor.TakeDamage(ImmediateDamage,
-			Controller != none ? Controller : CurrentSiegeWeapon.Controller,
-			Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
-
-		// Defer the lethal portion — RollbackRecentHits can cancel it
-		BangModPawn(Info.HitActor).fDeferredDamage = LethalPortion;
-		BangModPawn(Info.HitActor).DeferredDamageType = Info.DamageType;
-		BangModPawn(Info.HitActor).DeferredHitLocation = Info.HitLocation;
-		BangModPawn(Info.HitActor).DeferredHitForce = Info.HitForce;
-		BangModPawn(Info.HitActor).DeferredHitInfo = THI;
-		BangModPawn(Info.HitActor).DeferredDamageCauser = self;
-		BangModPawn(Info.HitActor).SetTimer(fParryRollbackWindowSeconds, false, 'ApplyDeferredReplication');
-	}
-	else
-	{
-		// Non-lethal hit — apply normally
-		Info.HitActor.TakeDamage(ActualDamage,
-			Controller != none ? Controller : CurrentSiegeWeapon.Controller,
-			Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
+		// Call take damage on the targeted pawn
+		Info.HitActor.TakeDamage(ActualDamage, Controller != none ? Controller : CurrentSiegeWeapon.Controller, Info.HitLocation, Info.HitForce, Info.DamageType, THI, self);
 	}
 
 	// BANGMOD: Buffer unparried hits for parry rollback
@@ -1762,13 +1693,17 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 			AIList.NotifyPawnSuccessBlock(Info.HitActor, self);
 	}
 
-	// BANGMOD: HandlePawnGetHit and Firebug are handled in ApplyDeferredReplication()
-	// for non-parried hits. Only run locally for parried hits or non-BangMod pawns.
+	// BANGMOD: Deferred — HandlePawnGetHit and Firebug are handled by
+	// ApplyDeferredReplication for non-parried BangMod pawns.
+	if (WorldInfo.NetMode == NM_Standalone || Worldinfo.NetMode == NM_ListenServer)
+	{
+		if (bParry || BangModPawn(Info.HitActor) == none)
+			Info.HitActor.HandlePawnGetHit();
+	}
+
+	// Firebug ignition deferred for non-parried BangMod pawns
 	if (bParry || BangModPawn(Info.HitActor) == none)
 	{
-		if (WorldInfo.NetMode == NM_Standalone || Worldinfo.NetMode == NM_ListenServer)
-			Info.HitActor.HandlePawnGetHit();
-
 		if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
 			&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
 			&& Info.HitActor.IsAliveAndWell())
@@ -1791,34 +1726,52 @@ function Set_bShowHitTime(bool set)
 	bShowHitTime = set;
 }
 
-// BANGMOD: Unified deferred hit feedback — one timer defers all client-side
-// hit feedback (blood, sound, flinch) via ReplicatedHitInfo replication.
-// Called 80ms after a rollback-eligible hit.
+// BANGMOD: Unified deferred hit feedback — processes all deferred effects
+// (damage, sound, HitInfo replication, Firebug) atomically after the
+// rollback window expires.  Called by SetTimer from AttackOtherPawn.
 function ApplyDeferredReplication()
 {
-	local HitInfo StoredInfo;
-
-	// Apply deferred lethal damage first (so health is correct when ReplicatedHitInfo replicates)
-	if (fDeferredDamage > 0.0f)
+	// 1. Apply deferred damage (lethal or non-lethal)
+	if (bHasDeferredDamage)
 	{
 		TakeDamage(fDeferredDamage,
 			Controller != none ? Controller : CurrentSiegeWeapon.Controller,
 			DeferredHitLocation, DeferredHitForce, DeferredDamageType,
 			DeferredHitInfo, DeferredDamageCauser);
+		bHasDeferredDamage = false;
 		fDeferredDamage = 0.0f;
 	}
 
-	if (!bHasPendingHitInfo) return;
-	StoredInfo = PendingHitInfo;
-	bHasPendingHitInfo = false;
-	ReplicatedHitInfo = StoredInfo;
-	if (WorldInfo.NetMode == NM_Standalone || Worldinfo.NetMode == NM_ListenServer)
-		HandlePawnGetHit();
-	if (BangModWeapon_Firebug(Weapon) != none && StoredInfo.HitActor != none
-		&& StoredInfo.HitDamage > 0.0f && !StoredInfo.bParry
-		&& !StoredInfo.HitActor.bIsBurning && StoredInfo.HitActor.IsAliveAndWell()
-		&& !IsOnSameTeam(self, StoredInfo.HitActor))
-		StoredInfo.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
+	// 2. Play deferred hit sounds and crosshair flash
+	if (bHasDeferredHitInfo)
+	{
+		if (!IsOnSameTeam(self, DeferredHitInfoFull.HitActor))
+			PlayMeleeHit();
+		if (Health - fDeferredHitDamage > 0.0f)
+			PlayHitSounds(fDeferredHitDamage, bDeferredHitFlinch);
+	}
+
+	// 3. Replicate HitInfo to clients (triggers HandlePawnGetHit → blood, impact sound)
+	if (bHasDeferredHitInfo)
+	{
+		ReplicatedHitInfo = DeferredHitInfoFull;
+		if (WorldInfo.NetMode == NM_Standalone || Worldinfo.NetMode == NM_ListenServer)
+			HandlePawnGetHit();
+	}
+
+	// 4. Firebug ignition
+	if (bHasDeferredHitInfo && BangModWeapon_Firebug(Weapon) != none
+		&& DeferredHitInfoFull.HitActor != none
+		&& DeferredHitInfoFull.HitDamage > 0.0f && !DeferredHitInfoFull.bParry
+		&& !DeferredHitInfoFull.HitActor.bIsBurning
+		&& DeferredHitInfoFull.HitActor.IsAliveAndWell()
+		&& !IsOnSameTeam(self, DeferredHitInfoFull.HitActor))
+	{
+		DeferredHitInfoFull.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
+	}
+
+	// 5. Clean up
+	bHasDeferredHitInfo = false;
 }
 
 
@@ -1853,14 +1806,6 @@ function RollbackRecentHits(float RollbackWindowSeconds)
     if (RecentUnparriedHits.Length == 0)
         return;
 
-    // BANGMOD: Cancel any deferred hit sounds, flinch, and death — we're rolling back this hit
-    ClearTimer('ApplyDeferredReplication');
-    bHasPendingHitInfo = false;
-    fPendingHitDamage = 0.0f;
-    PendingHitAttacker = none;
-    bPendingFlinchActive = false;
-    fDeferredDamage = 0.0f;
-
     fNow = WorldInfo.TimeSeconds;
 
     // Derive max hit-to-parry gap from defender's ping.
@@ -1892,24 +1837,18 @@ function RollbackRecentHits(float RollbackWindowSeconds)
         }
 
         // Hit within window AND within ping gap — roll it back
+        // Cancel ALL deferred effects for this hit — it should never have happened
+        ClearTimer('ApplyDeferredReplication');
+        bHasDeferredHitInfo = false;
+        bHasDeferredDamage = false;
+        fDeferredDamage = 0.0f;
+
         // Restore health
         Health = Min(Health + Entry.fDamage, HealthMax);
-
-        // Cancel all deferred feedback for this rolled-back hit
-        ClearTimer('ApplyDeferredReplication');
-        bHasPendingHitInfo = false;
 
         // Cancel flinch if we got flinched by this hit
         if (Weapon != none && Weapon.IsInState('Flinch'))
             Weapon.GotoState('Active');
-
-        // BANGMOD: If the attacker was using Firebug, extinguish the fire — the hit was rolled back
-        if (bIsBurning && Entry.InstigatorPawn != none
-            && BangModWeapon_Firebug(Entry.InstigatorPawn.Weapon) != none)
-        {
-            bIsBurning = false;
-            StopPawnOnFire();
-        }
 
         // Put attacker into deflect state (as if they were parried)
         if (Entry.InstigatorPawn != none && Entry.InstigatorPawn.Weapon != none)
