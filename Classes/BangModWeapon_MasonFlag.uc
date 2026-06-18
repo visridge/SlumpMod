@@ -16,7 +16,7 @@ defaultproperties
 	// Reuse spear icon for loadout screen
 	WeaponFontSymbol="7"
 	WeaponLargePortrait="UI_WeaponImages_SWF.weapon_select_spear"
-	WeaponSmallPortrait="UI_WeaponImages_SWF.weapon_spear"
+	WeaponSmallPortrait="UI_WeaponImages_SWF.icon_weapon_select_spear_png"
 
 	// TODO: Add nerfs here. Examples below (commented out for now):
 	// fParryNegation=10
