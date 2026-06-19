@@ -29,6 +29,7 @@ var float fParryTradeGraceSeconds;     // a parry counts unless it went active l
 var float fMaxPlausibleLatency;        // clamp for reconstructed action times (anti-spoof / one-way ping cap)
 var float fRecentHitTTL;               // how long a taken hit stays eligible to cancel a trade swing
 var float fClockOffsetAlpha;           // EMA weight for new clock-offset samples
+var bool  bEnableTradeCancellation;    // master toggle: whether hit-trade cancellation is active
 
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
@@ -1312,6 +1313,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	// the disabled ping-estimate "Fair trade window" block below.
 	if (!bCheckParryOnly
 		&& !bForceParry
+		&& bEnableTradeCancellation
 		&& fActionServerTime > 0.0
 		&& Info.HitActor != none
 		&& BangModPawn(Info.HitActor) != none
@@ -1731,6 +1733,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	// server can see it landed clearly later and drop it (trade priority). Real enemy melee hits
 	// only — parries, kicks, projectiles and team hits don't gate a trade.
 	if (!bParry && !bSameTeam
+		&& bEnableTradeCancellation
 		&& fActionServerTime > 0.0
 		&& Info.HitActor != none
 		&& BangModPawn(Info.HitActor) != none
@@ -2107,16 +2110,17 @@ DefaultProperties
 
 	// Parry rollback: hold an incoming swing up to this long (capped at defender one-way ping)
 	// so an in-flight parry can suppress it before any feedback plays. 0 hold at 0 ping.
-	fParryRollbackMaxHoldSeconds=0.034
+	fParryRollbackMaxHoldSeconds=0.042
 	fParryRollbackMinHoldSeconds=0.013
 
 	// Client-timestamp hit-trade priority (see helpers/arbitration in this include).
 	// Larger fTradeWindowSeconds keeps MORE trades; smaller cancels more staggered ones.
-	fTradeWindowSeconds=0.034      // hits within 60ms (normalized) still trade
-	fParryTradeGraceSeconds=0.034  // a parry counts unless it went active >60ms after the swing landed
+	fTradeWindowSeconds=0.042      // hits within 42ms (~5 frames at 120Hz) still trade
+	fParryTradeGraceSeconds=0.042  // a parry counts unless it went active >42ms after the swing landed
 	fMaxPlausibleLatency=0.500     // clamp for reconstructed client timestamps / one-way ping
-	fRecentHitTTL=0.80            // how long a taken hit can still cancel an incoming trade swing
+	fRecentHitTTL=0.150            // how long a taken hit stays eligible to cancel a trade swing
 	fClockOffsetAlpha=0.10         // EMA weight for per-message clock-offset samples
+	bEnableTradeCancellation=false  // master toggle: hit-trade cancellation; false disables it
 
 	// Riposte flinch immunity grace period - 300ms after successful parry
 	// Prevents flinch during Parry->ParryRelease state transition (network desync)

@@ -398,12 +398,12 @@ event Possess(Pawn inPawn, bool bVehicleTransition)
 	// Parry box settings live on the server class default and are read on the client when
 	// pawns/attachments size the local debug box. Sync them on every possess so respawns and
 	// late joins don't keep stale client-side defaults.
-	if (Role == ROLE_Authority)
-	{
-		ClientSyncParryBoxSettings(class'BangModAOCDuelPlayerController'.default.bBangModParryBox,
-			class'BangModAOCDuelPlayerController'.default.bSkeletalParry);
-		ClientSyncCollisionRadius(class'BangModAOCDuelPlayerController'.default.fBangModCollisionRadius);
-	}
+	// if (Role == ROLE_Authority)
+	// {
+	// 	ClientSyncParryBoxSettings(class'BangModAOCDuelPlayerController'.default.bBangModParryBox,
+	// 		class'BangModAOCDuelPlayerController'.default.bSkeletalParry);
+	// 	ClientSyncCollisionRadius(class'BangModAOCDuelPlayerController'.default.fBangModCollisionRadius);
+	// }
 	
 	// Show optimization tip once when player first spawns
 	if (!bShownOptimizationTip && Role == ROLE_Authority)
