@@ -2120,7 +2120,7 @@ DefaultProperties
 	fMaxPlausibleLatency=0.500     // clamp for reconstructed client timestamps / one-way ping
 	fRecentHitTTL=0.150            // how long a taken hit stays eligible to cancel a trade swing
 	fClockOffsetAlpha=0.10         // EMA weight for per-message clock-offset samples
-	bEnableTradeCancellation=false  // master toggle: hit-trade cancellation; false disables it
+	bEnableTradeCancellation=true  // master toggle: hit-trade cancellation; false disables it
 
 	// Riposte flinch immunity grace period - 300ms after successful parry
 	// Prevents flinch during Parry->ParryRelease state transition (network desync)
