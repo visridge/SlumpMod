@@ -138,11 +138,13 @@ defaultproperties
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'Puncha.WEP_Puncha'
 		Scale=1.0
+		Rotation=(Pitch=16384,Yaw=0,Roll=0)
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
 		SkeletalMesh=SkeletalMesh'Puncha.WEP_Puncha'
 		Scale=1.0
+		Rotation=(Pitch=16384,Yaw=0,Roll=0)
 	End Object
 
 	WeaponID=EWEP_Fists
