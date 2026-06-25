@@ -100,6 +100,9 @@ DefaultProperties
 	CurrentShieldType=ESHIELD_None
 	bHaveShield=false
 	WeaponIdentifier="doubleaxe"
+
+	AlternativeMode=class'BangModWeapon_PoleAxeBack'
+
 	EncircleRadius=25.0f
 	EffectiveDistance=200.0f
 
