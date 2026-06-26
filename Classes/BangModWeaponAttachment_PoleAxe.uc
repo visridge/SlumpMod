@@ -55,5 +55,46 @@ KickOffset=(X=50, Y=0, Z=-65)
 	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=35500, cDamageType="AOC.AOCDmgType_SwingBlunt", iWorldHitLenience=6)
 	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
 
-		
+	Skins(0)={(
+		SkeletalMeshPath="WP_2ha_Pollaxe.WEP_Pollaxe",
+		StaticMeshPath="WP_2ha_Pollaxe.sm_Pollaxe",
+		MaterialPath="",
+		StaticMeshScale=1.0,
+		ImagePath="ui_custweaponimages_swf.skin_pollaxe_png"
+		)};
+	Skins(1)={(
+		SkeletalMeshPath="WP_2ha_Pollaxe.WEP_Pollaxe",
+		StaticMeshPath="WP_2ha_Pollaxe.sm_Pollaxe",
+		MaterialPath="",
+		StaticMeshScale=1.0,
+		ImagePath="ui_custweaponimages_swf.skin_pollaxe_png"
+		)};
+	Skins(2)={(
+		SkeletalMeshPath="WP_2ha_Pollaxe.WEP_Pollaxe",
+		StaticMeshPath="WP_2ha_Pollaxe.sm_Pollaxe",
+		MaterialPath="",
+		StaticMeshScale=1.0,
+		ImagePath="ui_custweaponimages_swf.skin_pollaxe_png"
+		)};
+	Skins(3)={(
+		SkeletalMeshPath="WP_2ha_Pollaxe.WEP_Pollaxe",
+		StaticMeshPath="WP_2ha_Pollaxe.sm_Pollaxe",
+		MaterialPath="",
+		StaticMeshScale=1.0,
+		ImagePath="ui_custweaponimages_swf.skin_pollaxe_png"
+		)};
+	Skins(4)={(
+		SkeletalMeshPath="WP_2ha_Pollaxe.WEP_Pollaxe",
+		StaticMeshPath="WP_2ha_Pollaxe.sm_Pollaxe",
+		MaterialPath="",
+		StaticMeshScale=1.0,
+		ImagePath="ui_custweaponimages_swf.skin_pollaxe_png"
+		)};
+	Skins(5)={(
+		SkeletalMeshPath="WP_2ha_Pollaxe.WEP_Pollaxe",
+		StaticMeshPath="WP_2ha_Pollaxe.sm_Pollaxe",
+		MaterialPath="",
+		StaticMeshScale=1.0,
+		ImagePath="ui_custweaponimages_swf.skin_pollaxe_png"
+		)};	
 }
