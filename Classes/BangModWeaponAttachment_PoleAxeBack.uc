@@ -26,18 +26,6 @@ simulated function float GetHandleTracerPercent(int i)
     return (HandleLength / WeaponLength)/2;
 }
 
-/**
- * Flip the weapon 180 degrees so the hammer end faces forward.
- */
-simulated function AttachTo(UTPawn OwnerPawn)
-{
-    Super.AttachTo(OwnerPawn);
-
-    // 32768 Unreal rotator units = 180 degrees yaw
-    Mesh.SetRelativeRotation(rot(0, 32768, 0));
-    OverlayMesh.SetRelativeRotation(rot(0, 32768, 0));
-}
-
 DefaultProperties
 {
 

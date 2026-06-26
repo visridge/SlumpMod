@@ -92,6 +92,26 @@ simulated state Release
 	}
 }
 
+/** Force the attachment mesh to use SlumpWep_PaxeBack as soon as
+ *  the weapon starts equipping, so the correct mesh is visible during
+ *  the entire draw animation.
+ */
+simulated state WeaponEquipping
+{
+	simulated event BeginState(Name PreviousStateName)
+	{
+		super.BeginState(PreviousStateName);
+		if (AOCWepAttachment != none)
+		{
+			AOCWepAttachment.Mesh.SetSkeletalMesh(
+				SkeletalMesh'SlumpWep_PaxeBack.SlumpWep_PaxeBack');
+			if (AOCWepAttachment.OverlayMesh != none)
+				AOCWepAttachment.OverlayMesh.SetSkeletalMesh(
+					SkeletalMesh'SlumpWep_PaxeBack.SlumpWep_PaxeBack');
+		}
+	}
+}
+
 DefaultProperties
 {
 	bTwoHander=true
