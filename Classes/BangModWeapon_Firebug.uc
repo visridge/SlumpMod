@@ -4,6 +4,20 @@
 */
 class BangModWeapon_Firebug extends BangModMeleeWeapon;
 
+// Left-click (Attack_Slash) switches to throw mode, just like javelin.
+// All other attack types (overhead, stab, parry) behave as normal melee.
+simulated function BeginFire(Byte FireModeNum)
+{
+	if (FireModeNum == Attack_Slash)
+	{
+		AOCOwner.SwitchWeapon(1);
+	}
+	else
+	{
+		super.BeginFire(FireModeNum);
+	}
+}
+
 simulated state ParryRelease
 {
 	simulated function BeginFire(byte FireModeNum)
@@ -170,6 +184,8 @@ DefaultProperties
 	CurrentShieldType=ESHIELD_None
 	bHaveShield=true
 	bCanSwitchShield=true
+
+	AlternativeMode=class'BangModWeapon_FirebugThrow'
 
 	CurrentGenWeaponType=EWT_1hand
 
