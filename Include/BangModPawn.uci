@@ -31,6 +31,8 @@ var float fRecentHitTTL;               // how long a taken hit stays eligible to
 var float fClockOffsetAlpha;           // EMA weight for new clock-offset samples
 var bool  bEnableTradeCancellation;    // master toggle: whether hit-trade cancellation is active
 
+var AOCPawn StoredFirebugHitActor;     // cached victim for delayed Firebug ignition timer
+
 /** Adjust mesh scale for Man at Arms class to make them smaller */
 // simulated function CharacterAssetStoreAllAssetsLoaded()
 // {
@@ -1721,12 +1723,15 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 		Info.HitActor.HandlePawnGetHit();
 	}
 
-	// Firebug ignition (after the blunt impact sound).
+	// Firebug ignition — delayed so the blunt impact sound plays cleanly before
+	// the fire scream SFX kicks in. Without the delay the scream drowns out the
+	// weapon impact cue since both fire in the same frame on the same channel.
 	if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
 		&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
 		&& Info.HitActor.IsAliveAndWell())
 	{
-		Info.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
+		SetTimer(0.25f, false, 'DelayedFirebugIgnite');
+		StoredFirebugHitActor = Info.HitActor;
 	}
 
 	// BANGMOD: Remember this hit on the victim so, if their counter-swing is still in flight, the
@@ -1961,6 +1966,18 @@ function ProcessPendingHits()
 				Entry.Attacker.ProcessResolvedAttack(Entry.Info, Entry.DamageString, false, Entry.bBoxParrySuccess, Entry.bHitShield, Entry.LastHit, Entry.bQuickKick, false, Entry.fActionServerTime);
 		}
 	}
+}
+
+// BANGMOD: Delayed Firebug ignition — lets the blunt impact sound finish before the fire
+// scream plays, so both audio cues are audible instead of the scream drowning out the impact.
+function DelayedFirebugIgnite()
+{
+	if (StoredFirebugHitActor != none && StoredFirebugHitActor.IsAliveAndWell()
+		&& !StoredFirebugHitActor.bIsBurning)
+	{
+		StoredFirebugHitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
+	}
+	StoredFirebugHitActor = none;
 }
 
 // BANGMOD: A parry landed while swings were still held on us — resolve every one as a parry
