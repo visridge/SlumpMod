@@ -108,6 +108,19 @@ simulated function WeaponAttachmentChanged()
 		}
 	}
 
+	// Force PoleAxeBack to use its own mesh on ALL clients.
+	// WeaponEquipping::BeginState runs only on authority/local clients;
+	// remote clients get the attachment via replication and need this hook
+	// to apply the correct skeletal mesh.
+	if (CurrentWeaponAttachment.Class == class'BangModWeaponAttachment_PoleAxeBack')
+	{
+		CurrentWeaponAttachment.Mesh.SetSkeletalMesh(
+			SkeletalMesh'SlumpWep_PaxeBack.SlumpWep_PaxeBack');
+		if (CurrentWeaponAttachment.OverlayMesh != none)
+			CurrentWeaponAttachment.OverlayMesh.SetSkeletalMesh(
+				SkeletalMesh'SlumpWep_PaxeBack.SlumpWep_PaxeBack');
+	}
+
 	// BANGMOD: Fix heater shield orientation for javelin — javelin animations
 	// hold the arm differently, causing the heater to face skyward like a saucer.
 	// Rotate it 90° around Y (yaw) so the shield face points outward instead of upward.
