@@ -108,7 +108,7 @@ DefaultProperties
 
 	FlinchTime2H=1.05
 
-	HorizontalRotateSpeed=50000.0
-	VerticalRotateSpeed=50000.0
-	AttackHorizRotateSpeed=50000.0
+	HorizontalRotateSpeed=47500.0
+	VerticalRotateSpeed=47500.0
+	AttackHorizRotateSpeed=47500.0
 }

@@ -14,7 +14,7 @@ DefaultProperties
 	DamageType(EDMG_Generic)= 1.0f
 
 	DamageOverTime = 4.0f  // 4 damage per tick (vs vanilla 6)
-	DOTTime = 3.0f         // Burns for 3 seconds (vs vanilla 5)
+	DOTTime = 4.0f         // Burns for 3 seconds (vs vanilla 5)
 
 	DirectionalDeathAnims(0)=3p_death_firedeath
 	DirectionalDeathAnims(1)=3p_death_firedeath
