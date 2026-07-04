@@ -55,7 +55,7 @@ DefaultProperties
 	bTwoHander=true
 	EncircleRadius=25.0f
 	EffectiveDistance=200.0f
-	FlinchTime2H=1.05
+	FlinchTime2H=1.10
 
 	AttachmentClass=class'BangModWeaponAttachment_Nodachi'
 	InventoryAttachmentClass=class'BangModWeaponInventory_Nodachi'

@@ -55,7 +55,7 @@ Begin Object class=AnimNodeSequence Name=MeshSequenceA
 
 
 	bTwoHander=true
-	FlinchTime2H=1.05
+	FlinchTime2H=1.1
 	EncircleRadius=25.0f
 	EffectiveDistance=200.0f
 

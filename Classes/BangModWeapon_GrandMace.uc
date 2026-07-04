@@ -97,7 +97,7 @@ DefaultProperties
 	End Object
 
 	bTwoHander=true
-	FlinchTime2H=1.05
+	FlinchTime2H=1.1
 	bUseRMMDazed=true
 	bUseDirHitAnims=true
 	EncircleRadius=25.0f

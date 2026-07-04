@@ -106,7 +106,7 @@ DefaultProperties
 	WeaponLargePortrait="UI_WeaponImages_SWF.weapon_select_hws"
 	WeaponSmallPortrait="UI_WeaponImages_SWF.icon_weapon_select_hws_png"
 
-	FlinchTime2H=1.05
+	FlinchTime2H=1.10
 
 	HorizontalRotateSpeed=47500.0
 	VerticalRotateSpeed=47500.0

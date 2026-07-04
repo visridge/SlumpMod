@@ -92,7 +92,7 @@ simulated state Release
 DefaultProperties
 {
 	bTwoHander=true
-	FlinchTime2H=1.05
+	FlinchTime2H=1.10
 	AttachmentClass=class'BangModWeaponAttachment_PoleAxe'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_PoleAxe'
 	AllowedShieldClass=none

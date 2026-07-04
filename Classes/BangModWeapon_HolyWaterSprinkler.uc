@@ -39,7 +39,7 @@ DefaultProperties
 	bUseSprintLeanAnims=true
 	bUseRMMDazed=true
 	bUseDirHitAnims=true
-	FlinchTime1H=1.05
+	FlinchTime1H=1.00
 	bHaveShield=false
 
 	ImpactSounds(ESWINGSOUND_Slash)={(

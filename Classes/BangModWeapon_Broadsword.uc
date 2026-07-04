@@ -51,7 +51,7 @@ DefaultProperties
 	Begin Object class=AnimNodeSequence Name=MeshSequenceA
 		bCauseActorAnimEnd=true
 	End Object
-	FlinchTime1H=0.95
+	FlinchTime1H=1.0
 	bUseNewDodgeSystem=true
 	bUseStartStopAnims=true
 	bUseSprintLeanAnims=true

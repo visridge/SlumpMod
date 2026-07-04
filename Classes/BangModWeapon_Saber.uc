@@ -57,7 +57,7 @@ DefaultProperties
 	bUseSprintLeanAnims=true
 	bUseRMMDazed=true
 	bUseDirHitAnims=true
-	FlinchTime1H=0.95
+	FlinchTime1H=1.00
 
 	EncircleRadius=50.0f
 

@@ -115,7 +115,7 @@ simulated state WeaponEquipping
 DefaultProperties
 {
 	bTwoHander=true
-	FlinchTime2H=1.05
+	FlinchTime2H=1.10
 	AttachmentClass=class'BangModWeaponAttachment_PoleAxeBack'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Polehammer'
 	AllowedShieldClass=none
