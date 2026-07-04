@@ -343,6 +343,45 @@ simulated state Hit
 	}
 }
 
+/** ParryRelease state - Grace window for late SuccessfulParry RPCs.
+ *  End-of-release parries arrive after the parryup anim ends; without this
+ *  the weapon falls into Recovery (which locks bCanParry) even though the parry landed.
+ */
+simulated state ParryRelease
+{
+	simulated function OnStateAnimationEnd()
+	{
+		if (bSuccessfulParry && !bParryHitCounter)
+			GotoState('Active');
+		else if (!bParryHitCounter)
+			SetTimer(0.15f, false, 'ParryGraceExpired');
+		else
+			GotoState('Release');
+	}
+
+	simulated function ParryGraceExpired()
+	{
+		if (bSuccessfulParry)
+			GotoState('Active');
+		else
+			GotoState('Recovery');
+	}
+
+	simulated function SuccessfulParry(EAttack Type, int Dir)
+	{
+		super.SuccessfulParry(Type, Dir);
+		// The DirParryHitAnim timer will now fire OnStateAnimationEnd -> Active naturally.
+		// Cancel the grace fallback so both don't fire.
+		ClearTimer('ParryGraceExpired');
+	}
+
+	simulated event EndState(Name NextStateName)
+	{
+		ClearTimer('ParryGraceExpired');
+		super.EndState(NextStateName);
+	}
+}
+
 /** Recovery state - Auto-activate parry if buffered */
 simulated state Recovery
 {
