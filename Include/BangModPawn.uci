@@ -330,9 +330,9 @@ simulated event Tick(float DeltaTime)
 	*/
 	
 	// Override the PlayLowStaminaLoop call with fixed threshold
-	// Original used MaxStamina * 0.2f which is correct, but we hardcode to 20 for consistency
-	// This ensures all classes pant at the same absolute stamina level (20 or below)
-	PlayLowStaminaLoop(Stamina <= 10.0f && Health > 0.0f);
+	// Original used MaxStamina * 0.2f which is correct, but we hardcode to 15 for consistency
+	// This ensures all classes pant at the same absolute stamina level (15 or below)
+	PlayLowStaminaLoop(Stamina <= 15.0f && Health > 0.0f);
 }
 
 simulated function bool CheckProjectileParry(HitInfo Info) {
