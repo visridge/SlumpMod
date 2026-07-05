@@ -343,44 +343,7 @@ simulated state Hit
 	}
 }
 
-/** ParryRelease state - Grace window for late SuccessfulParry RPCs.
- *  End-of-release parries arrive after the parryup anim ends; without this
- *  the weapon falls into Recovery (which locks bCanParry) even though the parry landed.
- */
-simulated state ParryRelease
-{
-	simulated function OnStateAnimationEnd()
-	{
-		if (bSuccessfulParry && !bParryHitCounter)
-			GotoState('Active');
-		else if (!bParryHitCounter)
-			SetTimer(0.15f, false, 'ParryGraceExpired');
-		else
-			GotoState('Release');
-	}
 
-	simulated function ParryGraceExpired()
-	{
-		if (bSuccessfulParry)
-			GotoState('Active');
-		else
-			GotoState('Recovery');
-	}
-
-	simulated function SuccessfulParry(EAttack Type, int Dir)
-	{
-		super.SuccessfulParry(Type, Dir);
-		// The DirParryHitAnim timer will now fire OnStateAnimationEnd -> Active naturally.
-		// Cancel the grace fallback so both don't fire.
-		ClearTimer('ParryGraceExpired');
-	}
-
-	simulated event EndState(Name NextStateName)
-	{
-		ClearTimer('ParryGraceExpired');
-		super.EndState(NextStateName);
-	}
-}
 
 /** Recovery state - Auto-activate parry if buffered */
 simulated state Recovery
@@ -821,14 +784,15 @@ simulated state ParryRelease
 			bSuccessfulParry = true;
 			// Defer shield drop so DetectSuccessfulParry can finish
 			// checking bIsActiveShielding and zeroing HitDamage first.
-			// 300ms window matches normal weapon parry-hit animation duration,
-			// allowing shields to block near-simultaneous hits.
 			ClearTimer('AllowLowerParry');
 			SetTimer(0.1, false, 'DeferredShieldDrop');
 		}
 		else
 		{
 			super.SuccessfulParry(Type, Dir);
+			// The DirParryHitAnim timer will now fire OnStateAnimationEnd -> Active naturally.
+			// Cancel the grace fallback so both don't fire.
+			ClearTimer('ParryGraceExpired');
 		}
 	}
 	
@@ -844,6 +808,10 @@ simulated state ParryRelease
 	/** BANGMOD: Shields always go to Recovery after ParryRelease (no riposte).
 	 *  Vanilla weapons route to Active on successful parry for riposte opportunity;
 	 *  shields have no riposte, so Recovery is the correct destination.
+	 *
+	 *  Grace window for weapons: late SuccessfulParry RPCs can arrive after the
+	 *  parryup anim ends. If we got a successful parry, go Active for riposte;
+	 *  otherwise start a short grace timer before falling to Recovery.
 	 */
 	simulated function OnStateAnimationEnd()
 	{
@@ -851,15 +819,35 @@ simulated state ParryRelease
 		{
 			GotoState('Recovery');
 		}
+		else if (bSuccessfulParry && !bParryHitCounter)
+		{
+			GotoState('Active');
+		}
+		else if (!bParryHitCounter)
+		{
+			SetTimer(0.15f, false, 'ParryGraceExpired');
+		}
 		else
 		{
-			super.OnStateAnimationEnd();
+			GotoState('Release');
 		}
+	}
+
+	/** Grace window fallback: after 150ms in ParryRelease with no successful
+	 *  parry arriving, drop to Active (if one arrived late) or Recovery.
+	 */
+	simulated function ParryGraceExpired()
+	{
+		if (bSuccessfulParry)
+			GotoState('Active');
+		else
+			GotoState('Recovery');
 	}
 	
 	/** Clean up shield state on exit */
 	simulated event EndState(Name NextStateName)
 	{
+		ClearTimer('ParryGraceExpired');
 		if (bEquipShield)
 		{
 			AOCOwner.StateVariables.bIsActiveShielding = false;
