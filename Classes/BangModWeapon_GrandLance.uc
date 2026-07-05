@@ -7,6 +7,11 @@
 */
 class BangModWeapon_GrandLance extends BangModMeleeWeapon;
 
+/** Normalized point (0-1) in the release where playback speed changes */
+var float fReleaseDilatePoint;
+/** Rate multiplier applied after fReleaseDilatePoint (0.5 = 2x slower, 2.0 = 2x faster) */
+var float fReleaseDilateScale;
+
 simulated state ParryRelease
 {
 	simulated function BeginFire(byte FireModeNum)
@@ -44,6 +49,13 @@ simulated state Release
 		}
 	}
 
+	/** Always stop on hit — enemy or teammate — same as vanilla team-hit flinch */
+	simulated function ActivateHitAnim(EDirection Direction, bool bSameTeam)
+	{
+		ClientSetHit(true);
+		super.ActivateHitAnim(Direction, bSameTeam);
+	}
+
 	/** Play Release animation */
 	simulated function PlayStateAnimation()
 	{
@@ -73,6 +85,7 @@ simulated state Release
 				// odd sequential attacks should be the normal attack animation
 				AOCOwner.ReplicateCompressedAnimation(ReleaseAnimations[CurrentFireMode], EWST_Release, CurrentFireMode);
 				bJustPlayedCombo = false;
+				TimeLeftInRelease = GetRealAnimLength(ReleaseAnimations[CurrentFireMode]);
 			}
 			else
 			{
@@ -82,10 +95,51 @@ simulated state Release
 				Info.bCombo = true;
 				AOCOwner.ReplicateCompressedAnimation(Info, EWST_Release, CurrentFireMode);
 				bJustPlayedCombo = true;
+				TimeLeftInRelease = GetRealAnimLength(Info);
 			}
 		}
 		else
 			super.PlayStateAnimation(); // default handle for playing animation is fine if we are not doing a combo
+
+		// Schedule mid-animation rate dilation if configured for this weapon
+		if (fReleaseDilatePoint > 0.0 && fReleaseDilatePoint < 1.0 && fReleaseDilateScale > 0.0 && fReleaseDilateScale != 1.0)
+		{
+			if (CurrentFireMode != Attack_Shove && CurrentFireMode != Attack_Parry)
+			{
+				SetTimer(TimeLeftInRelease * fReleaseDilatePoint, false, 'ApplyReleaseDilation');
+			}
+		}
+	}
+
+	/** Change playback speed of the currently-playing release animation at the configured
+	 *  dilation point. Reschedules the pawn's OnAttackAnimEnd timer to stay in sync. */
+	simulated function ApplyReleaseDilation()
+	{
+		local AOCPawn P;
+		local float Remaining, NewRemaining;
+
+		P = AOCOwner;
+		if (P == none || P.RMMAnimNode == none) return;
+
+		// Time remaining at the current uniform rate
+		Remaining = TimeLeftInRelease * (1.0 - fReleaseDilatePoint);
+		// Time remaining after applying the rate multiplier
+		NewRemaining = Remaining / fReleaseDilateScale;
+
+		// Scale the active animation-nodes' playback rates
+		P.RMMAnimNode.GetCustomAnimNodeSeq().Rate *= fReleaseDilateScale;
+		if (P.FullBodyAnimSlot != none)
+			P.FullBodyAnimSlot.GetCustomAnimNodeSeq().Rate *= fReleaseDilateScale;
+
+		// Reschedule the state-end timer on the pawn
+		P.ClearTimer('OnAttackAnimEnd');
+		P.SetTimer(NewRemaining, false, 'OnAttackAnimEnd');
+	}
+
+	simulated event EndState(Name NextStateName)
+	{
+		ClearTimer('ApplyReleaseDilation');
+		super.EndState(NextStateName);
 	}
 }
 
@@ -101,6 +155,9 @@ DefaultProperties
 	FlinchTime2H=1.1
 	bUseNewDodgeSystem=true
 	bUseDirParryHitAnims=true
+	
+	fReleaseDilatePoint=0.5
+	fReleaseDilateScale=0.05
 
 	ImpactSounds(ESWINGSOUND_Slash)={(
 		light=SoundCue'A_Impacts_Melee.Light_Blunt_small',
@@ -235,9 +292,9 @@ DefaultProperties
 	WeaponLargePortrait="UI_WeaponImages_SWF.weapon_select_halberd"
 	WeaponSmallPortrait="UI_WeaponImages_SWF.icon_weapon_select_halberd_png"
 	WeaponReach=100
-	HorizontalRotateSpeed=55000.0
-	VerticalRotateSpeed=55000.0
-	AttackHorizRotateSpeed=55000.0
+	HorizontalRotateSpeed=40000.0
+	VerticalRotateSpeed=40000.0
+	AttackHorizRotateSpeed=40000.0
 	SprintAttackHorizRotateSpeed=25000.0
 	SprintAttackVerticalRotateSpeed=20000.0
 	DirParryHitAnimations(0)=(AnimationName=3p_halberd_parryhitL,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.3,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=true,bUseAltNode=true)
@@ -256,7 +313,7 @@ DefaultProperties
 	WindupAnimations(9)=(AnimationName=,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	ReleaseAnimations(0)=(AnimationName=3p_halberd_slash01release,ComboAnimation=3p_halberd_slash011release,AlternateAnimation=3p_halberd_slash011release,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_attack_01',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	ReleaseAnimations(1)=(AnimationName=3p_halberd_slash02release,ComboAnimation=3p_halberd_slash021release,AlternateAnimation=3p_halberd_slash021release,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_Attack_02',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
-	ReleaseAnimations(2)=(AnimationName=3p_halberd_stabrelease,ComboAnimation=3p_halberd_stabrelease,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_Attack_03',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=15.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
+	ReleaseAnimations(2)=(AnimationName=3p_halberd_stabrelease,ComboAnimation=3p_halberd_stabrelease,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_Attack_03',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=1.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	ReleaseAnimations(3)=(AnimationName=3p_halberd_sattackrelease_new,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_sprint_attack',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false,bUseAltBoneBranch=true)
 	ReleaseAnimations(4)=(AnimationName=3p_halberd_parryup,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_Parry',bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	ReleaseAnimations(5)=(AnimationName=3p_halberd_shoverelease_new,ComboAnimation=,AssociatedSoundCue=,bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=0.0,fAnimationLength=0.3,fBlendInTime=0.05,fBlendOutTime=0.05,bLastAnimation=false,bUseAltNode=true,bUseAltBoneBranch=true,bUseRMM=true)
