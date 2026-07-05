@@ -223,8 +223,8 @@ DefaultProperties
 	 * Kanabo stats - based on GrandMace
 	 */
 	iFeintStaminaCost=15
-	FeintTime=0.35
-	TertiaryFeintTime=0.45
+	FeintTime=0.3
+	TertiaryFeintTime=0.4
 	fParryNegation=100
 	ParryDrain(0)=30
 	ParryDrain(1)=32

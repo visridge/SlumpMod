@@ -2,7 +2,7 @@ class BangModFamilyInfo_Agatha_Knight extends AOCFamilyInfo_Agatha_Knight;
 
 DefaultProperties
 {
-	ParryBoxScale=(X=0.18,Y=0.17,Z=0.35)
+	ParryBoxScale=(X=0.20,Y=0.17,Z=0.35)
     ParryBoxTranslation=(X=10, Z=-28)
 
 	NewPrimaryWeapons.empty;
