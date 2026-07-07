@@ -35,6 +35,22 @@ simulated state ParryRelease
 
 simulated state Release
 {
+	simulated event BeginState(Name PreviousStateName)
+	{
+		super.BeginState(PreviousStateName);
+
+		// Enable forced sprint+forward on the pawn for stab releases.
+		if (CurrentFireMode == Attack_Stab && AOCOwner != none && AOCOwner.IsLocallyControlled())
+		{
+			BangModPawn(AOCOwner).bForceSprintForward = true;
+
+			// Lock jump and crouch during the charge so the forced sprint isn't cancelled.
+			AOCOwner.StateVariables.bCanJump = false;
+			AOCOwner.StateVariables.bCanCrouch = false;
+			AOCOwner.StopJump();
+		}
+	}
+
 	simulated function BeginFire(byte FireModeNum)
 	{
 		super.BeginFire(FireModeNum);
@@ -49,7 +65,9 @@ simulated state Release
 		}
 	}
 
-	/** Always stop on hit — enemy or teammate — same as vanilla team-hit flinch */
+	/** Always stop on hit — enemy or teammate — same as vanilla team-hit flinch.
+	 *  The self-flinch for successful stab hits is handled server-side in
+	 *  BangModPawn.ProcessResolvedAttack. */
 	simulated function ActivateHitAnim(EDirection Direction, bool bSameTeam)
 	{
 		ClientSetHit(true);
@@ -101,13 +119,12 @@ simulated state Release
 		else
 			super.PlayStateAnimation(); // default handle for playing animation is fine if we are not doing a combo
 
-		// Schedule mid-animation rate dilation if configured for this weapon
-		if (fReleaseDilatePoint > 0.0 && fReleaseDilatePoint < 1.0 && fReleaseDilateScale > 0.0 && fReleaseDilateScale != 1.0)
+		// Schedule mid-animation rate dilation if configured for this weapon — stab only
+		if (CurrentFireMode == Attack_Stab
+			&& fReleaseDilatePoint > 0.0 && fReleaseDilatePoint < 1.0
+			&& fReleaseDilateScale > 0.0 && fReleaseDilateScale != 1.0)
 		{
-			if (CurrentFireMode != Attack_Shove && CurrentFireMode != Attack_Parry)
-			{
-				SetTimer(TimeLeftInRelease * fReleaseDilatePoint, false, 'ApplyReleaseDilation');
-			}
+			SetTimer(TimeLeftInRelease * fReleaseDilatePoint, false, 'ApplyReleaseDilation');
 		}
 	}
 
@@ -138,6 +155,14 @@ simulated state Release
 
 	simulated event EndState(Name NextStateName)
 	{
+		// Release the sprint-forward lock and restore jump/crouch on the pawn.
+		if (AOCOwner != none)
+		{
+			BangModPawn(AOCOwner).bForceSprintForward = false;
+			AOCOwner.StateVariables.bCanJump = true;
+			AOCOwner.StateVariables.bCanCrouch = true;
+		}
+
 		ClearTimer('ApplyReleaseDilation');
 		super.EndState(NextStateName);
 	}
@@ -292,9 +317,9 @@ DefaultProperties
 	WeaponLargePortrait="UI_WeaponImages_SWF.weapon_select_halberd"
 	WeaponSmallPortrait="UI_WeaponImages_SWF.icon_weapon_select_halberd_png"
 	WeaponReach=100
-	HorizontalRotateSpeed=40000.0
-	VerticalRotateSpeed=40000.0
-	AttackHorizRotateSpeed=40000.0
+	HorizontalRotateSpeed=15000.0
+	VerticalRotateSpeed=5000.0
+	AttackHorizRotateSpeed=5000.0
 	SprintAttackHorizRotateSpeed=25000.0
 	SprintAttackVerticalRotateSpeed=20000.0
 	DirParryHitAnimations(0)=(AnimationName=3p_halberd_parryhitL,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.3,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=true,bUseAltNode=true)

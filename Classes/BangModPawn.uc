@@ -36,4 +36,8 @@ struct RecentIncomingHit
 };
 var array<RecentIncomingHit> RecentIncomingHits;  // hits we recently took, kept for fRecentHitTTL
 
+// BANGMOD: Grand Lance stab charge — weapon requests forced sprint+forward lock.
+var bool bForceSprintForward;
+var float fForceSprintForwardSpeedMult;  // multiplier on sprint speed (1.0 = normal)
+
 `include(BangMod/Include/BangModPawn.uci)

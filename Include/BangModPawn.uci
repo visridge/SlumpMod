@@ -297,6 +297,14 @@ simulated event Tick(float DeltaTime)
 		bKanaboExtraJumpUsed = false;
 	}
 
+	// BANGMOD: Grand Lance — force sprint+forward during stab release.
+	if (bForceSprintForward && IsLocallyControlled())
+	{
+		bIsCrouching = false;
+		bClientWantsToSprint = true;
+		Acceleration = Normal(vector(Rotation)) * GroundSpeed;
+	}
+
 	/*
 	bUsingBastardSword = Weapon != none
 		&& Weapon.Class == class'BangModWeapon_BastardSword';
@@ -519,7 +527,7 @@ function int CalcDodgeCost() {
 }
 
 /** Override DoJump to reduce stamina cost from 7 to 4 */
-simulated function bool CanKanaboAirJump()
+simulated function bool CanAirJump()
 {
 	/*
 	return Weapon != none
@@ -551,7 +559,7 @@ function bool DoJump( bool bUpdating )
 		&& (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider)
 		&& !(StateVariables.bIsAttacking && AOCWeapon(Weapon).CurrentFireMode == Attack_Shove)
 		&& (PawnState == ESTATE_IDLE || PawnState == ESTATE_RUN || PawnState == ESTATE_SPRINT);
-	bCanKanaboSecondJump = CanKanaboAirJump();
+	bCanKanaboSecondJump = CanAirJump();
 
 	if (bCanNormalJump)
 	{
@@ -1462,7 +1470,17 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 
 	// Register the hit on the AOCMeleeWeapon class
 	if (AOCMeleeWeapon(Info.Instigator.Weapon) != none)
+	{
 		AOCMeleeWeapon(Info.Instigator.Weapon).bHitPawn = true;
+
+		// Grand Lance: self-flinch the attacker on successful enemy stab hit
+		if (!bSameTeam && Info.AttackType == Attack_Stab
+			&& !bParry
+			&& BangModWeapon_GrandLance(Info.Instigator.Weapon) != none)
+		{
+			AOCWeapon(Info.Instigator.Weapon).ActivateFlinch(true, Info.Instigator.GetHitDirection(Location), false, false, true);
+		}
+	}
 
 	// Less damage for quick kick
 	if (bQuickKick)
