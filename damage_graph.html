@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BangMod Torso Damage — LMB / OH / Stab per Class</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* { box-sizing: border-box; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: #0d1117; color: #c9d1d9; padding: 16px; }
+h1 { text-align: center; color: #58a6ff; font-size: 22px; margin: 0 0 6px; }
+.subtitle { text-align: center; color: #8b949e; font-size: 12px; margin-bottom: 18px; }
+.info { background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 12px; line-height: 1.7; }
+.info b { color: #58a6ff; }
+.info code { background: #21262d; padding: 1px 5px; border-radius: 3px; color: #f0883e; }
+.weapon-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.per-weapon { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 14px; }
+.per-weapon h3 { color: #f0883e; font-size: 14px; margin: 0 0 10px; }
+.per-weapon canvas { max-height: 400px; }
+.byclass { margin-top: 30px; }
+.byclass h2 { color: #58a6ff; font-size: 18px; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<h1>BangMod — Effective Torso Damage</h1>
+<p class="subtitle">Damage = fBaseDamage × Σ(DamageType[i] × DamageResistances[i]) — parsed directly from BangModWeaponAttachment_*.uc</p>
+
+<div class="info">
+<b>Formula:</b> <code>Resistance = DmgType[Swing]×Resist[Swing] + DmgType[Pierce]×Resist[Pierce] + DmgType[Blunt]×Resist[Blunt]</code><br>
+<b>Effective Damage = ⌊BaseDamage × Resistance⌉</b> (rounded, torso LocationModifier = 1.0 for melee)<br>
+<b>Resistances (S/P/B):</b> <span style="color:#3fb950;">Archer 0.85/0.85/0.65</span> · <span style="color:#f85149;">Knight 0.40/0.50/0.61</span> · <span style="color:#58a6ff;">MaA 0.80/0.85/0.65</span> · <span style="color:#d2a800;">Vanguard 0.60/0.80/0.70</span><br>
+<b>Dmg type colors in by-class charts:</b> <span style="color:#f85149;">■Swing</span> <span style="color:#3fb950;">■Pierce</span> <span style="color:#58a6ff;">■Blunt</span> <span style="color:#bc8cff;">■SwingBlunt</span> <span style="color:#ffa657;">■PierceBlunt</span>
+</div>
+
+<div class="weapon-grid" id="weaponGrid"></div>
+<div class="byclass" id="byClass"></div>
+
+<script>
+const DMG = { "Swing":[1,0,0],"Pierce":[0,1,0],"Blunt":[0,0,1],"SwingBlunt":[0.5,0,0.5],"PierceBlunt":[0,0.5,0.5] };
+const CL = [
+  {n:"Archer",   r:[0.85,0.85,0.65], color:"rgba(63,185,80,0.85)", hex:"#3fb950"},
+  {n:"Knight",   r:[0.40,0.50,0.61], color:"rgba(248,81,73,0.85)", hex:"#f85149"},
+  {n:"ManAtArms",r:[0.80,0.85,0.65], color:"rgba(88,166,255,0.85)", hex:"#58a6ff"},
+  {n:"Vanguard", r:[0.60,0.80,0.70], color:"rgba(210,168,0,0.85)", hex:"#d2a800"},
+];
+const ATC = {Swing:"rgba(248,81,73,0.78)",Pierce:"rgba(63,185,80,0.78)",Blunt:"rgba(88,166,255,0.78)",SwingBlunt:"rgba(188,140,255,0.78)",PierceBlunt:"rgba(255,166,87,0.78)"};
+function calc(base,dtype,cls){const d=DMG[dtype];if(!d)return 0;return Math.round(base*(d[0]*cls.r[0]+d[1]*cls.r[1]+d[2]*cls.r[2]));}
+
+// CORRECTED DATA — parsed directly from BangModWeaponAttachment_*.uc files
+const W = {
+"Bardiche":      {0:[110,"Swing"],     1:[95,"SwingBlunt"],  2:[40,"Pierce"]},
+"BastardSword":  {0:[65,"Swing"],      1:[70,"Swing"],       2:[68,"Pierce"]},
+"Bearded":       {0:[95,"Swing"],      1:[100,"SwingBlunt"], 2:[20,"Blunt"]},
+"Bill":          {0:[75,"SwingBlunt"], 1:[75,"SwingBlunt"],  2:[76,"Pierce"]},
+"BoStaff":       {0:[50,"Blunt"],      1:[50,"Blunt"],       2:[45,"Blunt"]},
+"Brandistock":   {0:[50,"Blunt"],      1:[95,"Pierce"],      2:[61,"Pierce"]},
+"BroadDagger":   {0:[35,"Swing"],      1:[40,"Pierce"],      2:[35,"Pierce"]},
+"Broadsword":    {0:[70,"Swing"],      1:[70,"Swing"],       2:[55,"Pierce"]},
+"Claymore":      {0:[75,"Swing"],      1:[82,"Swing"],       2:[70,"Pierce"]},
+"Cudgel":        {0:[40,"Blunt"],      1:[54,"Blunt"],       2:[20,"Blunt"]},
+"Dagesse":       {0:[40,"Swing"],      1:[45,"Swing"],       2:[50,"Pierce"]},
+"Dane":          {0:[84,"Swing"],      1:[84,"SwingBlunt"],  2:[25,"Blunt"]},
+"DoubleAxe":     {0:[90,"SwingBlunt"], 1:[123,"SwingBlunt"], 2:[45,"Blunt"]},
+"Falchion":      {0:[78,"SwingBlunt"], 1:[90,"Swing"],       2:[50,"Pierce"]},
+"Fork":          {0:[25,"Blunt"],      1:[65,"Pierce"],      2:[60,"Pierce"]},
+"GrandHammer":   {0:[75,"Blunt"],      1:[90,"Blunt"],       2:[45,"PierceBlunt"]},
+"GrandLance":    {0:[25,"SwingBlunt"], 1:[25,"SwingBlunt"],  2:[95,"Pierce"]},
+"GrandMace":     {0:[82,"Blunt"],      1:[113,"Blunt"],      2:[45,"Blunt"]},
+"Greatsword":    {0:[93,"Swing"],      1:[93,"Swing"],       2:[70,"Pierce"]},
+"Halberd":       {0:[65,"SwingBlunt"], 1:[85,"SwingBlunt"],  2:[72,"Pierce"]},
+"Hatchet":       {0:[70,"SwingBlunt"], 1:[74,"SwingBlunt"],  2:[20,"Blunt"]},
+"HFlail":        {0:[75,"Blunt"],      1:[80,"Blunt"],       2:[45,"PierceBlunt"]},
+"HolyWS":        {0:[65,"PierceBlunt"],1:[65,"Blunt"],       2:[55,"PierceBlunt"]},
+"HuntingKnife":  {0:[40,"Swing"],      1:[45,"Swing"],       2:[30,"Pierce"]},
+"Javelin":       {0:[40,"Swing"],      1:[35,"Blunt"],       2:[60,"Pierce"]},
+"Kanabo":        {0:[75,"Blunt"],      1:[90,"Blunt"],       2:[45,"PierceBlunt"]},
+"Katana":        {0:[79,"Swing"],      1:[86,"Swing"],       2:[64,"Pierce"]},
+"Katana1H":      {0:[60,"Swing"],      1:[75,"Swing"],       2:[55,"Pierce"]},
+"Longsword":     {0:[79,"Swing"],      1:[86,"Swing"],       2:[64,"Pierce"]},
+"Longsword1H":   {0:[60,"Swing"],      1:[75,"Swing"],       2:[55,"Pierce"]},
+"Mace":          {0:[70,"Blunt"],      1:[75,"Blunt"],       2:[30,"PierceBlunt"]},
+"Maul":          {0:[100,"Blunt"],     1:[132,"Blunt"],      2:[45,"Blunt"]},
+"Messer":        {0:[95,"Swing"],      1:[95,"Swing"],       2:[55,"Pierce"]},
+"Messer1H":      {0:[80,"Swing"],      1:[80,"SwingBlunt"],  2:[50,"Pierce"]},
+"MorningStar":   {0:[65,"PierceBlunt"],1:[72,"PierceBlunt"], 2:[45,"PierceBlunt"]},
+"Nodachi":       {0:[79,"Swing"],      1:[84,"Swing"],       2:[71,"Pierce"]},
+"NorseSword":    {0:[60,"Swing"],      1:[70,"Swing"],       2:[57,"Pierce"]},
+"PoleAxe":       {0:[75,"Swing"],      1:[82,"Swing"],       2:[75,"Pierce"]},
+"PoleHammer":    {0:[80,"Blunt"],      1:[113,"Blunt"],      2:[65,"Pierce"]},
+"QuarterStaff":  {0:[50,"Blunt"],      1:[50,"Blunt"],       2:[45,"Blunt"]},
+"Saber":         {0:[51,"Swing"],      1:[62,"Swing"],       2:[40,"Pierce"]},
+"Spear":         {0:[30,"Blunt"],      1:[70,"Pierce"],      2:[55,"Pierce"]},
+"SpikedMace":    {0:[75,"Blunt"],      1:[90,"Blunt"],       2:[30,"PierceBlunt"]},
+"SwordOfWar":    {0:[65,"Swing"],      1:[70,"Swing"],       2:[72,"Pierce"]},
+"SwordOfWar1H":  {0:[55,"Swing"],      1:[60,"Swing"],       2:[60,"Pierce"]},
+"WarAxe":        {0:[70,"SwingBlunt"], 1:[85,"SwingBlunt"],  2:[57,"Pierce"]},
+"WarHammer":     {0:[75,"Blunt"],      1:[82,"Blunt"],       2:[40,"Blunt"]},
+"Zweihander":    {0:[90,"Swing"],      1:[115,"Swing"],      2:[72,"Pierce"]},
+};
+
+const A = {0:"LMB",1:"OH",2:"Stab"};
+const wnames = Object.keys(W).sort();
+
+function makeAtkInfo(wname) {
+  const arr = [];
+  for (const a of [0,1,2]) {
+    const [dmg, dt] = W[wname][a] || [0,"Swing"];
+    for (let c = 0; c < CL.length; c++) arr.push({ atk: A[a], dtype: dt, base: dmg });
+    if (a < 2) arr.push(null, null);
+  }
+  return arr;
+}
+
+// PER-WEAPON CHARTS
+const grid = document.getElementById("weaponGrid");
+wnames.forEach(wname => {
+  const div = document.createElement("div");
+  div.className = "per-weapon";
+  div.innerHTML = `<h3>${wname}</h3><canvas id="w_${wname}"></canvas>`;
+  grid.appendChild(div);
+
+  const atkInfo = makeAtkInfo(wname);
+  const labels = [], dataArrays = CL.map(() => []);
+  for (let i = 0; i < atkInfo.length; i++) {
+    const info = atkInfo[i];
+    labels.push(info === null ? '' : `${info.atk}\n${info.dtype} ${info.base}`);
+    for (let ci = 0; ci < CL.length; ci++) {
+      dataArrays[ci].push(info === null ? null : calc(info.base, info.dtype, CL[ci]));
+    }
+  }
+
+  const datasets = CL.map((cl, ci) => ({
+    label: cl.n, data: dataArrays[ci],
+    backgroundColor: dataArrays[ci].map(v => v === null ? 'transparent' : cl.color),
+    borderColor: dataArrays[ci].map(v => v === null ? 'transparent' : cl.hex),
+    borderWidth: 1, atkInfo,
+  }));
+
+  new Chart(document.getElementById(`w_${wname}`), {
+    type: "bar", data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: true,
+      plugins: {
+        legend: { labels: { color:"#c9d1d9", font:{size:10}, usePointStyle:true, pointStyleWidth:8 } },
+        tooltip: { callbacks: {
+          title: (items) => { const info = items[0]?.dataset?.atkInfo?.[items[0]?.dataIndex]; return info ? `${info.atk} — ${info.dtype} (${info.base} base)` : ''; },
+          label: (ctx) => ctx.raw === null ? '' : `${ctx.dataset.label}: ${ctx.raw} damage`,
+        }},
+      },
+      scales: {
+        x: { ticks: { color:"#8b949e",font:{size:8},maxRotation:30 }, grid:{color:"#21262d"} },
+        y: { beginAtZero:true, suggestedMax:140, ticks:{color:"#8b949e",font:{size:9}}, grid:{color:"#21262d"} },
+      },
+    },
+  });
+});
+
+// BY-CLASS CHARTS
+const byClassDiv = document.getElementById("byClass");
+byClassDiv.innerHTML = '<h2>Full Comparison by Class</h2>';
+const bcGrid = document.createElement("div");
+bcGrid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:14px;";
+byClassDiv.appendChild(bcGrid);
+
+CL.forEach(cl => {
+  const div = document.createElement("div");
+  div.className = "per-weapon";
+  div.innerHTML = `<h3>vs <span style="color:${cl.hex}">${cl.n}</span> — Swing ${cl.r[0]} / Pierce ${cl.r[1]} / Blunt ${cl.r[2]}</h3><canvas id="c_${cl.n}"></canvas>`;
+  bcGrid.appendChild(div);
+
+  const labels=[], data=[], bg=[], bcInfo=[];
+  wnames.forEach(w => {
+    for (const a of [0,1,2]) {
+      const [dmg, dt] = W[w][a]||[0,"Swing"];
+      labels.push(`${w} ${A[a]}`); data.push(calc(dmg,dt,cl));
+      bg.push(ATC[dt]||"#888"); bcInfo.push({w,atk:A[a],dtype:dt,base:dmg});
+    }
+    labels.push('');data.push(null);bg.push('transparent');bcInfo.push(null);
+  });
+
+  new Chart(document.getElementById(`c_${cl.n}`), {
+    type:"bar", data:{labels,datasets:[{label:`vs ${cl.n}`,data,backgroundColor:bg,borderColor:bg.map(c=>c==='transparent'?'transparent':c.replace("0.78","1")),borderWidth:1,atkInfo:bcInfo}]},
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      plugins:{legend:{display:false},tooltip:{callbacks:{title:(items)=>{const info=items[0]?.dataset?.atkInfo?.[items[0]?.dataIndex];return info?`${info.w} — ${info.atk} (${info.dtype} ${info.base})`:'';},label:(ctx)=>ctx.raw===null?'':`${ctx.raw} damage`}}},
+      scales:{x:{ticks:{color:"#8b949e",font:{size:7},maxRotation:90},grid:{color:"#21262d"}},y:{beginAtZero:true,ticks:{color:"#8b949e",font:{size:9}},grid:{color:"#21262d"}}},
+    },
+  });
+});
+</script>
+</body>
+</html>
