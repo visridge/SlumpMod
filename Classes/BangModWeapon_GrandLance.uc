@@ -12,6 +12,54 @@ var float fReleaseDilatePoint;
 /** Rate multiplier applied after fReleaseDilatePoint (0.5 = 2x slower, 2.0 = 2x faster) */
 var float fReleaseDilateScale;
 
+/** Per-firemode turncap overrides (LMB=0, OH=1, Stab=2).  If zero, falls back to AttackHorizRotateSpeed. */
+var float SlashHorizRotateSpeed;
+var float OverheadHorizRotateSpeed;
+var float StabHorizRotateSpeed;
+var float SlashVertRotateSpeed;
+var float OverheadVertRotateSpeed;
+var float StabVertRotateSpeed;
+
+/** Returns the per-firemode horizontal turncap if one is set, otherwise the shared cap. */
+simulated function float GetHorizontalRotateSpeed()
+{
+	if (AOCOwner == none)
+		CacheWeaponReferences();
+
+	if (!AOCOwner.StateVariables.bIsAttacking)
+		return HorizontalRotateSpeed;
+
+	if (CurrentFireMode == Attack_Sprint)
+		return SprintAttackHorizRotateSpeed;
+
+	switch (CurrentFireMode)
+	{
+		case Attack_Slash:    return SlashHorizRotateSpeed    > 0 ? SlashHorizRotateSpeed    : AttackHorizRotateSpeed;
+		case Attack_Overhead: return OverheadHorizRotateSpeed > 0 ? OverheadHorizRotateSpeed : AttackHorizRotateSpeed;
+		case Attack_Stab:     return StabHorizRotateSpeed     > 0 ? StabHorizRotateSpeed     : AttackHorizRotateSpeed;
+		default:              return AttackHorizRotateSpeed;
+	}
+}
+
+/** Returns the per-firemode vertical turncap if one is set, otherwise the shared cap. */
+simulated function float GetVerticalRotateSpeed()
+{
+	if (AOCOwner == none)
+		CacheWeaponReferences();
+
+	if (AOCOwner.StateVariables.bIsAttacking && CurrentFireMode == Attack_Sprint)
+		return SprintAttackVerticalRotateSpeed * Exp( -1 * NumHorizontalReversals * 0.693147 );
+
+	// vertical reversal degredation: use the per-firemode base if set
+	switch (CurrentFireMode)
+	{
+		case Attack_Slash:    return (SlashVertRotateSpeed    > 0 ? SlashVertRotateSpeed    : VerticalRotateSpeed) * Exp( -1 * NumVerticalReversals * 0.693147 );
+		case Attack_Overhead: return (OverheadVertRotateSpeed > 0 ? OverheadVertRotateSpeed : VerticalRotateSpeed) * Exp( -1 * NumVerticalReversals * 0.693147 );
+		case Attack_Stab:     return (StabVertRotateSpeed     > 0 ? StabVertRotateSpeed     : VerticalRotateSpeed) * Exp( -1 * NumVerticalReversals * 0.693147 );
+		default:              return VerticalRotateSpeed * Exp( -1 * NumVerticalReversals * 0.693147 );
+	}
+}
+
 simulated state ParryRelease
 {
 	simulated function BeginFire(byte FireModeNum)
@@ -305,6 +353,8 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Halberd]
 	 */
+	StabHorizRotateSpeed=15000
+	StabVertRotateSpeed=5000
 	Bcancombo=false
 	iFeintStaminaCost=15
 	FeintTime=0.3
@@ -317,9 +367,9 @@ DefaultProperties
 	WeaponLargePortrait="UI_WeaponImages_SWF.weapon_select_halberd"
 	WeaponSmallPortrait="UI_WeaponImages_SWF.icon_weapon_select_halberd_png"
 	WeaponReach=100
-	HorizontalRotateSpeed=15000.0
-	VerticalRotateSpeed=5000.0
-	AttackHorizRotateSpeed=5000.0
+	HorizontalRotateSpeed=40000.0
+	VerticalRotateSpeed=40000.0
+	AttackHorizRotateSpeed=40000.0
 	SprintAttackHorizRotateSpeed=25000.0
 	SprintAttackVerticalRotateSpeed=20000.0
 	DirParryHitAnimations(0)=(AnimationName=3p_halberd_parryhitL,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.3,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=true,bUseAltNode=true)

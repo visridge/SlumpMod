@@ -246,6 +246,8 @@ function ProcessViewRotation( float DeltaTime, out Rotator out_ViewRotation, Rot
 	local float MaxTurnSpeed;
 	local float MaxVertTurnSpeed;
 	local bool bInAttackFlow;
+	local bool bSavedAttacking;
+	local float AttackH, AttackV;
 
 	if( PreventTurning )
         return;
@@ -282,19 +284,27 @@ function ProcessViewRotation( float DeltaTime, out Rotator out_ViewRotation, Rot
 			MaxVertTurnSpeed = AOCWeapon(Pawn.Weapon).GetVerticalRotateSpeed();
 
 			// If the replicated bool flickered false mid-combo, GetHorizontalRotateSpeed() returns
-			// the *free-look* speed (its !bIsAttacking branch). Force the real attack cap straight
-			// from the weapon so the flicker can't briefly uncap the turn.
+			// the *free-look* speed (its !bIsAttacking branch).  Call GetHorizontalRotateSpeed /
+			// GetVerticalRotateSpeed again with a temporary bIsAttacking=true so per-firemode
+			// overrides in subclasses are still respected during the flicker.  The FMax() against
+			// the raw vars keeps a safe floor in case the override returns 0.
 			if (bInAttackFlow && !AOCPawn(Pawn).StateVariables.bIsAttacking)
 			{
+				bSavedAttacking = AOCPawn(Pawn).StateVariables.bIsAttacking;
+				AOCPawn(Pawn).StateVariables.bIsAttacking = true;
+				AttackH = AOCWeapon(Pawn.Weapon).GetHorizontalRotateSpeed();
+				AttackV = AOCWeapon(Pawn.Weapon).GetVerticalRotateSpeed();
+				AOCPawn(Pawn).StateVariables.bIsAttacking = bSavedAttacking;
+
 				if (AOCWeapon(Pawn.Weapon).CurrentFireMode == Attack_Sprint)
 				{
-					MaxTurnSpeed = AOCWeapon(Pawn.Weapon).SprintAttackHorizRotateSpeed;
-					MaxVertTurnSpeed = AOCWeapon(Pawn.Weapon).SprintAttackVerticalRotateSpeed;
+					MaxTurnSpeed    = FMax(AttackH, AOCWeapon(Pawn.Weapon).SprintAttackHorizRotateSpeed);
+					MaxVertTurnSpeed = FMax(AttackV, AOCWeapon(Pawn.Weapon).SprintAttackVerticalRotateSpeed);
 				}
 				else
 				{
-					MaxTurnSpeed = AOCWeapon(Pawn.Weapon).AttackHorizRotateSpeed;
-					MaxVertTurnSpeed = AOCWeapon(Pawn.Weapon).VerticalRotateSpeed;
+					MaxTurnSpeed    = FMax(AttackH, AOCWeapon(Pawn.Weapon).AttackHorizRotateSpeed);
+					MaxVertTurnSpeed = FMax(AttackV, AOCWeapon(Pawn.Weapon).VerticalRotateSpeed);
 				}
 			}
 			
