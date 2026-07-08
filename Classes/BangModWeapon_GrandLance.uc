@@ -88,7 +88,7 @@ simulated state Release
 		super.BeginState(PreviousStateName);
 
 		// Enable forced sprint+forward on the pawn for stab releases.
-		if (CurrentFireMode == Attack_Stab && AOCOwner != none && AOCOwner.IsLocallyControlled())
+		if (CurrentFireMode == Attack_Stab && AOCOwner != none)
 		{
 			BangModPawn(AOCOwner).bForceSprintForward = true;
 
@@ -96,6 +96,9 @@ simulated state Release
 			AOCOwner.StateVariables.bCanJump = false;
 			AOCOwner.StateVariables.bCanCrouch = false;
 			AOCOwner.StopJump();
+
+			// Immediately strip any crouch debuff carried from windup.
+			AOCOwner.RemoveDebuff(EDEBF_CROUCH);
 		}
 	}
 

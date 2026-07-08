@@ -298,12 +298,76 @@ simulated event Tick(float DeltaTime)
 	}
 
 	// BANGMOD: Grand Lance — force sprint+forward during stab release.
-	if (bForceSprintForward && IsLocallyControlled())
+	if (bForceSprintForward)
 	{
 		bIsCrouching = false;
 		bClientWantsToSprint = true;
 		Acceleration = Normal(vector(Rotation)) * GroundSpeed;
 	}
+
+	// Override the PlayLowStaminaLoop call with fixed threshold
+	// Original used MaxStamina * 0.2f which is correct, but we hardcode to 15 for consistency
+	// This ensures all classes pant at the same absolute stamina level (15 or below)
+	PlayLowStaminaLoop(Stamina <= 15.0f && Health > 0.0f);
+}
+
+
+// BANGMOD: Override SprintState to block sprint-off during Grand Lance charge.
+// Prevents the player from resetting the sprint speed ramp by tapping the sprint key.
+exec function SprintState(optional bool bSprint = false, optional bool bForceToggleSprint)
+{
+	if (bForceSprintForward && !bSprint)
+		return;
+
+	super.SprintState(bSprint, bForceToggleSprint);
+}
+
+
+// BANGMOD: Override ToggleSprint to prevent sprint-off from any source during charge.
+function ToggleSprint(bool bSprint, optional bool bForce)
+{
+	if (bForceSprintForward && !bSprint)
+		return;
+
+	super.ToggleSprint(bSprint, bForce);
+}
+
+
+// BANGMOD: Override ModifyVelocity to enforce crouch removal and sprint during Grand Lance charge.
+// Locks aForward=1.0 so the native acceleration ramp never resets from tapping/releasing W.
+function ModifyVelocity(float DeltaTime, vector OldVelocity)
+{
+	local vector Forward;
+	local AOCPlayerController PC;
+
+	if (bForceSprintForward)
+	{
+		// Strip any crouch debuff lingering from windup.
+		if (bIsCrouching)
+			ServerPerformCrouch(false);
+		RemoveDebuff(EDEBF_CROUCH);
+
+		// Lock forward input so the native acceleration ramp never drops to 0.
+		PC = AOCPlayerController(Controller);
+		if (PC != none && PC.PlayerInput != none)
+			PC.PlayerInput.aForward = 1.0;
+
+		// Force sprint input on so the native sprint ramp stays alive.
+		bClientWantsToSprint = true;
+		ToggleSprint(true);
+
+		// Lock acceleration direction to forward-only so S can't backpedal.
+		Forward = vector(Rotation);
+		Forward.Z = 0;
+		Forward = Normal(Forward);
+
+		if ((Acceleration dot Forward) < 0)
+			Acceleration -= Forward * (Acceleration dot Forward);
+	}
+
+	super.ModifyVelocity(DeltaTime, OldVelocity);
+}
+
 
 	/*
 	bUsingBastardSword = Weapon != none
@@ -337,11 +401,7 @@ simulated event Tick(float DeltaTime)
 	}
 	*/
 	
-	// Override the PlayLowStaminaLoop call with fixed threshold
-	// Original used MaxStamina * 0.2f which is correct, but we hardcode to 15 for consistency
-	// This ensures all classes pant at the same absolute stamina level (15 or below)
-	PlayLowStaminaLoop(Stamina <= 15.0f && Health > 0.0f);
-}
+
 
 simulated function bool CheckProjectileParry(HitInfo Info) {
 	local vector DirVector;
