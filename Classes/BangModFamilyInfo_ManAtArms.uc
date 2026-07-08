@@ -9,8 +9,8 @@ class BangModFamilyInfo_ManAtArms extends AOCFamilyInfo_ManAtArms;
 
 DefaultProperties
 {
-	ParryBoxScale=(X=0.20,Y=0.17,Z=0.35)
-    ParryBoxTranslation=(X=10, Z=-28)
+	// ParryBoxScale=(X=0.20,Y=0.17,Z=0.35)
+    // ParryBoxTranslation=(X=10, Z=-28)
 
 	PrimaryWeapons(0)=class'AOCWeapon_Broadsword'
 	PrimaryWeapons(1)=class'AOCWeapon_Falchion'
