@@ -34,12 +34,12 @@ DefaultProperties
 
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'CHV_DeadliestPorts.Meshes.WEP_Kanabo'
-		Scale=1.15
+		Scale=1.1
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
 		SkeletalMesh=SkeletalMesh'CHV_DeadliestPorts.Meshes.WEP_Kanabo'
-		Scale=1.15
+		Scale=1.1
 	End Object
 
 	WeaponID=EWEP_GrandMace
@@ -48,7 +48,7 @@ DefaultProperties
 
 	bUseAlternativeKick=true
 
-	WeaponStaticMeshScale=1.15
+	WeaponStaticMeshScale=1.1
 
 	AttackTypeInfo(0)=(fBaseDamage=75.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
 	AttackTypeInfo(1)=(fBaseDamage=90.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
@@ -61,35 +61,35 @@ DefaultProperties
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_Kanabo",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_Kanabo",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_Kanabo_INST",
-		StaticMeshScale=1.15,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(1)={(
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_Kanabo",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_Kanabo",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_Kanabo_INST",
-		StaticMeshScale=1.15,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(2)={(
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_Kanabo",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_Kanabo",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_Kanabo_INST",
-		StaticMeshScale=1.15,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(3)={(
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_Kanabo",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_Kanabo",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_Kanabo_INST",
-		StaticMeshScale=1.15,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(4)={(
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_Kanabo",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_Kanabo",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_Kanabo_INST",
-		StaticMeshScale=1.15,
+		StaticMeshScale=1.1,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 }
