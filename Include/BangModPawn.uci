@@ -334,7 +334,7 @@ function ToggleSprint(bool bSprint, optional bool bForce)
 
 
 // BANGMOD: Override ModifyVelocity to enforce crouch removal and sprint during Grand Lance charge.
-// Locks aForward=1.0 so the native acceleration ramp never resets from tapping/releasing W.
+// Locks aForward=1.0 and aStrafe=0.0 so acceleration ramp stays pure forward.
 function ModifyVelocity(float DeltaTime, vector OldVelocity)
 {
 	local vector Forward;
@@ -342,21 +342,21 @@ function ModifyVelocity(float DeltaTime, vector OldVelocity)
 
 	if (bForceSprintForward)
 	{
-		// Strip any crouch debuff lingering from windup.
 		if (bIsCrouching)
 			ServerPerformCrouch(false);
 		RemoveDebuff(EDEBF_CROUCH);
 
-		// Lock forward input so the native acceleration ramp never drops to 0.
+		// Lock inputs: full forward, zero strafe, zero up.
 		PC = AOCPlayerController(Controller);
 		if (PC != none && PC.PlayerInput != none)
+		{
 			PC.PlayerInput.aForward = 1.0;
+			PC.PlayerInput.aStrafe = 0.0;
+		}
 
-		// Force sprint input on so the native sprint ramp stays alive.
 		bClientWantsToSprint = true;
 		ToggleSprint(true);
 
-		// Lock acceleration direction to forward-only so S can't backpedal.
 		Forward = vector(Rotation);
 		Forward.Z = 0;
 		Forward = Normal(Forward);
