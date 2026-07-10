@@ -334,10 +334,11 @@ function ToggleSprint(bool bSprint, optional bool bForce)
 
 
 // BANGMOD: Override ModifyVelocity to enforce crouch removal and sprint during Grand Lance charge.
-// Works on both client and server by controlling Acceleration directly (not PlayerInput).
+// Sets Velocity directly (not just Acceleration) so server-side replicated-move input can't override.
 function ModifyVelocity(float DeltaTime, vector OldVelocity)
 {
 	local vector Forward;
+	local float SprintSpeed;
 
 	if (bForceSprintForward)
 	{
@@ -349,21 +350,23 @@ function ModifyVelocity(float DeltaTime, vector OldVelocity)
 		Forward.Z = 0;
 		Forward = Normal(Forward);
 
-		// Force Acceleration to pure forward — works on both client and server.
-		// The native movement pipeline uses Acceleration to compute velocity.
-		Acceleration = Forward * AccelRate;
-	}
+		SprintSpeed = GroundSpeed * SprintModifier;
 
-	super.ModifyVelocity(DeltaTime, OldVelocity);
+		// Let super handle gravity, ground friction, etc. first.
+		super.ModifyVelocity(DeltaTime, OldVelocity);
 
-	// Re-apply sprint after super — the native DisableSprint may have killed it.
-	if (bForceSprintForward)
-	{
-		bClientWantsToSprint = true;
-		ChangePawnState(ESTATE_SPRINT);
-		StateVariables.bIsSprinting = true;
+		// Then lock horizontal velocity to pure forward at sprint speed.
+		// Z is untouched — gravity/landing handled by super.
+		Velocity.X = Forward.X * SprintSpeed;
+		Velocity.Y = Forward.Y * SprintSpeed;
+
+		// Re-apply sprint debuff after native DisableSprint may have killed it.
 		RemoveDebuff(EDEBF_SPRINT);
 		AddDebuff(true, EDEBF_SPRINT, 1.3, -1.0, false);
+	}
+	else
+	{
+		super.ModifyVelocity(DeltaTime, OldVelocity);
 	}
 }
 
