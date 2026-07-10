@@ -302,7 +302,10 @@ simulated event Tick(float DeltaTime)
 	{
 		bIsCrouching = false;
 		bClientWantsToSprint = true;
-		Acceleration = Normal(vector(Rotation)) * GroundSpeed;
+
+		// Lock W input so the native acceleration system sees constant forward.
+		if (AOCPlayerController(Controller) != none && AOCPlayerController(Controller).PlayerInput != none)
+			AOCPlayerController(Controller).PlayerInput.aForward = 1.0;
 	}
 
 	// Override the PlayLowStaminaLoop call with fixed threshold
@@ -333,41 +336,34 @@ function ToggleSprint(bool bSprint, optional bool bForce)
 }
 
 
-// BANGMOD: Override ModifyVelocity to enforce crouch removal and sprint during Grand Lance charge.
-// Sets Velocity directly (not just Acceleration) so server-side replicated-move input can't override.
+// BANGMOD: Override ModifyVelocity to enforce pure-forward sprint during Grand Lance charge.
+// Sets Acceleration to pure forward BEFORE super runs, so the native sprint ramp builds naturally.
 function ModifyVelocity(float DeltaTime, vector OldVelocity)
 {
 	local vector Forward;
-	local float SprintSpeed;
 
 	if (bForceSprintForward)
 	{
+		// Strip crouch.
 		if (bIsCrouching)
 			ServerPerformCrouch(false);
 		RemoveDebuff(EDEBF_CROUCH);
 
+		// Build forward-only Acceleration vector so the native system
+		// only sees forward movement. Sprint ramp builds from 1.3 to SprintModifier.
 		Forward = vector(Rotation);
 		Forward.Z = 0;
 		Forward = Normal(Forward);
+		Acceleration = Forward * AccelRate;
 
-		SprintSpeed = GroundSpeed * SprintModifier;
-
-		// Let super handle gravity, ground friction, etc. first.
-		super.ModifyVelocity(DeltaTime, OldVelocity);
-
-		// Then lock horizontal velocity to pure forward at sprint speed.
-		// Z is untouched — gravity/landing handled by super.
-		Velocity.X = Forward.X * SprintSpeed;
-		Velocity.Y = Forward.Y * SprintSpeed;
-
-		// Re-apply sprint debuff after native DisableSprint may have killed it.
-		RemoveDebuff(EDEBF_SPRINT);
-		AddDebuff(true, EDEBF_SPRINT, 1.3, -1.0, false);
+		// Keep sprint on.
+		bClientWantsToSprint = true;
 	}
-	else
-	{
-		super.ModifyVelocity(DeltaTime, OldVelocity);
-	}
+
+	// Let the native pipeline compute velocity from Acceleration (handles sprint ramp,
+	// gravity, ground friction). Strafe/backpedal can't affect it because Acceleration
+	// is locked to pure forward above.
+	super.ModifyVelocity(DeltaTime, OldVelocity);
 }
 
 
