@@ -1300,7 +1300,17 @@ state PlayerWalking
 			InputDirection.Z = 0.f;
 			
 			bLastMoveForward = bMoveForward;
-			
+
+			// BANGMOD: Grand Lance stab charge — lock movement input to pure forward.
+			// aForward / aStrafe and the sprint-cancel check all read these axes below, so
+			// clamping here prevents S from triggering DisableSprint, removes backward/strafe
+			// acceleration from NewAccel, and stops A/D from deflecting the charge.
+			if (BangModPawn(Pawn) != none && BangModPawn(Pawn).bForceSprintForward)
+			{
+				PlayerInput.aForward = 1.0;
+				PlayerInput.aStrafe  = 0.0;
+			}
+
 			bMoveBackward = PlayerInput.aForward < 0.0f;
 			bMoveForward = (PlayerInput.aForward > 0.0f);
 			

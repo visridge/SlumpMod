@@ -1,16 +1,11 @@
 """
 Damage Graph Generator for BangMod (Chivalry: Medieval Warfare)
-Calculates effective torso-hit damage for each weapon vs each class.
-Formula: EffectiveDamage = fBaseDamage * sum(DamageType[i] * DamageResistances[i])
-         Torso LocationModifier = 1.0 for melee, so it cancels out.
+Calculates effective damage for each weapon vs each class at 3 hit locations.
+Formula: EffectiveDamage = fBaseDamage * sum(DamageType[i] * DamageResistances[i]) * LocationModifier
+         Melee LocationModifiers: Head=1.25, Torso=1.0, Legs=0.8
 """
 import os
 import re
-import matplotlib.pyplot as plt
-import matplotlib
-import numpy as np
-
-matplotlib.use('Agg')
 
 # Damage Type Compositions (EDMG_Swing, EDMG_Pierce, EDMG_Blunt, EDMG_Generic)
 DAMAGE_TYPES = {
@@ -29,6 +24,14 @@ CLASSES = {
     "Knight":    {"Swing": 0.40, "Pierce": 0.50, "Blunt": 0.61},
     "ManAtArms": {"Swing": 0.80, "Pierce": 0.85, "Blunt": 0.65},
     "Vanguard":  {"Swing": 0.60, "Pierce": 0.80, "Blunt": 0.70},
+}
+
+# Melee Hit Location Modifiers (from AOCFamilyInfo.uc)
+# Head=1.25, Torso=1.0, Legs=0.8 (Arm also 1.0 but we skip it)
+LOCATION_MODIFIERS = {
+    "Head":  1.25,
+    "Torso": 1.0,
+    "Legs":  0.8,
 }
 
 # Color schemes for classes
@@ -50,11 +53,11 @@ def calc_resistance(dmg_type_name, class_name):
                   dmg_composition[3] * 1.0)  # Generic = 1.0 multiplier
     return resistance
 
-def calc_effective_damage(base_damage, dmg_type_name, class_name):
-    """Calculate effective torso damage."""
+def calc_effective_damage(base_damage, dmg_type_name, class_name, location='Torso'):
+    """Calculate effective damage at a given hit location."""
     if dmg_type_name in ("AOCDmgType_Shove", "AOCDmgType_Generic"):
         return 0  # Shove/Generic damage doesn't use the normal formula
-    return base_damage * calc_resistance(dmg_type_name, class_name)
+    return round(base_damage * calc_resistance(dmg_type_name, class_name) * LOCATION_MODIFIERS[location])
 
 def parse_weapon_files(base_dir):
     """Parse all weapon attachment files and extract damage data."""
@@ -92,217 +95,258 @@ def parse_weapon_files(base_dir):
     
     return weapons
 
-def main():
-    base_dir = r"c:\Program Files (x86)\Steam\steamapps\common\chivalrymedievalwarfare\Development\Src\BangMod"
+
+def generate_html(weapons, output_path):
+    """Generate a self-contained HTML file with 3 hit-location charts per weapon."""
     
-    weapons = parse_weapon_files(base_dir)
-    
-    # Attack type labels
-    atk_labels = {0: "Slash", 1: "Alt-Slash", 2: "Stab", 3: "Sprint", 4: "ParryRiposte"}
-    
-    # Build data for all non-trivial attacks (ignore Shove at index 5, and 0-damage)
-    data = []
+    # Build JavaScript weapon data
+    js_weapons = {}
     for wname, attacks in sorted(weapons.items()):
+        js_attacks = {}
         for idx, (dmg, dtype) in attacks.items():
             if dmg <= 0 or dtype in ("AOCDmgType_Shove", "AOCDmgType_Generic"):
                 continue
-            if idx > 2:  # Only show Slash, Alt-Slash, Stab (main attack types)
+            if idx > 2:  # LMB, OH, Stab only
                 continue
-            for cls_name in CLASSES:
-                eff = calc_effective_damage(dmg, dtype, cls_name)
-                label = f"{wname}\n{atk_labels.get(idx, idx)}"
-                data.append((label, cls_name, eff, dmg, dtype))
+            short_type = dtype.replace("AOCDmgType_", "")
+            js_attacks[str(idx)] = [int(dmg), short_type]
+        if js_attacks:
+            js_weapons[wname] = js_attacks
     
-    # ==========================================
-    # Graph 1: Grouped bar chart - All Weapons
-    # ==========================================
-    # This gets very large. Let's create a heatmap instead for the first graph.
+    # Build class JS arrays
+    class_js = []
+    for cls_name, res in CLASSES.items():
+        class_js.append({
+            "n": cls_name,
+            "r": [res["Swing"], res["Pierce"], res["Blunt"]],
+            "color": "rgba(63,185,80,0.85)" if cls_name == "Archer" else
+                     "rgba(248,81,73,0.85)" if cls_name == "Knight" else
+                     "rgba(88,166,255,0.85)" if cls_name == "ManAtArms" else
+                     "rgba(210,168,0,0.85)",
+            "hex": "#3fb950" if cls_name == "Archer" else
+                   "#f85149" if cls_name == "Knight" else
+                   "#58a6ff" if cls_name == "ManAtArms" else
+                   "#d2a800"
+        })
     
-    # Build matrix for heatmap
-    unique_weapons = sorted(set(d[0] for d in data))
-    class_names = list(CLASSES.keys())
+    import json
+    weapons_json = json.dumps(js_weapons, indent=2)
+    classes_json = json.dumps(class_js, indent=2)
+    loc_mod_json = json.dumps(LOCATION_MODIFIERS)
     
-    matrix = np.zeros((len(unique_weapons), len(class_names)))
+    html = f'''<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>BangMod Damage — Head / Torso / Legs per Weapon</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+* {{ box-sizing: border-box; }}
+body {{ font-family: 'Segoe UI', Arial, sans-serif; background: #0d1117; color: #c9d1d9; padding: 20px; }}
+h1 {{ text-align: center; color: #58a6ff; font-size: 24px; margin: 0 0 6px; }}
+.subtitle {{ text-align: center; color: #8b949e; font-size: 13px; margin-bottom: 20px; }}
+.info {{ background: #161b22; border: 1px solid #30363d; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; font-size: 13px; line-height: 1.8; max-width: 900px; margin-left: auto; margin-right: auto; }}
+.info b {{ color: #58a6ff; }}
+.info code {{ background: #21262d; padding: 1px 5px; border-radius: 3px; color: #f0883e; }}
+.weapon-grid {{ display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 900px; margin: 0 auto; }}
+.per-weapon {{ background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; }}
+.per-weapon h3 {{ color: #f0883e; font-size: 15px; margin: 0 0 4px; }}
+.location-row {{ display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 8px; }}
+.location-card {{ background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 10px; }}
+.location-card h4 {{ color: #8b949e; font-size: 12px; margin: 0 0 6px; text-align: center; text-transform: uppercase; letter-spacing: 1px; }}
+.location-card canvas {{ max-height: 400px; }}
+.location-card .loc-mod {{ font-size: 10px; color: #484f58; text-align: center; margin-top: 2px; }}
+.byclass {{ margin-top: 40px; max-width: 1000px; margin-left: auto; margin-right: auto; }}
+.byclass h2 {{ color: #58a6ff; font-size: 20px; margin-bottom: 18px; }}
+.loc-tabs {{ display: flex; gap: 8px; margin-bottom: 16px; }}
+.loc-tab {{ padding: 6px 16px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; font-size: 13px; transition: all 0.2s; }}
+.loc-tab.active {{ background: #1f6feb; border-color: #1f6feb; color: #fff; }}
+.loc-tab:hover:not(.active) {{ background: #30363d; }}
+</style>
+</head>
+<body>
+
+<h1>BangMod — Effective Damage by Hit Location</h1>
+<p class="subtitle">Damage = fBaseDamage &times; &Sigma;(DmgType[i] &times; Resist[i]) &times; LocationModifier — parsed from BangModWeaponAttachment_*.uc</p>
+
+<div class="info">
+<b>Formula:</b> <code>Resistance = DmgType[Swing]&times;Resist[Swing] + DmgType[Pierce]&times;Resist[Pierce] + DmgType[Blunt]&times;Resist[Blunt]</code><br>
+<b>Effective Damage = &lfloor;BaseDamage &times; Resistance &times; LocationModifier&rceil;</b> (rounded)<br>
+<b>Melee Location Modifiers:</b> Head &times;{LOCATION_MODIFIERS["Head"]}, Torso &times;{LOCATION_MODIFIERS["Torso"]}, Legs &times;{LOCATION_MODIFIERS["Legs"]}<br>
+<b>Resistances (S/P/B):</b> <span style="color:#3fb950;">Archer 0.85/0.85/0.65</span> &middot; <span style="color:#f85149;">Knight 0.40/0.50/0.61</span> &middot; <span style="color:#58a6ff;">MaA 0.80/0.85/0.65</span> &middot; <span style="color:#d2a800;">Vanguard 0.60/0.80/0.70</span>
+</div>
+
+<div class="weapon-grid" id="weaponGrid"></div>
+<div class="byclass" id="byClass"></div>
+
+<script>
+const DMG = {{ "Swing":[1,0,0],"Pierce":[0,1,0],"Blunt":[0,0,1],"SwingBlunt":[0.5,0,0.5],"PierceBlunt":[0,0.5,0.5] }};
+const CL = {classes_json};
+const LOC = {loc_mod_json};
+const ATC = {{Swing:"rgba(248,81,73,0.78)",Pierce:"rgba(63,185,80,0.78)",Blunt:"rgba(88,166,255,0.78)",SwingBlunt:"rgba(188,140,255,0.78)",PierceBlunt:"rgba(255,166,87,0.78)"}};
+
+function calc(base, dtype, cls, loc) {{
+  const d = DMG[dtype];
+  if (!d) return 0;
+  const res = d[0]*cls.r[0] + d[1]*cls.r[1] + d[2]*cls.r[2];
+  return Math.round(base * res * LOC[loc]);
+}}
+
+const W = {weapons_json};
+const A = {{0:"LMB",1:"OH",2:"Stab"}};
+const ATK_LABELS = ["LMB","OH","Stab"];
+const LOCATIONS = ["Head","Torso","Legs"];
+const wnames = Object.keys(W).sort();
+
+// ============ PER-WEAPON CHARTS: 3 locations side-by-side ============
+const grid = document.getElementById("weaponGrid");
+
+wnames.forEach(wname => {{
+  const div = document.createElement("div");
+  div.className = "per-weapon";
+  
+  let canvases = "";
+  LOCATIONS.forEach(loc => {{
+    canvases += `<div class="location-card"><h4>${{loc}} <span class="loc-mod">(&times;${{LOC[loc]}})</span></h4><canvas id="w_${{wname}}_${{loc}}"></canvas></div>`;
+  }});
+  div.innerHTML = `<h3>${{wname}}</h3><div class="location-row">${{canvases}}</div>`;
+  grid.appendChild(div);
+
+  const atkEntries = [[0,"LMB"],[1,"OH"],[2,"Stab"]];
+  const labels = atkEntries.map(([idx, name]) => {{
+    const [dmg, dt] = W[wname][idx] || [0,"Swing"];
+    return `${{name}}\\n${{dt}} ${{dmg}}dmg`;
+  }});
+
+  LOCATIONS.forEach(loc => {{
+    const datasets = CL.map(cl => ({{
+      label: cl.n,
+      data: atkEntries.map(([idx]) => calc(W[wname][idx][0], W[wname][idx][1], cl, loc)),
+      backgroundColor: cl.color,
+      borderColor: cl.hex,
+      borderWidth: 1,
+    }}));
+
+    new Chart(document.getElementById(`w_${{wname}}_${{loc}}`), {{
+      type: "bar",
+      data: {{ labels, datasets }},
+      options: {{
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {{
+          legend: {{ display: loc === "Head" ? true : false, labels: {{ color:"#c9d1d9", font:{{size:10}}, usePointStyle:true, pointStyleWidth:8, boxWidth:8 }} }},
+          tooltip: {{
+            callbacks: {{
+              title: (items) => {{
+                if (!items.length) return '';
+                const a = ATK_LABELS[items[0].dataIndex];
+                const [dmg, dt] = W[wname][ATK_LABELS.indexOf(a)];
+                return `${{a}} — ${{dt}} (${{dmg}} base) → ${{loc}}`;
+              }},
+              label: (ctx) => `${{ctx.dataset.label}}: ${{ctx.raw}} damage`,
+            }},
+          }},
+        }},
+        scales: {{
+          x: {{ ticks: {{ color:"#8b949e", font:{{size:10}} }}, grid:{{color:"#21262d"}} }},
+          y: {{ beginAtZero:true, suggestedMax:160, ticks:{{color:"#8b949e", font:{{size:9}} }}, grid:{{color:"#21262d"}} }},
+        }},
+      }},
+    }});
+  }});
+}});
+
+// ============ BY-CLASS CHARTS with location tabs ============
+const byClassDiv = document.getElementById("byClass");
+byClassDiv.innerHTML = '<h2>Full Comparison by Class</h2>';
+
+CL.forEach(cl => {{
+  const container = document.createElement("div");
+  container.className = "per-weapon";
+  container.style.marginBottom = "16px";
+
+  // Location tabs
+  let tabsHtml = '<div class="loc-tabs">';
+  LOCATIONS.forEach((loc, i) => {{
+    tabsHtml += `<button class="loc-tab${{i === 0 ? ' active' : ''}}" data-cls="${{cl.n}}" data-loc="${{loc}}">${{loc}} &times;${{LOC[loc]}}</button>`;
+  }});
+  tabsHtml += '</div>';
+
+  // Canvas per location (only first visible)
+  let canvasesHtml = "";
+  LOCATIONS.forEach((loc, i) => {{
+    canvasesHtml += `<div class="location-card" id="bc_card_${{cl.n}}_${{loc}}" style="${{i > 0 ? 'display:none' : ''}}"><canvas id="c_${{cl.n}}_${{loc}}"></canvas></div>`;
+  }});
+
+  container.innerHTML = `<h3>vs <span style="color:${{cl.hex}}">${{cl.n}}</span> — Resist S:${{cl.r[0]}} P:${{cl.r[1]}} B:${{cl.r[2]}}</h3>${{tabsHtml}}${{canvasesHtml}}`;
+  byClassDiv.appendChild(container);
+
+  // Build charts for each location
+  LOCATIONS.forEach((loc, locIdx) => {{
+    const labels=[], data=[], bg=[], bcInfo=[];
+    wnames.forEach(w => {{
+      for (const a of [0,1,2]) {{
+        const [dmg, dt] = W[w][a]||[0,"Swing"];
+        labels.push(`${{w}} ${{A[a]}}`);
+        data.push(calc(dmg, dt, cl, loc));
+        bg.push(ATC[dt]||"#888");
+        bcInfo.push({{w, atk:A[a], dtype:dt, base:dmg, loc}});
+      }}
+      labels.push('');data.push(null);bg.push('transparent');bcInfo.push(null);
+    }});
+
+    new Chart(document.getElementById(`c_${{cl.n}}_${{loc}}`), {{
+      type:"bar",
+      data:{{labels,datasets:[{{label:`vs ${{cl.n}} (${{loc}})`,data,backgroundColor:bg,borderColor:bg.map(c=>c==='transparent'?'transparent':c.replace("0.78","1")),borderWidth:1,atkInfo:bcInfo}}]}},
+      options:{{
+        responsive:true,maintainAspectRatio:true,
+        plugins:{{legend:{{display:false}},
+          tooltip:{{callbacks:{{
+            title:(items)=>{{const info=items[0]?.dataset?.atkInfo?.[items[0]?.dataIndex];return info?`${{info.w}} — ${{info.atk}} (${{info.dtype}} ${{info.base}}) → ${{info.loc}}`:'';}},
+            label:(ctx)=>ctx.raw===null?'':`${{ctx.raw}} damage`
+          }}}}
+        }},
+        scales:{{
+          x:{{ticks:{{color:"#8b949e",font:{{size:7}},maxRotation:90}},grid:{{color:"#21262d"}}}},
+          y:{{beginAtZero:true,ticks:{{color:"#8b949e",font:{{size:9}}}},grid:{{color:"#21262d"}}}},
+        }},
+      }},
+    }});
+  }});
+
+  // Tab click handlers
+  container.querySelectorAll('.loc-tab').forEach(btn => {{
+    btn.addEventListener('click', () => {{
+      const clsName = btn.dataset.cls;
+      const loc = btn.dataset.loc;
+      // Update active tab state
+      container.querySelectorAll('.loc-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // Show/hide canvases
+      LOCATIONS.forEach(l => {{
+        const card = document.getElementById(`bc_card_${{clsName}}_${{l}}`);
+        if (card) card.style.display = l === loc ? '' : 'none';
+      }});
+    }});
+  }});
+}});
+</script>
+</body>
+</html>'''
     
-    for d in data:
-        wi = unique_weapons.index(d[0])
-        ci = class_names.index(d[1])
-        # Take max damage among attack types for each weapon+class combo
-        if d[2] > matrix[wi, ci]:
-            matrix[wi, ci] = d[2]
+    with open(output_path, 'w', encoding='utf-8') as f:
+        f.write(html)
     
-    # Create heatmap
-    fig, ax = plt.subplots(figsize=(14, max(10, len(unique_weapons) * 0.35)))
+    print(f"Generated {output_path}")
+    print(f"  Weapons: {len(js_weapons)}")
+    print(f"  Hit locations: {list(LOCATION_MODIFIERS.keys())}")
     
-    im = ax.imshow(matrix, cmap='RdYlGn', aspect='auto', vmin=0, vmax=120)
-    
-    ax.set_xticks(range(len(class_names)))
-    ax.set_xticklabels(class_names, fontsize=11, fontweight='bold')
-    ax.set_yticks(range(len(unique_weapons)))
-    ax.set_yticklabels(unique_weapons, fontsize=8)
-    
-    # Add text annotations
-    for i in range(len(unique_weapons)):
-        for j in range(len(class_names)):
-            val = matrix[i, j]
-            color = 'white' if val < 40 else 'black'
-            ax.text(j, i, f'{val:.0f}', ha='center', va='center',
-                    fontsize=7, fontweight='bold', color=color)
-    
-    ax.set_title('Effective Torso Damage (Max of Slash/Alt-Slash/Stab)\nBangMod Weapons vs Class Damage Resistances',
-                 fontsize=14, fontweight='bold', pad=10)
-    
-    plt.colorbar(im, ax=ax, label='Effective Damage')
-    plt.tight_layout()
-    plt.savefig(os.path.join(base_dir, 'damage_heatmap.png'), dpi=150, bbox_inches='tight')
-    plt.close()
-    print("Saved damage_heatmap.png")
-    
-    # ==========================================
-    # Graph 2: Top weapons grouped bar chart
-    # ==========================================
-    # Select a good subset of weapons for readability
-    key_weapons = [
-        "Longsword", "Greatsword", "Zweihander", "Claymore", "Nodachi",
-        "Messer", "SwordOfWar", "BastardSword", "Broadsword", "NorseSword",
-        "Falchion", "Saber", "Katana",
-        "Maul", "GrandMace", "WarHammer", "Mace", "MorningStar", "HolyWaterSprinkler",
-        "DoubleAxe", "PoleAxe", "Bearded", "Bardiche", "Halberd", "Bill",
-        "Dane", "WarAxe", "Hatchet",
-        "Spear", "Brandistock",
-        "QuarterStaff", "Cudgel"
-    ]
-    
-    # Filter to available weapons
-    avail = [w for w in key_weapons if w in weapons]
-    
-    # Get max effective damage for each weapon vs each class
-    plot_data = {cls: [] for cls in CLASSES}
-    labels = []
-    
-    for wname in avail:
-        attacks = weapons[wname]
-        labels.append(wname)
-        for cls_name in CLASSES:
-            max_eff = 0
-            for idx, (dmg, dtype) in attacks.items():
-                if dmg <= 0 or dtype in ("AOCDmgType_Shove", "AOCDmgType_Generic"):
-                    continue
-                if idx > 2:
-                    continue
-                eff = calc_effective_damage(dmg, dtype, cls_name)
-                if eff > max_eff:
-                    max_eff = eff
-            plot_data[cls_name].append(max_eff)
-    
-    x = np.arange(len(labels))
-    width = 0.2
-    multiplier = 0
-    
-    fig, ax = plt.subplots(figsize=(20, 8))
-    
-    for cls_name, color in CLASS_COLORS.items():
-        offset = width * multiplier
-        rects = ax.bar(x + offset, plot_data[cls_name], width, label=cls_name,
-                       color=color, alpha=0.85, edgecolor='black', linewidth=0.5)
-        # Add value labels on bars
-        for rect, val in zip(rects, plot_data[cls_name]):
-            if val > 5:
-                ax.text(rect.get_x() + rect.get_width()/2., rect.get_height() + 0.5,
-                        f'{val:.0f}', ha='center', va='bottom', fontsize=6, fontweight='bold')
-        multiplier += 1
-    
-    ax.set_ylabel('Effective Torso Damage', fontsize=12, fontweight='bold')
-    ax.set_title('Effective Torso Damage by Weapon & Class (Max of Main Attacks)\nBangMod', 
-                 fontsize=14, fontweight='bold')
-    ax.set_xticks(x + width * 1.5)
-    ax.set_xticklabels(labels, rotation=45, ha='right', fontsize=8)
-    ax.legend(loc='upper right', fontsize=10)
-    ax.set_ylim(0, max(max(v) for v in plot_data.values()) * 1.15)
-    ax.grid(axis='y', alpha=0.3)
-    
-    plt.tight_layout()
-    plt.savefig(os.path.join(base_dir, 'damage_grouped_bar.png'), dpi=150, bbox_inches='tight')
-    plt.close()
-    print("Saved damage_grouped_bar.png")
-    
-    # ==========================================
-    # Graph 3: Detailed per-attack-type comparison
-    # ==========================================
-    # For top weapons, show slash/alt-slash/stab separately
-    top_weapons = ["Longsword", "Maul", "Greatsword", "Messer", "DoubleAxe",
-                   "PoleAxe", "Broadsword", "Mace", "Dane", "Spear"]
-    avail_top = [w for w in top_weapons if w in weapons]
-    
-    atk_names = {0: "Slash", 1: "Alt-Slash", 2: "Stab"}
-    
-    fig, axes = plt.subplots(len(CLASSES), 1, figsize=(16, 4 * len(CLASSES)), sharex=False)
-    
-    for cls_idx, (cls_name, color) in enumerate(CLASS_COLORS.items()):
-        ax = axes[cls_idx]
-        all_labels = []
-        all_values = []
-        all_colors = []
-        
-        for wname in avail_top:
-            attacks = weapons[wname]
-            for idx in [0, 1, 2]:
-                if idx in attacks:
-                    dmg, dtype = attacks[idx]
-                    if dmg > 0 and dtype not in ("AOCDmgType_Shove", "AOCDmgType_Generic"):
-                        eff = calc_effective_damage(dmg, dtype, cls_name)
-                        all_labels.append(f"{wname}\n{atk_names[idx]}")
-                        all_values.append(eff)
-                        # Color by damage type
-                        if "SwingBlunt" in dtype:
-                            all_colors.append('#FF7043')
-                        elif "PierceBlunt" in dtype:
-                            all_colors.append('#AB47BC')
-                        elif "Blunt" in dtype:
-                            all_colors.append('#42A5F5')
-                        elif "Pierce" in dtype:
-                            all_colors.append('#66BB6A')
-                        elif "Swing" in dtype:
-                            all_colors.append('#EF5350')
-                        else:
-                            all_colors.append('#BDBDBD')
-        
-        bars = ax.bar(range(len(all_labels)), all_values, color=all_colors, edgecolor='black', linewidth=0.5)
-        ax.set_xticks(range(len(all_labels)))
-        ax.set_xticklabels(all_labels, rotation=45, ha='right', fontsize=7)
-        ax.set_ylabel('Effective Damage', fontsize=11, fontweight='bold')
-        ax.set_title(f'vs {cls_name} (Swing:{CLASSES[cls_name]["Swing"]} Pierce:{CLASSES[cls_name]["Pierce"]} Blunt:{CLASSES[cls_name]["Blunt"]})',
-                    fontsize=12, fontweight='bold', color=color)
-        ax.set_ylim(0, 140)
-        ax.grid(axis='y', alpha=0.3)
-        
-        # Add value labels
-        for bar, val in zip(bars, all_values):
-            ax.text(bar.get_x() + bar.get_width()/2., bar.get_height() + 0.5,
-                   f'{val:.0f}', ha='center', va='bottom', fontsize=6, fontweight='bold')
-    
-    # Legend for damage types
-    from matplotlib.patches import Patch
-    legend_elements = [
-        Patch(facecolor='#EF5350', label='Swing'),
-        Patch(facecolor='#66BB6A', label='Pierce'),
-        Patch(facecolor='#42A5F5', label='Blunt'),
-        Patch(facecolor='#FF7043', label='SwingBlunt'),
-        Patch(facecolor='#AB47BC', label='PierceBlunt'),
-    ]
-    fig.legend(handles=legend_elements, loc='upper right', fontsize=9, title='Damage Type')
-    
-    plt.tight_layout()
-    plt.savefig(os.path.join(base_dir, 'damage_per_attack.png'), dpi=150, bbox_inches='tight')
-    plt.close()
-    print("Saved damage_per_attack.png")
-    
-    # Print summary table
-    print("\n\n=== EFFECTIVE TORSO DAMAGE SUMMARY (Max of Slash/Alt-Slash/Stab) ===")
-    print(f"{'Weapon':<25}", end="")
+    # Print summary table (torso for backward compat)
+    print(f"\n=== EFFECTIVE DAMAGE SUMMARY (Torso, Max of LMB/OH/Stab) ===")
+    header = f"{'Weapon':<25}"
     for cls in CLASSES:
-        print(f"{cls:>12}", end="")
-    print()
+        header += f"{cls:>12}"
+    print(header)
     print("-" * (25 + 12 * len(CLASSES)))
     
     for wname in sorted(weapons.keys()):
@@ -315,11 +359,28 @@ def main():
                     continue
                 if idx > 2:
                     continue
-                eff = calc_effective_damage(dmg, dtype, cls_name)
+                eff = calc_effective_damage(dmg, dtype, cls_name, 'Torso')
                 if eff > max_eff:
                     max_eff = eff
-            print(f"{max_eff:>12.1f}", end="")
+            print(f"{max_eff:>12}", end="")
         print()
+
+
+def main():
+    # Auto-detect base directory: use script's own location
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = script_dir  # Script lives in BangMod root
+    
+    # Fallback to Windows path if needed
+    if not os.path.isdir(os.path.join(base_dir, "Classes")):
+        base_dir = r"c:\Program Files (x86)\Steam\steamapps\common\chivalrymedievalwarfare\Development\Src\BangMod"
+    
+    weapons = parse_weapon_files(base_dir)
+    print(f"Parsed {len(weapons)} weapons from {base_dir}")
+    
+    output_path = os.path.join(base_dir, "damage_graph.html")
+    generate_html(weapons, output_path)
+
 
 if __name__ == "__main__":
     main()

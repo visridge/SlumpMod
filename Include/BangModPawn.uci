@@ -336,6 +336,20 @@ function ToggleSprint(bool bSprint, optional bool bForce)
 }
 
 
+// BANGMOD: Override PerformCrouch to block client-side crouch during Grand Lance charge.
+// PerformCrouch intentionally skips the bCanCrouch check (see AOCPawn comment), so without
+// this override a held crouch key would set bIsCrouching = true locally each frame even
+// though the server correctly rejects it via bCanCrouch. Blocking it here keeps the client
+// and server in sync without relying solely on the Tick's bIsCrouching = false correction.
+simulated function PerformCrouch(bool bCrouch)
+{
+	if (bForceSprintForward && bCrouch)
+		return;
+
+	super.PerformCrouch(bCrouch);
+}
+
+
 // BANGMOD: Override ModifyVelocity to force pure-forward sprint during Grand Lance charge.
 // Sets Velocity directly after super — nothing in the native pipeline can override it.
 function ModifyVelocity(float DeltaTime, vector OldVelocity)

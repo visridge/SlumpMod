@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>BangMod Torso Damage — LMB / OH / Stab per Class</title>
+<title>BangMod Damage — Head / Torso / Legs per Weapon</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 * { box-sizing: border-box; }
@@ -14,21 +14,30 @@ h1 { text-align: center; color: #58a6ff; font-size: 24px; margin: 0 0 6px; }
 .info code { background: #21262d; padding: 1px 5px; border-radius: 3px; color: #f0883e; }
 .weapon-grid { display: grid; grid-template-columns: 1fr; gap: 20px; max-width: 900px; margin: 0 auto; }
 .per-weapon { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 18px; }
-.per-weapon h3 { color: #f0883e; font-size: 15px; margin: 0 0 12px; }
-.per-weapon canvas { max-height: 500px; }
+.per-weapon h3 { color: #f0883e; font-size: 15px; margin: 0 0 4px; }
+.location-row { display: grid; grid-template-columns: 1fr; gap: 12px; margin-top: 8px; }
+.location-card { background: #0d1117; border: 1px solid #21262d; border-radius: 6px; padding: 10px; }
+.location-card h4 { color: #8b949e; font-size: 12px; margin: 0 0 6px; text-align: center; text-transform: uppercase; letter-spacing: 1px; }
+.location-card canvas { max-height: 400px; }
+.location-card .loc-mod { font-size: 10px; color: #484f58; text-align: center; margin-top: 2px; }
 .byclass { margin-top: 40px; max-width: 1000px; margin-left: auto; margin-right: auto; }
 .byclass h2 { color: #58a6ff; font-size: 20px; margin-bottom: 18px; }
+.loc-tabs { display: flex; gap: 8px; margin-bottom: 16px; }
+.loc-tab { padding: 6px 16px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; font-size: 13px; transition: all 0.2s; }
+.loc-tab.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
+.loc-tab:hover:not(.active) { background: #30363d; }
 </style>
 </head>
 <body>
 
-<h1>BangMod — Effective Torso Damage</h1>
-<p class="subtitle">Damage = fBaseDamage × Σ(DamageType[i] × DamageResistances[i]) — parsed from BangModWeaponAttachment_*.uc</p>
+<h1>BangMod — Effective Damage by Hit Location</h1>
+<p class="subtitle">Damage = fBaseDamage &times; &Sigma;(DmgType[i] &times; Resist[i]) &times; LocationModifier — parsed from BangModWeaponAttachment_*.uc</p>
 
 <div class="info">
-<b>Formula:</b> <code>Resistance = DmgType[Swing]×Resist[Swing] + DmgType[Pierce]×Resist[Pierce] + DmgType[Blunt]×Resist[Blunt]</code> &nbsp; | &nbsp;
-<b>Effective Damage = ⌊BaseDamage × Resistance⌉</b> (rounded)<br>
-<b>Resistances (S/P/B):</b> <span style="color:#3fb950;">Archer 0.85/0.85/0.65</span> · <span style="color:#f85149;">Knight 0.40/0.50/0.61</span> · <span style="color:#58a6ff;">MaA 0.80/0.85/0.65</span> · <span style="color:#d2a800;">Vanguard 0.60/0.80/0.70</span>
+<b>Formula:</b> <code>Resistance = DmgType[Swing]&times;Resist[Swing] + DmgType[Pierce]&times;Resist[Pierce] + DmgType[Blunt]&times;Resist[Blunt]</code><br>
+<b>Effective Damage = &lfloor;BaseDamage &times; Resistance &times; LocationModifier&rceil;</b> (rounded)<br>
+<b>Melee Location Modifiers:</b> Head &times;1.25, Torso &times;1.0, Legs &times;0.8<br>
+<b>Resistances (S/P/B):</b> <span style="color:#3fb950;">Archer 0.85/0.85/0.65</span> &middot; <span style="color:#f85149;">Knight 0.40/0.50/0.61</span> &middot; <span style="color:#58a6ff;">MaA 0.80/0.85/0.65</span> &middot; <span style="color:#d2a800;">Vanguard 0.60/0.80/0.70</span>
 </div>
 
 <div class="weapon-grid" id="weaponGrid"></div>
@@ -37,151 +46,908 @@ h1 { text-align: center; color: #58a6ff; font-size: 24px; margin: 0 0 6px; }
 <script>
 const DMG = { "Swing":[1,0,0],"Pierce":[0,1,0],"Blunt":[0,0,1],"SwingBlunt":[0.5,0,0.5],"PierceBlunt":[0,0.5,0.5] };
 const CL = [
-  {n:"Archer",   r:[0.85,0.85,0.65], color:"rgba(63,185,80,0.85)", hex:"#3fb950"},
-  {n:"Knight",   r:[0.40,0.50,0.61], color:"rgba(248,81,73,0.85)", hex:"#f85149"},
-  {n:"ManAtArms",r:[0.80,0.85,0.65], color:"rgba(88,166,255,0.85)", hex:"#58a6ff"},
-  {n:"Vanguard", r:[0.60,0.80,0.70], color:"rgba(210,168,0,0.85)", hex:"#d2a800"},
+  {
+    "n": "Archer",
+    "r": [
+      0.85,
+      0.85,
+      0.65
+    ],
+    "color": "rgba(63,185,80,0.85)",
+    "hex": "#3fb950"
+  },
+  {
+    "n": "Knight",
+    "r": [
+      0.4,
+      0.5,
+      0.61
+    ],
+    "color": "rgba(248,81,73,0.85)",
+    "hex": "#f85149"
+  },
+  {
+    "n": "ManAtArms",
+    "r": [
+      0.8,
+      0.85,
+      0.65
+    ],
+    "color": "rgba(88,166,255,0.85)",
+    "hex": "#58a6ff"
+  },
+  {
+    "n": "Vanguard",
+    "r": [
+      0.6,
+      0.8,
+      0.7
+    ],
+    "color": "rgba(210,168,0,0.85)",
+    "hex": "#d2a800"
+  }
 ];
+const LOC = {"Head": 1.25, "Torso": 1.0, "Legs": 0.8};
 const ATC = {Swing:"rgba(248,81,73,0.78)",Pierce:"rgba(63,185,80,0.78)",Blunt:"rgba(88,166,255,0.78)",SwingBlunt:"rgba(188,140,255,0.78)",PierceBlunt:"rgba(255,166,87,0.78)"};
-function calc(base,dtype,cls){const d=DMG[dtype];if(!d)return 0;return Math.round(base*(d[0]*cls.r[0]+d[1]*cls.r[1]+d[2]*cls.r[2]));}
+
+function calc(base, dtype, cls, loc) {
+  const d = DMG[dtype];
+  if (!d) return 0;
+  const res = d[0]*cls.r[0] + d[1]*cls.r[1] + d[2]*cls.r[2];
+  return Math.round(base * res * LOC[loc]);
+}
 
 const W = {
-"Bardiche":{0:[110,"Swing"],1:[95,"SwingBlunt"],2:[40,"Pierce"]},
-"BastardSword":{0:[65,"Swing"],1:[70,"Swing"],2:[68,"Pierce"]},
-"Bearded":{0:[95,"Swing"],1:[100,"SwingBlunt"],2:[20,"Blunt"]},
-"Bill":{0:[75,"SwingBlunt"],1:[75,"SwingBlunt"],2:[76,"Pierce"]},
-"BoStaff":{0:[50,"Blunt"],1:[50,"Blunt"],2:[45,"Blunt"]},
-"Brandistock":{0:[50,"Blunt"],1:[95,"Pierce"],2:[61,"Pierce"]},
-"BroadDagger":{0:[35,"Swing"],1:[40,"Pierce"],2:[35,"Pierce"]},
-"Broadsword":{0:[70,"Swing"],1:[70,"Swing"],2:[55,"Pierce"]},
-"Claymore":{0:[75,"Swing"],1:[82,"Swing"],2:[70,"Pierce"]},
-"Cudgel":{0:[40,"Blunt"],1:[54,"Blunt"],2:[20,"Blunt"]},
-"Dagesse":{0:[40,"Swing"],1:[45,"Swing"],2:[50,"Pierce"]},
-"Dane":{0:[84,"Swing"],1:[84,"SwingBlunt"],2:[25,"Blunt"]},
-"DoubleAxe":{0:[90,"SwingBlunt"],1:[123,"SwingBlunt"],2:[45,"Blunt"]},
-"Falchion":{0:[78,"SwingBlunt"],1:[90,"Swing"],2:[50,"Pierce"]},
-"Fork":{0:[25,"Blunt"],1:[65,"Pierce"],2:[60,"Pierce"]},
-"GrandHammer":{0:[75,"Blunt"],1:[90,"Blunt"],2:[45,"PierceBlunt"]},
-"GrandLance":{0:[25,"SwingBlunt"],1:[25,"SwingBlunt"],2:[100,"Pierce"]},
-"GrandMace":{0:[82,"Blunt"],1:[113,"Blunt"],2:[45,"Blunt"]},
-"Greatsword":{0:[93,"Swing"],1:[93,"Swing"],2:[70,"Pierce"]},
-"Halberd":{0:[65,"SwingBlunt"],1:[85,"SwingBlunt"],2:[72,"Pierce"]},
-"Hatchet":{0:[70,"SwingBlunt"],1:[74,"SwingBlunt"],2:[20,"Blunt"]},
-"HFlail":{0:[75,"Blunt"],1:[80,"Blunt"],2:[45,"PierceBlunt"]},
-"HolyWS":{0:[65,"PierceBlunt"],1:[65,"Blunt"],2:[55,"PierceBlunt"]},
-"HuntingKnife":{0:[40,"Swing"],1:[45,"Swing"],2:[30,"Pierce"]},
-"Javelin":{0:[40,"Swing"],1:[35,"Blunt"],2:[60,"Pierce"]},
-"Kanabo":{0:[75,"Blunt"],1:[90,"Blunt"],2:[45,"PierceBlunt"]},
-"Katana":{0:[79,"Swing"],1:[86,"Swing"],2:[64,"Pierce"]},
-"Katana1H":{0:[60,"Swing"],1:[75,"Swing"],2:[55,"Pierce"]},
-"Longsword":{0:[79,"Swing"],1:[86,"Swing"],2:[64,"Pierce"]},
-"Longsword1H":{0:[60,"Swing"],1:[75,"Swing"],2:[55,"Pierce"]},
-"Mace":{0:[70,"Blunt"],1:[75,"Blunt"],2:[30,"PierceBlunt"]},
-"Maul":{0:[100,"Blunt"],1:[132,"Blunt"],2:[45,"Blunt"]},
-"Messer":{0:[95,"Swing"],1:[95,"Swing"],2:[55,"Pierce"]},
-"Messer1H":{0:[80,"Swing"],1:[80,"SwingBlunt"],2:[50,"Pierce"]},
-"MorningStar":{0:[65,"PierceBlunt"],1:[72,"PierceBlunt"],2:[45,"PierceBlunt"]},
-"Nodachi":{0:[79,"Swing"],1:[84,"Swing"],2:[71,"Pierce"]},
-"NorseSword":{0:[60,"Swing"],1:[70,"Swing"],2:[57,"Pierce"]},
-"PoleAxe":{0:[75,"Swing"],1:[82,"Swing"],2:[75,"Pierce"]},
-"PoleHammer":{0:[80,"Blunt"],1:[113,"Blunt"],2:[65,"Pierce"]},
-"QuarterStaff":{0:[50,"Blunt"],1:[50,"Blunt"],2:[45,"Blunt"]},
-"Saber":{0:[51,"Swing"],1:[62,"Swing"],2:[40,"Pierce"]},
-"Spear":{0:[30,"Blunt"],1:[70,"Pierce"],2:[55,"Pierce"]},
-"SpikedMace":{0:[75,"Blunt"],1:[90,"Blunt"],2:[30,"PierceBlunt"]},
-"SwordOfWar":{0:[65,"Swing"],1:[70,"Swing"],2:[72,"Pierce"]},
-"SwordOfWar1H":{0:[55,"Swing"],1:[60,"Swing"],2:[60,"Pierce"]},
-"WarAxe":{0:[70,"SwingBlunt"],1:[85,"SwingBlunt"],2:[57,"Pierce"]},
-"WarHammer":{0:[75,"Blunt"],1:[82,"Blunt"],2:[40,"Blunt"]},
-"Zweihander":{0:[90,"Swing"],1:[115,"Swing"],2:[72,"Pierce"]},
+  "Bardiche": {
+    "0": [
+      110,
+      "Swing"
+    ],
+    "1": [
+      95,
+      "SwingBlunt"
+    ],
+    "2": [
+      40,
+      "Pierce"
+    ]
+  },
+  "BastardSword": {
+    "0": [
+      65,
+      "Swing"
+    ],
+    "1": [
+      70,
+      "Swing"
+    ],
+    "2": [
+      68,
+      "Pierce"
+    ]
+  },
+  "Bearded": {
+    "0": [
+      95,
+      "Swing"
+    ],
+    "1": [
+      100,
+      "SwingBlunt"
+    ],
+    "2": [
+      20,
+      "Blunt"
+    ]
+  },
+  "Bill": {
+    "0": [
+      75,
+      "SwingBlunt"
+    ],
+    "1": [
+      75,
+      "SwingBlunt"
+    ],
+    "2": [
+      76,
+      "Pierce"
+    ]
+  },
+  "BoStaff": {
+    "0": [
+      50,
+      "Blunt"
+    ],
+    "1": [
+      50,
+      "Blunt"
+    ],
+    "2": [
+      45,
+      "Blunt"
+    ]
+  },
+  "Brandistock": {
+    "0": [
+      50,
+      "Blunt"
+    ],
+    "1": [
+      95,
+      "Pierce"
+    ],
+    "2": [
+      61,
+      "Pierce"
+    ]
+  },
+  "BroadDagger": {
+    "0": [
+      35,
+      "Swing"
+    ],
+    "1": [
+      40,
+      "Pierce"
+    ],
+    "2": [
+      35,
+      "Pierce"
+    ]
+  },
+  "Broadsword": {
+    "0": [
+      70,
+      "Swing"
+    ],
+    "1": [
+      70,
+      "Swing"
+    ],
+    "2": [
+      55,
+      "Pierce"
+    ]
+  },
+  "Claymore": {
+    "0": [
+      75,
+      "Swing"
+    ],
+    "1": [
+      82,
+      "Swing"
+    ],
+    "2": [
+      70,
+      "Pierce"
+    ]
+  },
+  "Cudgel": {
+    "0": [
+      40,
+      "Blunt"
+    ],
+    "1": [
+      54,
+      "Blunt"
+    ],
+    "2": [
+      20,
+      "Blunt"
+    ]
+  },
+  "Dagesse": {
+    "0": [
+      40,
+      "Swing"
+    ],
+    "1": [
+      45,
+      "Swing"
+    ],
+    "2": [
+      50,
+      "Pierce"
+    ]
+  },
+  "Dane": {
+    "0": [
+      84,
+      "Swing"
+    ],
+    "1": [
+      84,
+      "SwingBlunt"
+    ],
+    "2": [
+      25,
+      "Blunt"
+    ]
+  },
+  "DoubleAxe": {
+    "0": [
+      90,
+      "SwingBlunt"
+    ],
+    "1": [
+      123,
+      "SwingBlunt"
+    ],
+    "2": [
+      45,
+      "Blunt"
+    ]
+  },
+  "DualBucklers": {
+    "0": [
+      30,
+      "Fists"
+    ],
+    "1": [
+      35,
+      "Fists"
+    ],
+    "2": [
+      20,
+      "Fists"
+    ]
+  },
+  "Falchion": {
+    "0": [
+      78,
+      "SwingBlunt"
+    ],
+    "1": [
+      90,
+      "Swing"
+    ],
+    "2": [
+      50,
+      "Pierce"
+    ]
+  },
+  "Fork": {
+    "0": [
+      25,
+      "Blunt"
+    ],
+    "1": [
+      65,
+      "Pierce"
+    ],
+    "2": [
+      60,
+      "Pierce"
+    ]
+  },
+  "GrandHammer": {
+    "0": [
+      75,
+      "Blunt"
+    ],
+    "1": [
+      90,
+      "Blunt"
+    ],
+    "2": [
+      45,
+      "PierceBlunt"
+    ]
+  },
+  "GrandLance": {
+    "0": [
+      25,
+      "SwingBlunt"
+    ],
+    "1": [
+      25,
+      "SwingBlunt"
+    ],
+    "2": [
+      100,
+      "Pierce"
+    ]
+  },
+  "GrandMace": {
+    "0": [
+      82,
+      "Blunt"
+    ],
+    "1": [
+      113,
+      "Blunt"
+    ],
+    "2": [
+      45,
+      "Blunt"
+    ]
+  },
+  "Greatsword": {
+    "0": [
+      93,
+      "Swing"
+    ],
+    "1": [
+      93,
+      "Swing"
+    ],
+    "2": [
+      70,
+      "Pierce"
+    ]
+  },
+  "Halberd": {
+    "0": [
+      65,
+      "SwingBlunt"
+    ],
+    "1": [
+      85,
+      "SwingBlunt"
+    ],
+    "2": [
+      72,
+      "Pierce"
+    ]
+  },
+  "Hatchet": {
+    "0": [
+      70,
+      "SwingBlunt"
+    ],
+    "1": [
+      74,
+      "SwingBlunt"
+    ],
+    "2": [
+      20,
+      "Blunt"
+    ]
+  },
+  "HeavyJavelin": {
+    "0": [
+      40,
+      "Swing"
+    ],
+    "1": [
+      35,
+      "Blunt"
+    ],
+    "2": [
+      80,
+      "Pierce"
+    ]
+  },
+  "HolyWaterSprinkler": {
+    "0": [
+      65,
+      "PierceBlunt"
+    ],
+    "1": [
+      65,
+      "Blunt"
+    ],
+    "2": [
+      55,
+      "PierceBlunt"
+    ]
+  },
+  "HuntingKnife": {
+    "0": [
+      40,
+      "Swing"
+    ],
+    "1": [
+      45,
+      "Swing"
+    ],
+    "2": [
+      30,
+      "Pierce"
+    ]
+  },
+  "Javelin": {
+    "0": [
+      40,
+      "Swing"
+    ],
+    "1": [
+      35,
+      "Blunt"
+    ],
+    "2": [
+      60,
+      "Pierce"
+    ]
+  },
+  "Kanabo": {
+    "0": [
+      75,
+      "Blunt"
+    ],
+    "1": [
+      90,
+      "Blunt"
+    ],
+    "2": [
+      45,
+      "PierceBlunt"
+    ]
+  },
+  "Katana": {
+    "0": [
+      79,
+      "Swing"
+    ],
+    "1": [
+      86,
+      "Swing"
+    ],
+    "2": [
+      64,
+      "Pierce"
+    ]
+  },
+  "Katana1H": {
+    "0": [
+      60,
+      "Swing"
+    ],
+    "1": [
+      75,
+      "Swing"
+    ],
+    "2": [
+      55,
+      "Pierce"
+    ]
+  },
+  "Longsword": {
+    "0": [
+      79,
+      "Swing"
+    ],
+    "1": [
+      86,
+      "Swing"
+    ],
+    "2": [
+      64,
+      "Pierce"
+    ]
+  },
+  "Longsword1H": {
+    "0": [
+      60,
+      "Swing"
+    ],
+    "1": [
+      75,
+      "Swing"
+    ],
+    "2": [
+      55,
+      "Pierce"
+    ]
+  },
+  "Mace": {
+    "0": [
+      70,
+      "Blunt"
+    ],
+    "1": [
+      75,
+      "Blunt"
+    ],
+    "2": [
+      30,
+      "PierceBlunt"
+    ]
+  },
+  "Maul": {
+    "0": [
+      100,
+      "Blunt"
+    ],
+    "1": [
+      132,
+      "Blunt"
+    ],
+    "2": [
+      45,
+      "Blunt"
+    ]
+  },
+  "Messer": {
+    "0": [
+      95,
+      "Swing"
+    ],
+    "1": [
+      95,
+      "Swing"
+    ],
+    "2": [
+      55,
+      "Pierce"
+    ]
+  },
+  "Messer1H": {
+    "0": [
+      80,
+      "Swing"
+    ],
+    "1": [
+      80,
+      "SwingBlunt"
+    ],
+    "2": [
+      50,
+      "Pierce"
+    ]
+  },
+  "MorningStar": {
+    "0": [
+      65,
+      "PierceBlunt"
+    ],
+    "1": [
+      72,
+      "PierceBlunt"
+    ],
+    "2": [
+      45,
+      "PierceBlunt"
+    ]
+  },
+  "Nodachi": {
+    "0": [
+      79,
+      "Swing"
+    ],
+    "1": [
+      84,
+      "Swing"
+    ],
+    "2": [
+      71,
+      "Pierce"
+    ]
+  },
+  "NorseSword": {
+    "0": [
+      60,
+      "Swing"
+    ],
+    "1": [
+      70,
+      "Swing"
+    ],
+    "2": [
+      57,
+      "Pierce"
+    ]
+  },
+  "PoleAxe": {
+    "0": [
+      75,
+      "Swing"
+    ],
+    "1": [
+      82,
+      "Swing"
+    ],
+    "2": [
+      75,
+      "Pierce"
+    ]
+  },
+  "PoleAxeBack": {
+    "0": [
+      100,
+      "Blunt"
+    ],
+    "1": [
+      100,
+      "Blunt"
+    ],
+    "2": [
+      70,
+      "Pierce"
+    ]
+  },
+  "PoleHammer": {
+    "0": [
+      80,
+      "Blunt"
+    ],
+    "1": [
+      113,
+      "Blunt"
+    ],
+    "2": [
+      65,
+      "Pierce"
+    ]
+  },
+  "QuarterStaff": {
+    "0": [
+      50,
+      "Blunt"
+    ],
+    "1": [
+      50,
+      "Blunt"
+    ],
+    "2": [
+      45,
+      "Blunt"
+    ]
+  },
+  "Saber": {
+    "0": [
+      51,
+      "Swing"
+    ],
+    "1": [
+      62,
+      "Swing"
+    ],
+    "2": [
+      40,
+      "Pierce"
+    ]
+  },
+  "ShortSpear": {
+    "0": [
+      40,
+      "Swing"
+    ],
+    "1": [
+      35,
+      "Blunt"
+    ],
+    "2": [
+      50,
+      "Pierce"
+    ]
+  },
+  "Spear": {
+    "0": [
+      30,
+      "Blunt"
+    ],
+    "1": [
+      70,
+      "Pierce"
+    ],
+    "2": [
+      55,
+      "Pierce"
+    ]
+  },
+  "SpikedMace": {
+    "0": [
+      75,
+      "Blunt"
+    ],
+    "1": [
+      90,
+      "Blunt"
+    ],
+    "2": [
+      30,
+      "PierceBlunt"
+    ]
+  },
+  "SwordOfWar": {
+    "0": [
+      65,
+      "Swing"
+    ],
+    "1": [
+      70,
+      "Swing"
+    ],
+    "2": [
+      72,
+      "Pierce"
+    ]
+  },
+  "SwordOfWar1H": {
+    "0": [
+      55,
+      "Swing"
+    ],
+    "1": [
+      60,
+      "Swing"
+    ],
+    "2": [
+      60,
+      "Pierce"
+    ]
+  },
+  "WarAxe": {
+    "0": [
+      70,
+      "SwingBlunt"
+    ],
+    "1": [
+      85,
+      "SwingBlunt"
+    ],
+    "2": [
+      57,
+      "Pierce"
+    ]
+  },
+  "WarHammer": {
+    "0": [
+      75,
+      "Blunt"
+    ],
+    "1": [
+      82,
+      "Blunt"
+    ],
+    "2": [
+      40,
+      "Blunt"
+    ]
+  },
+  "Zweihander": {
+    "0": [
+      90,
+      "Swing"
+    ],
+    "1": [
+      115,
+      "Swing"
+    ],
+    "2": [
+      72,
+      "Pierce"
+    ]
+  }
 };
-
 const A = {0:"LMB",1:"OH",2:"Stab"};
-const ATK_LABELS = ["LMB", "OH", "Stab"];
+const ATK_LABELS = ["LMB","OH","Stab"];
+const LOCATIONS = ["Head","Torso","Legs"];
 const wnames = Object.keys(W).sort();
 
-// ============ PER-WEAPON CHARTS (single column, larger) ============
+// ============ PER-WEAPON CHARTS: 3 locations side-by-side ============
 const grid = document.getElementById("weaponGrid");
 
 wnames.forEach(wname => {
   const div = document.createElement("div");
   div.className = "per-weapon";
-  div.innerHTML = `<h3>${wname}</h3><canvas id="w_${wname}"></canvas>`;
+  
+  let canvases = "";
+  LOCATIONS.forEach(loc => {
+    canvases += `<div class="location-card"><h4>${loc} <span class="loc-mod">(&times;${LOC[loc]})</span></h4><canvas id="w_${wname}_${loc}"></canvas></div>`;
+  });
+  div.innerHTML = `<h3>${wname}</h3><div class="location-row">${canvases}</div>`;
   grid.appendChild(div);
 
-  // Build labels from weapon data
   const atkEntries = [[0,"LMB"],[1,"OH"],[2,"Stab"]];
   const labels = atkEntries.map(([idx, name]) => {
     const [dmg, dt] = W[wname][idx] || [0,"Swing"];
     return `${name}\n${dt} ${dmg}dmg`;
   });
-  const datasets = CL.map(cl => ({
-    label: cl.n,
-    data: atkEntries.map(([idx, name]) => calc(W[wname][idx][0], W[wname][idx][1], cl)),
-    backgroundColor: cl.color,
-    borderColor: cl.hex,
-    borderWidth: 1,
-  }));
 
-  // Add value labels on bars
-  new Chart(document.getElementById(`w_${wname}`), {
-    type: "bar",
-    data: { labels, datasets },
-    options: {
-      responsive: true,
-      maintainAspectRatio: true,
-      plugins: {
-        legend: { labels: { color:"#c9d1d9", font:{size:11}, usePointStyle:true, pointStyleWidth:10 } },
-        tooltip: {
-          callbacks: {
-            title: (items) => {
-              if (!items.length) return '';
-              const a = ATK_LABELS[items[0].dataIndex];
-              const [dmg, dt] = W[wname][ATK_LABELS.indexOf(a)];
-              return `${a} — ${dt} (${dmg} base)`;
+  LOCATIONS.forEach(loc => {
+    const datasets = CL.map(cl => ({
+      label: cl.n,
+      data: atkEntries.map(([idx]) => calc(W[wname][idx][0], W[wname][idx][1], cl, loc)),
+      backgroundColor: cl.color,
+      borderColor: cl.hex,
+      borderWidth: 1,
+    }));
+
+    new Chart(document.getElementById(`w_${wname}_${loc}`), {
+      type: "bar",
+      data: { labels, datasets },
+      options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        plugins: {
+          legend: { display: loc === "Head" ? true : false, labels: { color:"#c9d1d9", font:{size:10}, usePointStyle:true, pointStyleWidth:8, boxWidth:8 } },
+          tooltip: {
+            callbacks: {
+              title: (items) => {
+                if (!items.length) return '';
+                const a = ATK_LABELS[items[0].dataIndex];
+                const [dmg, dt] = W[wname][ATK_LABELS.indexOf(a)];
+                return `${a} — ${dt} (${dmg} base) → ${loc}`;
+              },
+              label: (ctx) => `${ctx.dataset.label}: ${ctx.raw} damage`,
             },
-            label: (ctx) => `${ctx.dataset.label}: ${ctx.raw} damage`,
           },
         },
+        scales: {
+          x: { ticks: { color:"#8b949e", font:{size:10} }, grid:{color:"#21262d"} },
+          y: { beginAtZero:true, suggestedMax:160, ticks:{color:"#8b949e", font:{size:9} }, grid:{color:"#21262d"} },
+        },
       },
-      scales: {
-        x: { ticks: { color:"#8b949e", font:{size:11} }, grid:{color:"#21262d"} },
-        y: { beginAtZero:true, suggestedMax:140, ticks:{color:"#8b949e", font:{size:10} }, grid:{color:"#21262d"} },
-      },
-    },
+    });
   });
 });
 
-// ============ BY-CLASS CHARTS ============
+// ============ BY-CLASS CHARTS with location tabs ============
 const byClassDiv = document.getElementById("byClass");
 byClassDiv.innerHTML = '<h2>Full Comparison by Class</h2>';
-const bcGrid = document.createElement("div");
-bcGrid.style.cssText = "display:grid;grid-template-columns:1fr 1fr;gap:16px;";
-byClassDiv.appendChild(bcGrid);
 
 CL.forEach(cl => {
-  const div = document.createElement("div");
-  div.className = "per-weapon";
-  div.innerHTML = `<h3>vs <span style="color:${cl.hex}">${cl.n}</span> — Resist S:${cl.r[0]} P:${cl.r[1]} B:${cl.r[2]}</h3><canvas id="c_${cl.n}"></canvas>`;
-  bcGrid.appendChild(div);
+  const container = document.createElement("div");
+  container.className = "per-weapon";
+  container.style.marginBottom = "16px";
 
-  const labels=[], data=[], bg=[], bcInfo=[];
-  wnames.forEach(w => {
-    for (const a of [0,1,2]) {
-      const [dmg, dt] = W[w][a]||[0,"Swing"];
-      labels.push(`${w} ${A[a]}`); data.push(calc(dmg,dt,cl));
-      bg.push(ATC[dt]||"#888"); bcInfo.push({w,atk:A[a],dtype:dt,base:dmg});
-    }
-    labels.push('');data.push(null);bg.push('transparent');bcInfo.push(null);
+  // Location tabs
+  let tabsHtml = '<div class="loc-tabs">';
+  LOCATIONS.forEach((loc, i) => {
+    tabsHtml += `<button class="loc-tab${i === 0 ? ' active' : ''}" data-cls="${cl.n}" data-loc="${loc}">${loc} &times;${LOC[loc]}</button>`;
+  });
+  tabsHtml += '</div>';
+
+  // Canvas per location (only first visible)
+  let canvasesHtml = "";
+  LOCATIONS.forEach((loc, i) => {
+    canvasesHtml += `<div class="location-card" id="bc_card_${cl.n}_${loc}" style="${i > 0 ? 'display:none' : ''}"><canvas id="c_${cl.n}_${loc}"></canvas></div>`;
   });
 
-  new Chart(document.getElementById(`c_${cl.n}`), {
-    type:"bar", data:{labels,datasets:[{label:`vs ${cl.n}`,data,backgroundColor:bg,borderColor:bg.map(c=>c==='transparent'?'transparent':c.replace("0.78","1")),borderWidth:1,atkInfo:bcInfo}]},
-    options:{
-      responsive:true,maintainAspectRatio:true,
-      plugins:{legend:{display:false},tooltip:{callbacks:{title:(items)=>{const info=items[0]?.dataset?.atkInfo?.[items[0]?.dataIndex];return info?`${info.w} — ${info.atk} (${info.dtype} ${info.base})`:'';},label:(ctx)=>ctx.raw===null?'':`${ctx.raw} damage`}}},
-      scales:{x:{ticks:{color:"#8b949e",font:{size:7},maxRotation:90},grid:{color:"#21262d"}},y:{beginAtZero:true,ticks:{color:"#8b949e",font:{size:9}},grid:{color:"#21262d"}}},
-    },
+  container.innerHTML = `<h3>vs <span style="color:${cl.hex}">${cl.n}</span> — Resist S:${cl.r[0]} P:${cl.r[1]} B:${cl.r[2]}</h3>${tabsHtml}${canvasesHtml}`;
+  byClassDiv.appendChild(container);
+
+  // Build charts for each location
+  LOCATIONS.forEach((loc, locIdx) => {
+    const labels=[], data=[], bg=[], bcInfo=[];
+    wnames.forEach(w => {
+      for (const a of [0,1,2]) {
+        const [dmg, dt] = W[w][a]||[0,"Swing"];
+        labels.push(`${w} ${A[a]}`);
+        data.push(calc(dmg, dt, cl, loc));
+        bg.push(ATC[dt]||"#888");
+        bcInfo.push({w, atk:A[a], dtype:dt, base:dmg, loc});
+      }
+      labels.push('');data.push(null);bg.push('transparent');bcInfo.push(null);
+    });
+
+    new Chart(document.getElementById(`c_${cl.n}_${loc}`), {
+      type:"bar",
+      data:{labels,datasets:[{label:`vs ${cl.n} (${loc})`,data,backgroundColor:bg,borderColor:bg.map(c=>c==='transparent'?'transparent':c.replace("0.78","1")),borderWidth:1,atkInfo:bcInfo}]},
+      options:{
+        responsive:true,maintainAspectRatio:true,
+        plugins:{legend:{display:false},
+          tooltip:{callbacks:{
+            title:(items)=>{const info=items[0]?.dataset?.atkInfo?.[items[0]?.dataIndex];return info?`${info.w} — ${info.atk} (${info.dtype} ${info.base}) → ${info.loc}`:'';},
+            label:(ctx)=>ctx.raw===null?'':`${ctx.raw} damage`
+          }}
+        },
+        scales:{
+          x:{ticks:{color:"#8b949e",font:{size:7},maxRotation:90},grid:{color:"#21262d"}},
+          y:{beginAtZero:true,ticks:{color:"#8b949e",font:{size:9}},grid:{color:"#21262d"}},
+        },
+      },
+    });
+  });
+
+  // Tab click handlers
+  container.querySelectorAll('.loc-tab').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const clsName = btn.dataset.cls;
+      const loc = btn.dataset.loc;
+      // Update active tab state
+      container.querySelectorAll('.loc-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      // Show/hide canvases
+      LOCATIONS.forEach(l => {
+        const card = document.getElementById(`bc_card_${clsName}_${l}`);
+        if (card) card.style.display = l === loc ? '' : 'none';
+      });
+    });
   });
 });
 </script>
