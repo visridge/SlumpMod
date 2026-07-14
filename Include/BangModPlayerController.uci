@@ -1066,6 +1066,19 @@ reliable server function S_AdminGotoCompMod() {
 	WorldInfo.ServerTravel("AOCFFA-YeedYard_p?modname=CompMod3", false);
 }
 
+exec function AdminGotoNateMod() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminGotoNateMod();
+}
+
+reliable server function S_AdminGotoNateMod() {
+	if (!IsAdmin()) return;
+	WorldInfo.ServerTravel("AOCFFA-YeedYard_p?modname=NateMod", false);
+}
+
 exec function AdminForceSpectate(String PlayerName) {
 	if (!PlayerReplicationInfo.bAdmin) {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");

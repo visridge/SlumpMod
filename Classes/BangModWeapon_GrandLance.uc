@@ -233,7 +233,7 @@ DefaultProperties
 	bUseDirParryHitAnims=true
 	
 	fReleaseDilatePoint=0.5
-	fReleaseDilateScale=0.1
+	fReleaseDilateScale=0.05
 
 	ImpactSounds(ESWINGSOUND_Slash)={(
 		light=SoundCue'A_Impacts_Melee.Light_Blunt_small',
