@@ -350,13 +350,14 @@ simulated function PerformCrouch(bool bCrouch)
 }
 
 
-// BANGMOD: Override ModifyVelocity to force pure-forward sprint during Grand Lance charge.
-// Sets Velocity directly after super — nothing in the native pipeline can override it.
+// BANGMOD: Override ModifyVelocity to steer the Grand Lance stab charge in the full 3D
+// direction the player is looking — pitch included. Gravity is intentionally suppressed each
+// frame by overwriting Velocity (Z included) with the look-direction vector, producing the
+// "witch's broom" effect: look up to fly up, look down to dive.
 function ModifyVelocity(float DeltaTime, vector OldVelocity)
 {
 	local vector Forward;
 	local float SpeedBefore;
-	local float fVelocityZ;
 
 	if (bForceSprintForward)
 	{
@@ -364,28 +365,21 @@ function ModifyVelocity(float DeltaTime, vector OldVelocity)
 			ServerPerformCrouch(false);
 		RemoveDebuff(EDEBF_CROUCH);
 
-		// Build forward axis.
-		Forward = vector(Rotation);
-		Forward.Z = 0;
-		Forward = Normal(Forward);
+		// Full 3D camera look direction — pitch is kept so vertical steering works.
+		Forward = Normal(vector(GetViewRotation()));
 
-		// Strip strafe/backward from Acceleration so the native sprint check
-		// sees pure forward and keeps the ramp alive.
+		// Align Acceleration with look direction so the native sprint ramp sees forward input.
 		Acceleration = Forward * VSize(Acceleration);
 
-		// Capture horizontal speed BEFORE super potentially zeroes it.
-		SpeedBefore = VSize2D(Acceleration) > 0 ? VSize2D(Velocity) : GroundSpeed;
+		// Capture 3D speed BEFORE super so the broom doesn't lose vertical momentum.
+		SpeedBefore = VSize(Acceleration) > 0 ? VSize(Velocity) : GroundSpeed;
 
-		// Let super handle gravity, ground friction, sprint ramp, etc.
+		// Let super run (gravity, friction, sprint ramp, etc.).
 		super.ModifyVelocity(DeltaTime, OldVelocity);
 
-		// After super, force Velocity to pure forward at pre-super speed.
-		// Use the greater of the pre-super speed and post-super speed so
-		// the sprint ramp's acceleration isn't thrown away.
-		// Preserve Z so gravity and falling physics are unaffected.
-		fVelocityZ = Velocity.Z;
-		Velocity = Forward * FMax(SpeedBefore, VSize2D(Velocity));
-		Velocity.Z = fVelocityZ;
+		// Override full Velocity to the look direction at the captured speed.
+		// Intentionally zeroes gravity (Z included) — the broom flies where you aim.
+		Velocity = Forward * FMax(SpeedBefore, VSize(Velocity));
 
 		// Keep sprint alive.
 		bClientWantsToSprint = true;
