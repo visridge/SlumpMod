@@ -23,7 +23,7 @@ simulated function float GetHandleTracerPercent(int i)
     WeaponLength = VSize(vEnd - vStart);
     HandleLength = VSize(vMid - vStart);
 
-    return (HandleLength / WeaponLength);
+    return (HandleLength / WeaponLength) / 2;
 }
 
 DefaultProperties
