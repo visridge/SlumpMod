@@ -356,6 +356,7 @@ function ModifyVelocity(float DeltaTime, vector OldVelocity)
 {
 	local vector Forward;
 	local float SpeedBefore;
+	local float fVelocityZ;
 
 	if (bForceSprintForward)
 	{
@@ -381,8 +382,10 @@ function ModifyVelocity(float DeltaTime, vector OldVelocity)
 		// After super, force Velocity to pure forward at pre-super speed.
 		// Use the greater of the pre-super speed and post-super speed so
 		// the sprint ramp's acceleration isn't thrown away.
+		// Preserve Z so gravity and falling physics are unaffected.
+		fVelocityZ = Velocity.Z;
 		Velocity = Forward * FMax(SpeedBefore, VSize2D(Velocity));
-		// Z is untouched — super handled gravity/ground/falling.
+		Velocity.Z = fVelocityZ;
 
 		// Keep sprint alive.
 		bClientWantsToSprint = true;
