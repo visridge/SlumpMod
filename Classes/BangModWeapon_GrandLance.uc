@@ -356,8 +356,8 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Halberd]
 	 */
-	StabHorizRotateSpeed=15000
-	StabVertRotateSpeed=5000
+	StabHorizRotateSpeed=40000.0
+	StabVertRotateSpeed=40000.0
 	Bcancombo=false
 	iFeintStaminaCost=15
 	FeintTime=0.3
