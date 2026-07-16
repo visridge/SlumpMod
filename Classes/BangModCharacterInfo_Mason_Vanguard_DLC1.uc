@@ -12,16 +12,16 @@ defaultproperties
 
 	MobileBattleCry=SoundCue'A_VO_Manual.Mason_Vanguard.Battlecry_Running_Mason_Vanguard'
 
-	CharacterMeshPath="CH_MasonVanguard_DLC1.models.SK_CH_3P_MasonVanguard_DLC1"
-	DecapMeshPath="CH_MasonVanguard_DLC1.models.SK_CH_3P_MasonVanguard_DLC1_Gore"
-	OwnerMeshPath="CH_MasonVanguard_DLC1.models.SK_CH_1P_MasonVanguard_DLC1"
+	CharacterMeshPath="SlumpCharacters.MasonVanguardDLC3p"
+	DecapMeshPath="SlumpCharacters.MasonVanguardDLC3p"
+	OwnerMeshPath="SlumpCharacters.MasonVanguardDLC1p"
 
 	HeadMaterialPath="CH_MasonVanguard_DLC1.Materials.MI_CH_3P_MasonVanguard_DLC1_Body"
 	BodyMaterialPath="CH_MasonVanguard_DLC1.Materials.MI_CH_3P_MasonVanguard_DLC1_Head"
 
-	StandinMesh=SkeletalMesh'CH_A_Vanguard_PKG.MasonVanguardANIMRIG'
-	StandinDecapMesh=SkeletalMesh'CH_A_Vanguard_PKG.SkeletalMesh.SK_CH_3P_M_Vanguard_Gore'
-	StandinOwnerMesh=SkeletalMesh'CH_A_Vanguard_PKG.PlayerviewTEMP'
+	StandinMesh=SkeletalMesh'SlumpCharacters.MasonVanguardDLC3p'
+	StandinDecapMesh=SkeletalMesh'SlumpCharacters.MasonVanguardDLC3p'
+	StandinOwnerMesh=SkeletalMesh'SlumpCharacters.MasonVanguardDLC1p'
 	StandinHeadMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_M_Vanguard_INST'
 	StandinBodyMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_M_Vanguard_INST'
 

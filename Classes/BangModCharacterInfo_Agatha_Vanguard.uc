@@ -6,18 +6,18 @@ defaultproperties
 
 	MobileBattleCry=SoundCue'A_VO_Manual.Agatha_Vanguard.Battlecry_Running_Agatha_Vanguard'
 
-	CharacterMeshPath="CH_A_Vanguard_PKG.AgathaVanguardANIMRIG"
-	DecapMeshPath="CH_A_Vanguard_PKG.SkeletalMesh.SK_CH_3P_Vanguard_Gore"
-	OwnerMeshPath="CH_A_Vanguard_PKG.PlayerviewTEMP_agatha"
+	CharacterMeshPath="SlumpCharacters.AgathaVanguard3p"
+	DecapMeshPath="SlumpCharacters.AgathaVanguard3p"
+	OwnerMeshPath="SlumpCharacters.AgathaVanguard1p"
 
 	HeadMaterialPath="CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST"
 	BodyMaterialPath="CH_A_Vanguard_PKG.Materials.M_Vanguard_Head_INST"
 
 	PhysAsset=PhysicsAsset'CH_AgathanMaa_PKG.SkeletalMesh.SK_CH_3P_AgathaMaa_Physics'
 
-	StandinMesh=SkeletalMesh'CH_A_Vanguard_PKG.AgathaVanguardANIMRIG'
-	StandinDecapMesh=SkeletalMesh'CH_A_Vanguard_PKG.SkeletalMesh.SK_CH_3P_Vanguard_Gore'
-	StandinOwnerMesh=SkeletalMesh'CH_A_Vanguard_PKG.PlayerviewTEMP_agatha'
+	StandinMesh=SkeletalMesh'SlumpCharacters.AgathaVanguard3p'
+	StandinDecapMesh=SkeletalMesh'SlumpCharacters.AgathaVanguard3p'
+	StandinOwnerMesh=SkeletalMesh'SlumpCharacters.AgathaVanguard1p'
 	StandinHeadMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST'
 	StandinBodyMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST'
 
