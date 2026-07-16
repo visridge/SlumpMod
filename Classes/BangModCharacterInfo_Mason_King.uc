@@ -40,5 +40,5 @@ defaultproperties
 	Helmets.Add((SkeletalMeshPath="CH_H_AOC.Meshes.sk_aoc_mason_helm",   StaticMeshPath="CH_H_AOC.Meshes.sm_AOC_Mason_Knight", GearData=(GearNameID=DefaultHat)))
 	Helmets.Add((SkeletalMeshPath="ch_hp3_polycount.Mesh.sk_HP3_Archer",             StaticMeshPath="ch_hp3_polycount.Mesh.sm_HP3_Archer",              GearData=(GearNameID=Greentooth, MicroTxID=101035, bVisibleInSelectorIfUnowned=false)))
 
-	Helmets.Add((SkeletalMeshPath="CH_BangMod.SK_Cowboy", StaticMeshPath="CH_BangMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
+	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_Cowboy", StaticMeshPath="CH_SlumpMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
 }

@@ -12,16 +12,16 @@ defaultproperties
 
 	MobileBattleCry=SoundCue'A_VO_Manual.Agatha_Vanguard.Battlecry_Running_Agatha_Vanguard'
 
-	CharacterMeshPath="SlumpCharacters.AgathaVanguardDLC3p"
-	DecapMeshPath="SlumpCharacters.AgathaVanguardDLC3p"
-	OwnerMeshPath="SlumpCharacters.AgathaVanguardDLC1p"
+	CharacterMeshPath="CH_AgathaVanguard_DLC1.models.SK_CH_3P_AgathaVanguard01"
+	DecapMeshPath="CH_AgathaVanguard_DLC1.models.SK_CH_3P_AgathaVanguard01_Gore"
+	OwnerMeshPath="CH_AgathaVanguard_DLC1.models.SK_CH_1P_AgathaVanguard01"
 
 	HeadMaterialPath="CH_AgathaVanguard_DLC1.Materials.MI_CH_3P_MasonVanguard_DLC1_Body"
 	BodyMaterialPath="CH_AgathaVanguard_DLC1.Materials.MI_CH_3P_MasonArcher_Head"
 
-	StandinMesh=SkeletalMesh'SlumpCharacters.AgathaVanguardDLC3p'
-	StandinDecapMesh=SkeletalMesh'SlumpCharacters.AgathaVanguardDLC3p'
-	StandinOwnerMesh=SkeletalMesh'SlumpCharacters.AgathaVanguardDLC1p'
+	StandinMesh=SkeletalMesh'CH_AgathaVanguard_DLC1.models.SK_CH_3P_AgathaVanguard01'
+	StandinDecapMesh=SkeletalMesh'CH_AgathaVanguard_DLC1.models.SK_CH_3P_AgathaVanguard01_Gore'
+	StandinOwnerMesh=SkeletalMesh'CH_AgathaVanguard_DLC1.models.SK_CH_1P_AgathaVanguard01'
 	StandinHeadMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST'
 	StandinBodyMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST'
 
@@ -134,5 +134,6 @@ defaultproperties
 
 	
 	
-	Helmets.Add((SkeletalMeshPath="CH_BangMod.SK_Cowboy", StaticMeshPath="CH_BangMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
+	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_Cowboy", StaticMeshPath="CH_SlumpMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
+	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_baseball", StaticMeshPath="CH_SlumpMod.SM_baseball", GearData=(GroupHexID="170000002457482", GearNameID=Oakland_As, bVisibleInSelectorIfUnowned=false)))
 }

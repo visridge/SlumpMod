@@ -130,5 +130,6 @@ defaultproperties
 	ShieldPatterns.Add((GearData=(GearNameID=Checkers),PerShieldTextures[0]=Texture2D'WP_shld_Buckler.T_buckler_p03',PerShieldTextures[1]=Texture2D'WP_shld_Heatshield.T_Heaters_p03',PerShieldTextures[2]=Texture2D'WP_shld_TowerShield.Materials.t_towershield_p02',PerShieldTextures[3]=Texture2D'WP_shld_Kite.T_kite_p03'))
 
 	
-	Helmets.Add((SkeletalMeshPath="CH_BangMod.SK_Cowboy", StaticMeshPath="CH_BangMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
+	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_Cowboy", StaticMeshPath="CH_SlumpMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
+Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_baseball", StaticMeshPath="CH_SlumpMod.SM_baseball", GearData=(GroupHexID="170000002457482", GearNameID=Oakland_As, bVisibleInSelectorIfUnowned=false)))
 }

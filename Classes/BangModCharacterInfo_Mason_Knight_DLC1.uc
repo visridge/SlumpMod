@@ -37,6 +37,7 @@ defaultproperties
 	Helmets.Empty
 
 	//Elite Knight DLC helmet
+Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_baseball", StaticMeshPath="CH_SlumpMod.SM_baseball", GearData=(GroupHexID="170000002457482", GearNameID=Oakland_As, bVisibleInSelectorIfUnowned=false)))
 	Helmets.Add((SkeletalMeshPath="CH_MasonKnight_DLC1.Helmet.sk_CHPack_Knight01",         StaticMeshPath="CH_MasonKnight_DLC1.Helmet.sm_CHPack_Knight01",        GearData=(GearNameID=MasonKnight_Helm1_DLC1, GearStoreDescriptionID=Mason_Elite_Knight_Bundle_1, MicroTxID=, bPartOfBundle=false, BundleNameID=Mason_Elite_Knight_Bundle_1)))
 	Helmets.Add((SkeletalMeshPath="CH_MasonKnight_DLC1.Helmet.sk_CHPack_Knight01_a",         StaticMeshPath="CH_MasonKnight_DLC1.Helmet.sm_CHPack_Knight01_a",        GearData=(GearNameID=MasonKnight_Helm_a_DLC1, GearStoreDescriptionID=Mason_Elite_Knight_Bundle_1, MicroTxID=, bPartOfBundle=false, BundleNameID=Mason_Elite_Knight_Bundle_1)))
 	Helmets.Add((SkeletalMeshPath="CH_MasonKnight_DLC1.Helmet.sk_CHPack_Knight01_c",         StaticMeshPath="CH_MasonKnight_DLC1.Helmet.sm_CHPack_Knight01_c",        GearData=(GearNameID=MasonKnight_Helm_c_DLC1, GearStoreDescriptionID=Mason_Elite_Knight_Bundle_1, MicroTxID=, bPartOfBundle=false, BundleNameID=Mason_Elite_Knight_Bundle_1)))
@@ -122,5 +123,5 @@ defaultproperties
 
 	Tabards.Empty
 	Tabards.Add((Img=Texture2D'CH_MasonKnight_DLC1.Textures.T_knight_3P_body_P01', GearData=(GearNameID=Default)))
-	Helmets.Add((SkeletalMeshPath="CH_BangMod.SK_Cowboy", StaticMeshPath="CH_BangMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
+	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_Cowboy", StaticMeshPath="CH_SlumpMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
 }

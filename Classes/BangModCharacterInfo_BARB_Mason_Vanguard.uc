@@ -12,16 +12,16 @@ defaultproperties
 
 	MobileBattleCry=SoundCue'A_VO_Manual.Mason_Vanguard.Battlecry_Running_Mason_Vanguard'
 
-	CharacterMeshPath="SlumpCharacters.MasonBarbVanguard3p"
-	DecapMeshPath="SlumpCharacters.MasonBarbVanguard3p"
-	OwnerMeshPath="SlumpCharacters.MasonBarbVanguard1p"
+	CharacterMeshPath="CH_Barb_MasonVanguard.models.SK_CH_3P_Barb_MasonVanguard"
+	DecapMeshPath="CH_Barb_MasonVanguard.models.SK_CH_3P_Barb_MasonVanguard_Gore"
+	OwnerMeshPath="CH_Barb_MasonVanguard.models.SK_CH_1P_Barb_MasonVanguard"
 
 	HeadMaterialPath="CH_Barb_MasonVanguard.Materials.MI_CH_3P_Barb_MasonVanguard_Body"
 	BodyMaterialPath="CH_Barb_MasonVanguard.Materials.MI_CH_3P_Barb_MasonVanguard_Head"
 
-	StandinMesh=SkeletalMesh'SlumpCharacters.MasonBarbVanguard3p'
-	StandinDecapMesh=SkeletalMesh'SlumpCharacters.MasonBarbVanguard3p'
-	StandinOwnerMesh=SkeletalMesh'SlumpCharacters.MasonBarbVanguard1p'
+	StandinMesh=SkeletalMesh'CH_Barb_MasonVanguard.models.SK_CH_3P_Barb_MasonVanguard'
+	StandinDecapMesh=SkeletalMesh'CH_Barb_MasonVanguard.models.SK_CH_3P_Barb_MasonVanguard_Gore'
+	StandinOwnerMesh=SkeletalMesh'CH_Barb_MasonVanguard.models.SK_CH_1P_Barb_MasonVanguard'
 	StandinHeadMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_M_Vanguard_INST'
 	StandinBodyMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_M_Vanguard_INST'
 
@@ -35,7 +35,7 @@ defaultproperties
 	AllowedTeams.Add(1)
 
 	/** Customizables **/
-
+	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_baseball", StaticMeshPath="CH_SlumpMod.SM_baseball", GearData=(GroupHexID="170000002457482", GearNameID=Oakland_As, bVisibleInSelectorIfUnowned=false)))
 	Helmets.Add((SkeletalMeshPath="CH_Barb_MasonVanguard_Accesso.models.SK_CH_Barb_MasonVanguard_Helm01",      StaticMeshPath="CH_H_Veteran.a_a.sm_CH_MasonVanguard_Helmet_Basic",         GearData=(GearNameID=DefaultHat)))
 	Helmets.Add((SkeletalMeshPath="",      StaticMeshPath="",         GearData=(GearNameID=NoHat)))
 	Helmets.Add((SkeletalMeshPath="CH_H_Veteran.m_v.sk_CH_MasonVanguard_Helmet_Basic",      StaticMeshPath="CH_H_Veteran.a_a.sm_CH_MasonVanguard_Helmet_Basic",         GearData=(GearNameID=DefaultHat)))
@@ -138,5 +138,5 @@ defaultproperties
 
 	SoundGroupClassName="AOCAudioContent.AOCPawnSoundGroup_BARB_Vanguard"
 	OverridePawnArmorType="ARMORTYPE_LIGHT"
-	Helmets.Add((SkeletalMeshPath="CH_BangMod.SK_Cowboy", StaticMeshPath="CH_BangMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
+	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_Cowboy", StaticMeshPath="CH_SlumpMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
 }

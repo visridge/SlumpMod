@@ -12,16 +12,16 @@ defaultproperties
 
 	MobileBattleCry=SoundCue'A_VO_Manual.Mason_Vanguard.Battlecry_Running_Mason_Vanguard'
 
-	CharacterMeshPath="SlumpCharacters.MasonVanguard3p"
-	DecapMeshPath="SlumpCharacters.MasonVanguard3p"
-	OwnerMeshPath="SlumpCharacters.MasonVanguard1p"
+	CharacterMeshPath="CH_A_Vanguard_PKG.MasonVanguardANIMRIG"
+	DecapMeshPath="CH_A_Vanguard_PKG.SkeletalMesh.SK_CH_3P_M_Vanguard_Gore"
+	OwnerMeshPath="CH_A_Vanguard_PKG.PlayerviewTEMP"
 
 	HeadMaterialPath="CH_A_Vanguard_PKG.Materials.M_M_Vanguard_INST"
 	BodyMaterialPath="CH_A_Vanguard_PKG.Materials.M_Vanguard_Head_INST"
 
-	StandinMesh=SkeletalMesh'SlumpCharacters.MasonVanguard3p'
-	StandinDecapMesh=SkeletalMesh'SlumpCharacters.MasonVanguard3p'
-	StandinOwnerMesh=SkeletalMesh'SlumpCharacters.MasonVanguard1p'
+	StandinMesh=SkeletalMesh'CH_A_Vanguard_PKG.MasonVanguardANIMRIG'
+	StandinDecapMesh=SkeletalMesh'CH_A_Vanguard_PKG.SkeletalMesh.SK_CH_3P_M_Vanguard_Gore'
+	StandinOwnerMesh=SkeletalMesh'CH_A_Vanguard_PKG.PlayerviewTEMP'
 	StandinHeadMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_M_Vanguard_INST'
 	StandinBodyMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_M_Vanguard_INST'
 
@@ -34,6 +34,7 @@ defaultproperties
 	AllowedTeams.Add(1)
 
 	/** Customizables **/
+	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_baseball", StaticMeshPath="CH_SlumpMod.SM_baseball", GearData=(GroupHexID="170000002457482", GearNameID=Oakland_As, bVisibleInSelectorIfUnowned=false)))
 	Helmets.Add((SkeletalMeshPath="CH_H_Veteran.m_v.sk_CH_MasonVanguard_Helmet_Basic",      StaticMeshPath="CH_H_Veteran.a_a.sm_CH_MasonVanguard_Helmet_Basic",         GearData=(GearNameID=DefaultHat)))
 	Helmets.Add((SkeletalMeshPath="",      StaticMeshPath="",         GearData=(GearNameID=NoHat)))	
 	Helmets.Add((SkeletalMeshPath="CH_H_AOC.Meshes.sk_aoc_mason_helm",                      StaticMeshPath="CH_H_AOC.Meshes.sm_AOC_Mason_Knight",                   GearData=(AppID=, GearNameID=KickStarterHat, bVisibleInSelectorIfUnowned=true)))
@@ -132,5 +133,5 @@ defaultproperties
 	Tabards.Add((Img=Texture2D'CH_A_Vanguard_PKG.Textures.3P_A_Vanguard_p02', GearData=(GearNameID=Tabard2)))
 	Tabards.Add((Img=Texture2D'CH_A_Vanguard_PKG.Textures.3P_A_Vanguard_ppl', GearData=(GearNameID=Tabard3)))
 
-	Helmets.Add((SkeletalMeshPath="CH_BangMod.SK_Cowboy", StaticMeshPath="CH_BangMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
+	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_Cowboy", StaticMeshPath="CH_SlumpMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
 }

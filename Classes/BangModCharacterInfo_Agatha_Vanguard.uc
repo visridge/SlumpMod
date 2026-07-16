@@ -6,18 +6,18 @@ defaultproperties
 
 	MobileBattleCry=SoundCue'A_VO_Manual.Agatha_Vanguard.Battlecry_Running_Agatha_Vanguard'
 
-	CharacterMeshPath="SlumpCharacters.AgathaVanguard3p"
-	DecapMeshPath="SlumpCharacters.AgathaVanguard3p"
-	OwnerMeshPath="SlumpCharacters.AgathaVanguard1p"
+	CharacterMeshPath="CH_A_Vanguard_PKG.AgathaVanguardANIMRIG"
+	DecapMeshPath="CH_A_Vanguard_PKG.SkeletalMesh.SK_CH_3P_Vanguard_Gore"
+	OwnerMeshPath="CH_A_Vanguard_PKG.PlayerviewTEMP_agatha"
 
 	HeadMaterialPath="CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST"
 	BodyMaterialPath="CH_A_Vanguard_PKG.Materials.M_Vanguard_Head_INST"
 
 	PhysAsset=PhysicsAsset'CH_AgathanMaa_PKG.SkeletalMesh.SK_CH_3P_AgathaMaa_Physics'
 
-	StandinMesh=SkeletalMesh'SlumpCharacters.AgathaVanguard3p'
-	StandinDecapMesh=SkeletalMesh'SlumpCharacters.AgathaVanguard3p'
-	StandinOwnerMesh=SkeletalMesh'SlumpCharacters.AgathaVanguard1p'
+	StandinMesh=SkeletalMesh'CH_A_Vanguard_PKG.AgathaVanguardANIMRIG'
+	StandinDecapMesh=SkeletalMesh'CH_A_Vanguard_PKG.SkeletalMesh.SK_CH_3P_Vanguard_Gore'
+	StandinOwnerMesh=SkeletalMesh'CH_A_Vanguard_PKG.PlayerviewTEMP_agatha'
 	StandinHeadMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST'
 	StandinBodyMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST'
 
@@ -136,5 +136,6 @@ defaultproperties
 	Helmets.Add((SkeletalMeshPath="ch_hp3_polycount.Mesh.sk_HP3_Archer",             StaticMeshPath="ch_hp3_polycount.Mesh.sm_HP3_Archer",              GearData=(GroupHexID="1700000027D2F8D", GearNameID=Greentooth, bVisibleInSelectorIfUnowned=false)))
 	Helmets.Add((SkeletalMeshPath="CH_H_AOC.Meshes.sk_aoc_agatha_helm",                         StaticMeshPath="CH_H_AOC.Meshes.sm_AOC_Agatha_Knight",                  GearData=(GroupHexID="1700000027C9B45", GearNameID=KickStarterHat, bVisibleInSelectorIfUnowned=false)))
 
-	Helmets.Add((SkeletalMeshPath="CH_BangMod.SK_Cowboy", StaticMeshPath="CH_BangMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
+	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_Cowboy", StaticMeshPath="CH_SlumpMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
+	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_baseball", StaticMeshPath="CH_SlumpMod.SM_baseball", GearData=(GroupHexID="170000002457482", GearNameID=Oakland_As, bVisibleInSelectorIfUnowned=false)))
 }
