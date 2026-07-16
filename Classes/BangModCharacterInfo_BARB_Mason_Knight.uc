@@ -137,4 +137,5 @@ defaultproperties
 
 	SoundGroupClassName="AOCAudioContent.AOCPawnSoundGroup_BARB_Knight"
 	OverridePawnArmorType="ARMORTYPE_HEAVY"
+	Helmets.Add((SkeletalMeshPath="CH_BangMod.SK_Cowboy", StaticMeshPath="CH_BangMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
 }

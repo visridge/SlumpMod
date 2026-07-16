@@ -122,4 +122,5 @@ defaultproperties
 
 	Tabards.Empty
 	Tabards.Add((Img=Texture2D'CH_MasonKnight_DLC1.Textures.T_knight_3P_body_P01', GearData=(GearNameID=Default)))
+	Helmets.Add((SkeletalMeshPath="CH_BangMod.SK_Cowboy", StaticMeshPath="CH_BangMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
 }

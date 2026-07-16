@@ -132,4 +132,5 @@ defaultproperties
 	Tabards.Add((Img=Texture2D'CH_A_Vanguard_PKG.Textures.3P_A_Vanguard_p02', GearData=(GearNameID=Tabard2)))
 	Tabards.Add((Img=Texture2D'CH_A_Vanguard_PKG.Textures.3P_A_Vanguard_ppl', GearData=(GearNameID=Tabard3)))
 
+	Helmets.Add((SkeletalMeshPath="CH_BangMod.SK_Cowboy", StaticMeshPath="CH_BangMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
 }
