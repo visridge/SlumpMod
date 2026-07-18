@@ -14,14 +14,14 @@ defaultproperties
 
 	CharacterMeshPath="CH_A_Vanguard_PKG.MasonVanguardANIMRIG"
 	DecapMeshPath="CH_A_Vanguard_PKG.SkeletalMesh.SK_CH_3P_M_Vanguard_Gore"
-	OwnerMeshPath="CH_A_Vanguard_PKG.PlayerviewTEMP"
+	OwnerMeshPath="SlumpCharacters.MasonVanguard1p"
 
 	HeadMaterialPath="CH_A_Vanguard_PKG.Materials.M_M_Vanguard_INST"
 	BodyMaterialPath="CH_A_Vanguard_PKG.Materials.M_Vanguard_Head_INST"
 
 	StandinMesh=SkeletalMesh'CH_A_Vanguard_PKG.MasonVanguardANIMRIG'
 	StandinDecapMesh=SkeletalMesh'CH_A_Vanguard_PKG.SkeletalMesh.SK_CH_3P_M_Vanguard_Gore'
-	StandinOwnerMesh=SkeletalMesh'CH_A_Vanguard_PKG.PlayerviewTEMP'
+	StandinOwnerMesh=SkeletalMesh'SlumpCharacters.MasonVanguard1p'
 	StandinHeadMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_M_Vanguard_INST'
 	StandinBodyMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_M_Vanguard_INST'
 
