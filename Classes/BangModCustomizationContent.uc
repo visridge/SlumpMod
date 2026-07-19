@@ -63,6 +63,7 @@ defaultproperties
 	Characters.Add(class'AOCCharacterInfo_Playable_PeasantRevolt')
 	Characters.Add(class'BangModCharacterInfo_Agatha_Footman')
 	Characters.Add(class'BangModCharacterInfo_Mason_Footman')
+	Characters.Add(class'BangModCharacterInfo_Agatha_Turtle')
     
 
     Teams.Empty()
