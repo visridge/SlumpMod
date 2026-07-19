@@ -5,28 +5,28 @@ defaultproperties
 	MobileBattleCry=SoundCue'A_VO_Manual.Agatha_Knight.Battlecry_Running_Agatha_Knight'
 
 	CharacterMeshPath="TurtleFFA.TurtleFFA"
-	DecapMeshPath="CH_AgathanKnight_PKG.models.SK_CH_3P_AgathaKnight_Gore"
+	DecapMeshPath="TurtleFFA.TurtleFFA"
 	OwnerMeshPath="TurtleFFA.TurtleFFA_1p"
 
-	HeadMaterialPath="CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Body"
-	BodyMaterialPath="CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Head"
+	HeadMaterialPath="CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Head"
+	BodyMaterialPath="CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Body"
 
 	StandinMesh=SkeletalMesh'TurtleFFA.TurtleFFA'
-	StandinDecapMesh=SkeletalMesh'CH_AgathanKnight_PKG.models.SK_CH_3P_AgathaKnight_Gore'
+	StandinDecapMesh=SkeletalMesh'TurtleFFA.TurtleFFA'
 	StandinOwnerMesh=SkeletalMesh'TurtleFFA.TurtleFFA_1p'
-	StandinHeadMaterial=MaterialInterface'CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Body'
-	StandinBodyMaterial=MaterialInterface'CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Head'
+	StandinHeadMaterial=MaterialInterface'TurtleFFA.TurtleFFAHead'
+	StandinBodyMaterial=MaterialInterface'TurtleFFA.TurtleFFABody'
 
 	PhysAsset=PhysicsAsset'CH_AgathanMaa_PKG.SkeletalMesh.SK_CH_3P_AgathaMaa_Physics'
 
 	/** Ownership info **/
 
-	GearData=(GearNameID=AgathaKnight, GroupHexID="170000002C14009")
+	GearData=(GearNameID=AgathaKnight, GroupHexID="170000002C14009", bVisibleInSelectorIfUnowned=false)
 
 	AllowedTeams.Empty()
 	AllowedTeams.Add(5)
 	AllowedClasses.Empty()
-	AllowedClasses.Add(4)
+	AllowedClasses.Add(3)
 
 	/** Customizables **/
 
