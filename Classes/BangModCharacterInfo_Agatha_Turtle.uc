@@ -8,8 +8,8 @@ defaultproperties
 	DecapMeshPath="TurtleFFA.TurtleFFA"
 	OwnerMeshPath="TurtleFFA.TurtleFFA_1p"
 
-	HeadMaterialPath="CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Head"
-	BodyMaterialPath="CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Body"
+	HeadMaterialPath="CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Body"
+	BodyMaterialPath="CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Head"
 
 	StandinMesh=SkeletalMesh'TurtleFFA.TurtleFFA'
 	StandinDecapMesh=SkeletalMesh'TurtleFFA.TurtleFFA'

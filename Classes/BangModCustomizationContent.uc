@@ -64,7 +64,7 @@ defaultproperties
 	Characters.Add(class'BangModCharacterInfo_Agatha_Footman')
 	Characters.Add(class'BangModCharacterInfo_Mason_Footman')
 	Characters.Add(class'BangModCharacterInfo_Agatha_Turtle')
-    
+    Characters.Add(class'BangModCharacterInfo_Mason_Saint')
 
     Teams.Empty()
     Teams.Add(class'BangModCustomizationTeam_Agatha') //0
