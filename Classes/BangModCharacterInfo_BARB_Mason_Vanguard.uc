@@ -14,14 +14,14 @@ defaultproperties
 
 	CharacterMeshPath="CH_Barb_MasonVanguard.models.SK_CH_3P_Barb_MasonVanguard"
 	DecapMeshPath="CH_Barb_MasonVanguard.models.SK_CH_3P_Barb_MasonVanguard_Gore"
-	OwnerMeshPath="SlumpCharacters.MasonBarbVanguard1p"
+	OwnerMeshPath="BangmodCharacters.MasonBarbVanguard1p"
 
 	HeadMaterialPath="CH_Barb_MasonVanguard.Materials.MI_CH_3P_Barb_MasonVanguard_Body"
 	BodyMaterialPath="CH_Barb_MasonVanguard.Materials.MI_CH_3P_Barb_MasonVanguard_Head"
 
 	StandinMesh=SkeletalMesh'CH_Barb_MasonVanguard.models.SK_CH_3P_Barb_MasonVanguard'
 	StandinDecapMesh=SkeletalMesh'CH_Barb_MasonVanguard.models.SK_CH_3P_Barb_MasonVanguard_Gore'
-	StandinOwnerMesh=SkeletalMesh'SlumpCharacters.MasonBarbVanguard1p'
+	StandinOwnerMesh=SkeletalMesh'BangmodCharacters.MasonBarbVanguard1p'
 	StandinHeadMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_M_Vanguard_INST'
 	StandinBodyMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_M_Vanguard_INST'
 

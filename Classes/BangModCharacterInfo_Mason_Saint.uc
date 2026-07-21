@@ -6,14 +6,14 @@ defaultproperties
 
 	CharacterMeshPath="SaintFFA.SaintFFA"
 	DecapMeshPath="SaintFFA.SaintFFA"
-	OwnerMeshPath="SlumpCharacters.MasonKnight1p"
+	OwnerMeshPath="BangmodCharacters.MasonKnight1p"
 
 	HeadMaterialPath="CH_MasonKnight.Materials.MI_CH_3P_MasonKnight_Body"
 	BodyMaterialPath="CH_MasonKnight.Materials.MI_CH_3P_MasonKnight_Head"
 
 	StandinMesh=SkeletalMesh'SaintFFA.SaintFFA'
 	StandinDecapMesh=SkeletalMesh'SaintFFA.SaintFFA'
-	StandinOwnerMesh=SkeletalMesh'SlumpCharacters.MasonKnight1p'
+	StandinOwnerMesh=SkeletalMesh'BangmodCharacters.MasonKnight1p'
 	StandinHeadMaterial=MaterialInterface'CH_MasonKnight.Materials.MI_CH_3P_MasonKnight_Body'
 	StandinBodyMaterial=MaterialInterface'CH_MasonKnight.Materials.MI_CH_3P_MasonKnight_Head'
 

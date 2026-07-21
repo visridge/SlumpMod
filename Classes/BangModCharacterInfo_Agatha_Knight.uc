@@ -6,14 +6,14 @@ defaultproperties
 
 	CharacterMeshPath="CH_AgathanKnight_PKG.models.SK_CH_3P_AgathaKnight"
 	DecapMeshPath="CH_AgathanKnight_PKG.models.SK_CH_3P_AgathaKnight_Gore"
-	OwnerMeshPath="SlumpCharacters.AgathaKnight1p"
+	OwnerMeshPath="BangmodCharacters.AgathaKnight1p"
 
 	HeadMaterialPath="CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Body"
 	BodyMaterialPath="CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Head"
 
 	StandinMesh=SkeletalMesh'CH_AgathanKnight_PKG.models.SK_CH_3P_AgathaKnight'
 	StandinDecapMesh=SkeletalMesh'CH_AgathanKnight_PKG.models.SK_CH_3P_AgathaKnight_Gore'
-	StandinOwnerMesh=SkeletalMesh'SlumpCharacters.AgathaKnight1p'
+	StandinOwnerMesh=SkeletalMesh'BangmodCharacters.AgathaKnight1p'
 	StandinHeadMaterial=MaterialInterface'CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Body'
 	StandinBodyMaterial=MaterialInterface'CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Head'
 

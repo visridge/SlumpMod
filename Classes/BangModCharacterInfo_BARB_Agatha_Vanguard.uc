@@ -14,14 +14,14 @@ defaultproperties
 
 	CharacterMeshPath="CH_Barb_AgathaVanguard.models.SK_CH_3P_Barb_AgathaVanguard"
 	DecapMeshPath="CH_Barb_AgathaVanguard.models.SK_CH_3P_Barb_AgathaVanguard_Gore"
-	OwnerMeshPath="SlumpCharacters.AgathaBarbVanguard1p"
+	OwnerMeshPath="BangmodCharacters.AgathaBarbVanguard1p"
 
 	HeadMaterialPath="CH_Barb_AgathaVanguard.Materials.MI_CH_3P_Barb_AgathaVanguard_Body"
 	BodyMaterialPath="CH_Barb_AgathaVanguard.Materials.MI_CH_3P_Barb_AgathaVanguard_Head"
 
 	StandinMesh=SkeletalMesh'CH_Barb_AgathaVanguard.models.SK_CH_3P_Barb_AgathaVanguard'
 	StandinDecapMesh=SkeletalMesh'CH_Barb_AgathaVanguard.models.SK_CH_3P_Barb_AgathaVanguard_Gore'
-	StandinOwnerMesh=SkeletalMesh'SlumpCharacters.AgathaBarbVanguard1p'
+	StandinOwnerMesh=SkeletalMesh'BangmodCharacters.AgathaBarbVanguard1p'
 	StandinHeadMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST'
 	StandinBodyMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST'
 

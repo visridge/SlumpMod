@@ -14,7 +14,7 @@ defaultproperties
 
 	CharacterMeshPath="CH_Barb_AgathaArcher.models.SK_CH_3P_Barb_AgathaArcher"
 	DecapMeshPath="CH_Barb_AgathaArcher.models.SK_CH_3P_Barb_AgathaArcher_Gore"
-	OwnerMeshPath="SlumpCharacters.AgathaBarbArcher1p"
+	OwnerMeshPath="BangmodCharacters.AgathaBarbArcher1p"
 
 	HeadMaterialPath="CH_Barb_AgathaArcher.Materials.MI_CH_3P_Barb_AgathaMaa_Body01"
 	BodyMaterialPath="CH_Barb_AgathaArcher.Materials.MI_CH_3P_Barb_AgathaMaa_Head"
