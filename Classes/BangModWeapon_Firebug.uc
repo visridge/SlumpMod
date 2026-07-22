@@ -178,14 +178,14 @@ DefaultProperties
 
 
 	AttachmentClass=class'BangModWeaponAttachment_Firebug'
-	InventoryAttachmentClass=class'AOCInventoryAttachment_Torch'
+	InventoryAttachmentClass=class'BangModWeaponAttachment_Firebug'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Cudgel
 	CurrentShieldType=ESHIELD_None
 	bHaveShield=true
 	bCanSwitchShield=true
 
-	AlternativeMode=class'BangModWeapon_FirebugThrow'
+	// AlternativeMode=class'BangModWeapon_FirebugThrow'
 
 	CurrentGenWeaponType=EWT_1hand
 
