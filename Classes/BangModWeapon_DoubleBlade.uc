@@ -46,6 +46,24 @@ simulated state ParryRelease
 	}
 }
 
+/** Remap stab input to alternate overhead — the quarterstaff stab animation
+ *  looks scuffed on a double-blade held in the middle, so players get an
+ *  extra overhead angle instead.  Follows the same pattern the base class
+ *  uses for Attack_AltSlash → Attack_Slash (AOCMeleeWeapon.Active.BeginFire).
+ */
+simulated state Active
+{
+	simulated function BeginFire(byte FireModeNum)
+	{
+		if (FireModeNum == Attack_Stab)
+		{
+			bPlayAlternateAnimation = true;
+			FireModeNum = Attack_Overhead;
+		}
+		super.BeginFire(FireModeNum);
+	}
+}
+
 simulated function float GetStaminaLossForMiss()
 {
 	// For missed swings, QuarterStaff should drain as much as one-hander
