@@ -15,9 +15,10 @@ DefaultProperties
 	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)
 	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
 	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_AgathaFlag',CorrespondingDuelProp=EDUEL_SpearUse)
-	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Gladius',CorrespondingDuelProp=EDUEL_DagesseUse)
+	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_SpikedMace',CorrespondingDuelProp=EDUEL_DagesseUse)
 	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_BastardSword',CorrespondingDuelProp=EDUEL_LongswordUse)
-	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_GrandLance')
+	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
+	// NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_GrandLance')
 
 
 	NewSecondaryWeapons.empty;

@@ -23,6 +23,17 @@ simulated state Release
 			}
 		}
 	}
+
+	/** Block stab combos — remap to shove so players can't slash→stab combo
+	*  around the Active.BeginFire override.  Same pattern as the base class
+	*  uses for Attack_AltSlash → Attack_Slash in HandleCombo.
+	*/
+	simulated function HandleCombo(EAttack ComboAttack)
+	{
+		if (ComboAttack == Attack_Stab)
+	    	return; // ignore the combo, don't call super.HandleCombo
+		super.HandleCombo(ComboAttack);
+	}
 }
 
 simulated state ParryRelease
@@ -57,8 +68,7 @@ simulated state Active
 	{
 		if (FireModeNum == Attack_Stab)
 		{
-			bPlayAlternateAnimation = true;
-			FireModeNum = Attack_Overhead;
+			FireModeNum = Attack_Shove;
 		}
 		super.BeginFire(FireModeNum);
 	}
