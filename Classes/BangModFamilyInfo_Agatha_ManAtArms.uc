@@ -16,8 +16,8 @@ DefaultProperties
 	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_MorningStar',CorrespondingDuelProp=EDUEL_MorningStarUse)
 	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_HolyWaterSprinkler',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_QuarterStaff',CorrespondingDuelProp=EDUEL_QStaffUse)
-	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_DualBucklers')
-	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_Firebug')
+	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_Firebug')
+	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_DualBucklers')
 	
 	NewSecondaryWeapons.empty;
 	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_Saber')
