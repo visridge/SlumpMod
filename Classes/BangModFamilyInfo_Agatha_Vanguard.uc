@@ -16,7 +16,7 @@ DefaultProperties
 	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
 	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Nodachi',CorrespondingDuelProp=EDUEL_ZweihanderUse)
 	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Kanabo',CorrespondingDuelProp=EDUEL_GrandMaceUse)
-	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
+	// NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 	// NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_Katana',CorrespondingDuelProp=EDUEL_LongswordUse)
 	
 	NewSecondaryWeapons.empty;
