@@ -1640,7 +1640,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 		if (bSameTeam) {
 			// Custom: Flinch both attacker and teammate (punishment for team damage)
 			AOCWeapon(Weapon).ActivateFlinch(true, GetHitDirection(Info.HitActor.Location), false, false, AOCWeapon(Info.HitActor.Weapon).bTwoHander);
-			AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), false, false, AOCWeapon(Weapon).bTwoHander);
+			// AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), false, false, AOCWeapon(Weapon).bTwoHander);
 		} else {
 			// Flinch enemy victim normally
 			AOCWeapon(Info.HitActor.Weapon).ActivateFlinch(true, Info.HitActor.GetHitDirection(Location), false, false, AOCWeapon(Weapon).bTwoHander);
