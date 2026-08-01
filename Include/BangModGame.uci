@@ -242,6 +242,12 @@ function StartMatch()
     // catches any destroyed or Kismet-spawned later in the round.
     DisableCatapultRespawns();
     SetTimer(3.0, true, 'DisableCatapultRespawns');
+
+    // BANGMOD: disable siege weapons and non-objective gates on Slumforest only.
+    // Objective-tied AOCInterpActor instances (e.g. Darkforest doors, peasant gates) are
+    // excluded via IsPartOfObjective(). Repeated on a timer to catch Kismet-spawned actors.
+    DisableSiegeObjects();
+    SetTimer(3.0, true, 'DisableSiegeObjects');
 }
 
 
@@ -333,4 +339,68 @@ function DisableCatapultRespawns()
 		if (Ballista.bDestroyed)
 			Ballista.ClearTimer('Repair');
 	}
+}
+
+// ---------------------------------------------------------------------------
+// BANGMOD: Disable ballistae, catapults, and non-objective gates on Slumforest.
+//
+// Ballistae / catapults: set health to zero and prevent repair so they stay as
+// broken wrecks (or are already destroyed).
+//
+// Gates (AOCInterpActor): hide and disable collision UNLESS the actor is
+// referenced by an AOCObjective_Breakable (i.e. the Darkforest peasant doors).
+// Objective-tied breakables are left alone so the map's Kismet logic works.
+// ---------------------------------------------------------------------------
+function DisableSiegeObjects()
+{
+	local AOCSWBallista Ballista;
+	local AOCSWCatapult Catapult;
+	local AOCInterpActor InterpActor;
+
+	// Only apply on Slumforest — completely inert on every other map.
+	if (InStr(WorldInfo.GetMapName(), "AOCTO-Slumforest_p", false, true) == INDEX_NONE)
+		return;
+
+	// Ballistae: zero out health, kill any in-flight repair timer.
+	foreach WorldInfo.AllActors(class'AOCSWBallista', Ballista)
+	{
+		Ballista.RepairTime = 1000000.0;
+		if (Ballista.bDestroyed)
+			Ballista.ClearTimer('Repair');
+		Ballista.Health = 0;
+	}
+
+	// Catapults: same treatment.
+	foreach WorldInfo.AllActors(class'AOCSWCatapult', Catapult)
+	{
+		Catapult.RepairTime = 1000000.0;
+		if (Catapult.bDestroyed)
+			Catapult.ClearTimer('Repair');
+		Catapult.Health = 0;
+	}
+
+	// Gates / breakable objects: only hide the ones NOT tied to an objective.
+	// Objective-tied actors (e.g. Darkforest final-stage doors) must remain
+	// intact so the map's Kismet objective sequence can still function.
+	foreach WorldInfo.AllActors(class'AOCInterpActor', InterpActor)
+	{
+		if (!IsPartOfObjective(InterpActor))
+		{
+			InterpActor.SetHidden(true);
+			InterpActor.SetCollision(false, false);
+		}
+	}
+}
+
+function bool IsPartOfObjective(AOCInterpActor CheckActor)
+{
+	local AOCObjective_Breakable Obj;
+
+	foreach WorldInfo.AllActors(class'AOCObjective_Breakable', Obj)
+	{
+		if (Actor(Obj.DestroyObject) == CheckActor)
+			return true;
+	}
+
+	return false;
 }

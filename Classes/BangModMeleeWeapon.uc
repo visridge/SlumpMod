@@ -22,6 +22,7 @@ var float fParryBufferWindow;   // How long to remember parry input (default 125
 var float fServerParryStartTime;  // When parry became active on server
 var float fParryGracePeriod;      // Grace period for parry timing validation (75ms for RTT compensation)
 var float fDamageTraceActivationDelay;  // Delay before release traces can deal damage
+var bool bAcceptLateParrySuccessInRecovery; // True only for ParryRelease -> Recovery race repair.
 
 // Minimum combo transition time for ping normalization
 var float fMinComboTransitionTime;  // Minimum time before combo can release (100ms floor)
@@ -350,8 +351,31 @@ simulated state Recovery
 {
 	simulated event BeginState(Name PreviousStateName)
 	{
+		bAcceptLateParrySuccessInRecovery =
+			PreviousStateName == 'ParryRelease'
+			&& CurrentFireMode == Attack_Parry
+			&& !bEquipShield;
+
 		super.BeginState(PreviousStateName);
 			// TryActivateBufferedParry();
+	}
+
+	simulated function SuccessfulParry(EAttack Type, int Dir)
+	{
+		if (!bAcceptLateParrySuccessInRecovery || bSuccessfulParry)
+			return;
+
+		bAcceptLateParrySuccessInRecovery = false;
+		bSuccessfulParry = true;
+		bParryHitCounter = false;
+
+		if (AOCOwner != none)
+		{
+			AOCOwner.ClearTimer('OnAttackAnimEnd');
+			AOCOwner.OnActionSucceeded(EACT_Block);
+		}
+
+		GotoState('Active');
 	}
 
 	/** Override HandleCombo to add server-side stamina validation */
@@ -390,6 +414,12 @@ simulated state Recovery
 			if (eNextAttack != ComboAttack)
 				AOCOwner.PlayerHUDStartRecovery();
 		}
+	}
+
+	simulated event EndState(Name NextStateName)
+	{
+		bAcceptLateParrySuccessInRecovery = false;
+		super.EndState(NextStateName);
 	}
 	
 }

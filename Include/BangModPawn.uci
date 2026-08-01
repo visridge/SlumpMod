@@ -2240,7 +2240,7 @@ DefaultProperties
 
 	// Parry rollback: hold an incoming swing up to this long (capped at defender one-way ping)
 	// so an in-flight parry can suppress it before any feedback plays. 0 hold at 0 ping.
-	fParryRollbackMaxHoldSeconds=0.0105
+	fParryRollbackMaxHoldSeconds=0.051
 	fParryRollbackMinHoldSeconds=0.013
 
 	// Client-timestamp hit-trade priority (see helpers/arbitration in this include).
