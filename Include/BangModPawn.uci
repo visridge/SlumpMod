@@ -2246,7 +2246,7 @@ DefaultProperties
 	// Client-timestamp hit-trade priority (see helpers/arbitration in this include).
 	// Larger fTradeWindowSeconds keeps MORE trades; smaller cancels more staggered ones.
 	fTradeWindowSeconds=0.025     // hits within 42ms (~5 frames at 120Hz) still trade
-	fParryTradeGraceSeconds=0.0105  // a parry counts unless it went active >42ms after the swing landed
+	fParryTradeGraceSeconds=0.051  // a parry counts unless it went active >42ms after the swing landed
 	fMaxPlausibleLatency=0.500     // clamp for reconstructed client timestamps / one-way ping
 	fRecentHitTTL=0.200            // how long a taken hit stays eligible to cancel a trade swing
 	fClockOffsetAlpha=0.10         // EMA weight for per-message clock-offset samples
