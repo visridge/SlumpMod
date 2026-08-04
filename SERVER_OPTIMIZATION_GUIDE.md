@@ -1,4 +1,4 @@
-# BangMod 120Hz Server Optimization Guide
+# BangMod 165Hz Server Optimization Guide
 
 ## Current Performance Bottlenecks (Dark Forest Final Objective)
 
@@ -25,7 +25,7 @@ NetUpdateFrequency = 1.0  // Down from vanilla 3.0Hz (66% reduction)
 NetUpdateFrequency = 30.0  // Down from vanilla 50.0Hz (40% reduction)
 ```
 - **Impact:** 40% less network overhead per moving NPC
-- **Rationale:** 30Hz is still smooth for AI, players get 120Hz for competitive feel
+- **Rationale:** 30Hz is still smooth for AI, players get 165Hz for competitive feel
 - **Usage:** Replace `AOCNPC_New` spawns with `BangModNPC_New` in map Kismet
 
 ---
@@ -57,8 +57,8 @@ NetUpdateFrequency = 30.0  // Down from vanilla 50.0Hz (40% reduction)
 
 ```ini
 [Engine.GameEngine]
-; 120Hz dedicated server tickrate
-NetServerMaxTickRate=120
+; 165Hz dedicated server tickrate
+NetServerMaxTickRate=165
 MaxClientRate=25000
 MaxInternetClientRate=25000
 
@@ -70,8 +70,8 @@ bUsePhysicsAsync=FALSE
 MaxSpectatorRate=8000
 
 [IpDrv.TcpNetDriver]
-; Network optimization for 120Hz
-NetServerMaxTickRate=120
+; Network optimization for 165Hz
+NetServerMaxTickRate=165
 InitialConnectTimeout=200.0
 ConnectionTimeout=80.0
 ```
@@ -102,8 +102,8 @@ stat net                    // Network stats (bandwidth, packet loss)
 ```
 
 **Target Metrics:**
-- **Server ms:** < 8.33ms (120Hz = 8.33ms budget per tick)
-- **Player NetUpdateFrequency:** 120Hz (BangModPawn, BangModPlayerController)
+- **Server ms:** < 6.06ms (165Hz = 6.06ms budget per tick)
+- **Player NetUpdateFrequency:** 165Hz (BangModPawn, BangModPlayerController)
 - **NPC NetUpdateFrequency:** 1-30Hz (BangModNPC classes)
 - **Player ping:** < 70ms optimal, < 140ms acceptable
 
@@ -120,9 +120,9 @@ stat net                    // Network stats (bandwidth, packet loss)
 6. ✅ Check client-side smoothness (should see no change)
 
 **Success Indicators:**
-- Server ms < 8.33ms on all objectives (including final)
+- Server ms < 6.06ms on all objectives (including final)
 - No visible jitter or lag on NPC deaths
-- Trade window still functions correctly (120Hz player updates maintained)
+- Trade window still functions correctly (165Hz player updates maintained)
 - Combat feels identical to previous optimizations (low latency)
 
 ---
@@ -148,9 +148,9 @@ stat net                    // Network stats (bandwidth, packet loss)
 - Physics async enable (risky, needs extensive testing)
 
 **Not Recommended:**
-- ❌ Reducing player NetUpdateFrequency below 120Hz (defeats competitive purpose)
+- ❌ Reducing player NetUpdateFrequency below 165Hz (defeats competitive purpose)
 - ❌ Disabling ragdolls entirely (already optimized to client-only)
-- ❌ Increasing server tickrate above 120Hz (diminishing returns, more CPU)
+- ❌ Increasing server tickrate above 165Hz (diminishing returns, more CPU)
 
 ---
 
@@ -166,7 +166,7 @@ stat net                    // Network stats (bandwidth, packet loss)
 - Balance between smoothness and performance
 - Human eye perceives smooth motion at ~24fps
 - 30Hz network updates = smooth enough for AI
-- 120Hz reserved for player pawns (competitive advantage)
+- 165Hz reserved for player pawns (competitive advantage)
 
 **Network Math:**
 ```
@@ -181,10 +181,10 @@ Savings: 432 updates/sec (66% reduction)
 
 **Server Tick Budget:**
 ```
-120Hz tickrate = 8.33ms per tick
+165Hz tickrate = 6.06ms per tick
 
 At 60% load:
-- Player updates: ~5ms (12 players × 120Hz)
+- Player updates: ~5ms (12 players × 165Hz)
 - NPC updates: ~1ms (18 NPCs × 1Hz)
 - Game logic: ~2ms (objectives, spawns, etc)
 = ~8ms total (within budget)
