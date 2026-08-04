@@ -441,6 +441,7 @@ function ShowOptimizationTip()
 {
 	ReceiveChatMessage("=== Welcome to SlumpMod ===", EFAC_ALL, false, true, "#00FF00");
 	ReceiveChatMessage("Join our discord at https://discord.gg/G4Zsm62z5J", EFAC_ALL, false, true, "#FFAA00");
+	ReceiveChatMessage("disableScreenShake True - in console", EFAC_ALL, false, true, "#ffffff");
 }
 
 reliable server function bool IsAdmin() {
