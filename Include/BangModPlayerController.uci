@@ -590,7 +590,7 @@ exec function ShowAllParryBoxes()
 	}
 }
 
-// Override ReplicateMove to set fixed 120Hz client movement updates (improves netcode smoothness)
+// Override ReplicateMove to set fixed 165Hz client movement updates (improves netcode smoothness)
 function ReplicateMove(float DeltaTime, vector NewAccel, eDoubleClickDir DoubleClickMove, rotator DeltaRot)
 {
 	local SavedMove NewMove, OldMove, AlmostLastMove, LastMove;
@@ -698,10 +698,10 @@ function ReplicateMove(float DeltaTime, vector NewAccel, eDoubleClickDir DoubleC
 
 	if ( PendingMove == None )
 	{
-		// BangMod: Fixed 120Hz update rate for improved netcode
+		// BangMod: Fixed 165Hz update rate for improved netcode
 		// Original code had dynamic rates: 90Hz (<=10 players) or 45Hz+ (>10 players) on listen servers, 20Hz on dedicated
-		// Setting to 0.00833 (~120Hz) matches the server's max tickrate for optimal smoothness
-		NetMoveDelta = 0.00833;
+		// Setting to 0.00606 (~165Hz) matches the server's max tickrate for optimal smoothness
+		NetMoveDelta = 0.00606;
 
 		if( (WorldInfo.TimeSeconds - ClientUpdateTime) * WorldInfo.TimeDilation < NetMoveDelta )
 		{
@@ -2110,9 +2110,9 @@ function ProcessVOIPQueue()
 
 DefaultProperties
 {
-	NetUpdateFrequency=120
-	// Netcode optimization: Client-side interpolation interval to match 120Hz tickrate
-	MaxClientUpdateInterval=0.00833  // 1/120 = 0.00833 seconds between client updates
+	NetUpdateFrequency=165
+	// Netcode optimization: Client-side interpolation interval to match 165Hz tickrate
+	MaxClientUpdateInterval=0.00606  // 1/165 = 0.00606 seconds between client updates
 	suicideDelay = 1.0f
 	CustomizationClass=class'BangModCustomization'
 	bShowDeathMessages = true

@@ -1,4 +1,4 @@
-# BangMod 120Hz Server Optimizations (No Map Access Required)
+# BangMod 165Hz Server Optimizations (No Map Access Required)
 
 ## Current Performance Status
 
@@ -13,17 +13,17 @@
 
 ## ✅ Already Implemented & Working
 
-### 1. 120Hz Player Network Updates
+### 1. 165Hz Player Network Updates
 **Location:** BangModPlayerController.uci line 410
 ```unrealscript
-NetMoveDelta = 0.00833;  // ~120Hz vs vanilla 20Hz
+NetMoveDelta = 0.00606;  // ~165Hz vs vanilla 20Hz
 ```
 **Impact:** Smooth competitive netcode, low latency player movement
 
-### 2. 120Hz Component Replication
-- **BangModPlayerController:** `NetUpdateFrequency=120`
-- **BangModPawn:** `NetUpdateFrequency=120`
-- **BangModWeaponAttachment:** `NetUpdateFrequency=120`
+### 2. 165Hz Component Replication
+- **BangModPlayerController:** `NetUpdateFrequency=165`
+- **BangModPawn:** `NetUpdateFrequency=165`
+- **BangModWeaponAttachment:** `NetUpdateFrequency=165`
 **Impact:** Synchronized updates across all player components
 
 ### 3. High Priority Player Replication
@@ -86,8 +86,8 @@ SetTimer(2.0f, true, 'UpdateServerTickTime');  // 2 seconds instead of 1
 
 ```ini
 [Engine.GameEngine]
-; 120Hz dedicated server tickrate (already set)
-NetServerMaxTickRate=120
+; 165Hz dedicated server tickrate (already set)
+NetServerMaxTickRate=165
 MaxClientRate=25000
 MaxInternetClientRate=25000
 
@@ -97,15 +97,15 @@ MaxPhysicsSubsteps=2
 ; NEW: Disable physics async (can cause overhead on older CPUs)
 bUsePhysicsAsync=FALSE
 
-; NEW: Reduce spectator bandwidth (they don't need 120Hz)
+; NEW: Reduce spectator bandwidth (they don't need 165Hz)
 MaxSpectatorRate=8000
 
 [IpDrv.TcpNetDriver]
-NetServerMaxTickRate=120
+NetServerMaxTickRate=165
 InitialConnectTimeout=200.0
 ConnectionTimeout=80.0
 
-; NEW: Reduce saved move history (default 96, we only need 48 at 120Hz)
+; NEW: Reduce saved move history (default 96, we only need 48 at 165Hz)
 NumRecentlyDisconnectedTrackingTime=10.0
 ```
 
@@ -302,7 +302,7 @@ You have two options:
 1. ✅ Compile BangMod (check for errors)
 2. ✅ Test with 12 players on Dark Forest
 3. ✅ Monitor server ms on all objectives (especially final)
-4. ✅ Verify trade window still functions (120Hz maintained)
+4. ✅ Verify trade window still functions (165Hz maintained)
 5. ✅ Check client smoothness (no jitter or lag)
 6. ✅ Confirm admin tick monitoring still works (if changed to 2s)
 
