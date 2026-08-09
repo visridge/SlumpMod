@@ -2131,12 +2131,14 @@ function ResolvePendingHitsAsParry(optional float fParryActionServerTime = 0.0)
 
 
 
-// Block all ballista bolt damage (direct and splash) at the TakeDamage level.
-// Splash damage from HurtRadius bypasses AttackOtherPawn entirely, so this is the only reliable intercept.
+// Block ballista bolt SPLASH damage only. Direct hits still kill.
+// Splash flows through HurtRadius → TakeRadiusDamage → TakeDamage with the
+// projectile as DamageCauser. Direct hits go through AttackOtherPawn → TakeDamage
+// with DamageCauser=none, so we let those through.
 event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector Momentum, class<DamageType> DamageType, optional TraceHitInfo HitInfo, optional Actor DamageCauser)
 {
-	// if (DamageType == class'AOCDmgType_BallistaBolt')
-	// 	return;
+	if (DamageType == class'AOCDmgType_BallistaBolt' && AOCProjectile(DamageCauser) != none)
+		return;
 
 	// Firebug ignition moved to end of AttackOtherPawn (after HandlePawnGetHit)
 	// so that the blunt impact sound plays before the fire sound.
