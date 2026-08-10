@@ -1,5 +1,5 @@
 // BangMod Weapon Attachment Netcode Optimization
-// Maximum performance: 165Hz for all weapon attachments
+// Maximum performance: 120Hz for all weapon attachments
 
 // Netcode optimization: High priority replication for all weapon attachments
 event float GetNetPriority(Actor Viewer, vector ViewLocation, float ViewDist)
@@ -52,5 +52,5 @@ simulated function AttachTo(UTPawn OwnerPawn)
 // }
 
 // Default properties
-NetUpdateFrequency=165
+NetUpdateFrequency=120
 ParryTracersLength=67.0

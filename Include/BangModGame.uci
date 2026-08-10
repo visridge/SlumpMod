@@ -246,8 +246,8 @@ function StartMatch()
     // BANGMOD: disable siege weapons and non-objective gates on Slumforest only.
     // Objective-tied AOCInterpActor instances (e.g. Darkforest doors, peasant gates) are
     // excluded via IsPartOfObjective(). Repeated on a timer to catch Kismet-spawned actors.
-    DisableSiegeObjects();
-    SetTimer(3.0, true, 'DisableSiegeObjects');
+    // DisableSiegeObjects();
+    // SetTimer(3.0, true, 'DisableSiegeObjects');
 }
 
 

@@ -2185,15 +2185,15 @@ function PossessedBy(Controller C, bool bVehicleTransition)
 {
 	Super.PossessedBy(C, bVehicleTransition);
 	
-	// Spectators don't need 165Hz - save bandwidth with 60Hz (still smooth, ~64% reduction)
+	// Spectators don't need 120Hz - save bandwidth with 60Hz (still smooth, ~50% reduction)
 	if (PlayerReplicationInfo != none && PlayerReplicationInfo.bOnlySpectator)
 		NetUpdateFrequency = 60.0;
 	else
-		NetUpdateFrequency = 165.0;
+		NetUpdateFrequency = 120.0;
 }
 
 // Netcode optimization: Maximum performance for all pawns
-// 165Hz update frequency for all distances
+// 120Hz update frequency for all distances
 event float GetNetPriority(Actor Viewer, vector ViewLocation, float ViewDist)
 {
 	// Always use maximum priority and frequency for all pawns
@@ -2247,8 +2247,8 @@ DefaultProperties
 
 	// Client-timestamp hit-trade priority (see helpers/arbitration in this include).
 	// Larger fTradeWindowSeconds keeps MORE trades; smaller cancels more staggered ones.
-	fTradeWindowSeconds=0.025     // hits within 25ms (~4 frames at 165Hz) still trade
-	fParryTradeGraceSeconds=0.051  // a parry counts unless it went active >51ms after the swing landed (~8 frames at 165Hz)
+	fTradeWindowSeconds=0.025     // hits within 25ms (~3 frames at 120Hz) still trade
+	fParryTradeGraceSeconds=0.051  // a parry counts unless it went active >51ms after the swing landed (~6 frames at 120Hz)
 	fMaxPlausibleLatency=0.500     // clamp for reconstructed client timestamps / one-way ping
 	fRecentHitTTL=0.200            // how long a taken hit stays eligible to cancel a trade swing
 	fClockOffsetAlpha=0.10         // EMA weight for per-message clock-offset samples
@@ -2260,8 +2260,8 @@ DefaultProperties
 	// Damage grace period disabled.
 	// fRiposteGracePeriod=0.300
 
-	// Netcode optimization: 165Hz server->client pawn updates (matches server tickrate and ReplicateMove rate)
-	NetUpdateFrequency=165
+	// Netcode optimization: 120Hz server->client pawn updates (matches server tickrate and ReplicateMove rate)
+	NetUpdateFrequency=120
 
 	CustomizationClass=class'BangModCustomization'
 

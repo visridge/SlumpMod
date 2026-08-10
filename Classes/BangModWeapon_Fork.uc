@@ -221,7 +221,7 @@ DefaultProperties
 	CurrentGenWeaponType=EWT_Spear
 	bIgnoreAlternate=true
 
-	EndFeintWindowTime = 0.200
+	EndFeintWindowTime = 0.225
 
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Fork]

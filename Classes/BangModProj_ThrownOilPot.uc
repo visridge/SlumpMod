@@ -191,7 +191,7 @@ DefaultProperties
 {
 	fGracePeriod=1.0           // 1 second grace period before damage starts
 	fDamagePerSecond=10.0      // 10 damage per second
-	fActiveDamageTime=7.0      // Deal damage for 7 seconds (after grace period)
+	fActiveDamageTime=8.0      // Deal damage for 7 seconds (after grace period)
 	bGracePeriodActive=false
 	fBurnStartTime=0.0
 }

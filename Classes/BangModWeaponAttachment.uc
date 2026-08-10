@@ -76,9 +76,9 @@ simulated function HandleHitPawn(AOCPawn HitPawn, Vector HitLocation, Vector Hit
 
 DefaultProperties
 {
-	// Netcode optimization: Match weapon attachment replication to 165Hz pawn updates
+	// Netcode optimization: Match weapon attachment replication to 120Hz pawn updates
 	// Ensures weapon animations and positions stay in sync with high-frequency pawn updates
-	NetUpdateFrequency=165
+	NetUpdateFrequency=120
 	
 	// Start with damage enabled (weapon will disable/enable as needed)
 	bCanDoDamage=true

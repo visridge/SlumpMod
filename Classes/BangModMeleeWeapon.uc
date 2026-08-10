@@ -1148,5 +1148,5 @@ DefaultProperties
 	// EndFeintWindowTime = 0.10;  // Reduced from vanilla 0.15
 	// EndFeintWindowTimeCombo = 0.20;  // Reduced from vanilla 0.25
 	
-	NetUpdateFrequency=165
+	NetUpdateFrequency=120
 }

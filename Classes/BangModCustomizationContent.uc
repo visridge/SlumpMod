@@ -37,6 +37,7 @@ defaultproperties
 	Characters.Add(class'BangModCharacterInfo_Agatha_Knight')
 	Characters.Add(class'BangModCharacterInfo_Agatha_ManAtArms')
 	Characters.Add(class'BangModCharacterInfo_Agatha_Vanguard')
+	Characters.Add(class'BangModCharacterInfo_Agatha_Turtle')
 	Characters.Add(class'BangModCharacterInfo_Mason_Archer')
 	Characters.Add(class'BangModCharacterInfo_Mason_King')
 	Characters.Add(class'BangModCharacterInfo_Mason_Knight')
@@ -44,7 +45,7 @@ defaultproperties
 	Characters.Add(class'BangModCharacterInfo_Mason_Vanguard')
 	Characters.Add(class'AOCCharacterInfo_Peasant')
 	Characters.Add(class'AOCCharacterInfo_Playable_Peasant')
-	Characters.Add(class'AOCCharacterInfo_Playable_Skeleton')
+	// Characters.Add(class'AOCCharacterInfo_Playable_Skeleton')
 
 	Characters.Add(class'BangModCharacterInfo_Agatha_Knight_DLC1')
 	Characters.Add(class'BangModCharacterInfo_Mason_Knight_DLC1')
@@ -63,8 +64,7 @@ defaultproperties
 	Characters.Add(class'AOCCharacterInfo_Playable_PeasantRevolt')
 	Characters.Add(class'BangModCharacterInfo_Agatha_Footman')
 	Characters.Add(class'BangModCharacterInfo_Mason_Footman')
-	// Characters.Add(class'BangModCharacterInfo_Agatha_Turtle')
-    // Characters.Add(class'BangModCharacterInfo_Mason_Saint')
+	Characters.Add(class'BangModCharacterInfo_Mason_Saint')
 
     Teams.Empty()
     Teams.Add(class'BangModCustomizationTeam_Agatha') //0
