@@ -104,6 +104,57 @@ static function bool IsShieldPatternOwnedBy(int ShieldPatternID, int CharacterID
     return true;
 }
 
+// Fix-up stale character index that was saved from a previous mod version
+// where the Characters array had different ordering. If the saved index now
+// points to a class that doesn't match the requested faction/class, walk the
+// array to find the correct index for the same character-info class.
+// On success the INI is healed in-place so the correction persists.
+static function int FixupCharacterIndex(int SavedIndex, int Faction, int PlayerClass)
+{
+	local class<AOCCharacterInfo> SavedCharClass;
+	local class<AOCCharacterInfo> CurrCharClass;
+	local int i, CorrectedIndex;
+	local array<class<AOCCharacterInfo>> CharList;
+
+	CharList = class'BangModCustomizationContent'.default.Characters;
+
+	// In-range and still valid for this faction/class — nothing to fix.
+	if (SavedIndex >= 0 && SavedIndex < CharList.Length
+		&& CharList[SavedIndex] != none
+		&& CharList[SavedIndex].static.IsValidFor(Faction, PlayerClass))
+	{
+		return SavedIndex;
+	}
+
+	// Out of range or mismatched. Walk current array by class reference.
+	SavedCharClass = (SavedIndex >= 0 && SavedIndex < CharList.Length)
+		? CharList[SavedIndex] : none;
+
+	if (SavedCharClass != none)
+	{
+		for (i = 0; i < CharList.Length; i++)
+		{
+			if (CharList[i] == SavedCharClass
+				&& CharList[i].static.IsValidFor(Faction, PlayerClass))
+			{
+				CorrectedIndex = i;
+				break;
+			}
+		}
+	}
+
+	if (SavedCharClass == none || CorrectedIndex == INDEX_NONE)
+	{
+		// Can't correlate saved index to any known class — fall back to default.
+		CorrectedIndex = class'AOCCustomization'.static.GetDefaultCharacterID(Faction, PlayerClass);
+	}
+
+	// Auto-heal the stale INI save so the fix persists on next session.
+	class'AOCCustomization'.static.LocalSetSelectedCharacter(Faction, PlayerClass, CorrectedIndex, true);
+
+	return CorrectedIndex;
+}
+
 // BangMod: Override LocalGetCustomizationChoices to use our unlocked logic and read from vanilla config
 static function SCustomizationChoice LocalGetCustomizationChoices(int Faction, int PlayerClass,
 	optional EWeaponType PrimaryWeaponType = EWEP_MAX,
@@ -146,9 +197,15 @@ static function SCustomizationChoice LocalGetCustomizationChoices(int Faction, i
 
 	//Character
 	CustomizationInfo.Character = class'AOCCustomization'.static.LocalGetSelectedCharacter(Faction, PlayerClass);
-	// BangMod: Allow all characters except skeleton/peasant restrictions
+	// BangMod: Fix-up stale character index saved from a previous mod version.
+	// The Characters array is append-only; if an old index now points to the
+	// wrong class, walk the array by class reference to find the correct slot.
+	CustomizationInfo.Character = FixupCharacterIndex(CustomizationInfo.Character, Faction, PlayerClass);
+	// BangMod: Allow all characters except skeleton/peasant restrictions.
+	// Fall back to GetDefaultCharacterID (not 0) so the player gets their
+	// class-appropriate default skin instead of the skeleton placeholder.
 	if(!IsCharacterOwnedBy(CustomizationInfo.Character, Faction, PlayerClass, PRI))
-		CustomizationInfo.Character = 0;
+		CustomizationInfo.Character = class'AOCCustomization'.static.GetDefaultCharacterID(Faction, PlayerClass);
 
 	//Helmet
 	TempID = class'AOCCustomization'.static.LocalGetSelectedHelmet(Faction, PlayerClass);
