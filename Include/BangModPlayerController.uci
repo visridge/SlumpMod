@@ -467,6 +467,27 @@ exec function AdminBroadcastMessage(String Message) {
 	S_AdminBroadcastMessage(Message);
 }
 
+exec function AdminCoinFlip() {
+	local int Coin;
+	local string Result;
+	local AOCPlayerController PC;
+
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+
+	Coin = Rand(2);
+	if (Coin == 0)
+		Result = "Heads";
+	else
+		Result = "Tails";
+
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC) {
+		PC.ReceiveChatMessage(AOCPRI(PlayerReplicationInfo).GetHumanReadableName()@"flipped a coin:"@Result, EFAC_ALL, false, true, "#00FF00");
+	}
+}
+
 exec function AdminChangeTeam(String PlayerName) {
 	if (!PlayerReplicationInfo.bAdmin) {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
@@ -1072,6 +1093,14 @@ exec function AdminGotoDF() {
 		return;
 	}
 	ServerChangeMap("AOCTO-Darkforest_p");
+}
+
+exec function AdminGotoCF() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-CompForest_p");
 }
 
 // Switch to CompMod3 server (players without the mod will be kicked and must rejoin manually)
