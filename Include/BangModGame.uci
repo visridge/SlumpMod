@@ -4,6 +4,19 @@
 //to add even more variety. See the ParseOption function in Src\Engine\Classes\GameInfo.uc
 var config array<GameTypePrefix> SDKPrefixes;
 
+// Local stats bridge. These values are per game-mode class in DefaultBangMod.ini.
+// Keep it disabled until the Chivalry dedicated server and local backend run on
+// the same machine, then configure a non-empty API key before enabling it.
+var config bool bEnableStatsReporting;
+var config string StatsEndpoint;
+var config string StatsApiKey;
+var config string StatsServerId;
+var config float StatsReportInterval;
+
+var string StatsMatchId;
+var bool bStatsRequestInFlight;
+var HttpRequestInterface StatsRequest;
+
 
 static event class<GameInfo> SetGameType(string MapName, string Options, string Portal)
 {
@@ -237,6 +250,8 @@ function StartMatch()
     ResetParryScoreboardCounts();
     super.StartMatch();
 
+    BeginStatsReporting();
+
     // BANGMOD: make catapults permanently destructible (see DisableCatapultRespawns). One
     // immediate pass covers catapults already on the map, and a low-frequency looping sweep
     // catches any destroyed or Kismet-spawned later in the round.
@@ -248,6 +263,131 @@ function StartMatch()
     // excluded via IsPartOfObjective(). Repeated on a timer to catch Kismet-spawned actors.
     // DisableSiegeObjects();
     // SetTimer(3.0, true, 'DisableSiegeObjects');
+}
+
+function BeginStatsReporting()
+{
+    if (!bEnableStatsReporting || StatsEndpoint == "" || StatsApiKey == "" || StatsServerId == "")
+    {
+        return;
+    }
+
+    // Map names and the server's elapsed time are engine-produced, safe identifier
+    // components. This ID stays stable for all snapshots in the current match.
+    StatsMatchId = WorldInfo.GetMapName() $ "-" $ string(int(WorldInfo.TimeSeconds));
+    ClearTimer('SendStatsSnapshot');
+    SendStatsSnapshot();
+    SetTimer(FMax(10.0, StatsReportInterval), true, 'SendStatsSnapshot');
+}
+
+function SendStatsSnapshot()
+{
+    local string Payload;
+
+    if (!bEnableStatsReporting || bStatsRequestInFlight || StatsMatchId == "")
+    {
+        return;
+    }
+
+    Payload = BuildStatsPayload();
+    StatsRequest = class'HttpFactory'.static.CreateRequest();
+    if (StatsRequest == none)
+    {
+        LogAlwaysInternal("SlumpMod stats: failed to create HTTP request.");
+        return;
+    }
+
+    bStatsRequestInFlight = true;
+    StatsRequest.SetURL(StatsEndpoint $ "?key=" $ StatsApiKey);
+    StatsRequest.SetVerb("POST");
+    StatsRequest.SetHeader("Content-Type", "application/json");
+    StatsRequest.SetContentAsString(Payload);
+    StatsRequest.SetProcessRequestCompleteDelegate(StatsRequestComplete);
+    StatsRequest.ProcessRequest();
+}
+
+function string BuildStatsPayload()
+{
+    local string Quote;
+
+    Quote = Chr(34);
+    return "{" $
+        Quote $ "matchId" $ Quote $ ":" $ Quote $ StatsMatchId $ Quote $ "," $
+        Quote $ "serverId" $ Quote $ ":" $ Quote $ StatsServerId $ Quote $ "," $
+        Quote $ "map" $ Quote $ ":" $ Quote $ WorldInfo.GetMapName() $ Quote $ "," $
+        Quote $ "elapsedSeconds" $ Quote $ ":" $ string(int(WorldInfo.TimeSeconds)) $ "," $
+        Quote $ "players" $ Quote $ ":" $ BuildStatsPlayersJson() $
+        "}";
+}
+
+function string BuildStatsPlayersJson()
+{
+    local `{GAMEMODE}PRI ModPRI;
+    local int i;
+    local int TeamIndex;
+    local string Quote;
+    local string Result;
+
+    Quote = Chr(34);
+    Result = "[";
+
+    if (WorldInfo == none || WorldInfo.GRI == none)
+    {
+        return Result $ "]";
+    }
+
+    for (i = 0; i < WorldInfo.GRI.PRIArray.Length; ++i)
+    {
+        ModPRI = `{GAMEMODE}PRI(WorldInfo.GRI.PRIArray[i]);
+        if (ModPRI == none || ModPRI.bBot)
+        {
+            continue;
+        }
+
+        if (ModPRI.Team != none)
+        {
+            TeamIndex = ModPRI.Team.TeamIndex;
+        }
+        else
+        {
+            TeamIndex = -1;
+        }
+
+        if (Result != "[")
+        {
+            Result $= ",";
+        }
+
+        Result $= "{" $
+            Quote $ "idA" $ Quote $ ":" $ string(ModPRI.UniqueId.Uid.A) $ "," $
+            Quote $ "idB" $ Quote $ ":" $ string(ModPRI.UniqueId.Uid.B) $ "," $
+            Quote $ "team" $ Quote $ ":" $ string(TeamIndex) $ "," $
+            Quote $ "kills" $ Quote $ ":" $ string(ModPRI.NumKills) $ "," $
+            Quote $ "deaths" $ Quote $ ":" $ string(ModPRI.Deaths) $ "," $
+            Quote $ "assists" $ Quote $ ":" $ string(ModPRI.NumAssists) $ "," $
+            Quote $ "enemyDamage" $ Quote $ ":" $ string(ModPRI.EnemyDamageDealt) $ "," $
+            Quote $ "teamDamage" $ Quote $ ":" $ string(ModPRI.TeamDamageDealt) $ "," $
+            Quote $ "damageTaken" $ Quote $ ":" $ string(ModPRI.AllDamageTaken) $ "," $
+            Quote $ "parries" $ Quote $ ":" $ string(ModPRI.Parries) $ "," $
+            Quote $ "feints" $ Quote $ ":" $ string(ModPRI.Feints) $ "," $
+            Quote $ "meleeHits" $ Quote $ ":" $ string(ModPRI.MeleeHits) $ "," $
+            Quote $ "projectileHits" $ Quote $ ":" $ string(ModPRI.ProjectileHits) $ "," $
+            Quote $ "blocks" $ Quote $ ":" $ string(ModPRI.Blocks) $ "," $
+            Quote $ "dodges" $ Quote $ ":" $ string(ModPRI.Dodges) $
+            "}";
+    }
+
+    return Result $ "]";
+}
+
+function StatsRequestComplete(HttpRequestInterface Request, HttpResponseInterface Response, bool bWasSuccessful)
+{
+    bStatsRequestInFlight = false;
+
+    if (!bWasSuccessful)
+    {
+        LogAlwaysInternal("SlumpMod stats: snapshot upload failed for" @ StatsMatchId);
+    }
 }
 
 
@@ -300,6 +440,11 @@ DefaultProperties
     MinimumRespawnTime = 10.0f
     MaximumRespawnTime = 10.0f
     bDisableTeamDamagePenalty = true
+
+    bEnableStatsReporting = false
+    StatsEndpoint = "http://127.0.0.1:3000/api/SlumpStats"
+    StatsServerId = "local-chivalry"
+    StatsReportInterval = 30.0
 
 }
 

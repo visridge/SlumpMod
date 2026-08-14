@@ -459,9 +459,12 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 	// self = attacker, Info.HitActor = defender.
 	// AttackerDir points from defender toward attacker; defender.Rotation is their forward vector.
 	// If dot < 0 the attacker is behind the defender — strip the parry entirely.
-	// AttackerDir = Normal(Location - Info.HitActor.Location);
-	// if ((AttackerDir dot vector(Info.HitActor.Rotation)) < 0.0)
-	// 	return false;
+	if (class'BangModAOCDuelPlayerController'.default.bDisableButtParries)
+	{
+		AttackerDir = Normal(Location - Info.HitActor.Location);
+		if ((AttackerDir dot vector(Info.HitActor.Rotation)) < 0.0)
+			return false;
+	}
 
 	// bParry = 1;
 	// StaminaDamage = 0;

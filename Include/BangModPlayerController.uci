@@ -24,6 +24,7 @@ var array<AOCPRI> NearbyTalkers;  // List of PRIs currently talking within range
 // Parry box toggle
 var globalconfig bool bBangModParryBox;  // When true, use BangMod parry box values; when false, revert to vanilla AOC defaults
 var globalconfig bool bSkeletalParry;    // When true, parry hitbox wraps the full player model (skeletal parry) instead of directional shield-style
+var globalconfig bool bDisableButtParries;  // When true, attacks from behind the defender cannot be parried
 
 // Collision bubble radius (OuterCylinder)
 var globalconfig float fBangModCollisionRadius;  // Radius of the player collision bubble; vanilla AOC default is 39.0
@@ -466,6 +467,27 @@ exec function AdminBroadcastMessage(String Message) {
 	S_AdminBroadcastMessage(Message);
 }
 
+exec function AdminCoinFlip() {
+	local int Coin;
+	local string Result;
+	local AOCPlayerController PC;
+
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+
+	Coin = Rand(2);
+	if (Coin == 0)
+		Result = "Heads";
+	else
+		Result = "Tails";
+
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC) {
+		PC.ReceiveChatMessage(AOCPRI(PlayerReplicationInfo).GetHumanReadableName()@"flipped a coin:"@Result, EFAC_ALL, false, true, "#00FF00");
+	}
+}
+
 exec function AdminChangeTeam(String PlayerName) {
 	if (!PlayerReplicationInfo.bAdmin) {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
@@ -816,6 +838,26 @@ reliable server function S_AdminEnableSkeletalParry(bool bEnable) {
 
 reliable server function S_AdminTournamentMode(bool bEnable) {}
 
+exec function AdminDisableButtParries(optional bool bEnable = true)
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminDisableButtParries(bEnable);
+}
+
+reliable server function S_AdminDisableButtParries(bool bEnable) {
+	if (!IsAdmin())
+		return;
+	class'BangModAOCDuelPlayerController'.default.bDisableButtParries = bEnable;
+	class'BangModAOCDuelPlayerController'.static.StaticSaveConfig();
+	if (bEnable)
+		S_AdminBroadcastMessage("Butt-parry prevention ENABLED - attacks from behind cannot be parried", false);
+	else
+		S_AdminBroadcastMessage("Butt-parry prevention DISABLED - attacks from behind are parryable (vanilla)", false);
+}
+
 exec function AdminSetCollisionRadius(float NewRadius)
 {
 	if (!PlayerReplicationInfo.bAdmin) {
@@ -1051,6 +1093,14 @@ exec function AdminGotoDF() {
 		return;
 	}
 	ServerChangeMap("AOCTO-Darkforest_p");
+}
+
+exec function AdminGotoCF() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-CompForest_p");
 }
 
 // Switch to CompMod3 server (players without the mod will be kicked and must rejoin manually)
@@ -2140,6 +2190,8 @@ DefaultProperties
 	bBangModParryBox=false
 	// Skeletal parry default (disabled = use directional/shield-style parry box)
 	bSkeletalParry=false
+	// Butt-parry prevention default (disabled = attacks from behind are parryable, vanilla behaviour)
+	bDisableButtParries=false
 
 	// Collision bubble radius default (39.0 = vanilla AOC OuterCylinder radius)
 	fBangModCollisionRadius=39.0
