@@ -114,7 +114,7 @@ static function int FixupCharacterIndex(int SavedIndex, int Faction, int PlayerC
 	local class<AOCCharacterInfo> SavedCharClass;
 	local class<AOCCharacterInfo> CurrCharClass;
 	local int i, CorrectedIndex;
-	local array<class<AOCCharacterInfo>> CharList;
+	local array<class<AOCCharacterInfo> > CharList;
 
 	CharList = class'BangModCustomizationContent'.default.Characters;
 
