@@ -1417,8 +1417,8 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	// us that will hit) clearly before our own swing landed — beyond fTradeWindowSeconds — the
 	// trade is too staggered, so drop our swing and let whoever connected first win. Swings
 	// within the window still trade. Only real enemy melee swings are eligible; parries (those
-	// resolve via bForceParry), kicks, projectiles and team hits are never cancelled. Replaces
-	// the disabled ping-estimate "Fair trade window" block below.
+	// resolve via bForceParry), kicks, projectiles, team hits and ripostes are never cancelled.
+	// Replaces the disabled ping-estimate "Fair trade window" block below.
 	if (!bCheckParryOnly
 		&& !bForceParry
 		&& bEnableTradeCancellation
@@ -1428,6 +1428,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 		&& !Info.DamageType.default.bIsProjectile
 		&& Info.AttackType != Attack_Shove
 		&& !IsOnSameTeam(self, Info.HitActor)
+		&& !IsRiposteAttack()
 		&& ShouldCancelTradeSwing(BangModPawn(Info.HitActor), fActionServerTime))
 	{
 		if (bShowHitTime && AOCPlayerController(Controller) != none)
@@ -1976,6 +1977,14 @@ function RecordIncomingHit(BangModPawn FromPawn, float fActionServerTime)
 	NewEntry.Attacker = FromPawn;
 	NewEntry.fActionServerTime = fActionServerTime;
 	RecentIncomingHits.AddItem(NewEntry);
+}
+
+// True when THIS pawn's current swing is a riposte (parry hit-counter attack). Ripostes are
+// exempt from hit-trade cancellation so a deliberate parry counter always lands, even when it
+// would otherwise line up as a staggered trade.
+function bool IsRiposteAttack()
+{
+	return BangModMeleeWeapon(Weapon) != none && BangModMeleeWeapon(Weapon).bParryHitCounter;
 }
 
 // True when OUR swing should be dropped: this opponent hit us (or has a swing held on us that
