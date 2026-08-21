@@ -50,6 +50,10 @@ var float   fBangModNextLifeBarAssert;   // throttle for re-asserting bar visibi
 var int     iBangModLastHealthShown;
 var float   fBangModLastStaminaShown;
 
+// BANGMOD: spectator field-of-view lock (see BangModEnforceSpectateFOV)
+var float   fBangModFOVCaught;       // last wrong FOV value we corrected while spectating
+var name    nBangModFOVCaughtWhere;  // which hook caught it -- reported by FPSpectateDebug
+
 
 simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
 {
@@ -2246,6 +2250,63 @@ simulated function BangModEnforceLifeBars()
 	}
 }
 
+/**
+ * Hold the spectator's field of view at the value they configured.
+ *
+ * Background. There is no camera object during normal AOC play -- AOCPlayerCamera
+ * extends Object, not Camera, so PlayerController.PlayerCamera is None and the engine
+ * reads the view angle straight off PlayerController.FOVAngle. A custom FOV therefore
+ * lives entirely in DefaultFOV / DesiredFOV / FOVAngle, and the only thing that ever
+ * re-establishes it is AOCPawn (AOCPawn.uc:9078-9080) calling SetFOV(MyFOV) when it
+ * spawns for a locally controlled player.
+ *
+ * That is the whole problem: a spectator has no pawn, so nothing on the spectate path
+ * ever puts the custom value back. Anything at all that knocks the three fields around
+ * on the way into spectate is permanent, because the usual repair never runs.
+ *
+ * I could not find the write. Every FOV assignment in the tree was checked
+ * (AOCPlayerController FixFOV/SetFOV/ResetFOV and its FOV exec; AOCPawn 9078/9504; the
+ * bow and crossbow zoom; Engine/UT Dead + RoundEnded BeginState, AdjustFOV, StartZoom
+ * and EndZoom) and none of them sit on the spectate-entry path. One more candidate is
+ * genuinely unfalsifiable from script: AOCPlayerController.state Spectating's
+ * GetPlayerViewPoint passes FOVAngle BY REFERENCE into ViewTarget.CalcCamera every
+ * frame, so any CalcCamera override that writes out_FOV silently owns the spectator's
+ * field of view (AOCPawn's dying state does exactly that, out_FOV = 90).
+ *
+ * So rather than keep guessing, assert the value instead. This is the same tactic as
+ * BangModEnforceLifeBars: cheap, and correct no matter which of the above it was.
+ *
+ * Deliberately gated on Pawn == none. Weapon zoom drives DesiredFOV during live play
+ * and must not be fought; a spectator never has a pawn, so that guard alone keeps this
+ * confined to spectating.
+ */
+simulated function BangModEnforceSpectateFOV(name Where)
+{
+	if (!IsLocalPlayerController() || Pawn != none)
+		return;
+
+	// Never invent a value. MyFOV is the same globalconfig the FOV exec writes and the
+	// pawn reads on spawn, so this holds spectate to exactly what live play uses.
+	if (MyFOV < 60.0 || MyFOV > 165.0)
+		return;
+
+	if (DefaultFOV == MyFOV && DesiredFOV == MyFOV && FOVAngle == MyFOV)
+		return;
+
+	// Record what we caught, so FPSpectateDebug can finally name the culprit.
+	if (FOVAngle != MyFOV)
+		fBangModFOVCaught = FOVAngle;
+	else if (DesiredFOV != MyFOV)
+		fBangModFOVCaught = DesiredFOV;
+	else
+		fBangModFOVCaught = DefaultFOV;
+	nBangModFOVCaughtWhere = Where;
+
+	DefaultFOV = MyFOV;
+	DesiredFOV = MyFOV;
+	FOVAngle   = MyFOV;
+}
+
 /** Console toggle, in case somebody wants to default to the vanilla orbit follow. */
 exec function FirstPersonSpectate(optional bool bEnable = true)
 {
@@ -2275,6 +2336,10 @@ exec function FPSpectateDebug()
 	// engine reads the view straight off it and ignores Pawn/ViewTarget entirely.
 	ClientDisplayConsoleMessage("PlayerCamera:" @ PlayerCamera @ " <-- should be None during normal play");
 	ClientDisplayConsoleMessage("FOV: MyFOV=" $ MyFOV @ "Default=" $ DefaultFOV @ "Desired=" $ DesiredFOV @ "Angle=" $ FOVAngle);
+	if (nBangModFOVCaughtWhere != '')
+		ClientDisplayConsoleMessage("FOV lock: last corrected a stray" @ fBangModFOVCaught @ "in" @ nBangModFOVCaughtWhere);
+	else
+		ClientDisplayConsoleMessage("FOV lock: has not had to correct anything yet.");
 
 	ClientDisplayConsoleMessage("FPObservedPawn:" @ BangModFPObservedPawn @ "| PerspectivePawn:" @ BangModPerspectivePawn);
 
@@ -2321,6 +2386,9 @@ state Spectating
 		BangModFPObservedPawn = none;
 		BangModHUDPawn = none;
 		BangModPerspectivePawn = none;
+
+		// Claim the field of view the moment we arrive, before the first frame renders.
+		BangModEnforceSpectateFOV('BeginState');
 	}
 
 	function EndState(Name NextStateName)
@@ -2419,11 +2487,28 @@ state Spectating
 		BangModPerspectivePawn = none;
 	}
 
+	/**
+	 * The last thing to run before the engine reads GetFOVAngle() for this frame.
+	 *
+	 * Vanilla's version hands FOVAngle to ViewTarget.CalcCamera as an out parameter, so
+	 * a view target is free to overwrite the spectator's field of view every single
+	 * frame -- which a tick-time correction would lose to, since tick runs first.
+	 * Re-asserting here closes that ordering hole; see BangModEnforceSpectateFOV.
+	 */
+	simulated event GetPlayerViewPoint( out vector POVLocation, out Rotator POVRotation )
+	{
+		super.GetPlayerViewPoint(POVLocation, POVRotation);
+		BangModEnforceSpectateFOV('GetPlayerViewPoint');
+	}
+
 	event PlayerTick(float DeltaTime)
 	{
 		local AOCPawn P;
 
 		super.PlayerTick(DeltaTime);
+
+		// Covers whatever moves the value outside the render path.
+		BangModEnforceSpectateFOV('PlayerTick');
 
 		if (!IsLocalPlayerController())
 			return;
