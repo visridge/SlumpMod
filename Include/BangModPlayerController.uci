@@ -1006,16 +1006,23 @@ exec function FOV(float F) {
 	if((F >= 60.0 && F <= 165.0) || PlayerReplicationInfo.bOnlySpectator) {
 		DefaultFOV = F;
 		DesiredFOV = DefaultFOV;
+		FOVAngle   = DefaultFOV;
 
-		if((F >= 60.0 && F <= 165.0) && PlayerCamera != None) {
-			PlayerCamera.SetFOV( F );
-			return;
-		}
-
+		// Persist BEFORE the PlayerCamera branch.
+		//
+		// Everything that later RESTORES the field of view -- AOCPlayerController's
+		// FixFOV() and ResetFOV(), and AOCPawn on spawn (AOCPawn.uc:9080) -- reads
+		// MyFOV. The previous version returned early whenever a PlayerCamera existed
+		// and so never stored it, which is how a custom FOV snaps back to the
+		// configured value (typically 120) the moment any of those run.
 		if (IsLocalPlayerController()) {
 			MyFOV = F;
 			default.MyFOV = F;
 			StaticSaveConfig();
+		}
+
+		if (PlayerCamera != None) {
+			PlayerCamera.SetFOV( F );
 		}
 	}
 }
@@ -2267,6 +2274,7 @@ exec function FPSpectateDebug()
 	// A non-none PlayerCamera outside a CameraActor view is a camera lock: the
 	// engine reads the view straight off it and ignores Pawn/ViewTarget entirely.
 	ClientDisplayConsoleMessage("PlayerCamera:" @ PlayerCamera @ " <-- should be None during normal play");
+	ClientDisplayConsoleMessage("FOV: MyFOV=" $ MyFOV @ "Default=" $ DefaultFOV @ "Desired=" $ DesiredFOV @ "Angle=" $ FOVAngle);
 
 	ClientDisplayConsoleMessage("FPObservedPawn:" @ BangModFPObservedPawn @ "| PerspectivePawn:" @ BangModPerspectivePawn);
 
