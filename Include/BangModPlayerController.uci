@@ -40,6 +40,15 @@ var bool  bPersistedClockOffsetInit;
 var bool    bBangModFPSpectate;      // desired perspective while following a player (true = first person)
 var AOCPawn BangModFPObservedPawn;   // pawn we currently have first-person-observer state applied to
 var AOCPawn BangModHUDPawn;          // pawn the spectator health/stamina HUD is currently showing
+var AOCPawn BangModPerspectivePawn;  // pawn we have already established a camera perspective for
+var float   fBangModNextFPRetry;     // WorldInfo.TimeSeconds gate for re-poking a pawn to rebuild its 1P mesh
+var AOCPawn BangModFPBlockLoggedPawn; // pawn whose first-person refusal we have already logged
+
+// BANGMOD: health/stamina bar enforcement (see BangModEnforceLifeBars)
+var AOCPawn BangModLifeBarPawn;          // pawn the bars are currently showing
+var float   fBangModNextLifeBarAssert;   // throttle for re-asserting bar visibility
+var int     iBangModLastHealthShown;
+var float   fBangModLastStaminaShown;
 
 
 simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
@@ -545,6 +554,9 @@ simulated event tick(float DeltaTime)
 {
 	local rotator DeltaRot, ViewRotation, NewRotation;
 	super.tick(DeltaTime);
+
+	// Runs in every state, so it covers both playing and spectating.
+	BangModEnforceLifeBars();
 	
 	if (bShowGroundSpeed)
 	{
@@ -1849,6 +1861,108 @@ reliable server function ServerUpdateCustomizationInfo(SCustomizationChoice NewC
 }
 
 /* ************************************************************************
+ * FIRST-PERSON SPECTATOR -- post-spawn camera correction
+ *
+ * Engine PlayerController.ClientRestart() (PlayerController.uc:4728) does, on a
+ * client:
+ *
+ *     Pawn = NewPawn;
+ *     AcknowledgePossession(Pawn);
+ *     Pawn.ClientRestart();
+ *     if (Role < ROLE_Authority)
+ *     {
+ *         SetViewTarget(Pawn);     // <-- still inside state Spectating
+ *         ResetCameraMode();       // <-- no-op unless PlayerCamera exists
+ *         EnterStartState();       // <-- only NOW do we leave Spectating
+ *     }
+ *
+ * Two consequences, both of which land on the camera:
+ *
+ * 1. SetViewTarget(Pawn) fires AOCPawn.BecomeViewTarget() while the controller is
+ *    still in state Spectating, so it takes its spectator branch --
+ *    CurrentObserver = PC; SetThirdPersonCamera(!bIsBeingFPObserved) -- and never
+ *    calls super.BecomeViewTarget(). UTPawn's real possession-view setup (arms
+ *    attach, SetMeshVisibility(bBehindView), bUpdateEyeHeight = true) is skipped
+ *    for our own pawn.
+ *
+ * 2. PlayerController.GetPlayerViewPoint reads the view straight off PlayerCamera
+ *    and ignores Pawn / ViewTarget entirely whenever one exists. The ONLY place AOC
+ *    destroys it is the non-CameraActor branch of
+ *    state Spectating.GetPlayerViewPoint, so leaving spectate while one is alive
+ *    strands the view wherever that camera actor sits -- a fixed spot on the map,
+ *    while the pawn plays normally underneath. Note ResetCameraMode() above cannot
+ *    help: PlayerController.SetCameraMode() does nothing when PlayerCamera is None,
+ *    and sets CameraStyle rather than clearing it when it is not.
+ *
+ * Rather than fight that ordering, we re-assert the camera one tick after
+ * ClientRestart, when the state transition has actually completed.
+ **************************************************************************/
+
+/** One-line camera dump to the log. Use with the FPSpectateDebug exec when chasing camera bugs. */
+simulated function BangModLogCameraState(string Tag)
+{
+	LogAlwaysInternal("[BangModFPSpec]" @ Tag
+		@ "State=" $ GetStateName()
+		@ "Pawn=" $ Pawn
+		@ "ViewTarget=" $ ViewTarget
+		@ "PlayerCamera=" $ PlayerCamera
+		@ "bBehindView=" $ bBehindView
+		@ "bFreeCamera=" $ bFreeCamera
+		@ "PCLoc=" $ Location);
+}
+
+/** Fired on a short timer from ClientRestart, after EnterStartState has run. */
+simulated function BangModFixCameraAfterSpawn()
+{
+	local AOCPawn MyPawn;
+
+	if (!IsLocalPlayerController())
+		return;
+
+	BangModLogCameraState("post-spawn");
+
+	if (Pawn == none || IsInState('Spectating') || IsInState('SpecialSpectating'))
+		return;
+
+	// (2) above -- a surviving PlayerCamera outranks Pawn and ViewTarget entirely.
+	if (PlayerCamera != none)
+	{
+		PlayerCamera.Destroy();
+		PlayerCamera = none;
+	}
+
+	// The spectator camera drove this and nothing on the spawn path clears it.
+	bFreeCamera = false;
+
+	// (1) above -- force the view target transition to happen again, now that we are
+	// out of Spectating, so AOCPawn.BecomeViewTarget takes its normal branch and
+	// chains into UTPawn's possession-view setup.
+	MyPawn = AOCPawn(Pawn);
+	if (MyPawn != none)
+	{
+		MyPawn.bIsBeingFPObserved = false;
+		MyPawn.CurrentObserver = none;
+	}
+
+	SetViewTarget(none);
+	SetViewTarget(Pawn);
+
+	// state Spectating.GetPlayerViewPoint has been SetLocation()-ing this controller
+	// onto the spectator camera position every frame.
+	SetLocation(Pawn.Location);
+
+	BangModLogCameraState("post-spawn-corrected");
+}
+
+reliable client function ClientRestart(Pawn NewPawn)
+{
+	super.ClientRestart(NewPawn);
+
+	if (NewPawn != none && IsLocalPlayerController())
+		SetTimer(0.05f, false, 'BangModFixCameraAfterSpawn');
+}
+
+/* ************************************************************************
  * FIRST-PERSON SPECTATOR
  *
  * Vanilla AOC already contains a complete first-person-observer path
@@ -1877,22 +1991,46 @@ reliable server function ServerUpdateCustomizationInfo(SCustomizationChoice NewC
  ************************************************************************** */
 
 /**
- * Everything AOCPawn.BecomeFirstPersonObserved() and AOCPawn.SetThirdPersonCamera()
- * dereference without a none-check. A pawn can be network-relevant to us before all
- * of this has replicated/loaded, and PlayerTick retries every frame, so an unguarded
- * apply turns one bad target into per-frame "Accessed None" log spam.
+ * Why first-person observe cannot be applied to this pawn, or "" when it can.
+ *
+ * Single source of truth for the guard so the diagnostic and the decision can never
+ * drift apart. Everything listed is something AOCPawn.BecomeFirstPersonObserved() or
+ * AOCPawn.SetThirdPersonCamera() dereferences with no none-check of its own, and a
+ * pawn can be network-relevant before it has all of them.
+ *
+ * Deliberately NOT checked: HelmetEmitter. It is not a DefaultProperties component --
+ * AOCPawn only creates it (~line 9207) for helmets that carry a particle system, so
+ * it is none on most pawns. SetThirdPersonCamera dereferences it unguarded anyway, on
+ * every pawn a spectator views, so requiring it here refused first person for
+ * virtually everybody while buying no safety vanilla does not already forgo.
  */
+simulated function string BangModFPObserveBlocker(AOCPawn P)
+{
+	if (P == none)
+		return "pawn is none";
+	if (P.OwnerMesh == none)
+		return "OwnerMesh is none (the 1P mesh could not be rebuilt)";
+	if (P.OwnerMesh.SkeletalMesh == none)
+		return "OwnerMesh has no SkeletalMesh";
+	if (P.CharacterAssetStore == none)
+		return "CharacterAssetStore is none";
+	if (P.HelmetMeshComp == none)
+		return "HelmetMeshComp is none";
+	if (P.ShieldMesh == none)
+		return "ShieldMesh is none";
+	if (P.OverlayShieldMesh == none)
+		return "OverlayShieldMesh is none";
+	if (AOCWeaponAttachment(P.CurrentWeaponAttachment) == none)
+		return "CurrentWeaponAttachment is not an AOCWeaponAttachment";
+	if (P.CurrentWeaponAttachment.Mesh == none)
+		return "the weapon attachment has no Mesh";
+
+	return "";
+}
+
 simulated function bool BangModCanFPObserve(AOCPawn P)
 {
-	return P != none
-		&& P.OwnerMesh != none
-		&& P.CharacterAssetStore != none
-		&& P.HelmetMeshComp != none
-		&& P.HelmetEmitter != none
-		&& P.ShieldMesh != none
-		&& P.OverlayShieldMesh != none
-		&& AOCWeaponAttachment(P.CurrentWeaponAttachment) != none
-		&& P.CurrentWeaponAttachment.Mesh != none;
+	return BangModFPObserveBlocker(P) == "";
 }
 
 /**
@@ -1914,13 +2052,24 @@ simulated function bool BangModCanFPObserve(AOCPawn P)
  * hidden). That is why the old implementation saw "inside the head". We put the
  * meshes back into 1P state afterwards.
  */
-simulated function BangModApplyFPObserve(AOCPawn P)
+simulated function bool BangModApplyFPObserve(AOCPawn P)
 {
-	if (P == none || !IsLocalPlayerController())
-		return;
+	local string Blocker;
 
-	if (!BangModCanFPObserve(P))
-		return;
+	if (P == none || !IsLocalPlayerController())
+		return false;
+
+	Blocker = BangModFPObserveBlocker(P);
+	if (Blocker != "")
+	{
+		// Once per pawn: silence is what made this hard to diagnose the first time.
+		if (BangModFPBlockLoggedPawn != P)
+		{
+			BangModFPBlockLoggedPawn = P;
+			LogAlwaysInternal("[BangModFPSpec] first person refused for"@P$":"@Blocker);
+		}
+		return false;
+	}
 
 	if (BangModFPObservedPawn != none && BangModFPObservedPawn != P)
 		BangModClearFPObserve();
@@ -1929,6 +2078,7 @@ simulated function BangModApplyFPObserve(AOCPawn P)
 	P.SetThirdPersonCamera(false);
 
 	BangModFPObservedPawn = P;
+	return true;
 }
 
 /**
@@ -1955,6 +2105,28 @@ simulated function BangModClearFPObserve()
 		P.SetThirdPersonCamera(true);
 }
 
+/**
+ * Hand the camera back to the vanilla spectator behaviour.
+ *
+ * AOCPlayerController.state Spectating.SetBehindView dereferences
+ * AOCGRI(WorldInfo.GRI) with no none-check, and this is reachable the instant we
+ * enter spectate -- before the GRI has replicated to a joining client. Fall back to
+ * setting the flags directly in that window; PlayerTick re-establishes properly
+ * once a real target arrives.
+ */
+simulated function BangModRestoreVanillaCamera()
+{
+	if (WorldInfo.GRI != none)
+	{
+		SetBehindView(true);
+	}
+	else
+	{
+		bBehindView = true;
+		bFreeCamera = true;
+	}
+}
+
 /** Applies whichever perspective the spectator currently wants to the current view target. */
 simulated function BangModApplySpectatorPerspective()
 {
@@ -1968,51 +2140,102 @@ simulated function BangModApplySpectatorPerspective()
 	if (P == none || P.Health <= 0)
 	{
 		BangModClearFPObserve();
+		BangModPerspectivePawn = none;
 
 		// SetBehindView(false) cleared bFreeCamera (UTPlayerController.SetBehindView).
 		// Hand it back, or the free camera can neither move nor look around --
 		// state Spectating.PlayerMove early-outs on !bFreeCamera before UpdateRotation.
-		SetBehindView(true);
+		BangModRestoreVanillaCamera();
 		return;
 	}
 
-	if (bBangModFPSpectate)
-	{
-		BangModApplyFPObserve(P);
-	}
-	else
-	{
-		BangModClearFPObserve();
-		SetBehindView(true); // vanilla orbit follow (state Spectating.SetBehindView re-enables bFreeCamera)
-	}
+	BangModPerspectivePawn = P;
+
+	if (bBangModFPSpectate && BangModApplyFPObserve(P))
+		return;
+
+	// Either the spectator asked for the orbit follow, or this pawn cannot be
+	// first-person observed (most often its 1P mesh could not be rebuilt).
+	//
+	// Falling through to an explicit SetBehindView(true) matters: vanilla's
+	// ViewAPlayer called SetBehindView(true) on EVERY target change and our
+	// override deliberately does not, so if neither branch here establishes camera
+	// state the controller is left running on whatever bBehindView / bFreeCamera
+	// happened to be left over -- which is how you end up with a camera that is
+	// neither following anybody nor accepting input.
+	BangModClearFPObserve();
+	BangModRestoreVanillaCamera(); // state Spectating.SetBehindView re-enables bFreeCamera
 }
 
 /**
- * Health/stamina bars for the followed player.
+ * Keep the health/stamina bars on screen and current for whoever we are actually
+ * looking at -- our own pawn in play, or the followed player while spectating.
  *
- * AOCPlayerController.PlayerTick already pushes AOCPawn(ViewTarget).Health /
- * .Stamina into the HUD when we have no pawn of our own, and ReplicatedStamina
- * is replicated to every client, so the values are available. What is missing is
- * visibility: DisplayCompleteHUD() is only called from ShowHUDElements() on
- * possession, so somebody who joined straight into spectate never had the bars
- * turned on. We also have to defeat the PreviousHealth/PreviousStamina change
- * filter so the new target's values get pushed immediately.
+ * Vanilla's handshake has too many holes to patch one at a time:
+ *   - the bars are only ever shown from ShowHUDElements() on possession, and hidden
+ *     from ClientPawnDied(), with nothing in between;
+ *   - DisplayCompleteHUD() silently does nothing when the GFx HUD has not finished
+ *     building yet (CheckCanUseHUD() is false), and nobody retries;
+ *   - nothing shows them for a spectator at all;
+ *   - AOCPlayerController.PlayerTick only pushes values when they change, so a
+ *     missed initial push leaves the bars stale until the next hit.
+ *
+ * So rather than chase each hole, assert the desired state every tick. Cheap: the
+ * GFx calls are throttled to a visibility re-assert twice a second plus a value push
+ * only when the number actually changed.
+ *
+ * Deliberately never HIDES anything -- vanilla owns that, via ClientPawnDied().
  */
-simulated function BangModRefreshSpectatorHUD()
+simulated function BangModEnforceLifeBars()
 {
-	if (AOCBaseHUD(myHUD) == none)
+	local AOCBaseHUD H;
+	local AOCPawn Subject;
+
+	if (!IsLocalPlayerController())
 		return;
 
-	if (AOCPawn(ViewTarget) != none && AOCPawn(ViewTarget).Health > 0)
+	H = AOCBaseHUD(myHUD);
+
+	// CheckCanUseHUD() is false until the GFx HUD exists. Returning without recording
+	// anything means we simply try again next tick.
+	if (H == none || !H.CheckCanUseHUD())
+		return;
+
+	// Our own pawn wins; otherwise show whoever we are spectating.
+	Subject = AOCPawn(Pawn);
+	if (Subject == none)
+		Subject = AOCPawn(ViewTarget);
+
+	if (Subject == none || Subject.Health <= 0)
 	{
-		AOCBaseHUD(myHUD).DisplayCompleteHUD();
-		PreviousHealth = -1;
-		PreviousStamina = -1.f;
+		BangModLifeBarPawn = none;
+		return;
 	}
-	else
+
+	// Re-assert visibility whenever the subject changes, and twice a second after
+	// that, so anything which hides the bars behind our back is corrected quickly.
+	if (Subject != BangModLifeBarPawn || WorldInfo.TimeSeconds >= fBangModNextLifeBarAssert)
 	{
-		// Despite the name this is just "hide life bars + crosshair + ammo count".
-		AOCBaseHUD(myHUD).ClearHUDOnDeath();
+		BangModLifeBarPawn = Subject;
+		fBangModNextLifeBarAssert = WorldInfo.TimeSeconds + 0.5f;
+
+		H.DisplayCompleteHUD();
+
+		// Force a value push on the next two tests regardless of the change filter.
+		iBangModLastHealthShown = -1;
+		fBangModLastStaminaShown = -1.f;
+	}
+
+	if (Subject.Health != iBangModLastHealthShown)
+	{
+		iBangModLastHealthShown = Subject.Health;
+		H.SetHealthValues(Subject.Health, Subject.HealthMax);
+	}
+
+	if (Subject.Stamina != fBangModLastStaminaShown)
+	{
+		fBangModLastStaminaShown = Subject.Stamina;
+		H.SetStaminaValues(Subject.Stamina, Subject.MaxStamina);
 	}
 }
 
@@ -2024,6 +2247,62 @@ exec function FirstPersonSpectate(optional bool bEnable = true)
 		BangModApplySpectatorPerspective();
 }
 
+/**
+ * Diagnostic for first-person spectate. Type "FPSpectateDebug" in the console
+ * while following a player.
+ *
+ * The usual failure is "OwnerMesh: None" -- see BangModEnsureOwnerMesh in
+ * BangModPawn.uci for why the 1P mesh gets stripped and how it is rebuilt.
+ */
+exec function FPSpectateDebug()
+{
+	local AOCPawn P;
+
+	ClientDisplayConsoleMessage("---- BangMod camera / spectate state ----");
+	ClientDisplayConsoleMessage("State:" @ GetStateName() @ "| NetMode:" @ int(WorldInfo.NetMode) @ "| LocalPC:" @ IsLocalPlayerController());
+	ClientDisplayConsoleMessage("bBangModFPSpectate:" @ bBangModFPSpectate @ "| bBehindView:" @ bBehindView @ "| bFreeCamera:" @ bFreeCamera);
+	ClientDisplayConsoleMessage("Pawn:" @ Pawn);
+	ClientDisplayConsoleMessage("ViewTarget:" @ ViewTarget @ "| RealViewTarget:" @ RealViewTarget);
+
+	// A non-none PlayerCamera outside a CameraActor view is a camera lock: the
+	// engine reads the view straight off it and ignores Pawn/ViewTarget entirely.
+	ClientDisplayConsoleMessage("PlayerCamera:" @ PlayerCamera @ " <-- should be None during normal play");
+
+	ClientDisplayConsoleMessage("FPObservedPawn:" @ BangModFPObservedPawn @ "| PerspectivePawn:" @ BangModPerspectivePawn);
+
+	if (Pawn != none && ViewTarget != Pawn)
+		ClientDisplayConsoleMessage("!! ViewTarget is not our own Pawn while we have one -- that is the frozen-camera signature.");
+
+	P = AOCPawn(ViewTarget);
+	if (P == none)
+	{
+		ClientDisplayConsoleMessage("ViewTarget is not an AOCPawn.");
+		ClientDisplayConsoleMessage("---------------------------------------");
+		return;
+	}
+
+	ClientDisplayConsoleMessage("Health:" @ P.Health @ "| bIsBot:" @ P.bIsBot @ "| LocallyControlled:" @ P.IsLocallyControlled());
+	ClientDisplayConsoleMessage("bIsBeingFPObserved:" @ P.bIsBeingFPObserved);
+	ClientDisplayConsoleMessage("OwnerMesh (1P component):" @ P.OwnerMesh);
+	ClientDisplayConsoleMessage("OwnerAimNode:" @ P.OwnerAimNode);
+	ClientDisplayConsoleMessage("CharacterAssetStore:" @ P.CharacterAssetStore);
+
+	if (P.CharacterAssetStore != none)
+	{
+		ClientDisplayConsoleMessage("  1P mesh asset:" @ P.CharacterAssetStore.OwnerMesh);
+		ClientDisplayConsoleMessage("  CharacterInfo set:" @ (P.CharacterAssetStore.CharacterInfo != none));
+	}
+
+	ClientDisplayConsoleMessage("HelmetMeshComp:" @ P.HelmetMeshComp @ "| HelmetEmitter:" @ P.HelmetEmitter);
+	ClientDisplayConsoleMessage("ShieldMesh:" @ P.ShieldMesh @ "| OverlayShieldMesh:" @ P.OverlayShieldMesh);
+	ClientDisplayConsoleMessage("WeaponAttachment:" @ AOCWeaponAttachment(P.CurrentWeaponAttachment));
+	if (BangModCanFPObserve(P))
+		ClientDisplayConsoleMessage("=> CanFPObserve: TRUE");
+	else
+		ClientDisplayConsoleMessage("=> CanFPObserve: FALSE --" @ BangModFPObserveBlocker(P));
+	ClientDisplayConsoleMessage("---------------------------------------");
+}
+
 state Spectating
 {
 	function BeginState(Name PreviousStateName)
@@ -2033,16 +2312,22 @@ state Spectating
 		// super sets SetViewTarget(none), so nothing is observed yet.
 		BangModFPObservedPawn = none;
 		BangModHUDPawn = none;
+		BangModPerspectivePawn = none;
 	}
 
 	function EndState(Name NextStateName)
 	{
 		BangModClearFPObserve();
 
-		if (AOCBaseHUD(myHUD) != none)
-			AOCBaseHUD(myHUD).ClearHUDOnDeath();
-
+		// Deliberately does NOT touch the HUD. An earlier version called
+		// ClearHUDOnDeath() here and cost every player their bars, crosshair and ammo
+		// count for a whole life: on spawn the server's Possess() fires
+		// ShowHUDElements() -> DisplayCompleteHUD() BEFORE ClientRestart() reaches
+		// EnterStartState(), so hiding here undid vanilla a moment after it showed them.
+		// BangModEnforceLifeBars() now owns bar visibility; vanilla owns hiding on death.
+		BangModLifeBarPawn = none;
 		BangModHUDPawn = none;
+		BangModPerspectivePawn = none;
 
 		super.EndState(NextStateName);
 	}
@@ -2085,7 +2370,6 @@ state Spectating
 		BangModApplySpectatorPerspective();
 
 		BangModHUDPawn = AOCPawn(ViewTarget);
-		BangModRefreshSpectatorHUD();
 	}
 
 	/** Space. Toggles between first person and the vanilla orbit follow. */
@@ -2124,7 +2408,7 @@ state Spectating
 		SetBehindView(true);
 
 		BangModHUDPawn = none;
-		BangModRefreshSpectatorHUD();
+		BangModPerspectivePawn = none;
 	}
 
 	event PlayerTick(float DeltaTime)
@@ -2145,14 +2429,32 @@ state Spectating
 			if (BangModFPObservedPawn != none)
 			{
 				BangModClearFPObserve();
-				SetBehindView(true);
+				BangModPerspectivePawn = none;
+				BangModRestoreVanillaCamera();
 			}
 		}
-		else if (bBangModFPSpectate && (BangModFPObservedPawn != P || !P.bIsBeingFPObserved))
+		else if (BangModPerspectivePawn != P)
 		{
-			// Covers respawns (the pawn object is replaced) and anything else
-			// that clears the flag behind our back.
-			BangModApplyFPObserve(P);
+			// New pawn (target switch, or the old one respawned as a new object).
+			// Establish a definite camera state exactly once.
+			BangModApplySpectatorPerspective();
+		}
+		else if (bBangModFPSpectate && !P.bIsBeingFPObserved)
+		{
+			// Keep retrying first person on the pawn we already settled on.
+			if (P.OwnerMesh != none)
+			{
+				BangModApplyFPObserve(P);
+			}
+			else if (WorldInfo.TimeSeconds >= fBangModNextFPRetry)
+			{
+				// The 1P mesh is rebuilt by the pawn's BecomeViewTarget override, which
+				// only fires on a view-target change. If its character assets had not
+				// streamed in by then, nothing would ever try again -- so poke it. Rate
+				// limited so a pawn that genuinely cannot be rebuilt costs us nothing.
+				fBangModNextFPRetry = WorldInfo.TimeSeconds + 0.5f;
+				P.BecomeViewTarget(self);
+			}
 		}
 
 		// Keep the 1P mesh's aim offset fed.
@@ -2168,11 +2470,7 @@ state Spectating
 			P.OwnerAimNode.Aim.Y = P.AimNode.Aim.Y;
 		}
 
-		if (BangModHUDPawn != P)
-		{
-			BangModHUDPawn = P;
-			BangModRefreshSpectatorHUD();
-		}
+		BangModHUDPawn = P;
 	}
 }
 

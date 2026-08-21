@@ -14,6 +14,9 @@ var float fRiposteGracePeriod;                  // Grace period after parry wher
 // var bool bWasBastardSwordSprinting;
 var bool bKanaboExtraJumpUsed;
 var CylinderComponent OuterCylinderComp; // Reference to the OuterCylinder component (player collision bubble)
+var bool bBangModWarnedNoOwnerMesh;      // one-shot log guard: 1P -> 3P camera socket fallback
+var bool bBangModWarnedNoCameraSocket;   // one-shot log guard: neither mesh usable
+var bool bBangModWarnedStock1PMesh;      // one-shot log guard: stock 1P mesh substituted
 
 // (Deferred-hit state removed — replaced by the PendingHits hold model in BangModPawn.uc)
 
@@ -2244,6 +2247,388 @@ simulated function SetThirdPersonCamera(bool bNewBehindView)
 
 
 // Default class properties
+
+/* ************************************************************************
+ * FIRST-PERSON SPECTATOR -- rebuild the stripped 1P mesh
+ *
+ * AOCPawn.SetCharacterAppearance() destroys the first-person OwnerMesh on any
+ * pawn that was not locally controlled at the moment it loaded its character
+ * assets (AOCPawn.uc ~11890):
+ *
+ *     if( IsLocallyControlled() || bIsBeingFPObserved )
+ *     {
+ *         ... OwnerMesh.SetAnimTreeTemplate(...);
+ *         ... OwnerMesh.SetSkeletalMesh( AssetStore.OwnerMesh );
+ *     }
+ *     else if(Worldinfo.NetMode != NM_DedicatedServer || Controller != none)
+ *     {
+ *         DetachComponent(OwnerMesh);
+ *         OwnerMesh = none;
+ *     }
+ *
+ * That runs at spawn, long before anybody spectates, so bIsBeingFPObserved is
+ * always false there. On a client that means EVERY other player's pawn -- human
+ * or bot -- permanently loses its 1P mesh, and AOCPawn.BecomeFirstPersonObserved()
+ * (which does OwnerMesh.SetSkeletalMesh(...)) can never work. Only pawns that are
+ * locally controlled keep it, i.e. your own pawn, plus bots when you are the
+ * listen-server/standalone host (server-side AI controllers count as local).
+ *
+ * The 1P skeletal mesh asset itself IS loaded on every client -- LoadCharacterAssets()
+ * fetches OwnerMeshPath into CharacterAssetStore.OwnerMesh with no
+ * locally-controlled gate -- so all that is missing is the component. We rebuild it
+ * from the class-default archetype the first time a local spectator views this pawn.
+ **************************************************************************/
+
+/**
+ * Recreates OwnerMesh if SetCharacterAppearance() stripped it. No-op when the
+ * mesh is already present, so this is safe to call repeatedly.
+ *
+ * Returns TRUE if the pawn has a usable 1P mesh afterwards.
+ *
+ * The setup below deliberately mirrors SetCharacterAppearance()'s own OwnerMesh
+ * branch, in the same order, because vanilla relies on SetAnimTreeTemplate() /
+ * SetSkeletalMesh() firing PostInitAnimTree(OwnerMesh) to populate OwnerAimNode,
+ * OwnerTopHalfSlot, OwnerBlendAnimationListNode and friends. There is no other
+ * call site that assigns those.
+ */
+simulated function bool BangModEnsureOwnerMesh()
+{
+	local class<AOCCharacterInfo> Info;
+	local AnimSet TempSet;
+	local int i;
+
+	if (OwnerMesh != none)
+		return true;
+
+	// Nothing to render on a dedicated server, and it never strips the mesh anyway.
+	if (WorldInfo.NetMode == NM_DedicatedServer)
+		return false;
+
+	if (CharacterAssetStore == none || CharacterAssetStore.OwnerMesh == none)
+		return false;
+
+	Info = CharacterAssetStore.CharacterInfo;
+	if (Info == none)
+		return false;
+
+	OwnerMesh = new(self) class'SkeletalMeshComponent' (default.OwnerMesh);
+	if (OwnerMesh == none)
+		return false;
+
+	AttachComponent(OwnerMesh);
+
+	// new(...)(Template) is a plain property copy -- it does NOT run component
+	// instancing, so the LightEnvironment pointer we just copied still refers to the
+	// class-default MyLightEnvironment subobject, which is not registered in the
+	// world. Without this the rebuilt 1P mesh renders unlit (black).
+	// Precedent: AOCWeaponAttachment.uc:258 does the same for ArrowComp.
+	if (Mesh != none)
+		OwnerMesh.SetLightEnvironment(Mesh.LightEnvironment);
+
+	// Stay hidden until SetThirdPersonCamera(false) deliberately reveals it, so a
+	// rebuilt mesh cannot flash on screen for a frame mid-setup.
+	OwnerMesh.SetHidden(true);
+
+	if (Info.default.OverrideOwnerMeshAnimTree != none)
+		OwnerMesh.SetAnimTreeTemplate(Info.default.OverrideOwnerMeshAnimTree);
+	else
+		OwnerMesh.SetAnimTreeTemplate(default.OwnerMesh.AnimTreeTemplate);
+
+	OwnerMesh.AnimSets = Info.default.AnimSets;
+	foreach Info.default.FirstPersonAnimSets(TempSet)
+		OwnerMesh.AnimSets.AddItem(TempSet);
+
+	OwnerMesh.SetSkeletalMesh( CharacterAssetStore.OwnerMesh );
+
+	for (i = 0; i < CharacterAssetStore.OwnerMesh.Materials.Length; ++i)
+		OwnerMesh.SetMaterial(i, CharacterAssetStore.OwnerMesh.Materials[i]);
+
+	// If PostInitAnimTree never fired, the anim nodes are unbound and the 1P mesh
+	// would render as a static ref-pose. Back the whole thing out rather than
+	// hand the spectator a broken view.
+	if (OwnerAimNode == none || OwnerBlendAnimationListNode == none)
+	{
+		// NOTE: do NOT use the log macro (backtick-log) here. SlumpMod compiles with
+		// FINAL_RELEASE defined, which makes Object.LogInternal private (Object.uc:1478,
+		// the prevent_direct_calls define), so it fails to compile. LogAlwaysInternal is
+		// the public equivalent and is what AOC itself uses. Every other log macro in
+		// this repo is commented out for the same reason.
+		LogAlwaysInternal(self@"BangModEnsureOwnerMesh: anim tree did not initialise (OwnerAimNode="$OwnerAimNode$", OwnerBlendAnimationListNode="$OwnerBlendAnimationListNode$") -- reverting");
+		DetachComponent(OwnerMesh);
+		OwnerMesh = none;
+		return false;
+	}
+
+	LogAlwaysInternal(self@"BangModEnsureOwnerMesh: rebuilt 1P mesh"@CharacterAssetStore.OwnerMesh);
+	return true;
+}
+
+/**
+ * Rebuild the 1P mesh as soon as a local spectator starts viewing this pawn, so it
+ * exists by the time BangModApplyFPObserve() runs on the controller side.
+ *
+ * BecomeViewTarget fires from the native SetViewTarget inside
+ * PlayerController.ClientSetViewTarget, which is exactly one step ahead of where
+ * BangModPlayerController applies the perspective.
+ */
+simulated event BecomeViewTarget(PlayerController PC)
+{
+	if (PC != none && PC.IsLocalPlayerController()
+		&& AOCPlayerController(PC) != none && AOCPlayerController(PC).IsInState('Spectating'))
+	{
+		BangModEnsureOwnerMesh();
+	}
+
+	super.BecomeViewTarget(PC);
+}
+
+
+/* ************************************************************************
+ * CAMERA SOCKET FALLBACK
+ *
+ * AOCPlayerCamera.UpdateCamera() derives the player's entire view from a socket
+ * on a skeletal mesh:
+ *
+ *     OwnerPawn.GetCameraSocketLocationAndRotation(bFirstPerson, CameraLocation, CameraRotation);
+ *
+ * and AOCPawn's implementation forwards straight to the native
+ * SkeletalMeshComponent.GetSocketWorldLocationAndRotation(). That native call
+ * returns WITHOUT WRITING ITS OUT PARAMETERS when the component has no
+ * SkeletalMesh -- it only emits
+ * "Warning: GetSocketWorldLocationAndRotation : Could not find SkeletalMesh".
+ *
+ * So a missing first-person mesh does not produce a visible error: it silently
+ * leaves CameraLocation / CameraRotation at whatever they last held, and the view
+ * freezes there forever. Coming out of spectate that is the spectator camera,
+ * hundreds of metres away -- the pawn plays normally underneath while the screen
+ * shows a fixed corner of the map.
+ *
+ * This bit BangMod badly: several classes ship OwnerMeshPaths whose package was
+ * not installed, and content packages live in the DLC folder, which a script cook
+ * wipes. Rather than depend on every 1P asset always being present, degrade:
+ *
+ *     1P socket  ->  3P socket  ->  pawn eye position
+ *
+ * The 3P mesh is fully animated (it carries the aim offset), so the fallback view
+ * still pitches and yaws with the player. It is not as clean as the real 1P
+ * camera, but it is a working first-person view instead of a dead one.
+ *
+ * When the 1P mesh IS present this is byte-for-byte vanilla behaviour -- the first
+ * branch below is the only one that runs.
+ **************************************************************************/
+
+/** True when this component can actually resolve CameraSocket. */
+simulated function bool BangModCanUseCameraSocket(SkeletalMeshComponent SMC)
+{
+	return SMC != none
+		&& SMC.SkeletalMesh != none
+		&& SMC.GetSocketByName(CameraSocket) != none;
+}
+
+simulated function GetCameraSocketLocationAndRotation(bool bFirstPerson, out vector CameraLocation, out rotator CameraRotation)
+{
+	local SkeletalMeshComponent Wanted;
+
+	// Seed the out params with an always-sane view BEFORE any native call.
+	//
+	// GetSocketWorldLocationAndRotation is declared to return bool and AOCPawn throws
+	// that result away, so every way it can bail -- no SkeletalMesh, a socket whose
+	// bone is missing, spacebases not yet valid -- leaves the caller's values
+	// untouched. That is the whole bug: stale values read as a frozen camera. Pre-fill
+	// them and a silent bail degrades to "camera at the pawn's eyes" instead.
+	BangModEyeViewPoint(CameraLocation, CameraRotation);
+
+	if (bFirstPerson)
+		Wanted = OwnerMesh;
+	else
+		Wanted = Mesh;
+
+	// Normal path: the mesh that was asked for can resolve the socket.
+	if (BangModCanUseCameraSocket(Wanted))
+	{
+		super.GetCameraSocketLocationAndRotation(bFirstPerson, CameraLocation, CameraRotation);
+		return;
+	}
+
+	// First person asked for but no usable 1P mesh -- borrow the 3P one. It is
+	// animated, so aim pitch still works. AOCPlayerCamera zeroes roll for us on the
+	// first-person path, so the 3P mesh's lean does not leak through.
+	if (bFirstPerson && BangModCanUseCameraSocket(Mesh))
+	{
+		if (!bBangModWarnedNoOwnerMesh)
+		{
+			bBangModWarnedNoOwnerMesh = true;
+			LogAlwaysInternal(self@"BangMod: no usable 1P camera mesh (OwnerMesh="$OwnerMesh$"), falling back to the 3P camera socket.");
+		}
+
+		super.GetCameraSocketLocationAndRotation(false, CameraLocation, CameraRotation);
+
+		// Take only the POSITION from the 3P socket. Its rotation is baked with the
+		// locomotion animation -- strafe lean, footstep sway, turn-in-place -- which the
+		// 1P mesh deliberately lacks. Feeding that to the view swings the camera around
+		// independently of where the player is aiming: forward movement jerks left and
+		// right, and W+A / W+D rotate the view instead of strafing.
+		//
+		// Deliberately NOT GetBaseAimRotation(): it calls Controller.GetPlayerViewPoint,
+		// which comes straight back here via AOCPlayerCamera.UpdateCamera.
+		BangModAimRotation(CameraRotation);
+		return;
+	}
+
+	// Neither mesh is usable. The seed above already holds the eye view point.
+	if (!bBangModWarnedNoCameraSocket)
+	{
+		bBangModWarnedNoCameraSocket = true;
+		LogAlwaysInternal(self@"BangMod: no usable camera socket on either mesh; using the pawn's eye position.");
+	}
+}
+
+/** Where this pawn is looking, without re-entering the camera path. */
+simulated function BangModAimRotation(out rotator OutRot)
+{
+	if (Controller != none)
+	{
+		OutRot = Controller.Rotation;
+		return;
+	}
+
+	// Remote pawn (someone we are spectating): Pawn.Controller only replicates to its
+	// owner, and Rotation carries yaw only -- pitch arrives as RemoteViewPitch.
+	OutRot = Rotation;
+	if (OutRot.Pitch == 0)
+		OutRot.Pitch = RemoteViewPitch << 8;
+}
+
+/** Last-resort view point: the pawn's own eyes. Never leaves the caller holding stale values. */
+simulated function BangModEyeViewPoint(out vector OutLoc, out rotator OutRot)
+{
+	OutLoc = Location;
+	OutLoc.Z += EyeHeight;
+	BangModAimRotation(OutRot);
+}
+
+/* ************************************************************************
+ * STOCK 1P MESH SUBSTITUTION
+ *
+ * Several BangMod classes set OwnerMeshPath to an object in a content package that
+ * is not installed at runtime, so CharacterAssetStore.OwnerMesh comes back none and
+ * the player has no first-person arms at all.
+ *
+ * Every one of those classes already draws its THIRD-person mesh from a stock
+ * Chivalry package that loads fine, and the stock packages also contain the
+ * matching first-person mesh. So when the configured 1P mesh is missing, fall back
+ * to the stock one for that class rather than leaving the player empty-handed.
+ *
+ * This only ever runs when the configured mesh failed to load -- if the custom
+ * package is ever installed properly, the custom arms are used and none of this
+ * executes.
+ **************************************************************************/
+
+/** Object name from a "Package.Object" or "Package.Group.Object" path. */
+simulated function string BangModObjectName(string Path)
+{
+	local int i;
+
+	// bSearchFromRight = true, so "Pkg.Group.Object" yields "Object".
+	i = InStr(Path, ".", true);
+
+	if (i == INDEX_NONE)
+		return Path;
+
+	return Mid(Path, i + 1);
+}
+
+/**
+ * Stock Chivalry 1P mesh for a class whose configured OwnerMeshPath did not load.
+ * Each mapping is the OwnerMeshPath that the matching vanilla AOCCharacterInfo_*
+ * class ships with, so these are the arms Chivalry itself uses for that character.
+ *
+ * Matched on the OBJECT NAME only, deliberately ignoring the package. The custom
+ * character package has been renamed once already (SlumpCharacters -> BangmodCharacters)
+ * and the classes are currently split across both spellings, so keying on the full
+ * path would silently stop matching the moment either name moves again.
+ */
+simulated function SkeletalMesh BangModStock1PMesh(class<AOCCharacterInfo> Info)
+{
+	local string Want, Path;
+
+	if (Info == none)
+		return none;
+
+	Want = BangModObjectName(Info.default.OwnerMeshPath);
+
+	// Knights
+	if (Want ~= "AgathaKnight1p")
+		Path = "CH_AgathanKnight_PKG.models.SK_CH_1P_AgathaKnight";
+	else if (Want ~= "AgathaKnightDLC1p")
+		Path = "CH_AgathaKnight_DLC1.models.SK_Char_knight_FP";
+	else if (Want ~= "MasonKnight1p")
+		Path = "CH_MasonKnight.models.SK_CH_1P_MasonKnight";
+	else if (Want ~= "MasonKnightDLC1p")
+		Path = "CH_MasonKnight_DLC1.models.SK_Char_knight_FP";
+
+	// Vanguards
+	else if (Want ~= "AgathaVanguard1p")
+		Path = "CH_A_Vanguard_PKG.PlayerviewTEMP_agatha";
+	else if (Want ~= "AgathaVanguardDLC1p")
+		Path = "CH_AgathaVanguard_DLC1.models.SK_CH_1P_AgathaVanguard01";
+	else if (Want ~= "MasonVanguard1p")
+		Path = "CH_A_Vanguard_PKG.PlayerviewTEMP";
+	else if (Want ~= "MasonVanguardDLC1p")
+		Path = "CH_MasonVanguard_DLC1.models.SK_CH_1P_MasonVanguard_DLC1";
+
+	// Barbarian variants
+	else if (Want ~= "AgathaBarbArcher1p")
+		Path = "CH_Barb_AgathaArcher.models.SK_CH_1P_Barb_AgathaArcher";
+	else if (Want ~= "AgathaBarb1p")
+		Path = "CH_Barb_AgathaKnight.models.SK_CH_1P_Barb_AgathaKnight";
+	else if (Want ~= "AgathaBarbVanguard1p")
+		Path = "CH_Barb_AgathaVanguard.models.SK_CH_1P_Barb_AgathaVanguard";
+	else if (Want ~= "MArcherBarb1p")
+		Path = "CH_Barb_MasonArcher.models.SK_CH_1P_Barb_MasonArcher";
+	else if (Want ~= "MasonBarb1p")
+		Path = "CH_Barb_MasonKnight.models.SK_CH_1P_Barb_MasonKnight";
+	else if (Want ~= "MasonBarbVanguard1p")
+		Path = "CH_Barb_MasonVanguard.models.SK_CH_1P_Barb_MasonVanguard";
+
+	if (Path == "")
+		return none;
+
+	// MayFail = true: if a stock package is somehow absent too, stay silent and let
+	// the camera fallback handle it rather than spamming.
+	return SkeletalMesh(DynamicLoadObject(Path, class'SkeletalMesh', true));
+}
+
+simulated function SetCharacterAppearance(AssetStore_AOCPawn_Character AssetStore)
+{
+	local SkeletalMesh Stock;
+
+	// Substitute only when the store is genuinely missing the mesh it was asked for.
+	// Comparing the paths as well as testing for none matters because AssetStore.Clear()
+	// resets LoadedObjects/PendingObjects but never nulls OwnerMesh -- a store reused
+	// for a different character could otherwise keep the previous class's arms.
+	if (AssetStore != none
+		&& AssetStore.CharacterInfo != none
+		&& AssetStore.OwnerMesh == none
+		&& AssetStore.OwnerMeshPath ~= AssetStore.CharacterInfo.default.OwnerMeshPath)
+	{
+		Stock = BangModStock1PMesh(AssetStore.CharacterInfo);
+
+		if (Stock != none)
+		{
+			AssetStore.OwnerMesh = Stock;
+
+			if (!bBangModWarnedStock1PMesh)
+			{
+				bBangModWarnedStock1PMesh = true;
+				LogAlwaysInternal(self@"BangMod: 1P mesh"@AssetStore.CharacterInfo.default.OwnerMeshPath@"did not load; substituting stock"@Stock);
+			}
+		}
+	}
+
+	super.SetCharacterAppearance(AssetStore);
+}
+
 DefaultProperties
 {
 	HealthTimeElapse=0.0
