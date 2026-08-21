@@ -36,6 +36,11 @@ var globalconfig float fBangModCollisionRadius;  // Radius of the player collisi
 var float fPersistedClientClockOffset;
 var bool  bPersistedClockOffsetInit;
 
+// BANGMOD: First-person spectator (see the FIRST-PERSON SPECTATOR block further down).
+var bool    bBangModFPSpectate;      // desired perspective while following a player (true = first person)
+var AOCPawn BangModFPObservedPawn;   // pawn we currently have first-person-observer state applied to
+var AOCPawn BangModHUDPawn;          // pawn the spectator health/stamina HUD is currently showing
+
 
 simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
 {
@@ -141,6 +146,12 @@ simulated event PostBeginPlay()
 	{
 		CustomizationClass = class'BangModCustomization';
 	}
+
+	// BANGMOD: follow players in first person by default; Space toggles back to
+	// the vanilla orbit follow. Set here rather than in state Spectating.BeginState
+	// so the choice sticks for the whole session instead of resetting every time
+	// the player re-enters spectate.
+	bBangModFPSpectate = true;
 }
 
 /*
@@ -1837,153 +1848,333 @@ reliable server function ServerUpdateCustomizationInfo(SCustomizationChoice NewC
 	*/
 }
 
-/** Client RPC to hide the spectator target's head */
-// reliable client function ClientHideSpectatorHead(AOCPawn TargetPawn)
-// {
-// 	if (TargetPawn != None)
-// 	{
-// 		// Hide helmet and head bones for spectator's view to match what the player sees
-// 		TargetPawn.HelmetMeshComp.SetOwnerNoSee(true);
-// 		TargetPawn.Mesh.HideBoneByName('b_head', PBO_None);
-// 	}
-// }
+/* ************************************************************************
+ * FIRST-PERSON SPECTATOR
+ *
+ * Vanilla AOC already contains a complete first-person-observer path
+ * (AOCPawn.bIsBeingFPObserved gates the 1P OwnerMesh animation tree, the 1P
+ * camera socket in AOCPlayerCamera.UpdateCamera, the 1P overlay weapon and the
+ * health/stamina HUD push in AOCPawn) -- Torn Banner just never wired any input
+ * to it. AOCPlayerController.state Spectating.ViewAPlayer() force-calls
+ * SetBehindView(true) on every target change and its BehindView() exec is an
+ * empty stub, so the player can never reach it.
+ *
+ * BangMod re-declares state Spectating to route target changes through the
+ * real FP-observer path instead. Everything the previous (commented-out)
+ * attempt hand-rolled -- forcing bBehindView = false, hiding the target's head,
+ * zeroing controller roll -- is unnecessary once bIsBeingFPObserved is actually
+ * set, because:
+ *
+ *   - AOCPlayerCamera.UpdateCamera takes its FP branch, reads the CameraPoint
+ *     socket off the 1P OwnerMesh, and does CameraRotation.Roll = 0. That is
+ *     the sprint-lean tilt fix (Shift+W+A / Shift+W+D no longer rolls the view).
+ *   - SetThirdPersonCamera(false) hides the 3P body and shows the 1P mesh, so
+ *     there is no head to be inside of and no head-hiding RPC needed.
+ *
+ * Perspective while following: first person by default, Space
+ * (GBA_SpectatorPerspective) toggles back to the vanilla orbit follow.
+ * Right click (SpectatorFreecam) still detaches to free camera.
+ ************************************************************************** */
 
-// /** Client RPC to restore the spectator target's head visibility */
-// reliable client function ClientShowSpectatorHead(AOCPawn TargetPawn)
-// {
-// 	if (TargetPawn != None)
-// 	{
-// 		TargetPawn.HelmetMeshComp.SetOwnerNoSee(false);
-// 		TargetPawn.Mesh.UnHideBoneByName('b_head');
-// 	}
-// }
+/**
+ * Everything AOCPawn.BecomeFirstPersonObserved() and AOCPawn.SetThirdPersonCamera()
+ * dereference without a none-check. A pawn can be network-relevant to us before all
+ * of this has replicated/loaded, and PlayerTick retries every frame, so an unguarded
+ * apply turns one bad target into per-frame "Accessed None" log spam.
+ */
+simulated function bool BangModCanFPObserve(AOCPawn P)
+{
+	return P != none
+		&& P.OwnerMesh != none
+		&& P.CharacterAssetStore != none
+		&& P.HelmetMeshComp != none
+		&& P.HelmetEmitter != none
+		&& P.ShieldMesh != none
+		&& P.OverlayShieldMesh != none
+		&& AOCWeaponAttachment(P.CurrentWeaponAttachment) != none
+		&& P.CurrentWeaponAttachment.Mesh != none;
+}
 
-/** First-person only spectator mode when following players - allows free camera */
-// state Spectating
-// {
-// 	/** Allow free camera, block third-person when following players */
-// 	exec function BehindView()
-// 	{
-// 		// Only allow if in free camera mode
-// 		if (bFreeCamera)
-// 		{
-// 			super.BehindView();
-// 		}
-// 		// Otherwise blocked - locked to first person when following players
-// 	}
-	
-// 	/** Allow free camera, block perspective toggle when following players */
-// 	exec function SpectatorPerspective()
-// 	{
-// 		// Only allow if in free camera mode
-// 		if (bFreeCamera)
-// 		{
-// 			super.SpectatorPerspective();
-// 		}
-// 		// Otherwise blocked - locked to first person when following players
-// 	}
-	
-// 	/** Allow free camera, block camera angle cycling when following players */
-// 	exec function NextCameraAngle()
-// 	{
-// 		// Only allow if in free camera mode
-// 		if (bFreeCamera)
-// 		{
-// 			super.NextCameraAngle();
-// 		}
-// 		// Otherwise blocked - locked to first person when following players
-// 	}
-	
-// 	/** Force first-person view when entering spectator mode */
-// 	function BeginState(Name PreviousStateName)
-// 	{
-// 		super.BeginState(PreviousStateName);
-		
-// 		// If we have a ViewTarget that's a pawn, force first person mode
-// 		if (ViewTarget != None && ViewTarget.IsA('Pawn'))
-// 		{
-// 			bFreeCamera = false;
-// 			bBehindView = false;
-// 			HideViewTargetHead();
-// 		}
-// 	}
-	
-// 	/** Continuously enforce first-person view when following players, handle respawns */
-// 	function PlayerTick(float DeltaTime)
-// 	{
-// 		local Rotator CamRot;
-		
-// 		super.PlayerTick(DeltaTime);
-		
-// 		// Only enforce when following a pawn (not in free camera)
-// 		if (!bFreeCamera && ViewTarget != None && ViewTarget.IsA('Pawn'))
-// 		{
-// 			// Force first-person view - prevents server from reverting to third person
-// 			if (bBehindView)
-// 			{
-// 				bBehindView = false;
-// 			}
-			
-// 			// Remove camera roll (tilt) to prevent lean animation affecting spectator
-// 			CamRot = Rotation;
-// 			if (CamRot.Roll != 0)
-// 			{
-// 				CamRot.Roll = 0;
-// 				SetRotation(CamRot);
-// 			}
-			
-// 			// Continuously hide head to handle respawns and state changes
-// 			HideViewTargetHead();
-// 		}
-// 	}
-	
-// 	/** Maintain first-person view when switching spectator targets */
-// 	function ViewAPlayer(int dir)
-// 	{
-// 		local Actor OldTarget;
-		
-// 		// Store old target to restore their head visibility
-// 		OldTarget = ViewTarget;
-		
-// 		super.ViewAPlayer(dir);
-		
-// 		// Restore previous target's head visibility
-// 		if (OldTarget != None && AOCPawn(OldTarget) != None)
-// 		{
-// 			ClientShowSpectatorHead(AOCPawn(OldTarget));
-// 		}
-		
-// 		// Force disable free camera when following a player
-// 		if (ViewTarget != None && ViewTarget.IsA('Pawn'))
-// 		{
-// 			bFreeCamera = false;
-// 			bBehindView = false;
-// 			HideViewTargetHead();
-// 		}
-// 	}
-	
-// 	/** Hide the viewed player's head mesh to prevent seeing inside their head */
-// 	function HideViewTargetHead()
-// 	{
-// 		if (ViewTarget != None && AOCPawn(ViewTarget) != None)
-// 		{
-// 			// Call client RPC to hide head on client side
-// 			ClientHideSpectatorHead(AOCPawn(ViewTarget));
-// 		}
-// 	}
-	
-// 	/** Restore head visibility when leaving spectator mode */
-// 	function EndState(Name NextStateName)
-// 	{
-// 		// Restore viewed player's head visibility
-// 		if (ViewTarget != None && AOCPawn(ViewTarget) != None)
-// 		{
-// 			ClientShowSpectatorHead(AOCPawn(ViewTarget));
-// 		}
-		
-// 		super.EndState(NextStateName);
-// 	}
-// }
+/**
+ * Puts the observed pawn into real first-person-observer state.
+ *
+ * Ordering note: AOCPlayerController.state Spectating.SetBehindView(false) does
+ *   super.SetBehindView(false)   -> UTPlayerController: bBehindView = false,
+ *                                   bFreeCamera = false,
+ *                                   ViewTarget.SetThirdPersonCamera(false)
+ *   AOCPawn.BecomeFirstPersonObserved(self)
+ *       -> BecomeViewTarget(self)
+ *           -> SetThirdPersonCamera(!bIsBeingFPObserved)  // still false here,
+ *                                                         // so this re-runs as
+ *                                                         // SetThirdPersonCamera(TRUE)
+ *       -> bIsBeingFPObserved = true, swap OwnerMesh, attach 1P weapon
+ *
+ * i.e. vanilla's own call order leaves the pawn flagged for a first-person
+ * camera but visually still in third person (3P body drawn, helmet on, 1P mesh
+ * hidden). That is why the old implementation saw "inside the head". We put the
+ * meshes back into 1P state afterwards.
+ */
+simulated function BangModApplyFPObserve(AOCPawn P)
+{
+	if (P == none || !IsLocalPlayerController())
+		return;
+
+	if (!BangModCanFPObserve(P))
+		return;
+
+	if (BangModFPObservedPawn != none && BangModFPObservedPawn != P)
+		BangModClearFPObserve();
+
+	SetBehindView(false);
+	P.SetThirdPersonCamera(false);
+
+	BangModFPObservedPawn = P;
+}
+
+/**
+ * Undoes BangModApplyFPObserve on whichever pawn we last applied it to.
+ * AOCPawn.EndViewTarget() clears bIsBeingFPObserved / CurrentObserver but does
+ * NOT restore mesh visibility, so a pawn we stop following would keep its 1P
+ * mesh unhidden and its 3P body flagged owner-no-see.
+ */
+simulated function BangModClearFPObserve()
+{
+	local AOCPawn P;
+
+	if (BangModFPObservedPawn == none)
+		return;
+
+	P = BangModFPObservedPawn;
+	BangModFPObservedPawn = none;
+
+	P.bIsBeingFPObserved = false;
+	if (P.CurrentObserver == self)
+		P.CurrentObserver = none;
+
+	if (BangModCanFPObserve(P))
+		P.SetThirdPersonCamera(true);
+}
+
+/** Applies whichever perspective the spectator currently wants to the current view target. */
+simulated function BangModApplySpectatorPerspective()
+{
+	local AOCPawn P;
+
+	if (!IsLocalPlayerController())
+		return;
+
+	P = AOCPawn(ViewTarget);
+
+	if (P == none || P.Health <= 0)
+	{
+		BangModClearFPObserve();
+
+		// SetBehindView(false) cleared bFreeCamera (UTPlayerController.SetBehindView).
+		// Hand it back, or the free camera can neither move nor look around --
+		// state Spectating.PlayerMove early-outs on !bFreeCamera before UpdateRotation.
+		SetBehindView(true);
+		return;
+	}
+
+	if (bBangModFPSpectate)
+	{
+		BangModApplyFPObserve(P);
+	}
+	else
+	{
+		BangModClearFPObserve();
+		SetBehindView(true); // vanilla orbit follow (state Spectating.SetBehindView re-enables bFreeCamera)
+	}
+}
+
+/**
+ * Health/stamina bars for the followed player.
+ *
+ * AOCPlayerController.PlayerTick already pushes AOCPawn(ViewTarget).Health /
+ * .Stamina into the HUD when we have no pawn of our own, and ReplicatedStamina
+ * is replicated to every client, so the values are available. What is missing is
+ * visibility: DisplayCompleteHUD() is only called from ShowHUDElements() on
+ * possession, so somebody who joined straight into spectate never had the bars
+ * turned on. We also have to defeat the PreviousHealth/PreviousStamina change
+ * filter so the new target's values get pushed immediately.
+ */
+simulated function BangModRefreshSpectatorHUD()
+{
+	if (AOCBaseHUD(myHUD) == none)
+		return;
+
+	if (AOCPawn(ViewTarget) != none && AOCPawn(ViewTarget).Health > 0)
+	{
+		AOCBaseHUD(myHUD).DisplayCompleteHUD();
+		PreviousHealth = -1;
+		PreviousStamina = -1.f;
+	}
+	else
+	{
+		// Despite the name this is just "hide life bars + crosshair + ammo count".
+		AOCBaseHUD(myHUD).ClearHUDOnDeath();
+	}
+}
+
+/** Console toggle, in case somebody wants to default to the vanilla orbit follow. */
+exec function FirstPersonSpectate(optional bool bEnable = true)
+{
+	bBangModFPSpectate = bEnable;
+	if (IsInState('Spectating'))
+		BangModApplySpectatorPerspective();
+}
+
+state Spectating
+{
+	function BeginState(Name PreviousStateName)
+	{
+		super.BeginState(PreviousStateName);
+
+		// super sets SetViewTarget(none), so nothing is observed yet.
+		BangModFPObservedPawn = none;
+		BangModHUDPawn = none;
+	}
+
+	function EndState(Name NextStateName)
+	{
+		BangModClearFPObserve();
+
+		if (AOCBaseHUD(myHUD) != none)
+			AOCBaseHUD(myHUD).ClearHUDOnDeath();
+
+		BangModHUDPawn = none;
+
+		super.EndState(NextStateName);
+	}
+
+	/**
+	 * Runs on the server (called from ServerViewNextPlayer / ServerViewPrevPlayer).
+	 *
+	 * Deliberately does NOT call super. Vanilla's version force-calls
+	 * SetBehindView(true) here, and because the server has no LocalPlayer that
+	 * turns into a ClientSetBehindView(true) RPC which drags the client back into
+	 * third person on every single target change. The client decides its own
+	 * perspective in ClientSetViewTarget below.
+	 */
+	function ViewAPlayer(int dir)
+	{
+		local PlayerReplicationInfo PRI;
+
+		PRI = GetNextViewablePlayer(dir);
+		if (PRI == None)
+			return;
+
+		SetViewTarget(PRI);
+
+		if (ViewTarget != none)
+			SetReality(ViewTarget.RealityID);
+
+		ClientSetViewTarget(ViewTarget);
+	}
+
+	/** The client-side hook for "the view target changed" -- this is where perspective is applied. */
+	reliable client event ClientSetViewTarget( Actor A, optional ViewTargetTransitionParams TransitionParams )
+	{
+		// Restore the outgoing pawn before the native SetViewTarget inside super
+		// fires EndViewTarget on it (EndViewTarget does not restore its meshes).
+		if (BangModFPObservedPawn != none && BangModFPObservedPawn != A)
+			BangModClearFPObserve();
+
+		super.ClientSetViewTarget(A, TransitionParams);
+
+		BangModApplySpectatorPerspective();
+
+		BangModHUDPawn = AOCPawn(ViewTarget);
+		BangModRefreshSpectatorHUD();
+	}
+
+	/** Space. Toggles between first person and the vanilla orbit follow. */
+	exec function SpectatorPerspective()
+	{
+		if (AOCPawn(ViewTarget) == none)
+			return; // free camera / nobody followed -- nothing to toggle
+
+		bBangModFPSpectate = !bBangModFPSpectate;
+		BangModApplySpectatorPerspective();
+	}
+
+	/** Same key path, reached via UTPlayerController.BehindView bindings. */
+	exec function BehindView()
+	{
+		SpectatorPerspective();
+	}
+
+	/** Camera angles only mean anything in the orbit follow. */
+	exec function NextCameraAngle()
+	{
+		if (bBangModFPSpectate && AOCPawn(ViewTarget) != none)
+			return;
+
+		iThirdPersonAngle = 1;
+	}
+
+	/** Right click. */
+	exec function SpectatorFreecam()
+	{
+		BangModClearFPObserve();
+		super.SpectatorFreecam();
+
+		// Restore bFreeCamera, which SetBehindView(false) zeroed on the way into
+		// first person. Without this the free camera is frozen in place.
+		SetBehindView(true);
+
+		BangModHUDPawn = none;
+		BangModRefreshSpectatorHUD();
+	}
+
+	event PlayerTick(float DeltaTime)
+	{
+		local AOCPawn P;
+
+		super.PlayerTick(DeltaTime);
+
+		if (!IsLocalPlayerController())
+			return;
+
+		P = AOCPawn(ViewTarget);
+		if (P != none && P.Health <= 0)
+			P = none; // dead: let the vanilla death camera / auto-advance take over
+
+		if (P == none)
+		{
+			if (BangModFPObservedPawn != none)
+			{
+				BangModClearFPObserve();
+				SetBehindView(true);
+			}
+		}
+		else if (bBangModFPSpectate && (BangModFPObservedPawn != P || !P.bIsBeingFPObserved))
+		{
+			// Covers respawns (the pawn object is replaced) and anything else
+			// that clears the flag behind our back.
+			BangModApplyFPObserve(P);
+		}
+
+		// Keep the 1P mesh's aim offset fed.
+		// AOCPawn.FaceRotation() is the only thing that copies AimNode -> OwnerAimNode,
+		// and FaceRotation is only invoked for a locally controlled pawn
+		// (PlayerController.UpdateRotation / ProcessMove). For a pawn we are merely
+		// observing it never runs, which would leave the 1P mesh -- and therefore the
+		// camera socket -- refusing to pitch with the observed player's aim.
+		// Cheap enough to just re-copy every frame.
+		if (P != none && P.bIsBeingFPObserved && P.OwnerAimNode != none && P.AimNode != none)
+		{
+			P.OwnerAimNode.Aim.X = P.AimNode.Aim.X;
+			P.OwnerAimNode.Aim.Y = P.AimNode.Aim.Y;
+		}
+
+		if (BangModHUDPawn != P)
+		{
+			BangModHUDPawn = P;
+			BangModRefreshSpectatorHUD();
+		}
+	}
+}
 
 /* ************************************************************************
  * PROXIMITY VOICE CHAT IMPLEMENTATION

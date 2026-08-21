@@ -27,6 +27,94 @@ function RemoveEscapeMenu()
 }
 
 
+
+/* ************************************************************************
+ * FIRST-PERSON SPECTATOR -- followed player name / class readout
+ *
+ * AOCBaseHUD.DrawHUD() has a "spectator follow" branch that can drive the
+ * sub-crosshair info box (bOverrideSubXhair / OverrideText), but a few lines
+ * later the same branch unconditionally calls ShowInfomationBox(false) whenever
+ * GetViewName() does not resolve a player under the crosshair -- which is the
+ * normal case while spectating in first person. So instead of fighting it we
+ * draw the readout ourselves, straight off the current view target.
+ **************************************************************************/
+function DrawHUD()
+{
+	super.DrawHUD();
+	BangModDrawSpectatorTarget();
+}
+
+function BangModDrawSpectatorTarget()
+{
+	local AOCPlayerController PC;
+	local AOCPawn P;
+	local AOCPRI TargetPRI;
+	local string Line;
+	local float XL, YL, X, Y;
+	local EAOCFaction Fac;
+
+	PC = AOCPlayerController(PlayerOwner);
+
+	if (PC == none || Canvas == none || !PC.IsInState('Spectating'))
+		return;
+
+	P = AOCPawn(PC.ViewTarget);
+
+	if (P == none || P.PlayerReplicationInfo == none)
+		return;
+
+	Line = P.PlayerReplicationInfo.PlayerName;
+
+	Fac = EFAC_NONE;
+	TargetPRI = AOCPRI(P.PlayerReplicationInfo);
+	// Read FamilyFaction directly rather than AOCPRI.GetCurrentTeam(), which
+	// dereferences Team without a none-check on its bot branch.
+	if (TargetPRI != none && TargetPRI.MyFamilyInfo != none)
+	{
+		Fac = TargetPRI.MyFamilyInfo.FamilyFaction;
+
+		if (TargetPRI.MyFamilyInfo.ClassName != "")
+			Line $= "  -  " $ TargetPRI.MyFamilyInfo.ClassName;
+	}
+
+	Canvas.Font = class'Engine'.static.GetMediumFont();
+	Canvas.StrLen(Line, XL, YL);
+
+	X = (Canvas.SizeX - XL) * 0.5f;
+	Y = Canvas.SizeY * 0.88f;
+
+	// Drop shadow, so the name stays readable over bright terrain.
+	Canvas.SetPos(X + 1.f, Y + 1.f);
+	Canvas.DrawColor = BlackColor;
+	Canvas.DrawText(Line, true);
+
+	Canvas.SetPos(X, Y);
+	Canvas.DrawColor = BangModGetFactionColor(Fac);
+	Canvas.DrawText(Line, true);
+}
+
+function Color BangModGetFactionColor(EAOCFaction Fac)
+{
+	local Color C;
+
+	C.A = 255;
+
+	switch (Fac)
+	{
+		case EFAC_AGATHA:
+			C.R = 90;  C.G = 150; C.B = 255;
+			break;
+		case EFAC_MASON:
+			C.R = 235; C.G = 80;  C.B = 70;
+			break;
+		default:
+			C.R = 235; C.G = 235; C.B = 235;
+			break;
+	}
+
+	return C;
+}
+
 DefaultProperties
 {
 	PawnClass=class'BangModPawn'
