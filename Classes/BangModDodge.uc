@@ -1,10 +1,12 @@
 /**
- * BangModDodge - Custom dodge class that remaps WeaponIdentifier for weapons
- * that have no dodge animations for MaA (e.g. doubleaxe is a Vanguard weapon type).
+ * BangModDodge - Custom dodge base class with weapon-identifier remapping.
  *
  * Overrides GetWeaponIdentifier() to substitute identifiers that lack dodge anims
- * with ones that have them, while keeping the original WeaponIdentifier on the weapon
- * class so the AnimTree selects the correct idle/stance pose.
+ * (e.g. doubleaxe -> qstaff) with ones that have them, while keeping the original
+ * WeaponIdentifier on the weapon class so the AnimTree selects the correct idle/stance.
+ *
+ * Roll behaviour lives in BangModRoll (extends this class); see that file for the
+ * ninja-roll dodge.
  */
 class BangModDodge extends AOCDodge;
 
@@ -17,8 +19,8 @@ simulated function string GetWeaponIdentifier()
 
 	Identifier = super.GetWeaponIdentifier();
 
-	// Remap Vanguard weapon identifiers that lack MaA dodge animations
-	// doubleaxe (GrandMace/Kanabo) -> qstaff (QuarterStaff, a 2H MaA weapon with dodge anims)
+	// Remap Vanguard weapon identifiers that lack dodge animations
+	// doubleaxe (GrandMace/Kanabo) -> qstaff (QuarterStaff, a 2H weapon with dodge anims)
 	if (Identifier == "doubleaxe")
 	{
 		return "qstaff";
@@ -97,10 +99,7 @@ simulated function StartDodgeSM(byte direction, byte WeaponId)
 	super.StartDodgeSM(direction, WeaponId);
 
 	AOCAttach = AOCWeaponAttachment(OwnerPawn.CurrentWeaponAttachment);
-
-	// If the identifier was remapped, reattach weapon to the socket the dodge anim drives
-	if (AOCAttach != none
-		&& IsUsingRemappedDodgeIdentifier())
+	if (AOCAttach != none && IsUsingRemappedDodgeIdentifier())
 	{
 		RemappedSocket = GetRemappedDodgeSocket();
 		OriginalWeaponSocket = AOCAttach.default.WeaponSocket;
@@ -117,7 +116,7 @@ simulated function StopDodgeSM()
 
 	if (bHasRemappedDodgeAttachment)
 	{
-		Inf = OwnerPawn.CreateAnimationInfo(name(AllDirAnimations[DodgeDir].DodgeAnims[1]), true, true, false,,true);
+		Inf = OwnerPawn.CreateAnimationInfo(name(AllDirAnimations[DodgeDir].DodgeAnims[1]), true, true, false,, true);
 		Inf.AnimationName = name(Repl(string(Inf.AnimationName), "REPL", GetWeaponIdentifier(), true));
 		LandAnimLength = OwnerPawn.Mesh.GetAnimLength(Inf.AnimationName);
 	}
@@ -127,13 +126,9 @@ simulated function StopDodgeSM()
 	if (bHasRemappedDodgeAttachment)
 	{
 		if (LandAnimLength > 0.f)
-		{
 			OwnerPawn.SetTimer(LandAnimLength, false, 'RestoreDodgeWeaponAttachment');
-		}
 		else
-		{
 			RestoreOriginalWeaponAttachment();
-		}
 	}
 }
 

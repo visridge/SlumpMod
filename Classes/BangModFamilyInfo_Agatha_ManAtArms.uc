@@ -1,7 +1,11 @@
-class BangModFamilyInfo_Agatha_ManAtArms extends AOCFamilyInfo_Agatha_ManAtArms;
+class BangModFamilyInfo_Agatha_ManAtArms extends BangModFamilyInfo_ManAtArms
+	dependson(AOCPawn);
 
 DefaultProperties
 {
+	FamilyID="Man-At-Arms"
+	Faction="Agatha"
+	FamilyFaction=EFAC_AGATHA
 	// ParryBoxScale=(X=0.20,Y=0.17,Z=0.35)
     // ParryBoxTranslation=(X=10, Z=-28)
 
@@ -16,8 +20,8 @@ DefaultProperties
 	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_MorningStar',CorrespondingDuelProp=EDUEL_MorningStarUse)
 	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_HolyWaterSprinkler',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_QuarterStaff',CorrespondingDuelProp=EDUEL_QStaffUse)
-	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_Firebug')
-	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_DualBucklers')
+	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_DualBucklers')
+	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_Firebug')
 	
 	NewSecondaryWeapons.empty;
 	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_Saber')

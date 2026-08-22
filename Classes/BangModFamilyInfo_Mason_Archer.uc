@@ -1,7 +1,12 @@
-class BangModFamilyInfo_Mason_Archer extends AOCFamilyInfo_Mason_Archer;
+class BangModFamilyInfo_Mason_Archer extends BangModFamilyInfo_Archer
+	dependson(AOCPawn);
 
 DefaultProperties
 {
+	FamilyID="Archer"
+	Faction="Mason"
+	FamilyFaction=EFAC_MASON
+
 	// ParryBoxScale=(X=0.20,Y=0.17,Z=0.35)
     // ParryBoxTranslation=(X=10, Z=-28)
 
@@ -73,7 +78,7 @@ DefaultProperties
 	FORWARD_MODIFY=1.0
 	CROUCH_MODIFY=0.65
 	MaxSprintSpeedTime=3.5
-	bCanDodge=false
+	bCanDodge=true
 	iKickCost=25
 	iDodgeCost=40
 	fComboAggressionBonus=1.0

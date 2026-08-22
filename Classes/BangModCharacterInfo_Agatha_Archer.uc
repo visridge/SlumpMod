@@ -21,6 +21,9 @@ defaultproperties
 
 	/** Ownership info **/
 
+	ThirdPersonAnimSets(19)=AnimSet'NinjaAnims.NinjaRollAnims'
+	FirstPersonAnimSets(19)=AnimSet'NinjaAnims.NinjaRollAnims_1p'
+
 	GearData=(GearNameID=AgathaArcher)
 
 	AllowedTeams.Add(0)

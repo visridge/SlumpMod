@@ -80,7 +80,7 @@ DefaultProperties
 	CROUCH_MODIFY=0.65
 	PercentDamageToTake=0.9
 	MaxSprintSpeedTime=2.0
-	bCanDodge=false
+	bCanDodge=true
 	iDodgeCost=20
 	iKickCost=20
 	fComboAggressionBonus=1.0

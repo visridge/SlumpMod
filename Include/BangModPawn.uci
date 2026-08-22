@@ -823,12 +823,12 @@ simulated function RestoreDodgeWeaponAttachment()
 	}
 }
 
-/** Override to use BangModDodge which remaps WeaponIdentifiers that lack MaA dodge animations */
+/** Override to use BangModRoll (ninja-roll for Archer) with the shared weapon-identifier remap. */
 simulated function VerifyDodgeSMInitialize()
 {
 	if (DodgeSM == none)
 	{
-		DodgeSM = new(Outer) class'BangModDodge';
+		DodgeSM = new(Outer) class'BangModRoll';
 		DodgeSM.OwnerPawn = self;
 	}
 }
