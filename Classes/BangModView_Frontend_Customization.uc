@@ -1,6 +1,15 @@
 class BangModView_Frontend_Customization extends AOCView_Frontend_Customization
 config(BangModCustomization);
 
+// Assassin (5th class) customization storage.
+//
+// The parent struct TeamCustomizationChoicePair.ClassCustomizationChoices is a
+// fixed [4] array (AOC source, which BangMod does not modify). The 5th class --
+// ECLASS_SiegeEngineer, class index 4 -- does not fit in it, so its customization
+// choices live here in the subclass. These are loaded/saved through the same
+// BangModCustomization static paths as classes 0-3, keyed on class index 4.
+var SCustomizationChoice AssassinChoices[EAOCFaction];
+
 function OnEscapeKeyPress()
 {
 		SaveAndExit();
@@ -24,6 +33,12 @@ function PopulateCustomizationInfoArrays()
 		TeamCustomizationChoices[EFAC_FFA].ClassCustomizationChoices[i] = class'BangModCustomization'.static.LocalGetCustomizationChoices(EFAC_FFA, i);
 	}
 
+	// Assassin (class 4) choices are kept in the subclass array, since the parent
+	// struct only holds classes 0-3.
+	AssassinChoices[EFAC_Agatha] = class'BangModCustomization'.static.LocalGetCustomizationChoices(EFAC_Agatha, 4);
+	AssassinChoices[EFAC_Mason] = class'BangModCustomization'.static.LocalGetCustomizationChoices(EFAC_Mason, 4);
+	AssassinChoices[EFAC_FFA] = class'BangModCustomization'.static.LocalGetCustomizationChoices(EFAC_FFA, 4);
+
 	for(i = 0; i < 4; ++i)
 	{
 		class'BangModCustomization'.static.LocalGetSelectedWeaponDrops(EFAC_MASON, i, TeamWeaponChoices[EFAC_MASON].Classes[i].Weapons, AOCPRI(repInfo));
@@ -45,6 +60,11 @@ function SaveChoices()
 		class'BangModCustomization'.static.LocalSetCustomizationChoices(TeamCustomizationChoices[EFAC_Mason].ClassCustomizationChoices[i], EFAC_Mason, i, TeamWeaponChoices[EFAC_Mason].Classes[i].Weapons, FactionSupportFavIconId);
 		class'BangModCustomization'.static.LocalSetCustomizationChoices(TeamCustomizationChoices[EFAC_FFA].ClassCustomizationChoices[i], EFAC_FFA, i, TeamWeaponChoices[EFAC_FFA].Classes[i].Weapons, FactionSupportFavIconId);
 	}
+
+	// Assassin (class 4) choices live in the subclass array.
+	class'BangModCustomization'.static.LocalSetCustomizationChoices(AssassinChoices[EFAC_Agatha], EFAC_Agatha, 4, TeamWeaponChoices[EFAC_AGATHA].Classes[4].Weapons, FactionSupportFavIconId);
+	class'BangModCustomization'.static.LocalSetCustomizationChoices(AssassinChoices[EFAC_Mason], EFAC_Mason, 4, TeamWeaponChoices[EFAC_MASON].Classes[4].Weapons, FactionSupportFavIconId);
+	class'BangModCustomization'.static.LocalSetCustomizationChoices(AssassinChoices[EFAC_FFA], EFAC_FFA, 4, TeamWeaponChoices[EFAC_FFA].Classes[4].Weapons, FactionSupportFavIconId);
 
 	AOCPlayerController(class'Worldinfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientUpdateCurrentCustomizationInfo();
 
@@ -188,6 +208,28 @@ function OnFadeOutDone()
 	CaptureActor.UICharTimerTrigger = OnTimerTriggerToStartFadeIn;
 	CaptureActor.StartUICharTimer(0.01f);
 	PreviewPawn.PrestreamTextures(10000000, true);
+}
+
+
+// Assassin (class 4) family resolution for the customization preview.
+// The vanilla GetFamilyFromTeamAndClass has no ECLASS_SiegeEngineer case and falls
+// through to Knight, which would preview the wrong family (and the wrong weapon
+// selection). Resolve the Assassin family from GRI.FamilyInfos slots 4 (Agatha) and
+// 9 (Mason) instead.
+function AOCFamilyInfo GetFamilyFromTeamAndClass(EAOCFaction TargetTeam, EAOCCLASS TargetClass)
+{
+	local AOCGRI GRI;
+
+	if (TargetClass == ECLASS_SiegeEngineer)
+	{
+		GRI = AOCGRI(class'Worldinfo'.static.GetWorldInfo().GRI);
+		if (GRI == none)
+			return none;
+
+		return (TargetTeam == EFAC_Agatha ? GRI.FamilyInfos[4] : GRI.FamilyInfos[9]);
+	}
+
+	return super.GetFamilyFromTeamAndClass(TargetTeam, TargetClass);
 }
 
 

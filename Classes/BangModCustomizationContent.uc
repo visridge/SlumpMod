@@ -16,6 +16,9 @@ static function int GetDefaultCharacterIDFor(int Team, int PawnClass)
     case ECLASS_Knight:
         return Team == EFAC_Agatha ? default.Characters.Find(class'BangModCharacterInfo_Agatha_Knight') : default.Characters.Find(class'BangModCharacterInfo_Mason_Knight');
         break;
+    case ECLASS_SiegeEngineer:
+        return Team == EFAC_Agatha ? default.Characters.Find(class'BangModCharacterInfo_Agatha_Assassin') : default.Characters.Find(class'BangModCharacterInfo_Mason_Assassin');
+        break;
     case ECLASS_King:
         return Team == EFAC_Agatha ? default.Characters.Find(class'BangModCharacterInfo_Agatha_King') : default.Characters.Find(class'BangModCharacterInfo_Mason_King');
         break;
@@ -65,6 +68,8 @@ defaultproperties
 	Characters.Add(class'BangModCharacterInfo_Mason_Footman')
 	Characters.Add(class'BangModCharacterInfo_Mason_Saint')
 	Characters.Add(class'BangModCharacterInfo_Agatha_Turtle')
+	Characters.Add(class'BangModCharacterInfo_Agatha_Assassin')
+	Characters.Add(class'BangModCharacterInfo_Mason_Assassin')
 
     Teams.Empty()
     Teams.Add(class'BangModCustomizationTeam_Agatha') //0

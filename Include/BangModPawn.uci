@@ -2602,6 +2602,7 @@ simulated function SkeletalMesh BangModStock1PMesh(class<AOCCharacterInfo> Info)
 simulated function SetCharacterAppearance(AssetStore_AOCPawn_Character AssetStore)
 {
 	local SkeletalMesh Stock;
+	local int i;
 
 	// Substitute only when the store is genuinely missing the mesh it was asked for.
 	// Comparing the paths as well as testing for none matters because AssetStore.Clear()
@@ -2627,6 +2628,27 @@ simulated function SetCharacterAppearance(AssetStore_AOCPawn_Character AssetStor
 	}
 
 	super.SetCharacterAppearance(AssetStore);
+
+	// Assassin first-person arms tint: AOCPawn.SetCharacterAppearance only applies
+	// HeadMaterialPath/BodyMaterialPath to the THIRD-person mesh. The owner (1P) mesh
+	// keeps whatever material is baked into it, and the DW Ninja arms mesh ships with
+	// a neutral grey baked material, so the arms render grey instead of team colours.
+	// Re-tint every owner-mesh slot with the faction body material (NinjaBodyAgathaMat /
+	// NinjaBodyMasonMat) for the two Assassin characters. Scoped so no other class is
+	// affected. Also keyed on the CharacterInfo and BodyMaterial actually being loaded.
+	if (AssetStore != none
+		&& AssetStore.CharacterInfo != none
+		&& OwnerMesh != none
+		&& AssetStore.OwnerMesh != none
+		&& AssetStore.BodyMaterial != none
+		&& (AssetStore.CharacterInfo == class'BangModCharacterInfo_Agatha_Assassin'
+			|| AssetStore.CharacterInfo == class'BangModCharacterInfo_Mason_Assassin'))
+	{
+		for (i = 0; i < AssetStore.OwnerMesh.Materials.Length; ++i)
+		{
+			OwnerMesh.SetMaterial(i, AssetStore.BodyMaterial);
+		}
+	}
 }
 
 

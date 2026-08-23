@@ -795,6 +795,163 @@ reliable server function S_GetAdmins() {
 	}
 }
 
+// Debug helper: force-join a class directly. Bypasses the class-select UI so new
+// classes with no UI slot (e.g. the Assassin) can be tested before Layer 3 is done.
+//   TeamIndex : -1 = keep current team, 0 = Agatha, 1 = Mason
+//   ClassIndex: 0-3 = Archer/MAA/Vanguard/Knight, 4 = Assassin (ECLASS_SiegeEngineer)
+// Example: "JoinClass -1 4" or "JoinClass 0 4"
+exec function JoinClass(optional int TeamIndex = -1, optional int ClassIndex = 4)
+{
+	S_JoinClass(TeamIndex, ClassIndex);
+}
+
+reliable server function S_JoinClass(int TeamIndex, int ClassIndex)
+{
+	local EAOCFaction Team;
+	local EAOCFaction OldFaction;
+	local AOCGRI GRI;
+	local AOCFamilyInfo FamInfo;
+	local int FamIndex;
+
+	if (!IsAdmin())
+	{
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+
+	GRI = AOCGRI(WorldInfo.GRI);
+	if (GRI == none)
+	{
+		ClientDisplayConsoleMessage("JoinClass: GRI not ready yet.");
+		return;
+	}
+
+	ClassIndex = Clamp(ClassIndex, 0, 4);
+
+	if (TeamIndex < 0)
+		Team = AOCPRI(PlayerReplicationInfo).GetCurrentTeam();
+	else
+		Team = (TeamIndex == 0) ? EFAC_AGATHA : EFAC_MASON;
+
+	// FamilyInfos layout: Agatha classes at 0..4, Mason classes at 5..9.
+	FamIndex = (Team == EFAC_AGATHA) ? ClassIndex : (ClassIndex + 5);
+	FamInfo = GRI.FamilyInfos[FamIndex];
+
+	if (FamInfo == none)
+	{
+		ClientDisplayConsoleMessage("JoinClass: no family info for team" @ Team @ "class index" @ ClassIndex);
+		return;
+	}
+
+	OldFaction = (CurrentFamilyInfo != none) ? CurrentFamilyInfo.FamilyFaction : EFAC_NONE;
+
+	// Force-switch to the family, then guarantee a valid weapon loadout for it.
+	SetNewClass(FamInfo, false, true);
+	FindFirstAvailableLoadoutForCurrentFamilyInfo();
+
+	if (Pawn == none)
+	{
+		SetReady(true);
+	}
+	else if (CurrentFamilyInfo.FamilyFaction == OldFaction)
+	{
+		// Same-team class swap: SetNewClass doesn't kill the pawn, so respawn manually.
+		WorldInfo.Game.RestartPlayer(self);
+	}
+
+	ClientDisplayConsoleMessage("JoinClass:" @ FamInfo.default.ClassName @ "(" $ FamInfo.default.FamilyFaction $ ")");
+}
+
+// Assassin customization console command (no-Flash path).
+//
+// The customization screen's class tabs are baked into Customization.swf and only
+// cover classes 0-3, so the 5th class (index 4) has no clickable tab. This command
+// drives the SAME LocalGet/LocalSetCustomizationChoices path the UI uses, so any
+// value set here is persisted to Customization.ini and applied on spawn exactly like
+// an in-menu choice.
+//
+//   TeamIndex  : 0 = Agatha, 1 = Mason
+//   Field      : helmet | tabard | emblem | shield | char | tabardcolor | tcolor |
+//                emblemcolor | ecolor | shieldcolor | scolor
+//   Value      : index into the corresponding list
+//   ColourSlot : optional, only for *color fields. 0/1/2 selects which colour channel;
+//                omitted (or anything other than 0/1) defaults to slot 2.
+//
+// Examples:
+//   SetAssassinCustom 0 helmet 3
+//   SetAssassinCustom 0 tabardcolor 5 0      (Agatha tabard colour 0 -> index 5)
+//   SetAssassinCustom 1 tcolor 4 1           (Mason tabard colour 1 -> index 4)
+//   SetAssassinCustom 1 char 3               (Mason Assassin -> character index 3)
+//
+// NOTE: PlayerClass is pinned to 4 (ECLASS_SiegeEngineer). The field is lowercased
+// before matching, and the choice is persisted through the same LocalSetCustomizationChoices
+// path the customization UI uses.
+exec function SetAssassinCustom(int TeamIndex, string Field, int Value, optional int ColourSlot = -1)
+{
+	S_SetAssassinCustom(TeamIndex, Field, Value, ColourSlot);
+}
+
+reliable server function S_SetAssassinCustom(int TeamIndex, string Field, int Value, int ColourSlot)
+{
+	local EAOCFaction Faction;
+	local SCustomizationChoice Choices;
+	local int WeaponDrops[EWeaponType.EWEP_MAX];
+	local byte FavIcon;
+
+	if (!IsAdmin())
+	{
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+
+	Faction = (TeamIndex == 0) ? EFAC_AGATHA : EFAC_MASON;
+
+	// Read the current Assassin choices through the same path the UI uses.
+	Choices = class'BangModCustomization'.static.LocalGetCustomizationChoices(Faction, 4);
+	class'BangModCustomization'.static.LocalGetSelectedWeaponDrops(Faction, 4, WeaponDrops, AOCPRI(PlayerReplicationInfo));
+	FavIcon = class'BangModCustomization'.static.LocalGetFactionSupporterId();
+
+	Field = Locs(Field);
+
+	if (Field == "helmet")
+		Choices.Helmet = byte(Clamp(Value, 0, 255));
+	else if (Field == "tabard")
+		Choices.Tabard = byte(Clamp(Value, 0, 255));
+	else if (Field == "emblem")
+		Choices.Emblem = byte(Clamp(Value, 0, 255));
+	else if (Field == "shield")
+		Choices.Shield = byte(Clamp(Value, 0, 255));
+	else if (Field == "char" || Field == "character")
+		Choices.Character = Clamp(Value, -1, 255);
+	else if (Field == "tabardcolor" || Field == "tcolor")
+	{
+		if (ColourSlot == 0) Choices.TabardColor1 = byte(Clamp(Value, 0, 255));
+		else if (ColourSlot == 1) Choices.TabardColor2 = byte(Clamp(Value, 0, 255));
+		else Choices.TabardColor3 = byte(Clamp(Value, 0, 255));
+	}
+	else if (Field == "emblemcolor" || Field == "ecolor")
+	{
+		if (ColourSlot == 0) Choices.EmblemColor1 = byte(Clamp(Value, 0, 255));
+		else if (ColourSlot == 1) Choices.EmblemColor2 = byte(Clamp(Value, 0, 255));
+		else Choices.EmblemColor3 = byte(Clamp(Value, 0, 255));
+	}
+	else if (Field == "shieldcolor" || Field == "scolor")
+	{
+		if (ColourSlot == 0) Choices.ShieldColor1 = byte(Clamp(Value, 0, 255));
+		else if (ColourSlot == 1) Choices.ShieldColor2 = byte(Clamp(Value, 0, 255));
+		else Choices.ShieldColor3 = byte(Clamp(Value, 0, 255));
+	}
+	else
+	{
+		ClientDisplayConsoleMessage("SetAssassinCustom: unknown field" @ Field);
+		return;
+	}
+
+	class'BangModCustomization'.static.LocalSetCustomizationChoices(Choices, Faction, 4, WeaponDrops, FavIcon);
+
+	ClientDisplayConsoleMessage("SetAssassinCustom:" @ Field @ "=" @ Value @ "for" @ Faction);
+}
+
 reliable client function NotifyTournamentWaiting(float Threshold) {
 	bShowedTournamentWaitingMessage = true;
 }

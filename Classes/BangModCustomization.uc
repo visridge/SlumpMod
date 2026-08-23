@@ -146,7 +146,10 @@ static function int FixupCharacterIndex(int SavedIndex, int Faction, int PlayerC
 	if (SavedCharClass == none || CorrectedIndex == INDEX_NONE)
 	{
 		// Can't correlate saved index to any known class — fall back to default.
-		CorrectedIndex = class'AOCCustomization'.static.GetDefaultCharacterID(Faction, PlayerClass);
+		// Use the BangMod content resolver directly: AOCCustomization.GetDefaultCharacterID
+		// would use the vanilla content list, which has no entry for ECLASS_SiegeEngineer
+		// (class slot 4) and would fall through to the peasant.
+		CorrectedIndex = class'BangModCustomizationContent'.static.GetDefaultCharacterIDFor(Faction, PlayerClass);
 	}
 
 	// Auto-heal the stale INI save so the fix persists on next session.
@@ -204,8 +207,11 @@ static function SCustomizationChoice LocalGetCustomizationChoices(int Faction, i
 	// BangMod: Allow all characters except skeleton/peasant restrictions.
 	// Fall back to GetDefaultCharacterID (not 0) so the player gets their
 	// class-appropriate default skin instead of the skeleton placeholder.
+	// Use the BangMod content resolver directly: AOCCustomization.GetDefaultCharacterID
+	// would use the vanilla content list, which has no entry for ECLASS_SiegeEngineer
+	// (class slot 4) and would fall through to the peasant.
 	if(!IsCharacterOwnedBy(CustomizationInfo.Character, Faction, PlayerClass, PRI))
-		CustomizationInfo.Character = class'AOCCustomization'.static.GetDefaultCharacterID(Faction, PlayerClass);
+		CustomizationInfo.Character = class'BangModCustomizationContent'.static.GetDefaultCharacterIDFor(Faction, PlayerClass);
 
 	//Helmet
 	TempID = class'AOCCustomization'.static.LocalGetSelectedHelmet(Faction, PlayerClass);
@@ -331,4 +337,15 @@ static function LocalSetSelectWeaponSkinChoices(int Faction, int PlayerClass, in
 
 	if(SaveConfig)
 		class'AOCCustomization'.static.StaticSaveConfig();
+}
+
+// BangMod: Localize the 5th class name for the customization screen. The vanilla
+// GetClassName has no ECLASS_SiegeEngineer case, so it returns an empty string and
+// the class label renders blank.
+static function string GetClassName(EAOCClass ClassID)
+{
+	if (ClassID == ECLASS_SiegeEngineer)
+		return "Assassin";
+
+	return super.GetClassName(ClassID);
 }
