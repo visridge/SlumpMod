@@ -54,6 +54,12 @@ var float   fBangModLastStaminaShown;
 var float   fBangModFOVCaught;       // last wrong FOV value we corrected while spectating
 var name    nBangModFOVCaughtWhere;  // which hook caught it -- reported by FPSpectateDebug
 
+// BANGMOD: admin-only pause control (ported from NateMod). Pausing is restricted
+// to admins; unpausing is also admin-only and runs a short 3-2-1-GO countdown so
+// players get a heads-up before the action resumes.
+var bool  bIsPaused;              // true while an admin has the game paused
+var int   UnpauseCountdownTime;   // countdown start value (default 3)
+
 
 simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
 {
@@ -483,6 +489,63 @@ reliable server function S_AdminBroadcastMessage(string Message, optional bool b
 	}
 }
 
+// Admin-only pause/unpause. Overrides the engine SetPause so a non-admin can
+// neither pause (e.g. typing "pause" in the console) nor unpause the game.
+function bool SetPause(bool bPause, optional delegate<CanUnpause> CanUnpauseDelegate=CanUnpause) {
+	local bool bResult;
+	if (bPause) {
+		if (!IsAdmin()) {
+			ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+			return false;
+		}
+		bFire = 0;
+		bResult = WorldInfo.Game.SetPause(self, CanUnpauseDelegate);
+		if (bResult) {
+			PauseRumbleForAllPlayers();
+			bIsPaused = true;
+		}
+	} else if (IsAdmin() && bIsPaused) {
+		// Route through countdown instead of immediate unpause
+		S_StartUnpauseCountdown();
+	}
+	return bResult;
+}
+
+// Explicit admin command to start the unpause countdown.
+exec function UnPause() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_StartUnpauseCountdown();
+}
+
+reliable server function S_StartUnpauseCountdown() {
+	if (!IsAdmin())
+		return;
+	if (!bIsPaused) {
+		ClientDisplayConsoleMessage("The game is not currently paused.");
+		return;
+	}
+	UnpauseCountdownTime = Default.UnpauseCountdownTime;
+	S_AdminBroadcastMessage("Unpausing in...", false);
+	WorldInfo.Game.ClearPause();
+	PauseRumbleForAllPlayers(false);
+	bIsPaused = false;
+	UnpauseCountdownTick();
+	SetTimer(1.0f, true, 'UnpauseCountdownTick');
+}
+
+function UnpauseCountdownTick() {
+	if (UnpauseCountdownTime == 0) {
+		S_AdminBroadcastMessage("GO!", false);
+		ClearTimer('UnpauseCountdownTick');
+	} else {
+		S_AdminBroadcastMessage("    "$UnpauseCountdownTime$"...", false);
+		UnpauseCountdownTime--;
+	}
+}
+
 exec function AdminBroadcastMessage(String Message) {
 	if (!PlayerReplicationInfo.bAdmin) {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
@@ -546,6 +609,60 @@ exec function AdminReadyAll() {
 	}
 	S_AdminBroadcastMessage("AdminReadyAll");
 	super.AdminReadyAll();
+}
+
+exec function AdminKick(optional String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminKick "$PlayerName);
+	super.AdminKick(PlayerName);
+}
+
+exec function AdminKickScoreboard(optional String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminKick "$PlayerName);
+	super.AdminKickScoreboard(PlayerName);
+}
+
+exec function AdminKickBan(optional String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminKickBan "$PlayerName);
+	super.AdminKickBan(PlayerName);
+}
+
+exec function AdminKickBanScoreboard(optional String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminKickBan "$PlayerName);
+	super.AdminKickBanScoreboard(PlayerName);
+}
+
+exec function AdminUnban(optional String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminUnban "$PlayerName);
+	super.AdminUnban(PlayerName);
+}
+
+exec function AdminBanNetID(string NetIDString, optional string Reason) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminBanNetID "$NetIDString);
+	super.AdminBanNetID(NetIDString, Reason);
 }
 
 
@@ -1206,6 +1323,33 @@ exec function CauseEvent(optional name EventName) {
 	super.CauseEvent(EventName);
 }
 
+// Log map changes to chat (chat is mirrored to the in-game console) so everyone
+// can see which admin changed the map, and to where.
+reliable server function ServerChangeMap(string URL)
+{
+	if (IsAdmin() && AOCGame(WorldInfo.Game).MapExists(URL))
+		S_AdminBroadcastMessage("changed map to "$URL);
+	super.ServerChangeMap(URL);
+}
+
+// Restart the current map (admin only) and log who did it.
+exec function AdminRestartMap()
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminRestartMap();
+}
+
+reliable server function S_AdminRestartMap()
+{
+	if (!IsAdmin())
+		return;
+	S_AdminBroadcastMessage("restarted the map");
+	WorldInfo.ServerTravel("?restart", false);
+}
+
 exec function AdminGotoSF() {
 	if (!PlayerReplicationInfo.bAdmin) {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
@@ -1305,6 +1449,7 @@ exec function AdminGotoCompMod() {
 
 reliable server function S_AdminGotoCompMod() {
 	if (!IsAdmin()) return;
+	S_AdminBroadcastMessage("changed map to AOCFFA-YeedYard_p?modname=CompMod3");
 	WorldInfo.ServerTravel("AOCFFA-YeedYard_p?modname=CompMod3", false);
 }
 
@@ -1318,6 +1463,7 @@ exec function AdminGotoNateMod() {
 
 reliable server function S_AdminGotoNateMod() {
 	if (!IsAdmin()) return;
+	S_AdminBroadcastMessage("changed map to AOCFFA-YeedYard_p?modname=NateMod");
 	WorldInfo.ServerTravel("AOCFFA-YeedYard_p?modname=NateMod", false);
 }
 
@@ -1331,6 +1477,7 @@ exec function AdminGotoZwangMod() {
 
 reliable server function S_AdminGotoZwangMod() {
 	if (!IsAdmin()) return;
+	S_AdminBroadcastMessage("changed map to AOCFFA-YeedYard_p?modname=Slump3");
 	WorldInfo.ServerTravel("AOCFFA-YeedYard_p?modname=Slump3", false);
 }
 
@@ -2917,6 +3064,7 @@ DefaultProperties
 	// Netcode optimization: Client-side interpolation interval to match 120Hz tickrate
 	MaxClientUpdateInterval=0.00833  // 1/120 = 0.00833 seconds between client updates
 	suicideDelay = 1.0f
+	UnpauseCountdownTime = 3
 	CustomizationClass=class'BangModCustomization'
 	bShowDeathMessages = true
 	
