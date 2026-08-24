@@ -49,7 +49,7 @@ DefaultProperties
 	CrossbowLocationModifiers(EHIT_Arm) = 2.25
 
 
-	DamageResistances(EDMG_Swing) = 0.85
+	DamageResistances(EDMG_Swing) = 0.80
 	DamageResistances(EDMG_Pierce) = 0.85
 	DamageResistances(EDMG_Blunt) = 0.65
 
