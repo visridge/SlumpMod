@@ -2682,8 +2682,8 @@ simulated function ResetBlends(optional float BlendOutTime = 0.3f, optional bool
 /* ************************************************************************
  * WEAPON-KEYED NINJA (ASSASSIN) SKIN
  *
- * Picking one of the archer's "ninja" primary weapons (Spear, Brandistock,
- * Agatha/Mason Flag, SpikedMace, BastardSword -- indexes 6..10 in
+ * Picking one of the archer's "ninja" primary weapons (SpikedMace, BastardSword,
+ * Kanabo, Katana, GrandHammer -- indexes 6..10 in
  * BangModFamilyInfo_*_Archer) makes the pawn spawn with the Assassin (ninja)
  * mesh instead of the archer mesh, with no new UI slot and no Flash asset.
  *
@@ -2701,12 +2701,11 @@ simulated function ResetBlends(optional float BlendOutTime = 0.3f, optional bool
 /** True when the equipped primary is one of the archer's ninja weapons (indexes 6..10). */
 simulated function bool BangModIsNinjaPrimary()
 {
-	return PawnInfo.myPrimary == class'BangModWeapon_Spear'
-		|| PawnInfo.myPrimary == class'BangModWeapon_Brandistock'
-		|| PawnInfo.myPrimary == class'BangModWeapon_AgathaFlag'
-		|| PawnInfo.myPrimary == class'BangModWeapon_MasonFlag'
-		|| PawnInfo.myPrimary == class'BangModWeapon_SpikedMace'
-		|| PawnInfo.myPrimary == class'BangModWeapon_BastardSword';
+	return PawnInfo.myPrimary == class'BangModWeapon_SpikedMace'
+		|| PawnInfo.myPrimary == class'BangModWeapon_BastardSword'
+		|| PawnInfo.myPrimary == class'BangModWeapon_Kanabo'
+		|| PawnInfo.myPrimary == class'BangModWeapon_Katana'
+		|| PawnInfo.myPrimary == class'BangModWeapon_GrandHammer';
 }
 
 /** Rewrite the character ID to the Assassin before the character mesh is loaded. */
