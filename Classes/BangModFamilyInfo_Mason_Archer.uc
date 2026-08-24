@@ -24,7 +24,7 @@ DefaultProperties
 	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_GrandHammer',CForceTertiary=(class'BangModWeapon_HuntingKnife'))
 
 	NewSecondaryWeapons.empty;
-	NewTertiaryWeapons(0)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
+	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
 
 
 	NewTertiaryWeapons.empty;

@@ -29,7 +29,7 @@ DefaultProperties
 
 
 	NewSecondaryWeapons.empty;
-	NewTertiaryWeapons(0)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
+	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
 
 	NewTertiaryWeapons.empty;
 	NewTertiaryWeapons(0)=(CWeapon=class'AOCWeapon_ProjBodkin',bEnabledDefault=false)
