@@ -13,10 +13,11 @@ DefaultProperties
 	NewPrimaryWeapons(4)=(CWeapon=class'BangModWeapon_Bill',CorrespondingDuelProp=EDUEL_BillUse)
 	NewPrimaryWeapons(5)=(CWeapon=class'BangModWeapon_Halberd',CorrespondingDuelProp=EDUEL_HalberdUse)
 	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_PoleHammer',CorrespondingDuelProp=EDUEL_PoleHammerUse)
-	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
-	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Nodachi',CorrespondingDuelProp=EDUEL_ZweihanderUse)
-	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Kanabo',CorrespondingDuelProp=EDUEL_GrandMaceUse)
-	// NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
+	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_Nodachi',CorrespondingDuelProp=EDUEL_ZweihanderUse)
+	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
+	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
+	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)
+	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
 	
 
 	NewSecondaryWeapons.empty;

@@ -48,6 +48,7 @@ DefaultProperties
 	DamageResistances(EDMG_Pierce) = 0.85
 	DamageResistances(EDMG_Blunt) = 0.65
 	
+	LocationModifiers(EHIT_Head) = 1.125 // was inherited 1.25
 
 	BACK_MODIFY=0.7
 	AccelRate=600.0

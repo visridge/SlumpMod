@@ -55,7 +55,7 @@ Begin Object class=AnimNodeSequence Name=MeshSequenceA
 
 
 	bTwoHander=true
-	FlinchTime2H=1.1
+	FlinchTime2H=1.0
 	EncircleRadius=25.0f
 	EffectiveDistance=200.0f
 
@@ -181,7 +181,7 @@ Begin Object class=AnimNodeSequence Name=MeshSequenceA
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Messer]
 	 */
-	iFeintStaminaCost=15
+	iFeintStaminaCost=17
 	FeintTime=0.35
 	TertiaryFeintTime=0.45
 	ComboFeintTime=0.575

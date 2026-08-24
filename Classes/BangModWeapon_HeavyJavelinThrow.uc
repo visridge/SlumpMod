@@ -33,8 +33,8 @@ DefaultProperties
 
 	CurrentWeaponType = EWEP_HeavyJavelin
 	// set maximum ammo
-	AmmoCount=1
-	MaxAmmoCount=1
+	AmmoCount=2
+	MaxAmmoCount=2
 	AIRange=5000
 
 	HorizontalRotateSpeed = 60000
