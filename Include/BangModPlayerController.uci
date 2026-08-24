@@ -1001,25 +1001,15 @@ reliable server function S_JoinClass(int TeamIndex, int ClassIndex)
 //   SetAssassinCustom 1 char 3               (Mason Assassin -> character index 3)
 //
 // NOTE: PlayerClass is pinned to 4 (ECLASS_SiegeEngineer). The field is lowercased
-// before matching, and the choice is persisted through the same LocalSetCustomizationChoices
-// path the customization UI uses.
+// before matching. This runs CLIENT-side because LocalGet/LocalSetCustomizationChoices
+// read and write the local player's Customization.ini (the same file the menu edits);
+// running them on a server would target the wrong (server-local) config copy.
 exec function SetAssassinCustom(int TeamIndex, string Field, int Value, optional int ColourSlot = -1)
-{
-	S_SetAssassinCustom(TeamIndex, Field, Value, ColourSlot);
-}
-
-reliable server function S_SetAssassinCustom(int TeamIndex, string Field, int Value, int ColourSlot)
 {
 	local EAOCFaction Faction;
 	local SCustomizationChoice Choices;
 	local int WeaponDrops[EWeaponType.EWEP_MAX];
 	local byte FavIcon;
-
-	if (!IsAdmin())
-	{
-		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
-		return;
-	}
 
 	Faction = (TeamIndex == 0) ? EFAC_AGATHA : EFAC_MASON;
 
@@ -1064,7 +1054,15 @@ reliable server function S_SetAssassinCustom(int TeamIndex, string Field, int Va
 		return;
 	}
 
+	// Persist to the local Customization.ini (mirrors the menu's SaveChoices).
 	class'BangModCustomization'.static.LocalSetCustomizationChoices(Choices, Faction, 4, WeaponDrops, FavIcon);
+
+	// If the player is CURRENTLY the Assassin, push the change to the server so it
+	// applies to the next spawn without reconnecting (same sync the menu does).
+	if (CurrentFamilyInfo != none && CurrentFamilyInfo.ClassReference == ECLASS_SiegeEngineer)
+	{
+		ServerUpdateCurrentCustomizationInfo(Choices, Faction, ECLASS_SiegeEngineer);
+	}
 
 	ClientDisplayConsoleMessage("SetAssassinCustom:" @ Field @ "=" @ Value @ "for" @ Faction);
 }
