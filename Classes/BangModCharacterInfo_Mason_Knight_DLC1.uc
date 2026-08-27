@@ -121,6 +121,10 @@ Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_baseball", StaticMeshPath="CH_Slum
 	Helmets.Add((SkeletalMeshPath="CH_AgathanKnight_PKG.models.SK_CH_AgathaKnight_Helm01", StaticMeshPath="CH_sm_helms.smhelms_SK_CH_Agathaknight_Helm02", MaterialPath="CH_PaintedHelms.Materials.M_AgathaKnight_PaintedHelm01_P02", GearData=(GearNameID=PaintedHelm02)))
 	Helmets.Add((SkeletalMeshPath="CH_AgathanKnight_PKG.models.SK_CH_AgathaKnight_Helm01", StaticMeshPath="CH_sm_helms.smhelms_SK_CH_Agathaknight_Helm02", MaterialPath="CH_PaintedHelms.Materials.M_AgathaKnight_PaintedHelm01_P03", GearData=(GearNameID=PaintedHelm03)))
 
+	Helmets.Add((SkeletalMeshPath="HelmetAntlers.HelmetAntler1", StaticMeshPath="HelmetAntlers.HelmetAntler1_mesh", GearData=(GroupHexID="170000002C22DC8", GearNameID=AntlerHelmet1, bVisibleInSelectorIfUnowned=false)))
+	Helmets.Add((SkeletalMeshPath="HelmetAntlers.HelmetAntler2", StaticMeshPath="HelmetAntlers.HelmetAntler2_mesh", GearData=(GroupHexID="170000002C22DC8", GearNameID=AntlerHelmet2, bVisibleInSelectorIfUnowned=false)))
+	Helmets.Add((SkeletalMeshPath="HelmetAntlers.HelmetAntler3", StaticMeshPath="Helmet Antlers.HelmetAntler3_mesh", GearData=(GroupHexID="170000002C22DC8", GearNameID=AntlerHelmet3, bVisibleInSelectorIfUnowned=false)))
+	
 	Tabards.Empty
 	Tabards.Add((Img=Texture2D'CH_MasonKnight_DLC1.Textures.T_knight_3P_body_P01', GearData=(GearNameID=Default)))
 	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_Cowboy", StaticMeshPath="CH_SlumpMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
