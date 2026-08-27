@@ -33,8 +33,8 @@ DefaultProperties
 
 	CurrentWeaponType = EWEP_ShortSpear
 	// set maximum ammo
-	AmmoCount=3
-	MaxAmmoCount=3
+	AmmoCount=4
+	MaxAmmoCount=4
 	AIRange=5000
 	
 	HorizontalRotateSpeed = 60000
@@ -117,7 +117,7 @@ DefaultProperties
 	ConfigProjectileBaseDamage[1]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	ConfigProjectileBaseDamage[2]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	ConfigProjectileBaseDamage[3]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
-	ConfigProjectileBaseDamage[4]=(Damage=40,InitialSpeed=2800.0,MaxSpeed=3300.0,AmmoCount=3,InitialGravityScale=0.7,Drag=0.000003,PitchCorrection=0)
+	ConfigProjectileBaseDamage[4]=(Damage=50,InitialSpeed=2800.0,MaxSpeed=3300.0,AmmoCount=3,InitialGravityScale=0.7,Drag=0.000003,PitchCorrection=0)
 	ConfigProjectileBaseDamage[5]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	iFeintStaminaCost=0
 	WeaponFontSymbol="z"

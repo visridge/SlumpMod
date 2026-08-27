@@ -34,7 +34,7 @@ DefaultProperties
 
 	// Stamina cost of the roll. Defaults to the archer's vanilla dodge cost; tune
 	// here without touching iDodgeCost (used by vanilla dodge elsewhere).
-	iRollStaminaCost=20
+	iRollStaminaCost=25
 
 	// Effort/voice sound played when the roll starts.
 	RollSound=SoundCue'A_VO_Pain.Agatha_MAA_Swing_grunt_tier1'

@@ -62,6 +62,8 @@ DefaultProperties
 	DamageResistances(EDMG_Pierce) = 0.85
 	DamageResistances(EDMG_Blunt) = 0.65
 
+	// LocationModifiers(EHIT_Head) = 1.125 // was inherited 1.25
+
 	// Man-At-Arms movement/stats (override archer base where they differ)
 	AirControl=0.5
 	GroundSpeed=210.0

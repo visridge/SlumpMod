@@ -54,6 +54,23 @@ var float   fBangModLastStaminaShown;
 var float   fBangModFOVCaught;       // last wrong FOV value we corrected while spectating
 var name    nBangModFOVCaughtWhere;  // which hook caught it -- reported by FPSpectateDebug
 
+// BANGMOD: minimum client send rate (see BangModRestoreNetSpeed).
+//   0 (or absent from the ini) = use the built-in default of 15000
+//   negative                   = opt out entirely
+// Deliberately NOT relying on globalconfig to deliver the default: measured on a
+// live client this read back 0 even with iBangModMinNetSpeed=15000 in
+// defaultproperties, the key absent from every ini, and no competing
+// defaultproperties block in the including class. So 0 is treated as unset.
+var globalconfig int iBangModMinNetSpeed;
+var int iBangModMinNetSpeedFallback;  // plain var: config cannot zero this one
+var float fBangModNextNetSpeedCheck;  // throttle for the tick-side assert
+var name  nBangModNetSpeedBlock;      // why the last automatic attempt did nothing
+var int   iBangModNetSpeedTries;      // how many times it has tried
+
+// BANGMOD: spectator team lock (see BangModMayView)
+var int     iBangModViewBlocks;      // times we refused an out-of-team view target
+var name    nBangModViewBlockWhere;  // which hook refused it, for FPSpectateDebug
+
 // BANGMOD: admin-only pause control (ported from NateMod). Pausing is restricted
 // to admins; unpausing is also admin-only and runs a short 3-2-1-GO countdown so
 // players get a heads-up before the action resumes.
@@ -678,6 +695,17 @@ simulated event tick(float DeltaTime)
 
 	// Runs in every state, so it covers both playing and spectating.
 	BangModEnforceLifeBars();
+
+	// Belt and braces on the ClientCapBandwidth override. That hook catches the cap the
+	// server applies at PostLogin, but it is a single ordering-dependent call -- if it
+	// ever fires before Player is valid, or something else lowers the rate later, the
+	// client is left throttled with no second chance. Cheap to just re-check: the
+	// function early-outs on a comparison, and this only runs twice a second.
+	if (WorldInfo.TimeSeconds >= fBangModNextNetSpeedCheck)
+	{
+		fBangModNextNetSpeedCheck = WorldInfo.TimeSeconds + 0.5f;
+		BangModRestoreNetSpeed();
+	}
 	
 	if (bShowGroundSpeed)
 	{
@@ -2440,6 +2468,58 @@ simulated function BangModRestoreVanillaCamera()
 	}
 }
 
+/**
+ * May we look at this player?
+ *
+ * Mirrors AOCGame.CanSpectate (AOCGame.uc:5104) deliberately, rather than inventing a
+ * second rule:
+ *
+ *     return ( AOCPRI(Viewer.PRI).bIsVoluntarySpectator
+ *              || (ViewTarget.Team == Viewer.PRI.Team) );
+ *
+ * i.e. real spectators see everybody, players on a team see only their own team.
+ *
+ * The difference is WHERE it runs. CanSpectate is a GameInfo function, so it only
+ * exists server-side and only gates GetNextViewablePlayer. This one is simulated and
+ * works off replicated PRI data, so the client can apply the same rule to the things
+ * the server gate does not cover -- first-person observation and the life bars.
+ *
+ * Why this exists at all: players have reported cycling onto ENEMY pawns in first
+ * person, which leaks flanks, health, stamina and (on Outpost) the enemy VIP's HUD
+ * marker. I could not find the path by which the server hands out an enemy PRI --
+ * ServerViewNextPlayer -> ViewAPlayer -> GetNextViewablePlayer consults CanSpectate on
+ * every candidate, and BangMod overrides none of it. So this does not pretend to fix a
+ * cause I have not proven. It enforces the intended rule at every point we control and
+ * counts the refusals, so FPSpectateDebug can say whether the server-side gate is
+ * actually leaking or whether the leak is somewhere else entirely.
+ */
+simulated function bool BangModMayView(PlayerReplicationInfo TargetPRI)
+{
+	local AOCPRI MyPRI;
+
+	if (TargetPRI == none || PlayerReplicationInfo == none)
+		return false;
+
+	// Dedicated spectators may watch anybody.
+	if (PlayerReplicationInfo.bOnlySpectator)
+		return true;
+
+	MyPRI = AOCPRI(PlayerReplicationInfo);
+	if (MyPRI != none && MyPRI.bIsVoluntarySpectator)
+		return true;
+
+	// On a team: own team only. A player with no team yet gets nothing rather than
+	// everything -- failing closed is the whole point here.
+	return (PlayerReplicationInfo.Team != none && TargetPRI.Team == PlayerReplicationInfo.Team);
+}
+
+/** Records a refusal so FPSpectateDebug can report whether this ever actually fires. */
+simulated function BangModNoteViewBlock(name Where)
+{
+	iBangModViewBlocks++;
+	nBangModViewBlockWhere = Where;
+}
+
 /** Applies whichever perspective the spectator currently wants to the current view target. */
 simulated function BangModApplySpectatorPerspective()
 {
@@ -2449,6 +2529,15 @@ simulated function BangModApplySpectatorPerspective()
 		return;
 
 	P = AOCPawn(ViewTarget);
+
+	// Never put a player into first person on somebody they are not allowed to watch.
+	// First person is the worst case of the leak: it hands over the exact view, the
+	// health and stamina bars, and any HUD marker that pawn's team can see.
+	if (P != none && !BangModMayView(P.PlayerReplicationInfo))
+	{
+		BangModNoteViewBlock('Perspective');
+		P = none;
+	}
 
 	if (P == none || P.Health <= 0)
 	{
@@ -2517,7 +2606,19 @@ simulated function BangModEnforceLifeBars()
 	// Our own pawn wins; otherwise show whoever we are spectating.
 	Subject = AOCPawn(Pawn);
 	if (Subject == none)
+	{
 		Subject = AOCPawn(ViewTarget);
+
+		// Only for somebody we are allowed to watch. This ran from the GLOBAL tick with
+		// no team test, so it pushed health and stamina for whatever the view target
+		// happened to be -- including an enemy on the death camera, in any state, not
+		// just while spectating. That was this function's bug, not vanilla's.
+		if (Subject != none && !BangModMayView(Subject.PlayerReplicationInfo))
+		{
+			BangModNoteViewBlock('LifeBars');
+			Subject = none;
+		}
+	}
 
 	if (Subject == none || Subject.Health <= 0)
 	{
@@ -2638,6 +2739,11 @@ exec function FPSpectateDebug()
 	// engine reads the view straight off it and ignores Pawn/ViewTarget entirely.
 	ClientDisplayConsoleMessage("PlayerCamera:" @ PlayerCamera @ " <-- should be None during normal play");
 	ClientDisplayConsoleMessage("FOV: MyFOV=" $ MyFOV @ "Default=" $ DefaultFOV @ "Desired=" $ DesiredFOV @ "Angle=" $ FOVAngle);
+	if (iBangModViewBlocks > 0)
+		ClientDisplayConsoleMessage("Team lock: refused" @ iBangModViewBlocks @ "out-of-team view target(s), last in" @ nBangModViewBlockWhere);
+	else
+		ClientDisplayConsoleMessage("Team lock: no out-of-team view target has been refused.");
+
 	if (nBangModFOVCaughtWhere != '')
 		ClientDisplayConsoleMessage("FOV lock: last corrected a stray" @ fBangModFOVCaught @ "in" @ nBangModFOVCaughtWhere);
 	else
@@ -2727,6 +2833,17 @@ state Spectating
 		if (PRI == None)
 			return;
 
+		// Belt and braces on top of GetNextViewablePlayer, which already consults
+		// AOCGame.CanSpectate for every candidate. If that gate works this is dead code
+		// and iBangModViewBlocks stays at zero; if it is leaking, this stops it here on
+		// the server -- where it matters, since a client cannot be trusted to refuse a
+		// view target it has already been given.
+		if (!BangModMayView(PRI))
+		{
+			BangModNoteViewBlock('ViewAPlayer');
+			return;
+		}
+
 		SetViewTarget(PRI);
 
 		if (ViewTarget != none)
@@ -2748,6 +2865,27 @@ state Spectating
 		BangModApplySpectatorPerspective();
 
 		BangModHUDPawn = AOCPawn(ViewTarget);
+	}
+
+	/**
+	 * Left click / right click cycle the spectate target.
+	 *
+	 * Free for the taking: AOCPlayerController.state Spectating declares both of these
+	 * as empty stubs (AOCPlayerController.uc:5030-5038), so the mouse buttons do
+	 * nothing at all while spectating today. Engine's PlayerController.state Spectating
+	 * did bind StartFire to ServerViewNextPlayer; AOC stubbed it out and never replaced
+	 * it. Right click's vanilla meaning -- ResetCameraMode + ServerViewSelf -- was
+	 * already lost to that stub, and free camera keeps its existing binding, so nothing
+	 * reachable is being taken away here.
+	 */
+	exec function StartFire(optional byte FireModeNum)
+	{
+		SpectatorNext();
+	}
+
+	exec function StartAltFire(optional byte FireModeNum)
+	{
+		SpectatorPrevious();
 	}
 
 	/** Space. Toggles between first person and the vanilla orbit follow. */
@@ -2875,39 +3013,244 @@ state Spectating
  **************************************************************************/
 
 // Push-to-talk command (bound to G key by default)
+/**
+ * Re-enable networked voice.
+ *
+ * The engine's voice stack is INTACT. Verified in the shipped binary rather than
+ * assumed: FVoiceInterfaceSteamworks::CreateInstance allocates and constructs a real
+ * object and calls its virtual Init(MaxLocalTalkers, MaxRemoteTalkers, bIsDedicated),
+ * and the recording path calls Steam's own ISteamUser voice API -- StartVoiceRecording,
+ * GetAvailableVoice and GetVoice at 16 kHz -- branching on Steam's EVoiceResult. The
+ * binary also carries UVoiceChannel, RegisterLocalTalker, RegisterRemoteTalker,
+ * StartNetworkedVoice and ReadLocalVoiceData. There is no Speex, but there would not
+ * be: Steam owns the codec, not the engine.
+ *
+ * What actually disabled voice is two lines of Torn Banner UnrealScript:
+ *
+ *   AOCGame.uc:1826-1827   "Tell the player to disable voice by default and use the
+ *                           push to talk method" -> NewPlayer.ClientStopNetworkedVoice()
+ *   AOCPlayerController.uc:3700   exec function ToggleSpeaking(bool bNowOn) {}
+ *
+ * The off switch fires on every join, and the push-to-talk handler that was supposed
+ * to turn it back on is an empty override of UTPlayerController.ToggleSpeaking, which
+ * in UT does the real work. Keybind and server settings survive because nobody removed
+ * them -- which is exactly why it looks like an engine-level removal from the outside.
+ *
+ * This restores UTPlayerController's implementation. Speech recognition is deliberately
+ * left out; it is a separate subsystem and unrelated to talking.
+ *
+ * UNTESTED against a live server. VoiceInterface can legitimately be None -- that is
+ * what the engine's "Failed to create the voice interface" message guards -- and
+ * whether it initialises here cannot be settled by reading code. Type VoiceDebug to
+ * find out rather than guessing.
+ */
+exec function ToggleSpeaking(bool bNowOn)
+{
+	local LocalPlayer LP;
+	local OnlineVoiceInterface VI;
+
+	LP = LocalPlayer(Player);
+	if (LP == none)
+		return;
+
+	// PlayerController.VoiceInterface is only assigned in RegisterOnlineDelegates
+	// (PlayerController.uc:2347). Fall back to the subsystem's copy so a missed
+	// registration does not silently mean "no voice".
+	VI = VoiceInterface;
+	if (VI == none && OnlineSub != none)
+		VI = OnlineSub.VoiceInterface;
+
+	if (VI == none)
+	{
+		ClientDisplayConsoleMessage("Voice: no voice interface available (see VoiceDebug).");
+		return;
+	}
+
+	if (bNowOn)
+		VI.StartNetworkedVoice(LP.ControllerId);
+	else
+		VI.StopNetworkedVoice(LP.ControllerId);
+
+	// The talking indicator lives HERE, not in GBA_ToggleSpeaking.
+	//
+	// GBA_ToggleSpeaking is an input ALIAS, not our exec:
+	//     Bindings=(Name="GBA_ToggleSpeaking",
+	//               Command="ToggleSpeaking true | OnRelease ToggleSpeaking false")
+	// so the key expands straight to ToggleSpeaking(true/false) and the exec of that
+	// name is never reached. That is why pressing to talk showed no UI: the indicator
+	// was in a function the keybind does not call. It also means this is genuine
+	// hold-to-talk, not a toggle.
+	bIsTalking = bNowOn;
+
+	if (AOCBaseHUD(myHUD) != none
+		&& AOCBaseHUD(myHUD).HUD != none
+		&& AOCBaseHUD(myHUD).HUD.MainHUD != none)
+	{
+		AOCBaseHUD(myHUD).HUD.MainHUD.LocalPlayerStartTalking(bNowOn);
+	}
+}
+
+/** Reports every value that decides whether voice can work. Type VoiceDebug. */
+exec function VoiceDebug()
+{
+	local LocalPlayer LP;
+
+	LP = LocalPlayer(Player);
+
+	ClientDisplayConsoleMessage("---- BangMod voice state ----");
+	ClientDisplayConsoleMessage("OnlineSub:" @ OnlineSub);
+	ClientDisplayConsoleMessage("PC.VoiceInterface:" @ VoiceInterface);
+	if (OnlineSub != none)
+		ClientDisplayConsoleMessage("OnlineSub.VoiceInterface:" @ OnlineSub.VoiceInterface @ " <-- must be non-None");
+	ClientDisplayConsoleMessage("LocalPlayer:" @ LP @ "| ControllerId:" @ (LP != none ? string(LP.ControllerId) : "n/a"));
+	ClientDisplayConsoleMessage("bEnableProximityChat:" @ bEnableProximityChat @ "| bIsTalking:" @ bIsTalking);
+	ClientDisplayConsoleMessage("NetMode:" @ int(WorldInfo.NetMode) @ "| bRequiresPushToTalk:" @ (WorldInfo.Game != none ? string(WorldInfo.Game.bRequiresPushToTalk) : "server-only"));
+
+	// The numbers that decide saturation. "Connection saturated!" is the stat net HUD
+	// reporting IsNetReady(0) == false, and that is judged against CurrentNetSpeed --
+	// NOT against whatever the ini says. Raising MaxInternetClientRate and
+	// ConfiguredInternetSpeed only matters if it actually lands here, and nothing so far
+	// has confirmed that it does. Read it rather than assume it.
+	if (Player != none)
+		ClientDisplayConsoleMessage("CurrentNetSpeed:" @ Player.CurrentNetSpeed @ "  <-- the value saturation is judged against");
+	ClientDisplayConsoleMessage("ClientCap:" @ ClientCap @ " (non-zero = the server capped us via ClientCapBandwidth)");
+
+	// Client move send rate. AOCPlayerController.ReplicateMove hardcodes 0.05s on a
+	// dedicated server -- 20 Hz. Every deferred packet therefore costs a 50 ms hole in
+	// what the server knows about your position, which is why a little saturation feels
+	// like a lot of rubber-banding.
+	ClientDisplayConsoleMessage("Move send interval: 0.05s (20 Hz) on dedicated -- AOCPlayerController.uc:9239");
+	ClientDisplayConsoleMessage("Auto-netspeed: config=" $ iBangModMinNetSpeed @ "fallback=" $ iBangModMinNetSpeedFallback @ "tries=" $ iBangModNetSpeedTries @ "last=" $ nBangModNetSpeedBlock);
+	ClientDisplayConsoleMessage("-----------------------------");
+}
+
+/**
+ * Raise this client's own send budget at runtime.
+ *
+ * Why this is needed. "Connection saturated!" on the stat net HUD is the native
+ * IsNetReady(0) returning false, and that is judged against Player.CurrentNetSpeed --
+ * not against MaxInternetClientRate or ConfiguredInternetSpeed in any ini. Measured on
+ * a live dedicated server, CurrentNetSpeed was 10000 and ClientCap was 10000 while the
+ * client ini asked for 100000, so the ini value was being discarded after connect.
+ *
+ * AOCGame.uc:1810 calls NewPlayer.ClientCapBandwidth(NewPlayer.Player.CurrentNetSpeed)
+ * during PostLogin, and PlayerController.ClientCapBandwidth then does
+ * SetNetSpeed(Cap) whenever the client is above it. So the server's view at login
+ * becomes a hard ceiling regardless of what either config said.
+ *
+ * SetNetSpeed is a native script-callable function, so the ceiling can simply be
+ * raised again afterwards. Deliberately an exec rather than automatic: this changes
+ * only how much this client is willing to push upstream, and it should be a measured
+ * decision rather than something the mod does behind your back.
+ *
+ * Usage: BangModNetSpeed 100000, then hold push-to-talk and check stat net.
+ */
+/**
+ * Undo the login bandwidth cap that makes push-to-talk unusable.
+ *
+ * Measured, not theorised. On a live dedicated server a client sat at
+ * CurrentNetSpeed 10000 with ClientCap 10000, while its own ini asked for 100000.
+ * Holding push-to-talk pushed roughly 9951 B/s -- voice is about 8 KB/s and moves take
+ * the rest -- so the connection sat pinned at its ceiling and stat net reported
+ * "Connection saturated!". Because AOCPlayerController.ReplicateMove hardcodes a 0.05s
+ * send interval on dedicated servers (20 Hz), every packet the net layer defers costs a
+ * 50 ms hole in what the server knows about your position. That is the rubber-banding.
+ *
+ * The cap comes from AOCGame.uc:1810 calling
+ * ClientCapBandwidth(NewPlayer.Player.CurrentNetSpeed) during PostLogin, using whatever
+ * the server believed at that instant. PlayerController.ClientCapBandwidth then calls
+ * SetNetSpeed(Cap) on anyone above it, so the ini value is discarded after connect --
+ * which is why editing MaxInternetClientRate or ConfiguredInternetSpeed changed nothing.
+ *
+ * 15000 rather than something larger because that is where the engine clamps: 0x3A98
+ * appears as a hardcoded instruction immediate in the net driver, and SetNetSpeed(100000)
+ * was observed landing on exactly 15000. Asking for more is not refused, it is ignored.
+ *
+ * This only raises how much THIS client is willing to send upstream. It does not change
+ * what the server sends us, and it cannot exceed the engine ceiling. Set
+ * iBangModMinNetSpeed to a negative value to opt out.
+ */
+simulated function BangModRestoreNetSpeed()
+{
+	local int Target;
+
+	// Every bail-out records WHY. The automatic path was reported as doing nothing while
+	// the identical SetNetSpeed call from the BangModNetSpeed exec worked, so the
+	// difference has to be one of these guards -- and naming which one beats another
+	// round of me speculating about it.
+	if (Player == none)
+	{
+		nBangModNetSpeedBlock = 'Player_is_none';
+		return;
+	}
+	// 0 means "config never delivered a value" -- fall back rather than do nothing.
+	Target = iBangModMinNetSpeed;
+	if (Target == 0)
+		Target = default.iBangModMinNetSpeedFallback;
+
+	if (Target < 0)
+	{
+		nBangModNetSpeedBlock = 'opted_out';
+		return;
+	}
+	if (!IsLocalPlayerController())
+	{
+		nBangModNetSpeedBlock = 'not_local_PC';
+		return;
+	}
+	if (Player.CurrentNetSpeed >= Target)
+	{
+		nBangModNetSpeedBlock = 'already_at_or_above';
+		return;
+	}
+
+	iBangModNetSpeedTries++;
+	SetNetSpeed(Target);
+
+	// Did the call actually stick? If SetNetSpeed silently refuses in this context the
+	// value will not have moved, and that is a different problem from never being called.
+	if (Player.CurrentNetSpeed < Target)
+		nBangModNetSpeedBlock = 'SetNetSpeed_refused';
+	else
+		nBangModNetSpeedBlock = 'applied';
+}
+
+/** The server caps us here at login; put it back afterwards. */
+reliable client function ClientCapBandwidth(int Cap)
+{
+	super.ClientCapBandwidth(Cap);
+	BangModRestoreNetSpeed();
+}
+
+exec function BangModNetSpeed(int NewSpeed)
+{
+	if (Player == none)
+		return;
+
+	if (NewSpeed < 1800)
+	{
+		ClientDisplayConsoleMessage("Refusing" @ NewSpeed $ ": UE3 treats anything under 1800 as unusable.");
+		return;
+	}
+
+	ClientDisplayConsoleMessage("CurrentNetSpeed" @ Player.CurrentNetSpeed @ "->" @ NewSpeed
+		@ "(ClientCap was" @ ClientCap $ ")");
+	SetNetSpeed(NewSpeed);
+	ClientDisplayConsoleMessage("Now:" @ Player.CurrentNetSpeed);
+}
+
 exec function GBA_ToggleSpeaking()
 {
+	// Fallback only. On a stock config the input alias above means this never runs;
+	// it is here for anyone whose bindings lack the alias, and it toggles rather than
+	// holds because a bare exec has no release event to hang StopNetworkedVoice on.
 	if (!bEnableProximityChat)
 	{
 		ClientDisplayConsoleMessage("Proximity voice chat is disabled. Enable in config.");
 		return;
 	}
-		
-	bIsTalking = !bIsTalking;
-	
-	// Debug message
-	ClientDisplayConsoleMessage("Voice chat: " $ (bIsTalking ? "TALKING" : "STOPPED"));
-	
-	// Update HUD to show we're talking
-	if (AOCBaseHUD(myHUD) != none)
-	{
-		if (AOCBaseHUD(myHUD).HUD != none && AOCBaseHUD(myHUD).HUD.MainHUD != none)
-		{
-			AOCBaseHUD(myHUD).HUD.MainHUD.LocalPlayerStartTalking(bIsTalking);
-			ClientDisplayConsoleMessage("Updated HUD talking indicator");
-		}
-		else
-		{
-			ClientDisplayConsoleMessage("HUD not available");
-		}
-	}
-	
-	// NOTE: Actual voice transmission requires the VoIP codec which was removed from the engine
-	// The infrastructure is here, but microphone capture/transmission is not available
-	// without engine-level modifications or external voice solutions (Discord, etc.)
-	
-	// Server notification disabled - voice codec missing makes this non-functional
-	// ServerNotifyTalkingState(bIsTalking);
+
+	ToggleSpeaking(!bIsTalking);
 }
 
 // NOTE: Server-side proximity notification disabled due to voice codec being missing from engine
@@ -2991,29 +3334,54 @@ reliable client function ClientReceiveProximityTalker(PlayerReplicationInfo Talk
 }
 
 // Override ClientNotifyPlayerTalking to handle proximity filtering
+/**
+ * Fires whenever a player's talking state changes -- ours or anyone else's.
+ *
+ * Rewritten because the previous version was almost certainly the push-to-talk
+ * stutter. It ran
+ *
+ *     foreach DynamicActors(class'PlayerReplicationInfo', PRI)
+ *
+ * which walks EVERY dynamic actor in the level, and it ran that on every talking
+ * notification. Steam raises those at VoiceNotificationDelta = 0.2s for each talker,
+ * so holding the key meant a full actor sweep several times a second on the client.
+ * A client that hitches stops sending ServerMove on time, the server stops hearing
+ * where you are, and it corrects you -- which is exactly the "server is having a hard
+ * time figuring out my position" rubber-band, rather than anything wrong with voice
+ * transmission itself.
+ *
+ * Two things were wrong with it beyond cost. PlayerReplicationInfo.Owner is a
+ * Controller, not a Pawn, so Pawn(PRI.Owner) always cast to none and the proximity
+ * test could never pass -- it paid for the sweep and then did nothing. And vanilla's
+ * AOCPlayerController.ClientNotifyPlayerTalking is an empty function, so none of this
+ * cost existed before BangMod added it.
+ *
+ * GRI.PRIArray is the replicated player list: a handful of entries, no actor
+ * iteration, already maintained for us.
+ */
 function ClientNotifyPlayerTalking(UniqueNetId TalkingPlayer, bool bIsTalking)
 {
 	local PlayerReplicationInfo PRI;
-	local float Distance;
-	
-	// Find the PRI for this player
-	foreach DynamicActors(class'PlayerReplicationInfo', PRI)
+	local Controller OwnerC;
+	local int i;
+
+	if (!bEnableProximityChat || WorldInfo.GRI == none || Pawn == none)
+		return;
+
+	for (i = 0; i < WorldInfo.GRI.PRIArray.Length; i++)
 	{
-		if (PRI.UniqueId == TalkingPlayer)
+		PRI = WorldInfo.GRI.PRIArray[i];
+		if (PRI == none || PRI.UniqueId != TalkingPlayer)
+			continue;
+
+		// Owner is the Controller; its Pawn is what has a location.
+		OwnerC = Controller(PRI.Owner);
+		if (OwnerC != none && OwnerC.Pawn != none
+			&& VSize(Pawn.Location - OwnerC.Pawn.Location) <= ProximityChatDistance)
 		{
-			// Check if they're in proximity range
-			if (Pawn != none && PRI.Owner != none && Pawn(PRI.Owner) != none)
-			{
-				Distance = VSize(Pawn.Location - Pawn(PRI.Owner).Location);
-				
-				if (Distance <= ProximityChatDistance)
-				{
-					// They're in range, process normally
-					ClientReceiveProximityTalker(PRI, bIsTalking);
-				}
-			}
-			break;
+			ClientReceiveProximityTalker(PRI, bIsTalking);
 		}
+		return;
 	}
 }
 
@@ -3068,6 +3436,8 @@ DefaultProperties
 	
 	// Proximity voice chat defaults
 	ProximityChatDistance=2048.0  // About 39 meters (typical medieval battle communication range)
+	iBangModMinNetSpeed=15000
+	iBangModMinNetSpeedFallback=15000
 	bEnableProximityChat=true
 	bIsTalking=false
 

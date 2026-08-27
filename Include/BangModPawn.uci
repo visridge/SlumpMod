@@ -102,15 +102,6 @@ simulated function WeaponAttachmentChanged()
 	if (CurrentWeaponAttachment == none)
 		return;
 
-	if (CurrentWeaponAttachment.Class == class'AOCWeaponAttachment_HFlail')
-	{
-		CurrentWeaponAttachment.Mesh.SetScale(1.25f);
-		if (CurrentWeaponAttachment.OverlayMesh != none)
-		{
-			CurrentWeaponAttachment.OverlayMesh.SetScale(1.25f);
-		}
-	}
-
 	// Force PoleAxeBack to use its own mesh on ALL clients.
 	// WeaponEquipping::BeginState runs only on authority/local clients;
 	// remote clients get the attachment via replication and need this hook
@@ -2686,6 +2677,54 @@ simulated function ResetBlends(optional float BlendOutTime = 0.3f, optional bool
 	}
 
 	super.ResetBlends(BlendOutTime, bReplicated);
+}
+
+/* ************************************************************************
+ * WEAPON-KEYED NINJA (ASSASSIN) SKIN
+ *
+ * Picking one of the archer's "ninja" primary weapons (SpikedMace, BastardSword,
+ * Kanabo, Katana, GrandHammer -- indexes 6..10 in
+ * BangModFamilyInfo_*_Archer) makes the pawn spawn with the Assassin (ninja)
+ * mesh instead of the archer mesh, with no new UI slot and no Flash asset.
+ *
+ * The Assassin presentation already exists and is fully registered:
+ *   - BangModCharacterInfo_Agatha_Assassin / _Mason_Assassin (SlumpCharacters.NinjaMesh*)
+ *   - BangModCustomizationContent.GetDefaultCharacterIDFor maps ECLASS_SiegeEngineer
+ *     -> the faction Assassin CharacterInfo.
+ *
+ * AOCPawn.LoadCharacterAssets() resolves the mesh from
+ * PawnInfo.myCustomization.Character; we simply rewrite that ID before the
+ * superclass runs. LoadCharacterAssets is per-pawn and simulated, so the same
+ * remap runs on the server and on every client.
+ **************************************************************************/
+
+/** True when the equipped primary is one of the archer's ninja weapons (indexes 6..10). */
+simulated function bool BangModIsNinjaPrimary()
+{
+	return PawnInfo.myPrimary == class'BangModWeapon_SpikedMace'
+		|| PawnInfo.myPrimary == class'BangModWeapon_BastardSword'
+		|| PawnInfo.myPrimary == class'BangModWeapon_Kanabo'
+		|| PawnInfo.myPrimary == class'BangModWeapon_Katana'
+		|| PawnInfo.myPrimary == class'BangModWeapon_GrandHammer';
+}
+
+/** Rewrite the character ID to the Assassin before the character mesh is loaded. */
+simulated function LoadCharacterAssets()
+{
+	local EAOCFaction TeamID;
+
+	if (PawnFamily != none && BangModIsNinjaPrimary())
+	{
+		TeamID = GetCustomizationFactionFromActualFaction(PawnFamily.FamilyFaction);
+		PawnInfo.myCustomization.Character =
+			CustomizationClass.static.GetDefaultCharacterID(TeamID, ECLASS_SiegeEngineer);
+
+		// The archer's saved helmet index resolves against the Assassin's helmet
+		// list, which points at a different (wrong) helmet. NoHat keeps it clean.
+		PawnInfo.myCustomization.Helmet = 0;
+	}
+
+	super.LoadCharacterAssets();
 }
 
 DefaultProperties

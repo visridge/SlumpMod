@@ -227,7 +227,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'AOCWeaponAttachment_Flail'
+	AttachmentClass=class'BangModWeaponAttachment_Flail'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Flail'
 	AllowedShieldClass=class'BangModShield_Kite'
 	CurrentWeaponType=EWEP_Flail

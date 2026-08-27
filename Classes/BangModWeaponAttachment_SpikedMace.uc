@@ -16,18 +16,18 @@ DefaultProperties
 {
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'WP_1hb_HWS_Variant_02.WEP_HWS_v02'
-		Scale=2.0
+		Scale=1.3
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
 		SkeletalMesh=SkeletalMesh'WP_1hb_HWS_Variant_02.WEP_HWS_v02'
-		Scale=2.0
+		Scale=1.3
 	End Object
 
 	WeaponID=EWEP_HolyWaterSprinkler
 	WeaponClass=class'BangModWeapon_SpikedMace'
 	WeaponSocket=wep2hpoint
-	WeaponStaticMeshScale=2.0
+	WeaponStaticMeshScale=1.3
 
 	AttackTypeInfo(0)=(fBaseDamage=75.0, fForce=20000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
 	AttackTypeInfo(1)=(fBaseDamage=90.0, fForce=20000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
@@ -40,7 +40,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hb_HWS_Variant_02.WEP_HWS_v02",
 		StaticMeshPath="WP_1hb_HWS_Variant_02.SM_HWS_v02",
 		MaterialPath="",
-		StaticMeshScale=2.0,
+		StaticMeshScale=1.3,
 		ImagePath="ui_custweaponimages_swf.skin_holywater_sprinkler_png"
 		)};
 
@@ -48,7 +48,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hb_HWS_Variant_02.WEP_HWS_v02",
 		StaticMeshPath="WP_1hb_HWS_Variant_02.SM_HWS_v02",
 		MaterialPath="",
-		StaticMeshScale=2.0,
+		StaticMeshScale=1.3,
 		ImagePath="ui_custweaponimages_swf.skin_holywater_sprinkler_png"
 		)};
 
@@ -56,7 +56,7 @@ DefaultProperties
 		SkeletalMeshPath="WP_1hb_HWS_Variant_02.WEP_HWS_v02",
 		StaticMeshPath="WP_1hb_HWS_Variant_02.SM_HWS_v02",
 		MaterialPath="",
-		StaticMeshScale=2.0,
+		StaticMeshScale=1.3,
 		ImagePath="ui_custweaponimages_swf.skin_holywater_sprinkler_png"
 		)};
 }
