@@ -13,6 +13,12 @@ var config string StatsApiKey;
 var config string StatsServerId;
 var config float StatsReportInterval;
 
+// BANGMOD: watchdog on the tournament ready gate. Vanilla never gives up, so a gate that
+// can never be satisfied leaves the server in a permanent pre-round. Turns a brick into
+// a delay.
+var config float fBangModTournamentHoldLimit;   // seconds before giving up; 0 disables
+var float fBangModTournamentHoldSince;          // when the gate first blocked; 0 = not blocking
+
 var string StatsMatchId;
 var bool bStatsRequestInFlight;
 var HttpRequestInterface StatsRequest;
@@ -55,6 +61,7 @@ function bool ShouldCountDown()
     local int CorrectedAgathaSize, CorrectedMasonSize;
     local bool bCanSpawn;
     local bool bEachTeamHasAtleastOnePlayer;
+    local bool bReadyGateOpen;
 
     local Controller C;
     local AOCPlayerController PC;
@@ -112,7 +119,7 @@ function bool ShouldCountDown()
 
     if (bTournamentMode)
     {
-        return
+        bReadyGateOpen =
         (
             bEachTeamHasAtleastOnePlayer &&
             (
@@ -126,6 +133,35 @@ function bool ShouldCountDown()
                 || bAdminForcedTournamentReady
             )
         );
+
+        if (bReadyGateOpen)
+        {
+            fBangModTournamentHoldSince = 0;
+            return true;
+        }
+
+        if (fBangModTournamentHoldSince == 0)
+        {
+            fBangModTournamentHoldSince = WorldInfo.TimeSeconds;
+        }
+        else if (fBangModTournamentHoldLimit > 0
+                 && WorldInfo.TimeSeconds - fBangModTournamentHoldSince > fBangModTournamentHoldLimit)
+        {
+            // Only StartRound clears bTournamentMode, and it cannot run while this
+            // returns false -- so give up rather than hold the server hostage.
+            LogAlwaysInternal("[BangMod] Tournament ready gate held the pre-round for"
+                @ int(fBangModTournamentHoldLimit) @ "seconds. Dropping tournament mode.");
+            S_BroadcastServerMessage("Tournament mode could not start the round. Starting normally.");
+
+            bTournamentMode = false;
+            if (AOCGRI(GameReplicationInfo) != none)
+                AOCGRI(GameReplicationInfo).bTournamentModeWaiting = false;
+            fBangModTournamentHoldSince = 0;
+
+            return (bEachTeamHasAtleastOnePlayer || !bWaitForTeams);
+        }
+
+        return false;
     }
     else
     {
@@ -411,8 +447,265 @@ reliable server function ConfigureTournamentMode(bool bEnable)
     class'AOCGame'.static.StaticSaveConfig();
 }
 
+/**
+ * Enforce admin mute on the server instead of trusting the client to do it.
+ *
+ * Vanilla only ever checks AOCPRI.bIsAdminMuted inside
+ * AOCPlayerController.ReceiveChatMessage, i.e. on each receiving client, and that check
+ * has two holes: it is skipped when the receiver has the sender on their Steam friends
+ * list, and it is skipped for the sender's own copy of the message (the PRI !=
+ * PlayerReplicationInfo test). The result is that an admin-muted player still sees their
+ * own chat go through and their friends still see it too, which is indistinguishable from
+ * mute being broken. AOCPlayerController.ServerAdminMutePlayer sets the flag and has its
+ * UpdateGameplayMuteList follow-up commented out, so nothing else picks up the slack.
+ *
+ * Dropping the message here means it never reaches the wire at all, so it holds regardless
+ * of what the receiving clients do with the flag.
+ */
+function BroadcastMessage(PlayerController Sender, string Message, EAOCFaction DesignatedTeam, optional bool bSystemMessage = false, optional bool bUseCustomColor = false, optional string Col)
+{
+    local AOCPRI SenderPRI;
+    local AOCPlayerController SenderPC;
+
+    SenderPC = AOCPlayerController(Sender);
+
+    if (!bSystemMessage && SenderPC != none)
+    {
+        SenderPRI = AOCPRI(SenderPC.PlayerReplicationInfo);
+        if (SenderPRI != none && SenderPRI.bIsAdminMuted)
+        {
+            // Tell the sender only, so mute is not silently confusing to them.
+            SenderPC.ReceiveChatMessage("You are muted by an admin.", EFAC_ALL, false, true, "#FF5555");
+            return;
+        }
+    }
+
+    // Admin chat commands are consumed here rather than broadcast. Doing it before the
+    // super call means "!slap bob" never appears in everyone's chat log.
+    if (!bSystemMessage && SenderPC != none && BangModHandleAdminCommand(SenderPC, Message))
+        return;
+
+    super.BroadcastMessage(Sender, Message, DesignatedTeam, bSystemMessage, bUseCustomColor, Col);
+}
+
+/**
+ * In-game admin commands, typed into chat.
+ *
+ *   !bring <name>   pull a player to you
+ *   !goto <name>    go to a player
+ *   !slap <name> [power]
+ *   !pause / !unpause
+ *
+ * Returns true when the message was a command, so the caller drops it instead of
+ * broadcasting it.
+ *
+ * Chat rather than exec functions on purpose: this is what was asked for, and it works from
+ * the chat box mid-fight without dropping to the console. Vanilla already parses "!ready"
+ * and "!adminreadyall" out of chat the same way (AOCGame.uc:727-755), so the pattern is the
+ * game's own.
+ *
+ * Every branch is gated on bAdmin. A non-admin typing !slap just says "!slap" in chat,
+ * which is the right outcome -- silently eating it would be confusing.
+ */
+/**
+ * Pause/unpause at the game level, so it works regardless of who owns the pause.
+ *
+ * bPauseable is forced on for the call: AOCGame inherits bPauseable=False from
+ * UTGame.uc:3396, so GameInfo.AllowPausing falls through to bAdminCanPause && IsAdmin, and
+ * bAdminCanPause is false in UDKGame.ini. Restored on unpause.
+ */
+function BangModAdminPause(AOCPlayerController Sender, bool bPause)
+{
+    if (bPause)
+    {
+        if (WorldInfo.Pauser != none)
+        {
+            BangModTellAdmin(Sender, "The game is already paused.");
+            return;
+        }
+
+        Sender.bFire = 0;
+        bPauseable = true;
+
+        if (!SetPause(Sender))
+        {
+            bPauseable = default.bPauseable;
+            BangModTellAdmin(Sender, "The game refused the pause.");
+            return;
+        }
+        Sender.PauseRumbleForAllPlayers();
+    }
+    else
+    {
+        if (WorldInfo.Pauser == none)
+        {
+            BangModTellAdmin(Sender, "The game is not paused.");
+            return;
+        }
+
+        ClearPause();
+        bPauseable = default.bPauseable;
+        Sender.PauseRumbleForAllPlayers(false);
+    }
+
+    // SetPause broadcasts its own system message; ClearPause announces nothing.
+    if (!bPause)
+        BroadcastMessage(none, "An admin unpaused the match.", EFAC_ALL, true, true, "#4CC964");
+
+    BangModLogAdminAction(Sender, bPause ? "PAUSE" : "UNPAUSE", "");
+}
+
+function bool BangModHandleAdminCommand(AOCPlayerController Sender, string Message)
+{
+    local array<string> Parts;
+    local string Verb;
+    local AOCPlayerController Target;
+    local int Matches, Power;
+
+    if (Left(Message, 1) != "!")
+        return false;
+
+    ParseStringIntoArray(Message, Parts, " ", true);
+    if (Parts.Length == 0)
+        return false;
+
+    Verb = Locs(Parts[0]);
+    if (Verb != "!bring" && Verb != "!goto" && Verb != "!slap"
+        && Verb != "!pause" && Verb != "!unpause")
+        return false;   // not ours; let vanilla's own "!" handling see it
+
+    if (AOCPRI(Sender.PlayerReplicationInfo) == none
+        || !Sender.PlayerReplicationInfo.bAdmin)
+        return false;
+
+    // Vanilla's UnPause exec only clears a pause the SAME controller set, so it cannot
+    // undo an RCON pause. This can, and takes no target.
+    if (Verb == "!pause" || Verb == "!unpause")
+    {
+        BangModAdminPause(Sender, Verb == "!pause");
+        return true;
+    }
+
+    if (Parts.Length < 2)
+    {
+        BangModTellAdmin(Sender, "Usage:" @ Verb @ "<part of a player name>");
+        return true;
+    }
+
+    Target = class'BangModAdminActions'.static.FindByName(WorldInfo, Parts[1], Matches);
+    if (Target == none)
+    {
+        BangModTellAdmin(Sender, Matches > 1
+            ? ("\"" $ Parts[1] $ "\" matches" @ Matches @ "players - be more specific.")
+            : ("No player matching \"" $ Parts[1] $ "\"."));
+        return true;
+    }
+
+    if (Verb == "!slap")
+    {
+        Power = (Parts.Length > 2) ? int(Parts[2]) : 400;
+        Power = Clamp(Power, 50, 2000);
+
+        if (Target.Pawn == none)
+        {
+            BangModTellAdmin(Sender, Target.PlayerReplicationInfo.PlayerName @ "is not alive.");
+            return true;
+        }
+
+        class'BangModAdminActions'.static.Slap(Target.Pawn, Power);
+        BangModTellAdmin(Sender, "Slapped" @ Target.PlayerReplicationInfo.PlayerName @ "(" $ Power $ ").");
+        BangModLogAdminAction(Sender, "SLAP", Target.PlayerReplicationInfo.PlayerName @ Power);
+        return true;
+    }
+
+    // !bring and !goto are the same teleport with the ends swapped.
+    if (Sender.Pawn == none || Target.Pawn == none)
+    {
+        BangModTellAdmin(Sender, "Both players have to be alive for that.");
+        return true;
+    }
+
+    if (Verb == "!bring")
+    {
+        if (class'BangModAdminActions'.static.Teleport(Target.Pawn, Sender.Pawn))
+        {
+            BangModTellAdmin(Sender, "Brought" @ Target.PlayerReplicationInfo.PlayerName @ "to you.");
+            BangModLogAdminAction(Sender, "BRING", Target.PlayerReplicationInfo.PlayerName);
+        }
+        else
+        {
+            BangModTellAdmin(Sender, "No room around you to put them.");
+        }
+        return true;
+    }
+
+    if (class'BangModAdminActions'.static.Teleport(Sender.Pawn, Target.Pawn))
+    {
+        BangModTellAdmin(Sender, "Moved you to" @ Target.PlayerReplicationInfo.PlayerName $ ".");
+        BangModLogAdminAction(Sender, "GOTO", Target.PlayerReplicationInfo.PlayerName);
+    }
+    else
+    {
+        BangModTellAdmin(Sender, "No room around them to put you.");
+    }
+    return true;
+}
+
+/** Private reply to the admin who typed the command. */
+function BangModTellAdmin(AOCPlayerController PC, string Text)
+{
+    PC.ReceiveChatMessage(Text, EFAC_ALL, true, true, "#4DA3FF");
+}
+
+/**
+ * Mirrors an in-game admin action into the server log, so chat commands land in the same
+ * record as RCON ones. LogAlwaysInternal rather than the log macro -- FINAL_RELEASE makes
+ * LogInternal private.
+ */
+function BangModLogAdminAction(AOCPlayerController Sender, string Action, string Detail)
+{
+    LogAlwaysInternal("[BangModAdmin]" @ Action @ "by"
+        @ Sender.PlayerReplicationInfo.PlayerName @ "|" @ Detail);
+}
+
+/**
+ * Spawn BangMod's remote console instead of the vanilla one.
+ *
+ * AOCGame.InitRemoteConsole hardcodes Spawn(class'AOCRCon'), so this override is the
+ * only hook needed -- BangModRCon extends AOCRCon, so every vanilla opcode, the auth
+ * handshake and all the outbound GameEvent_* calls keep working untouched. It only
+ * adds handling for opcodes the base class ignores.
+ *
+ * The AllActors sweep and the dedicated-server check are kept exactly as vanilla has
+ * them: the console survives a level change and must not exist on a listen server.
+ */
+function InitRemoteConsole(string Options)
+{
+	local AOCRCon RCon;
+
+	if (WorldInfo.NetMode != NM_DedicatedServer)
+		return;
+
+	// Reuse the console carried over from before the map change, if there is one.
+	foreach WorldInfo.AllActors(class'AOCRCon', RCon)
+	{
+		RemoteConsole = RCon;
+		break;
+	}
+
+	if (RemoteConsole == none)
+	{
+		RemoteConsole = Spawn(class'BangModRCon');
+		LogAlwaysInternal("[BangModRCon] remote console started (extended opcodes 23-37 available)");
+	}
+}
+
 DefaultProperties
 {
+    // Five minutes. Long enough that a real match night never trips it, short enough that a
+    // stuck server recovers on its own instead of needing a restart. 0 disables.
+    fBangModTournamentHoldLimit=300.0
+
     PlayerControllerClass=class'`{GAMEMODE}PlayerController'
     DefaultPawnClass=class'`{GAMEMODE}Pawn'
     HUDType=class'`{GAMEMODE}HUD'

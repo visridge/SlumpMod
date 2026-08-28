@@ -77,6 +77,12 @@ var name    nBangModViewBlockWhere;  // which hook refused it, for FPSpectateDeb
 var bool  bIsPaused;              // true while an admin has the game paused
 var int   UnpauseCountdownTime;   // countdown start value (default 3)
 
+// BANGMOD: inebriate on any map (see the block above ClientInebriate for the why).
+// Declared up here because UnrealScript requires every var before the first function
+// in the class body -- and this .uci is pasted straight into one.
+var PostProcessChain BangModDrunkChain;   // ChivPostProcess_drunk, from defaultproperties
+var bool bBangModDrunkChainAdded;         // true only when WE swapped the chain, so only we restore it
+
 
 simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
 {
@@ -3423,6 +3429,149 @@ function ProcessVOIPQueue()
 	}
 }
 
+/* ==================== Inebriate on any map ==================================
+ *
+ * Vanilla's drunk effect is not map-gated by design -- it is gated by the post-process
+ * chain that happens to be active. AOCBaseHUD.NotifyBindPostProcessEffects caches it with
+ *
+ *     DrunkEffect = MaterialEffect(LocalPlayer(...).PlayerPostProcess.FindPostProcessEffect('drunkeffect'));
+ *
+ * and Torn Banner's own comment beside it reads "if the PPC doesn't have a drunk effect,
+ * this does nothing". The default chain is CHV_PPC_Pack.ChivPostProcess_noToneMap
+ * (DefaultPostProcessName in UDKEngine.ini); the drunk nodes live in a sibling chain,
+ * ChivPostProcess_drunk, which maps can select through their world properties. That is why
+ * inebriate has a reputation for being TO2-only.
+ *
+ * The chain is a base-game asset, not map content, so it can be selected on any map. It is
+ * a REPLACEMENT, not an add-on: ChivPostProcess_drunk is a complete chain, a sibling of
+ * ChivPostProcess_noToneMap, so appending it leaves two full chains running back to back --
+ * the scene gets uber-post-processed (tone map, bloom, motion blur) twice and comes out as
+ * blocky smeared garbage. Swap the whole chain instead, which is exactly what the engine
+ * does in GameInfo.uc:1585-1592:
+ *
+ *     LP.RemoveAllPostProcessingChains();
+ *     LP.InsertPostProcessingChain(<chain>, INDEX_NONE, true);
+ *     PC.myHUD.NotifyBindPostProcessEffects();
+ *
+ * Sobering up restores the world chain the same way. (AOCPlayerController's GUI background
+ * chain at index 1 is collateral, but it re-inserts itself on demand -- :8659 checks for
+ * none before adding it.)
+ *
+ * All of this is client-side: ClientInebriate only ever runs on the target's machine.
+ * ============================================================================= */
+
+/** True when the active chain can already render the drunk effect. */
+simulated function bool BangModHasDrunkEffects()
+{
+	local LocalPlayer LP;
+
+	LP = LocalPlayer(Player);
+	if (LP == none || LP.PlayerPostProcess == none)
+		return false;
+
+	// Both are needed: ToggleDrunkPostEffects dereferences BlackoutEffect and its material
+	// instance with no none-check, so a chain with only one of the two is worse than neither.
+	return LP.PlayerPostProcess.FindPostProcessEffect('drunkeffect') != none
+		&& LP.PlayerPostProcess.FindPostProcessEffect('blackout') != none;
+}
+
+/** Makes the drunk effect available on this map, if it is not already. */
+simulated function bool BangModEnsureDrunkChain()
+{
+	local LocalPlayer LP;
+
+	if (BangModHasDrunkEffects())
+		return true;                          // map already brought a chain with it
+
+	LP = LocalPlayer(Player);
+	if (LP == none || myHUD == none || BangModDrunkChain == none)
+		return false;
+
+	// Replace, do not append -- see the note above. bInClone deep-copies the effects so the
+	// shared asset is never mutated by one player's session.
+	LP.RemoveAllPostProcessingChains();
+	if (!LP.InsertPostProcessingChain(BangModDrunkChain, INDEX_NONE, true))
+	{
+		// Put the map back the way it was rather than leaving the player with no chain.
+		BangModRestoreWorldChain();
+		return false;
+	}
+
+	// Re-cache AOCBaseHUD's DrunkEffect / BlackoutEffect pointers against the new chain.
+	myHUD.NotifyBindPostProcessEffects();
+
+	bBangModDrunkChainAdded = BangModHasDrunkEffects();
+	if (!bBangModDrunkChainAdded)
+		BangModRestoreWorldChain();
+
+	return bBangModDrunkChainAdded;
+}
+
+/** Puts the map's own post-process chain back. Mirrors GameInfo.uc:1585-1592. */
+simulated function BangModRestoreWorldChain()
+{
+	local LocalPlayer LP;
+	local PostProcessChain WorldChain;
+
+	LP = LocalPlayer(Player);
+	if (LP == none)
+		return;
+
+	// Static on Engine (Engine.uc:1042). Reached through class'Engine'.static rather than
+	// LP.Outer so this does not depend on LocalPlayer's within-class.
+	WorldChain = class'Engine'.static.GetWorldPostProcessChain();
+	if (WorldChain == none)
+		WorldChain = class'Engine'.static.GetDefaultPostProcessChain();
+
+	LP.RemoveAllPostProcessingChains();
+	if (WorldChain != none)
+		LP.InsertPostProcessingChain(WorldChain, INDEX_NONE, true);
+
+	if (myHUD != none)
+		myHUD.NotifyBindPostProcessEffects();
+}
+
+/**
+ * Undoes BangModEnsureDrunkChain. Guarded on the flag so that a map which supplied its own
+ * drunk chain keeps it -- on those maps we never swapped anything and must not "restore".
+ */
+simulated function BangModDropDrunkChain()
+{
+	if (!bBangModDrunkChainAdded)
+		return;
+
+	bBangModDrunkChainAdded = false;
+	BangModRestoreWorldChain();
+}
+
+/**
+ * Adds the chain first when the map has no drunk effect of its own, so inebriate works
+ * everywhere rather than only where the map happened to supply one.
+ *
+ * The sound mode is deliberately not touched here: AOCBaseHUD drives EnableDrunkSoundMode
+ * from its own fade (UpdateDrunkEffect on the way in, ToggleDrunkPostEffects on the way
+ * out), and that runs on this same client.
+ */
+reliable client function ClientInebriate(bool bEnable)
+{
+	if (AOCBaseHUD(myHUD) == none)
+		return;
+
+	if (bEnable)
+	{
+		if (!BangModEnsureDrunkChain())
+		{
+			ClientDisplayConsoleMessage("Inebriate: no drunk post-process chain available on this map.");
+			return;
+		}
+		super.ClientInebriate(true);
+		return;
+	}
+
+	super.ClientInebriate(false);
+	BangModDropDrunkChain();
+}
+
 
 DefaultProperties
 {
@@ -3432,6 +3581,9 @@ DefaultProperties
 	suicideDelay = 1.0f
 	UnpauseCountdownTime = 3
 	CustomizationClass=class'BangModCustomization'
+	// Sibling of the default chain (ChivPostProcess_noToneMap) in the same base-game
+	// package, so referencing it costs no new content on any map.
+	BangModDrunkChain=PostProcessChain'CHV_PPC_Pack.PostProcessChain.ChivPostProcess_drunk'
 	bShowDeathMessages = true
 	
 	// Proximity voice chat defaults
