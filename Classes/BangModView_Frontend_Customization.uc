@@ -573,7 +573,7 @@ function GFxObject PopulateHelmetList(int CharID, out float selectedIndex)
 	local GFxObject IndvElement;
 	local array<int> IDs;
 	local int i, GearID;
-	local bool bIsOwned;
+	local bool bIsOwned, bIsMicoTxnVisible;
 
 	local byte bPromptToBuy;
 	local string Price,PurchaseName, DiscountPercent;
@@ -594,31 +594,43 @@ function GFxObject PopulateHelmetList(int CharID, out float selectedIndex)
 		{
             LogAlwaysInternal("BangMod Helmet ID="@GearID);
 			AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("BangMod Helmet ID=" $ GearID);
-			// Treat all helmets as visible and owned in UI
-			bIsOwned = true;
-			IndvElement = CreateObject("Object");
-			IndvElement.SetInt("helmetID", GearID);
-			IndvElement.SetBool("isLocked", false);
-			IndvElement.SetBool("isItemOnSale", false);
-			IndvElement.SetBool("isNewItem", false);
-			IndvElement.SetBool("isPurchasable", false);
-			IndvElement.SetInt("microTxnId", 0);
-			IndvElement.SetString("itemName", class'BangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
-            LogAlwaysInternal("BangMod Helmet Name="@class'BangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
-			AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("BangMod Helmet Name=" $ class'BangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
-			IndvElement.SetString("price", "");
-			ListDataProvider.SetElementObject(i, IndvElement);
+			// BangMod: restored GroupHexID gating for helmets. Non-group helmets
+			// stay unlocked; group-locked helmets are hidden unless owned (or
+			// visible-if-unowned).
+			bIsOwned = class'BangModCustomization'.static.IsHelmetOwnedBy(GearID, CharID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass);
+			bIsMicoTxnVisible = class'BangModCustomization'.static.IsMicroTxnHelmetVisible(GearID, CharID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo);
+			// (Commented out: old global-unlock behavior)
+			//bIsOwned = true;
 
-			if(GearID == TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Helmet)
+			if(bIsMicoTxnVisible)
 			{
-                LogAlwaysInternal("BangMod Helmet Selected match id="@GearID);
-				AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("BangMod Helmet Selected=" $ GearID);
-				ShowBuyButton(false, "");
-				selectedIndex = i;
-				SetItemNameLabel(class'BangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
-			}
+				if(bIsOwned || class'BangModCustomization'.static.IsHelmetVisibleIfUnowned(GearID, CharID))
+				{
+					IndvElement = CreateObject("Object");
+					IndvElement.SetInt("helmetID", GearID);
+					IndvElement.SetBool("isLocked", !bIsOwned);
+					IndvElement.SetBool("isItemOnSale", false);
+					IndvElement.SetBool("isNewItem", false);
+					IndvElement.SetBool("isPurchasable", false);
+					IndvElement.SetInt("microTxnId", 0);
+					IndvElement.SetString("itemName", class'BangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
+					LogAlwaysInternal("BangMod Helmet Name="@class'BangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
+					AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("BangMod Helmet Name=" $ class'BangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
+					IndvElement.SetString("price", "");
+					ListDataProvider.SetElementObject(i, IndvElement);
 
-			++i;
+					if(GearID == TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Helmet)
+					{
+						LogAlwaysInternal("BangMod Helmet Selected match id="@GearID);
+						AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("BangMod Helmet Selected=" $ GearID);
+						ShowBuyButton(false, "");
+						selectedIndex = i;
+						SetItemNameLabel(class'BangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
+					}
+
+					++i;
+				}
+			}
 		}
 	}
 
@@ -1041,6 +1053,9 @@ function CheckLocks()
 	}
 	else if(RightTabMode == RTAB_Helmet && !class'BangModCustomization'.static.IsHelmetOwnedBy(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Helmet, CharacterID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass))
 	{
+		// BangMod: show the lock panel for group-locked helmets the player
+		// doesn't own (e.g. Community Hat), while every other tab stays unlocked.
+		bLocked = true;
 		LockText = class'BangModCustomization'.static.GetHelmetStoreDescription(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Helmet, CharacterID, bPromptToBuy, DisplayedMicroTxPurchasePrice, DisplayedMicroTxID, DisplayedMicroTxPurchaseName); 
 	}
 	else if(RightTabMode == RTAB_Weapon)

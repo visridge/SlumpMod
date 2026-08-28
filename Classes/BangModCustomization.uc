@@ -1,9 +1,37 @@
 class BangModCustomization extends AOCCustomization
     config(Customization);
 
-// Always treat all helmets as owned for BangMod
+// BangMod: Respect GroupHexID ownership for helmets. Group-locked helmets
+// (Antlers, Crown, Cowboy, Oakland A's, Community Hat) are equippable only by
+// members of the matching Steam group. All other helmets remain unlocked for
+// everyone (DLC/microtxn/veteran/rank gating stays disabled).
+//
+// Exceptions: The Cowboy hat (GroupHexID "1700000027DC808") and baseball hat
+// (Oakland A's, GroupHexID "170000002457482") are whitelisted so they stay
+// available to everyone regardless of Steam group membership.
 static function bool IsHelmetOwnedBy(int HelmetID, int CharacterID, PlayerReplicationInfo PRI, optional EAOCClass CheckClass)
 {
+	local AOCGearData GearData;
+
+	if(!IsHelmetValidFor(HelmetID, CharacterID))
+	{
+		return false;
+	}
+
+	GearData = class<AOCCustomizationContentBase>(FindObject(default.CustomizationContentClassString, class'Class')).default.Characters[CharacterID].default.Helmets[HelmetID].GearData;
+
+	// Cowboy hat and baseball hat are free for everyone.
+	if(GearData.GroupHexID == "1700000027DC808"
+		|| GearData.GroupHexID == "170000002457482")
+	{
+		return true;
+	}
+
+	if(GearData.GroupHexID != "")
+	{
+		return IsGearOwnedBy(GearData, PRI, CheckClass);
+	}
+
 	return true;
 }
 
