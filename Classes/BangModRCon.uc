@@ -1,37 +1,14 @@
 /**
- * BangMod remote console.
+ * BangMod remote console. Extends AOCRCon with ChivAdmin's command set plus our own.
  *
- * Extends the vanilla AOCRCon TCP server with the command set the original ChivAdmin
- * server mutator provided, plus BangMod's own additions.
+ * 0-22 are vanilla, in AOCRCon's MessageType order. 23-28 exist only in the ChivAdmin
+ * client (its mutator was never published); implementing them means an unmodified
+ * ChivAdmin client works here. 29+ are ours -- unknown opcodes are ignored, so adding
+ * them cannot break that client. Full table and payloads: RCON_PROTOCOL.md.
  *
- * WIRE COMPATIBILITY -- this is the point of the whole class.
- * The ChivAdmin desktop client (github: ChivAdmin, src/chivrcon) already speaks opcodes
- * 0-28. Opcodes 0-22 match AOCRCon's MessageType enum exactly, in order. Opcodes 23-28
- * exist ONLY in the client; the vanilla server ignores them, because they were served by
- * a companion mutator that was never published ("Mutator mod excluded" in its README).
- * Implementing 23-28 here means an unmodified ChivAdmin client works against a BangMod
- * server. The layouts below were read off the client's own encoders, not guessed:
- *
- *   23 PING_EXTENDED        out: QWord uid, int ping, score, idleTime, kills,
- *                                teamDamageDealt, rank
- *   24 CHANGE_SCORE         in : QWord uid, int score
- *   25 KILL_PLAYER          in : QWord uid
- *   26 INEBRIATE            in : QWord uid
- *   27 CHANGE_GAME_PASSWORD in : string password
- *   28 CONSOLE_COMMAND      in : QWord uid, int scope, string command
- *                                scope 0 = game, 1 = that player, 2 = all players
- *
- * 29+ are BangMod's own and unknown to ChivAdmin, which ignores opcodes it does not
- * recognise -- so adding them cannot break the existing client.
- *
- * AUDITING. Every command that changes game state is logged with the opcode, the actor
- * and the argument, and echoed back over the wire as RCONX_ADMIN_AUDIT. RCON is
- * password-authenticated but otherwise unrestricted, and CONSOLE_COMMAND in particular
- * is arbitrary execution against a live server. That power should be visible rather
- * than quiet -- if anyone asks what admins can do here, the answer should be a log.
- *
- * UNTESTED. Written against the source but never run. See the notes on individual
- * handlers where an argument had no verifiable source.
+ * Every state-changing command calls BangModAudit: logged, and echoed as
+ * RCONX_ADMIN_AUDIT. RCON is password-authenticated but otherwise unrestricted, and
+ * opcode 28 is arbitrary execution, so that power should be visible rather than quiet.
  */
 class BangModRCon extends AOCRCon;
 
@@ -506,17 +483,12 @@ function HandleSetTeam(AOCRConPacket Packet)
 }
 
 /**
- * Actually move a player between Agatha and Mason.
+ * Move a player between Agatha and Mason.
  *
- * WorldInfo.Game.ChangeTeam(PC, num, ...) does NOT work here and never did:
- * AOCGame.ChangeTeam ignores num entirely and resolves the team from
- * AOCPlayerController.CurrentFamilyInfo.FamilyFaction, so it always re-resolves
- * to the team the player is already on and returns false. The only thing that
- * moves a player is changing CurrentFamilyInfo first.
- *
- * This mirrors AOCGame.PerformDeathBasedAB, which is the one place in the stock
- * game that force-swaps a live player. AOCGRI.FamilyInfos is laid out
- * 0-4 = Agatha classes, 5-9 = Mason classes, indexed by ClassReference.
+ * NOT WorldInfo.Game.ChangeTeam: AOCGame.ChangeTeam ignores its team argument and
+ * re-resolves from CurrentFamilyInfo.FamilyFaction, so it always returns false. Changing
+ * CurrentFamilyInfo first is the only thing that moves anyone -- same approach as
+ * AOCGame.PerformDeathBasedAB. AOCGRI.FamilyInfos: 0-4 Agatha, 5-9 Mason.
  */
 function BangModForceTeam(AOCPlayerController PC, int NewTeam)
 {
@@ -586,11 +558,8 @@ function string DescribeController(Controller PC)
 /**
  * 20 (vanilla): unban by UID, but persisted.
  *
- * AOCAccessControl.UnbanByUID removes the BanInfo from the array and stops there.
- * AddBan calls SaveConfig(); UnbanByUID does not, so nothing is written back to
- * the ini and the ban reappears on restart. Doing the removal here lets us call
- * SaveConfig and tell the client whether anything was actually removed, which the
- * stock protocol never did.
+ * AOCAccessControl.UnbanByUID never calls SaveConfig (AddBan does), so the ban returns
+ * on restart. Removing it here lets us save, and report whether anything was removed.
  */
 function HandleUnbanFixed(AOCRConPacket Packet)
 {
@@ -656,11 +625,9 @@ function HandleForceSpectate(AOCRConPacket Packet)
 /**
  * 34: set a team's score.
  *
- * In most modes Teams[].Score IS the score. LTS is different: RoundScores on AOCLTS is
- * authoritative, AOCLTSGRI.RoundsWon is what clients draw, and Teams[].Score is only a
- * mirror that gets rewritten from RoundScores at round start (AOCLTS.uc:216-219) and on
- * every round win (:316). Writing the mirror alone looked like it worked and was silently
- * discarded at the next round boundary. All three are written here.
+ * LTS is the odd one: AOCLTS.RoundScores is authoritative, AOCLTSGRI.RoundsWon is drawn,
+ * and Teams[].Score is a mirror rewritten from RoundScores at every round boundary
+ * (AOCLTS.uc:216-219, :316). Writing the mirror alone is silently discarded. All three here.
  */
 function HandleSetTeamScore(AOCRConPacket Packet)
 {
@@ -755,13 +722,8 @@ function GameEvent_UpdatePing(PlayerReplicationInfo PRI, int NewPing)
 /* ============================ wave two ====================================== */
 
 /**
- * 38: hand back whatever the command printed.
- *
- * This is what turns RCON from a fire-and-forget pipe into an actual console.
- * Actor.ConsoleCommand returns the output as a string and vanilla simply discards it,
- * so every query command -- anything that reports rather than acts -- was previously
- * invisible to an admin. Empty results are still sent, so a client can always pair a
- * response to its request.
+ * 38: hand back whatever the command printed. Vanilla discards ConsoleCommand's return,
+ * so query commands were invisible. Empty results are still sent, so every request pairs.
  */
 function SendConsoleResult(string Command, string Result)
 {
@@ -775,12 +737,8 @@ function SendConsoleResult(string Command, string Result)
 }
 
 /**
- * 39 -> a burst of 40s then a 41.
- *
- * Vanilla RCON can unban but has no way to SEE the ban list, which makes unbanning a
- * guessing game unless you already know the uid. AOCAccessControl keeps a richer
- * "Bans" array than the engine's bare BannedIDs precisely so unbanning is workable --
- * name, reason and duration included.
+ * 39 -> a burst of 40s then a 41. Vanilla can unban but never shows the list, so you had
+ * to know the uid. AOCAccessControl.Bans carries name, reason and duration.
  */
 function HandleBanListRequest()
 {
@@ -852,14 +810,9 @@ function HandleMutePlayer(AOCRConPacket Packet)
 /* ======================= freeze, class, loadout, map ======================== */
 
 /**
- * 60: send one player to another.
- *
- * The RCON answer to the in-game !bring / !goto pair -- from here neither player is "you",
- * so it takes both ends explicitly and the client picks them.
- *
- * Shares BangModAdminActions with the chat commands so the placement logic exists once:
- * SetLocation returns false when the spot is occupied, so it tries a ring around the
- * destination rather than dropping someone inside them.
+ * 60: send one player to another. Takes both ends because from here neither is "you".
+ * Placement lives in BangModAdminActions: SetLocation returns false when the spot is
+ * occupied, so it rings the destination rather than dropping someone inside them.
  */
 function HandleTeleport(AOCRConPacket Packet)
 {
@@ -921,20 +874,12 @@ function HandleSlap(AOCRConPacket Packet)
 }
 
 /**
- * 51: freeze or release a player.
+ * 51: freeze or release a player, via TB's tutorial input blocking
+ * (ScriptToggleInput -> ClientScriptToggleInput, already a reliable client function :7572).
  *
- * Uses TB's own tutorial input-blocking system. AOCPlayerController.ScriptToggleInput ->
- * ClientScriptToggleInput is already a reliable client function (:7572), so nothing new has
- * to be replicated -- the array itself is not replicated, but the RPC that sets it is.
- *
- * IMPORTANT, and TB says it themselves in a comment beside that function: "This isn't a
- * safe way of preventing a player from performing some action. It's intended for
- * SP/Tutorials." Enforcement is client-side, so a modified client can ignore it. This is a
- * tool for holding an ordinary player still while you talk to them -- not an anti-cheat
- * measure, and not something to rely on against someone actively hostile.
- *
- * Talk is deliberately left unblocked: freezing someone so you can have a word with them
- * and then removing their ability to reply would be self-defeating.
+ * NOT anti-cheat. TB's own comment there: "This isn't a safe way of preventing a player
+ * from performing some action. It's intended for SP/Tutorials." Enforcement is
+ * client-side, so a modified client ignores it. Talk is left unblocked on purpose.
  */
 function BangModSetFrozen(AOCPlayerController PC, bool bFrozen)
 {
@@ -979,17 +924,11 @@ function HandleSetFrozen(AOCRConPacket Packet)
 }
 
 /**
- * 52: put a player on a different class, keeping their team.
+ * 52: change class, keeping the team. FamilyInfos as above, indexed by EAOCClass
+ * (0 Archer, 1 ManAtArms, 2 Vanguard, 3 Knight, 4 SiegeEngineer).
  *
- * Same FamilyInfos layout as the team swap: 0-4 Agatha, 5-9 Mason, indexed by
- * EAOCClass (0 Archer, 1 ManAtArms, 2 Vanguard, 3 Knight, 4 SiegeEngineer).
- *
- * bForceSwitch=true makes SetNewClass call FindFirstAvailableLoadoutForCurrentFamilyInfo,
- * so the player ends up with weapons that are legal for the new class rather than whatever
- * the old one was holding.
- *
- * Vanilla applies a class change on the next spawn. immediate=1 kills the current pawn so
- * it lands now, which is usually what an admin means; it is a flag rather than the default
+ * bForceSwitch=true so SetNewClass picks a loadout legal for the new class. Vanilla applies
+ * on next spawn; immediate=1 kills the pawn so it lands now -- a flag, not the default,
  * because killing someone mid-fight to change their class is a rude surprise.
  */
 function HandleSetClass(AOCRConPacket Packet)
@@ -1041,12 +980,8 @@ function HandleSetClass(AOCRConPacket Packet)
 }
 
 /**
- * 53: list the weapons this player's current class may take.
- *
- * Sent as indices into AOCFamilyInfo.NewPrimaryWeapons / NewSecondaryWeapons /
- * NewTertiaryWeapons rather than as names the client has to resolve. Opcode 56 then sets by
- * the same index, so the client never has to know a weapon class path and the server never
- * has to trust a string.
+ * 53: list the weapons this class may take, as indices into AOCFamilyInfo.New*Weapons.
+ * Opcode 56 sets by the same index, so no class paths on the wire and no strings to trust.
  */
 function HandleLoadoutRequest(AOCRConPacket Packet)
 {
@@ -1093,12 +1028,8 @@ function SendLoadoutOption(QWord PlayerId, int Slot, int Index, class<AOCWeapon>
 }
 
 /**
- * 56: set a player's loadout by index. -1 in any slot leaves that slot alone.
- *
- * Server-side only, on purpose. SetWeapons is simulated, and the normal client flow is
- * client-sets-then-S_SetWeapons-to-server. Setting it here updates what the server will
- * spawn them with, which is the part that matters for a forced loadout; their own class
- * menu will not show the change until it next refreshes.
+ * 56: set loadout by index; -1 leaves a slot alone. Server-side only on purpose -- this is
+ * what they spawn with. Their own class menu will not show it until it next refreshes.
  */
 function HandleSetLoadout(AOCRConPacket Packet)
 {
@@ -1140,13 +1071,9 @@ function HandleSetLoadout(AOCRConPacket Packet)
 /**
  * 57: one snapshot of where everyone is.
  *
- * Reads Pawn.Location directly rather than the replicated AOCPRI.PawnLocation, which is only
- * refreshed on a 2s server timer (AOCPRI.uc:192) -- this handler already runs on the server,
- * so there is no reason to take the stale copy. PawnLocation is the fallback for a player
- * whose pawn is gone, which at least puts them where they died.
- *
- * Yaw is sent in degrees so the client can draw facing without knowing about UE3 rotator
- * units (65536 to the turn).
+ * Reads Pawn.Location, not the replicated AOCPRI.PawnLocation -- that only refreshes on a 2s
+ * timer (AOCPRI.uc:192) and we already run server-side. PawnLocation is the fallback for a
+ * dead pawn. Yaw in degrees so the client need not know UE3 rotator units.
  */
 function SendPlayerPositions()
 {
@@ -1333,25 +1260,19 @@ function HandleReadyAll(AOCRConPacket Packet)
 }
 
 /**
- * 43: pause / unpause.
+ * 43: pause / unpause. Borrows a controller to own the pause -- an admin if one is
+ * connected, otherwise the first.
  *
- * GameInfo.SetPause needs a PlayerController to own the pause and the console has none, so
- * it borrows one -- an admin if connected, otherwise the first controller.
+ * Calls AOCGame.SetPause (:4801), not PlayerController.SetPause: BangMod's override of the
+ * latter is admin-gated, and AOCGame's is what sets AOCGRI.Speed and calls NotifyPaused.
  *
- * Calls AOCGame.SetPause (:4801) rather than PlayerController.SetPause -- BangMod's override
- * of the latter refuses anyone who is not bAdmin, and the borrowed controller usually is not.
- * AOCGame's version is also the one that sets AOCGRI.Speed and calls NotifyPaused on every
- * client, which is what actually shows the pause.
+ * bPauseable is forced on around the call and restored after. AOCGame inherits
+ * bPauseable=False from UTGame.uc:3396, so AllowPausing (:2794) falls through to
+ * bAdminCanPause && IsAdmin -- false in the ini, and the borrowed controller is no admin.
+ * Without the flip SetPause just returns false.
  *
- * bPauseable is forced on around the call. AOCGame inherits bPauseable=False from
- * UTGame.uc:3396, so GameInfo.AllowPausing (:2794) falls through to
- * bAdminCanPause && IsAdmin(PC) -- and bAdminCanPause is false in UDKGame.ini, and the
- * borrowed controller is not an admin. Without the flip SetPause simply returned false.
- * The original value is restored on unpause.
- *
- * The PC override's bIsPaused flag is per-controller and lives on the BangMod PC subclasses,
- * so it is not set here. Consequence: an in-game admin cannot clear an RCON pause with
- * "unpause", which checks their OWN bIsPaused. Use RCON, or the !unpause chat command.
+ * bIsPaused lives on the BangMod PC subclasses and is not set here, so in-game "unpause"
+ * (which checks the caller's own flag) cannot clear an RCON pause. Use RCON or !unpause.
  */
 function HandleSetPause(AOCRConPacket Packet)
 {
@@ -1477,16 +1398,10 @@ function HandleSetAutoBalance(AOCRConPacket Packet)
 }
 
 /**
- * 46: game speed.
- *
- * Sent as an integer percent because the packet format has no float primitive --
- * 100 is normal, 50 is half. AOCGame.SetGameSpeed is the right entry point rather
- * than a "slomo" console command: it notifies every client via NotifySpeedChanged and
- * republishes AOCGRI.Speed, which a bare console command does not do. That is why the
- * old relay needed its own SLOMO verb.
- *
- * Clamped: 10%-400%. A speed of zero stops the match dead with no way to type the
- * command that would restore it.
+ * 46: game speed as an integer percent (no float on the wire); 100 is normal.
+ * AOCGame.SetGameSpeed rather than a slomo console command: it calls NotifySpeedChanged and
+ * republishes AOCGRI.Speed, which the bare command does not. Clamped 10-400 -- zero stops
+ * the match with no way to type the command that would restore it.
  */
 function HandleSetGameSpeed(AOCRConPacket Packet)
 {

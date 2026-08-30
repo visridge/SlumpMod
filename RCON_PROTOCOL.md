@@ -1,9 +1,22 @@
 # BangMod RCON protocol
 
-Server side: `Src\BangMod\Classes\BangModRCon.uc` (opcodes 23-45) (extends `AOCRCon`), spawned by the
+Server side: `Src\BangMod\Classes\BangModRCon.uc` (opcodes 23-61) (extends `AOCRCon`), spawned by the
 `InitRemoteConsole` override in `Src\BangMod\Include\BangModGame.uci`.
 
-**Status: Limited Testing in a development environment. 
+**Status: limited testing in a development environment.** Tournament controls, loadout,
+freeze, bans, map and the fun commands have been exercised on a live server; the fixes
+made in response are noted per opcode below. Nothing has been load-tested.
+
+## Why this exists
+
+The ChivAdmin desktop client already speaks opcodes 0-28. Opcodes 0-22 match
+`AOCRCon.uc`'s `MessageType` enum exactly, in order. **Opcodes 23-28 exist only in the
+client** -- its Java classes for them are marked `implements CustomChivEvent`, whose
+javadoc says "for non-vanilla CMW messages sent from the server. This is the case when
+the 'ChivAdmin' mod is installed." That mutator was never published.
+
+So implementing 23-28 makes an **unmodified ChivAdmin client** work against a BangMod
+server. Every layout below was read off the client's own encoders/decoders, not guessed.
 
 ## Wire format (unchanged from vanilla)
 
@@ -374,3 +387,16 @@ refresh, select, unban, with the server's audit line reported back in the dialog
 Note `KickBanGlobal` -> `AddBan` stores both the NetID **and** an IP policy
 (`DENY,<addr>`) in the same `BanInfo`, so removing the entry lifts both. An IP-only ban
 with no UID cannot be lifted by opcode 20; the dialog greys that case out.
+
+## Untested, in rough risk order
+
+  * The C# client changes have not been compiled -- no .NET SDK was reachable from this
+    session. `BanManagerDialog.cs` is a new file in `ChivRcon.App`.
+  * `BangModForceTeam` against a player who is mid-respawn, in a vehicle, or a King class
+    (`FamilyInfos` only covers the five standard classes).
+  * `AC.Bans.Remove(i, 1)` + `SaveConfig()` from outside `AOCAccessControl` -- legal
+    UnrealScript, but the write happens on whatever ini `AOCAccessControl` is configured
+    to, not necessarily the one being edited by hand.
+  * Opcode 30's field order against the client's parse (now read by the player list).
+  * `Pawn.Died` for opcode 25 -- taken from an existing `AOCGame` call site, but not
+    exercised from an RCON context.

@@ -2212,39 +2212,20 @@ reliable server function ServerUpdateCustomizationInfo(SCustomizationChoice NewC
 /* ************************************************************************
  * FIRST-PERSON SPECTATOR -- post-spawn camera correction
  *
- * Engine PlayerController.ClientRestart() (PlayerController.uc:4728) does, on a
- * client:
+ * PlayerController.ClientRestart (:4728) calls SetViewTarget(Pawn) while still inside
+ * state Spectating, and only then EnterStartState(). Two consequences:
  *
- *     Pawn = NewPawn;
- *     AcknowledgePossession(Pawn);
- *     Pawn.ClientRestart();
- *     if (Role < ROLE_Authority)
- *     {
- *         SetViewTarget(Pawn);     // <-- still inside state Spectating
- *         ResetCameraMode();       // <-- no-op unless PlayerCamera exists
- *         EnterStartState();       // <-- only NOW do we leave Spectating
- *     }
- *
- * Two consequences, both of which land on the camera:
- *
- * 1. SetViewTarget(Pawn) fires AOCPawn.BecomeViewTarget() while the controller is
- *    still in state Spectating, so it takes its spectator branch --
- *    CurrentObserver = PC; SetThirdPersonCamera(!bIsBeingFPObserved) -- and never
- *    calls super.BecomeViewTarget(). UTPawn's real possession-view setup (arms
- *    attach, SetMeshVisibility(bBehindView), bUpdateEyeHeight = true) is skipped
+ * 1. AOCPawn.BecomeViewTarget takes its spectator branch and never calls super, so
+ *    UTPawn's possession setup (arm attach, mesh visibility, eye height) is skipped
  *    for our own pawn.
+ * 2. GetPlayerViewPoint reads PlayerCamera and ignores Pawn/ViewTarget whenever one
+ *    exists. AOC only destroys it in state Spectating.GetPlayerViewPoint, so leaving
+ *    spectate with one alive strands the view on a fixed map spot while the pawn plays
+ *    underneath. ResetCameraMode cannot help -- SetCameraMode is a no-op when
+ *    PlayerCamera is None.
  *
- * 2. PlayerController.GetPlayerViewPoint reads the view straight off PlayerCamera
- *    and ignores Pawn / ViewTarget entirely whenever one exists. The ONLY place AOC
- *    destroys it is the non-CameraActor branch of
- *    state Spectating.GetPlayerViewPoint, so leaving spectate while one is alive
- *    strands the view wherever that camera actor sits -- a fixed spot on the map,
- *    while the pawn plays normally underneath. Note ResetCameraMode() above cannot
- *    help: PlayerController.SetCameraMode() does nothing when PlayerCamera is None,
- *    and sets CameraStyle rather than clearing it when it is not.
- *
- * Rather than fight that ordering, we re-assert the camera one tick after
- * ClientRestart, when the state transition has actually completed.
+ * So the camera is re-asserted one tick after ClientRestart, once the state
+ * transition has actually completed.
  **************************************************************************/
 
 /** One-line camera dump to the log. Use with the FPSpectateDebug exec when chasing camera bugs. */
@@ -2314,44 +2295,30 @@ reliable client function ClientRestart(Pawn NewPawn)
 /* ************************************************************************
  * FIRST-PERSON SPECTATOR
  *
- * Vanilla AOC already contains a complete first-person-observer path
- * (AOCPawn.bIsBeingFPObserved gates the 1P OwnerMesh animation tree, the 1P
- * camera socket in AOCPlayerCamera.UpdateCamera, the 1P overlay weapon and the
- * health/stamina HUD push in AOCPawn) -- Torn Banner just never wired any input
- * to it. AOCPlayerController.state Spectating.ViewAPlayer() force-calls
- * SetBehindView(true) on every target change and its BehindView() exec is an
- * empty stub, so the player can never reach it.
+ * Vanilla already has a complete FP-observer path -- bIsBeingFPObserved gates the 1P
+ * mesh, camera socket, overlay weapon and HUD push -- but nothing is wired to it:
+ * state Spectating.ViewAPlayer force-calls SetBehindView(true) and BehindView() is an
+ * empty stub.
  *
- * BangMod re-declares state Spectating to route target changes through the
- * real FP-observer path instead. Everything the previous (commented-out)
- * attempt hand-rolled -- forcing bBehindView = false, hiding the target's head,
- * zeroing controller roll -- is unnecessary once bIsBeingFPObserved is actually
- * set, because:
+ * BangMod re-declares state Spectating to route target changes through it. Once
+ * bIsBeingFPObserved is actually set, the hand-rolled workarounds are unnecessary:
+ * AOCPlayerCamera.UpdateCamera takes its FP branch and zeroes CameraRotation.Roll
+ * (the sprint-lean tilt fix), and SetThirdPersonCamera(false) shows the 1P mesh so
+ * there is no head to hide.
  *
- *   - AOCPlayerCamera.UpdateCamera takes its FP branch, reads the CameraPoint
- *     socket off the 1P OwnerMesh, and does CameraRotation.Roll = 0. That is
- *     the sprint-lean tilt fix (Shift+W+A / Shift+W+D no longer rolls the view).
- *   - SetThirdPersonCamera(false) hides the 3P body and shows the 1P mesh, so
- *     there is no head to be inside of and no head-hiding RPC needed.
- *
- * Perspective while following: first person by default, Space
- * (GBA_SpectatorPerspective) toggles back to the vanilla orbit follow.
- * Right click (SpectatorFreecam) still detaches to free camera.
+ * First person by default; Space toggles the vanilla orbit follow, right click
+ * still detaches to free camera.
  ************************************************************************** */
 
 /**
- * Why first-person observe cannot be applied to this pawn, or "" when it can.
+ * Why first-person observe cannot be applied to this pawn, or "" when it can. One source
+ * of truth so the diagnostic and the decision cannot drift. Each item is something
+ * BecomeFirstPersonObserved or SetThirdPersonCamera dereferences unguarded, and a pawn can
+ * be network-relevant before it has them all.
  *
- * Single source of truth for the guard so the diagnostic and the decision can never
- * drift apart. Everything listed is something AOCPawn.BecomeFirstPersonObserved() or
- * AOCPawn.SetThirdPersonCamera() dereferences with no none-check of its own, and a
- * pawn can be network-relevant before it has all of them.
- *
- * Deliberately NOT checked: HelmetEmitter. It is not a DefaultProperties component --
- * AOCPawn only creates it (~line 9207) for helmets that carry a particle system, so
- * it is none on most pawns. SetThirdPersonCamera dereferences it unguarded anyway, on
- * every pawn a spectator views, so requiring it here refused first person for
- * virtually everybody while buying no safety vanilla does not already forgo.
+ * NOT checked: HelmetEmitter. AOCPawn only creates it for helmets with a particle system,
+ * so it is none on most pawns, and SetThirdPersonCamera dereferences it unguarded anyway --
+ * requiring it refused first person for nearly everyone and bought no safety.
  */
 simulated function string BangModFPObserveBlocker(AOCPawn P)
 {
@@ -2385,21 +2352,11 @@ simulated function bool BangModCanFPObserve(AOCPawn P)
 /**
  * Puts the observed pawn into real first-person-observer state.
  *
- * Ordering note: AOCPlayerController.state Spectating.SetBehindView(false) does
- *   super.SetBehindView(false)   -> UTPlayerController: bBehindView = false,
- *                                   bFreeCamera = false,
- *                                   ViewTarget.SetThirdPersonCamera(false)
- *   AOCPawn.BecomeFirstPersonObserved(self)
- *       -> BecomeViewTarget(self)
- *           -> SetThirdPersonCamera(!bIsBeingFPObserved)  // still false here,
- *                                                         // so this re-runs as
- *                                                         // SetThirdPersonCamera(TRUE)
- *       -> bIsBeingFPObserved = true, swap OwnerMesh, attach 1P weapon
- *
- * i.e. vanilla's own call order leaves the pawn flagged for a first-person
- * camera but visually still in third person (3P body drawn, helmet on, 1P mesh
- * hidden). That is why the old implementation saw "inside the head". We put the
- * meshes back into 1P state afterwards.
+ * Ordering trap: state Spectating.SetBehindView(false) reaches
+ * BecomeFirstPersonObserved -> BecomeViewTarget -> SetThirdPersonCamera(!bIsBeingFPObserved),
+ * and the flag is still false at that point -- so it re-runs as SetThirdPersonCamera(TRUE)
+ * before the flag is set. Vanilla's own order leaves the pawn flagged for a 1P camera but
+ * visually in 3P, which is the "inside the head" view. The meshes are put back afterwards.
  */
 simulated function bool BangModApplyFPObserve(AOCPawn P)
 {
@@ -2477,29 +2434,17 @@ simulated function BangModRestoreVanillaCamera()
 }
 
 /**
- * May we look at this player?
+ * May we look at this player? Mirrors AOCGame.CanSpectate (:5104) rather than inventing a
+ * second rule: real spectators see everybody, players see only their own team.
  *
- * Mirrors AOCGame.CanSpectate (AOCGame.uc:5104) deliberately, rather than inventing a
- * second rule:
+ * The difference is WHERE. CanSpectate is server-side and only gates
+ * GetNextViewablePlayer; this is simulated off replicated PRI data, so the client can apply
+ * the same rule to what that gate does not cover -- FP observation and the life bars.
  *
- *     return ( AOCPRI(Viewer.PRI).bIsVoluntarySpectator
- *              || (ViewTarget.Team == Viewer.PRI.Team) );
- *
- * i.e. real spectators see everybody, players on a team see only their own team.
- *
- * The difference is WHERE it runs. CanSpectate is a GameInfo function, so it only
- * exists server-side and only gates GetNextViewablePlayer. This one is simulated and
- * works off replicated PRI data, so the client can apply the same rule to the things
- * the server gate does not cover -- first-person observation and the life bars.
- *
- * Why this exists at all: players have reported cycling onto ENEMY pawns in first
- * person, which leaks flanks, health, stamina and (on Outpost) the enemy VIP's HUD
- * marker. I could not find the path by which the server hands out an enemy PRI --
- * ServerViewNextPlayer -> ViewAPlayer -> GetNextViewablePlayer consults CanSpectate on
- * every candidate, and BangMod overrides none of it. So this does not pretend to fix a
- * cause I have not proven. It enforces the intended rule at every point we control and
- * counts the refusals, so FPSpectateDebug can say whether the server-side gate is
- * actually leaking or whether the leak is somewhere else entirely.
+ * Exists because players reported cycling onto ENEMY pawns in first person, leaking flanks,
+ * health and the VIP marker. The path by which the server hands out an enemy PRI was never
+ * found, so this does not claim to fix a proven cause -- it enforces the rule everywhere we
+ * control and counts refusals, so FPSpectateDebug can say whether the server gate leaks.
  */
 simulated function bool BangModMayView(PlayerReplicationInfo TargetPRI)
 {
@@ -2578,23 +2523,16 @@ simulated function BangModApplySpectatorPerspective()
 }
 
 /**
- * Keep the health/stamina bars on screen and current for whoever we are actually
- * looking at -- our own pawn in play, or the followed player while spectating.
+ * Keep the health/stamina bars on screen and current for whoever we are looking at -- our
+ * own pawn, or the followed player while spectating.
  *
- * Vanilla's handshake has too many holes to patch one at a time:
- *   - the bars are only ever shown from ShowHUDElements() on possession, and hidden
- *     from ClientPawnDied(), with nothing in between;
- *   - DisplayCompleteHUD() silently does nothing when the GFx HUD has not finished
- *     building yet (CheckCanUseHUD() is false), and nobody retries;
- *   - nothing shows them for a spectator at all;
- *   - AOCPlayerController.PlayerTick only pushes values when they change, so a
- *     missed initial push leaves the bars stale until the next hit.
+ * Vanilla has too many holes to patch individually: bars are shown only from
+ * ShowHUDElements on possession, DisplayCompleteHUD silently no-ops before the GFx HUD is
+ * built and nobody retries, nothing shows them for a spectator, and PlayerTick only pushes
+ * on change so a missed initial push leaves them stale.
  *
- * So rather than chase each hole, assert the desired state every tick. Cheap: the
- * GFx calls are throttled to a visibility re-assert twice a second plus a value push
- * only when the number actually changed.
- *
- * Deliberately never HIDES anything -- vanilla owns that, via ClientPawnDied().
+ * So assert the desired state every tick instead. Throttled to a visibility re-assert twice
+ * a second plus a value push only on change. Never HIDES -- vanilla owns that.
  */
 simulated function BangModEnforceLifeBars()
 {
@@ -2664,32 +2602,17 @@ simulated function BangModEnforceLifeBars()
 /**
  * Hold the spectator's field of view at the value they configured.
  *
- * Background. There is no camera object during normal AOC play -- AOCPlayerCamera
- * extends Object, not Camera, so PlayerController.PlayerCamera is None and the engine
- * reads the view angle straight off PlayerController.FOVAngle. A custom FOV therefore
- * lives entirely in DefaultFOV / DesiredFOV / FOVAngle, and the only thing that ever
- * re-establishes it is AOCPawn (AOCPawn.uc:9078-9080) calling SetFOV(MyFOV) when it
- * spawns for a locally controlled player.
+ * There is no camera object in normal play -- AOCPlayerCamera extends Object, not Camera --
+ * so the engine reads FOVAngle directly, and the only thing that re-establishes a custom FOV
+ * is AOCPawn calling SetFOV on spawn (:9078). A spectator has no pawn, so anything that
+ * knocks those fields around on the way into spectate is permanent.
  *
- * That is the whole problem: a spectator has no pawn, so nothing on the spectate path
- * ever puts the custom value back. Anything at all that knocks the three fields around
- * on the way into spectate is permanent, because the usual repair never runs.
+ * The write was never found. Every FOV assignment in the tree was ruled out; the one
+ * candidate unfalsifiable from script is state Spectating.GetPlayerViewPoint passing
+ * FOVAngle BY REFERENCE into CalcCamera, so any override writing out_FOV owns it (AOCPawn's
+ * dying state does exactly that). So assert the value instead -- correct whichever it was.
  *
- * I could not find the write. Every FOV assignment in the tree was checked
- * (AOCPlayerController FixFOV/SetFOV/ResetFOV and its FOV exec; AOCPawn 9078/9504; the
- * bow and crossbow zoom; Engine/UT Dead + RoundEnded BeginState, AdjustFOV, StartZoom
- * and EndZoom) and none of them sit on the spectate-entry path. One more candidate is
- * genuinely unfalsifiable from script: AOCPlayerController.state Spectating's
- * GetPlayerViewPoint passes FOVAngle BY REFERENCE into ViewTarget.CalcCamera every
- * frame, so any CalcCamera override that writes out_FOV silently owns the spectator's
- * field of view (AOCPawn's dying state does exactly that, out_FOV = 90).
- *
- * So rather than keep guessing, assert the value instead. This is the same tactic as
- * BangModEnforceLifeBars: cheap, and correct no matter which of the above it was.
- *
- * Deliberately gated on Pawn == none. Weapon zoom drives DesiredFOV during live play
- * and must not be fought; a spectator never has a pawn, so that guard alone keeps this
- * confined to spectating.
+ * Gated on Pawn == none: weapon zoom drives DesiredFOV in live play and must not be fought.
  */
 simulated function BangModEnforceSpectateFOV(name Where)
 {
@@ -3022,35 +2945,18 @@ state Spectating
 
 // Push-to-talk command (bound to G key by default)
 /**
- * Re-enable networked voice.
+ * Re-enable networked voice by restoring UTPlayerController's implementation.
  *
- * The engine's voice stack is INTACT. Verified in the shipped binary rather than
- * assumed: FVoiceInterfaceSteamworks::CreateInstance allocates and constructs a real
- * object and calls its virtual Init(MaxLocalTalkers, MaxRemoteTalkers, bIsDedicated),
- * and the recording path calls Steam's own ISteamUser voice API -- StartVoiceRecording,
- * GetAvailableVoice and GetVoice at 16 kHz -- branching on Steam's EVoiceResult. The
- * binary also carries UVoiceChannel, RegisterLocalTalker, RegisterRemoteTalker,
- * StartNetworkedVoice and ReadLocalVoiceData. There is no Speex, but there would not
- * be: Steam owns the codec, not the engine.
+ * The engine's voice stack is intact -- verified in the shipped binary, which carries
+ * FVoiceInterfaceSteamworks, UVoiceChannel, RegisterRemoteTalker, StartNetworkedVoice and
+ * Steam's own ISteamUser voice API. There is no Speex because Steam owns the codec.
  *
- * What actually disabled voice is two lines of Torn Banner UnrealScript:
+ * Two lines of TB script disabled it: AOCGame.uc:1826 calls ClientStopNetworkedVoice() on
+ * every join, and AOCPlayerController.uc:3700 is an empty ToggleSpeaking override where UT
+ * does the real work. Keybinds and server settings survived, which is why it looks like an
+ * engine-level removal from outside. Speech recognition is deliberately left out.
  *
- *   AOCGame.uc:1826-1827   "Tell the player to disable voice by default and use the
- *                           push to talk method" -> NewPlayer.ClientStopNetworkedVoice()
- *   AOCPlayerController.uc:3700   exec function ToggleSpeaking(bool bNowOn) {}
- *
- * The off switch fires on every join, and the push-to-talk handler that was supposed
- * to turn it back on is an empty override of UTPlayerController.ToggleSpeaking, which
- * in UT does the real work. Keybind and server settings survive because nobody removed
- * them -- which is exactly why it looks like an engine-level removal from the outside.
- *
- * This restores UTPlayerController's implementation. Speech recognition is deliberately
- * left out; it is a separate subsystem and unrelated to talking.
- *
- * UNTESTED against a live server. VoiceInterface can legitimately be None -- that is
- * what the engine's "Failed to create the voice interface" message guards -- and
- * whether it initialises here cannot be settled by reading code. Type VoiceDebug to
- * find out rather than guessing.
+ * VoiceInterface can legitimately be None -- type VoiceDebug rather than guessing.
  */
 exec function ToggleSpeaking(bool bNowOn)
 {
@@ -3146,50 +3052,28 @@ exec function VoiceDebug()
 }
 
 /**
- * Raise this client's own send budget at runtime.
+ * Raise this client's own send budget at runtime. Usage: BangModNetSpeed 100000, then hold
+ * push-to-talk and check stat net.
  *
- * Why this is needed. "Connection saturated!" on the stat net HUD is the native
- * IsNetReady(0) returning false, and that is judged against Player.CurrentNetSpeed --
- * not against MaxInternetClientRate or ConfiguredInternetSpeed in any ini. Measured on
- * a live dedicated server, CurrentNetSpeed was 10000 and ClientCap was 10000 while the
- * client ini asked for 100000, so the ini value was being discarded after connect.
- *
- * AOCGame.uc:1810 calls NewPlayer.ClientCapBandwidth(NewPlayer.Player.CurrentNetSpeed)
- * during PostLogin, and PlayerController.ClientCapBandwidth then does
- * SetNetSpeed(Cap) whenever the client is above it. So the server's view at login
- * becomes a hard ceiling regardless of what either config said.
- *
- * SetNetSpeed is a native script-callable function, so the ceiling can simply be
- * raised again afterwards. Deliberately an exec rather than automatic: this changes
- * only how much this client is willing to push upstream, and it should be a measured
- * decision rather than something the mod does behind your back.
- *
- * Usage: BangModNetSpeed 100000, then hold push-to-talk and check stat net.
+ * "Connection saturated!" is IsNetReady(0) judged against Player.CurrentNetSpeed, not any
+ * ini value. AOCGame.uc:1810 caps it at login via ClientCapBandwidth, so the server's view
+ * at that instant becomes a hard ceiling. An exec rather than automatic: it changes only
+ * what this client pushes upstream, which should be a measured decision.
  */
 /**
  * Undo the login bandwidth cap that makes push-to-talk unusable.
  *
- * Measured, not theorised. On a live dedicated server a client sat at
- * CurrentNetSpeed 10000 with ClientCap 10000, while its own ini asked for 100000.
- * Holding push-to-talk pushed roughly 9951 B/s -- voice is about 8 KB/s and moves take
- * the rest -- so the connection sat pinned at its ceiling and stat net reported
- * "Connection saturated!". Because AOCPlayerController.ReplicateMove hardcodes a 0.05s
- * send interval on dedicated servers (20 Hz), every packet the net layer defers costs a
- * 50 ms hole in what the server knows about your position. That is the rubber-banding.
+ * Measured: a live client sat at CurrentNetSpeed 10000 while its ini asked for 100000, and
+ * push-to-talk pushed ~9951 B/s -- pinned at the ceiling, so stat net read "Connection
+ * saturated!". ReplicateMove hardcodes 0.05s (20 Hz) on dedicated, so every deferred packet
+ * is a 50 ms hole in the server's view of your position. That is the rubber-banding.
  *
- * The cap comes from AOCGame.uc:1810 calling
- * ClientCapBandwidth(NewPlayer.Player.CurrentNetSpeed) during PostLogin, using whatever
- * the server believed at that instant. PlayerController.ClientCapBandwidth then calls
- * SetNetSpeed(Cap) on anyone above it, so the ini value is discarded after connect --
- * which is why editing MaxInternetClientRate or ConfiguredInternetSpeed changed nothing.
+ * The cap is AOCGame.uc:1810 -> ClientCapBandwidth -> SetNetSpeed at PostLogin, which is why
+ * editing MaxInternetClientRate changed nothing.
  *
- * 15000 rather than something larger because that is where the engine clamps: 0x3A98
- * appears as a hardcoded instruction immediate in the net driver, and SetNetSpeed(100000)
- * was observed landing on exactly 15000. Asking for more is not refused, it is ignored.
- *
- * This only raises how much THIS client is willing to send upstream. It does not change
- * what the server sends us, and it cannot exceed the engine ceiling. Set
- * iBangModMinNetSpeed to a negative value to opt out.
+ * 15000 because that is where the engine clamps -- 0x3A98 is a hardcoded immediate in the
+ * net driver, and SetNetSpeed(100000) was observed landing on exactly 15000. This only
+ * raises what THIS client sends. Set iBangModMinNetSpeed negative to opt out.
  */
 simulated function BangModRestoreNetSpeed()
 {
@@ -3356,29 +3240,17 @@ reliable client function ClientReceiveProximityTalker(PlayerReplicationInfo Talk
 
 // Override ClientNotifyPlayerTalking to handle proximity filtering
 /**
- * Fires whenever a player's talking state changes -- ours or anyone else's.
+ * Fires when any player's talking state changes. Registered as the Steamworks talking
+ * delegate at AOCPlayerController.uc:1067, so a call here means voice data arrived.
  *
- * Rewritten because the previous version was almost certainly the push-to-talk
- * stutter. It ran
+ * Rewritten from a foreach DynamicActors sweep that ran on every notification -- Steam
+ * raises those every 0.2s per talker, so holding the key meant a full actor sweep several
+ * times a second, and a hitching client stops sending ServerMove on time. That was likely
+ * the push-to-talk rubber-banding rather than anything wrong with voice itself.
  *
- *     foreach DynamicActors(class'PlayerReplicationInfo', PRI)
- *
- * which walks EVERY dynamic actor in the level, and it ran that on every talking
- * notification. Steam raises those at VoiceNotificationDelta = 0.2s for each talker,
- * so holding the key meant a full actor sweep several times a second on the client.
- * A client that hitches stops sending ServerMove on time, the server stops hearing
- * where you are, and it corrects you -- which is exactly the "server is having a hard
- * time figuring out my position" rubber-band, rather than anything wrong with voice
- * transmission itself.
- *
- * Two things were wrong with it beyond cost. PlayerReplicationInfo.Owner is a
- * Controller, not a Pawn, so Pawn(PRI.Owner) always cast to none and the proximity
- * test could never pass -- it paid for the sweep and then did nothing. And vanilla's
- * AOCPlayerController.ClientNotifyPlayerTalking is an empty function, so none of this
- * cost existed before BangMod added it.
- *
- * GRI.PRIArray is the replicated player list: a handful of entries, no actor
- * iteration, already maintained for us.
+ * It was also broken: PRI.Owner is a Controller, so Pawn(PRI.Owner) always cast to none and
+ * the proximity test could never pass. GRI.PRIArray is the replicated list, already
+ * maintained, no iteration needed.
  */
 function ClientNotifyPlayerTalking(UniqueNetId TalkingPlayer, bool bIsTalking)
 {
@@ -3453,33 +3325,18 @@ function ProcessVOIPQueue()
 
 /* ==================== Inebriate on any map ==================================
  *
- * Vanilla's drunk effect is not map-gated by design -- it is gated by the post-process
- * chain that happens to be active. AOCBaseHUD.NotifyBindPostProcessEffects caches it with
+ * The drunk effect is gated by the active post-process chain, not by the map. The default
+ * is ChivPostProcess_noToneMap; the drunk nodes live in the sibling ChivPostProcess_drunk,
+ * which maps opt into -- hence its reputation for being TO2-only. Both are base-game
+ * assets, so the chain can be selected anywhere.
  *
- *     DrunkEffect = MaterialEffect(LocalPlayer(...).PlayerPostProcess.FindPostProcessEffect('drunkeffect'));
+ * It is a REPLACEMENT, not an add-on. ChivPostProcess_drunk is a complete chain, so
+ * appending it runs two full chains back to back and the scene is uber-post-processed
+ * twice -- blocky smeared garbage. Swap it, as GameInfo.uc:1585-1592 does:
+ * RemoveAllPostProcessingChains, InsertPostProcessingChain, NotifyBindPostProcessEffects.
  *
- * and Torn Banner's own comment beside it reads "if the PPC doesn't have a drunk effect,
- * this does nothing". The default chain is CHV_PPC_Pack.ChivPostProcess_noToneMap
- * (DefaultPostProcessName in UDKEngine.ini); the drunk nodes live in a sibling chain,
- * ChivPostProcess_drunk, which maps can select through their world properties. That is why
- * inebriate has a reputation for being TO2-only.
- *
- * The chain is a base-game asset, not map content, so it can be selected on any map. It is
- * a REPLACEMENT, not an add-on: ChivPostProcess_drunk is a complete chain, a sibling of
- * ChivPostProcess_noToneMap, so appending it leaves two full chains running back to back --
- * the scene gets uber-post-processed (tone map, bloom, motion blur) twice and comes out as
- * blocky smeared garbage. Swap the whole chain instead, which is exactly what the engine
- * does in GameInfo.uc:1585-1592:
- *
- *     LP.RemoveAllPostProcessingChains();
- *     LP.InsertPostProcessingChain(<chain>, INDEX_NONE, true);
- *     PC.myHUD.NotifyBindPostProcessEffects();
- *
- * Sobering up restores the world chain the same way. (AOCPlayerController's GUI background
- * chain at index 1 is collateral, but it re-inserts itself on demand -- :8659 checks for
- * none before adding it.)
- *
- * All of this is client-side: ClientInebriate only ever runs on the target's machine.
+ * Sobering up restores the world chain the same way. AOCPlayerController's GUI chain is
+ * collateral but re-inserts itself on demand (:8659). All client-side.
  * ============================================================================= */
 
 /** True when the active chain can already render the drunk effect. */

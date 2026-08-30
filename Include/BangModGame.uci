@@ -448,19 +448,12 @@ reliable server function ConfigureTournamentMode(bool bEnable)
 }
 
 /**
- * Enforce admin mute on the server instead of trusting the client to do it.
+ * Enforce admin mute server-side instead of trusting the client.
  *
- * Vanilla only ever checks AOCPRI.bIsAdminMuted inside
- * AOCPlayerController.ReceiveChatMessage, i.e. on each receiving client, and that check
- * has two holes: it is skipped when the receiver has the sender on their Steam friends
- * list, and it is skipped for the sender's own copy of the message (the PRI !=
- * PlayerReplicationInfo test). The result is that an admin-muted player still sees their
- * own chat go through and their friends still see it too, which is indistinguishable from
- * mute being broken. AOCPlayerController.ServerAdminMutePlayer sets the flag and has its
- * UpdateGameplayMuteList follow-up commented out, so nothing else picks up the slack.
- *
- * Dropping the message here means it never reaches the wire at all, so it holds regardless
- * of what the receiving clients do with the flag.
+ * Vanilla only checks bIsAdminMuted in AOCPlayerController.ReceiveChatMessage, and skips it
+ * for Steam friends of the sender and for the sender's own copy -- so a muted player still
+ * sees their chat go through, which looks exactly like mute being broken. Dropping it here
+ * means it never reaches the wire.
  */
 function BroadcastMessage(PlayerController Sender, string Message, EAOCFaction DesignatedTeam, optional bool bSystemMessage = false, optional bool bUseCustomColor = false, optional string Col)
 {
@@ -489,23 +482,13 @@ function BroadcastMessage(PlayerController Sender, string Message, EAOCFaction D
 }
 
 /**
- * In-game admin commands, typed into chat.
+ * In-game admin commands typed into chat: !bring <name>, !goto <name>,
+ * !slap <name> [power], !pause, !unpause. Returns true when the message was a command so
+ * the caller drops it.
  *
- *   !bring <name>   pull a player to you
- *   !goto <name>    go to a player
- *   !slap <name> [power]
- *   !pause / !unpause
- *
- * Returns true when the message was a command, so the caller drops it instead of
- * broadcasting it.
- *
- * Chat rather than exec functions on purpose: this is what was asked for, and it works from
- * the chat box mid-fight without dropping to the console. Vanilla already parses "!ready"
- * and "!adminreadyall" out of chat the same way (AOCGame.uc:727-755), so the pattern is the
- * game's own.
- *
- * Every branch is gated on bAdmin. A non-admin typing !slap just says "!slap" in chat,
- * which is the right outcome -- silently eating it would be confusing.
+ * Chat rather than execs so it works mid-fight without dropping to the console; vanilla
+ * parses !ready the same way (AOCGame.uc:727-755). Every branch is gated on bAdmin, and a
+ * non-admin's !slap just appears as chat rather than being silently eaten.
  */
 /**
  * Pause/unpause at the game level, so it works regardless of who owns the pause.
@@ -515,15 +498,19 @@ function BroadcastMessage(PlayerController Sender, string Message, EAOCFaction D
  * bAdminCanPause is false in UDKGame.ini. Restored on unpause.
  */
 /**
- * BANGMOD: build the voice mute lists on join.
+ * Build the voice mute lists on join.
  *
- * AOCGame.SetupPlayerMuteList (:2154) is what pairs players for voice -- it walks every
- * controller and calls GameplayUnmutePlayer both ways, which clears VoicePacketFilter and
- * fires ClientUnmutePlayer. AOC's only live caller is the ChangeForceTeamVOIP exec (:659);
- * the PostLogin call is commented out at :2139. So on a normal join nobody is ever paired.
+ * AOCGame.SetupPlayerMuteList (:2154) pairs players for voice via GameplayUnmutePlayer,
+ * which clears VoicePacketFilter and fires ClientUnmutePlayer. Its only live caller is the
+ * ChangeForceTeamVOIP exec (:659) -- the PostLogin call is commented out at :2139, so on a
+ * normal join nobody is ever paired. Confirmed live: running that exec over RCON, which does
+ * nothing but this loop, revived voice on a server where it was dead both ways.
  *
- * Not calling it directly: it dereferences CurrentFamilyInfo when bForceTeamVOIP is on, and
- * that is None at PostLogin -- an accessed-None on every join. Same logic, guarded.
+ * Not calling it directly -- it dereferences CurrentFamilyInfo, which is None at PostLogin.
+ * Same logic, guarded.
+ *
+ * Note AOC ties voice mute to bIsAdminMuted (:2198), the flag opcode 42 sets for TEXT mute:
+ * text-muting also mutes voice, and unmuting does not rebuild the pairing.
  */
 function BangModSetupVoiceMuteList(AOCPlayerController Joiner)
 {
@@ -742,15 +729,10 @@ function BangModLogAdminAction(AOCPlayerController Sender, string Action, string
 }
 
 /**
- * Spawn BangMod's remote console instead of the vanilla one.
- *
- * AOCGame.InitRemoteConsole hardcodes Spawn(class'AOCRCon'), so this override is the
- * only hook needed -- BangModRCon extends AOCRCon, so every vanilla opcode, the auth
- * handshake and all the outbound GameEvent_* calls keep working untouched. It only
- * adds handling for opcodes the base class ignores.
- *
- * The AllActors sweep and the dedicated-server check are kept exactly as vanilla has
- * them: the console survives a level change and must not exist on a listen server.
+ * Spawn BangMod's remote console instead of the vanilla one. AOCGame.InitRemoteConsole
+ * hardcodes Spawn(class'AOCRCon'), so this is the only hook needed -- BangModRCon extends
+ * AOCRCon, so vanilla opcodes, auth and the GameEvent_* calls keep working untouched.
+ * The AllActors sweep and dedicated-server check are vanilla's, kept verbatim.
  */
 function InitRemoteConsole(string Options)
 {

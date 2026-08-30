@@ -1,10 +1,7 @@
 /**
- * Admin actions that are wanted from two places at once: the in-game chat commands in
- * BangModGame.uci, and the RCON handlers in BangModRCon.
- *
- * A static helper class rather than functions on the game, because the game class differs
- * per mode (BangModTO, BangModTD, BangModLTS...) and BangModRCon has no single type to cast
- * WorldInfo.Game to. Statics on an Object subclass are reachable from both without a cast.
+ * Admin actions wanted from both the chat commands in BangModGame.uci and the RCON handlers.
+ * Statics on an Object rather than functions on the game, because the game class differs per
+ * mode and BangModRCon has no single type to cast WorldInfo.Game to.
  */
 class BangModAdminActions extends Object;
 
@@ -15,11 +12,8 @@ const TELEPORT_RADIUS = 120.0;
 const TELEPORT_LIFT = 40.0;
 
 /**
- * Finds exactly one player by a case-insensitive partial name.
- *
- * Reports the match count rather than just returning none, so a caller can tell "no such
- * player" from "you typed something three people match" -- getting the wrong one of those
- * silently is how an admin ends up slapping the wrong person.
+ * Exactly one player by case-insensitive partial name. Reports the match count so a caller
+ * can tell "no such player" from "three people match" -- guessing is how you slap the wrong one.
  */
 static function AOCPlayerController FindByName(WorldInfo WI, string Partial, out int MatchCount)
 {
@@ -36,8 +30,7 @@ static function AOCPlayerController FindByName(WorldInfo WI, string Partial, out
 		if (PC.PlayerReplicationInfo == none)
 			continue;
 
-		// An exact name wins outright, so someone called "Bob" is still reachable when
-		// "Bobby" and "Bobcat" are also on the server.
+		// Exact name wins outright, so "Bob" stays reachable next to "Bobby" and "Bobcat".
 		if (Locs(PC.PlayerReplicationInfo.PlayerName) == Needle)
 		{
 			MatchCount = 1;
@@ -55,12 +48,8 @@ static function AOCPlayerController FindByName(WorldInfo WI, string Partial, out
 }
 
 /**
- * Puts Mover next to Dest.
- *
- * SetLocation is native(267) and returns FALSE when the destination is blocked, so this
- * walks a ring of candidate spots rather than assuming the first one is free -- dropping a
- * player inside the one they were sent to would either fail silently or telefrag.
- * Velocity is cleared so nobody arrives still carrying a sprint.
+ * Puts Mover next to Dest. SetLocation returns FALSE when the spot is blocked, so this rings
+ * the destination rather than dropping someone inside them. Velocity is cleared on arrival.
  */
 static function bool Teleport(Pawn Mover, Pawn Dest)
 {
@@ -89,8 +78,7 @@ static function bool Teleport(Pawn Mover, Pawn Dest)
 		}
 	}
 
-	// Everything around them was blocked. Directly above is the last resort -- a short
-	// drop is better than the command appearing to do nothing.
+	// All eight blocked; directly above is the last resort. A short drop beats a no-op.
 	Try = Base;
 	Try.Z += TELEPORT_RADIUS;
 	if (Mover.SetLocation(Try))
@@ -103,11 +91,8 @@ static function bool Teleport(Pawn Mover, Pawn Dest)
 }
 
 /**
- * Launches a player. No damage -- this is for getting attention, and an admin who wants
- * them dead has Kill.
- *
- * Power is the upward impulse; horizontal spread is randomised so repeated slaps do not
- * send someone along a predictable line.
+ * Launches a player. No damage -- an admin who wants them dead has Kill. Power is the upward
+ * impulse; horizontal spread is randomised so repeated slaps do not follow a line.
  */
 static function Slap(Pawn P, int Power)
 {
