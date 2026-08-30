@@ -83,6 +83,8 @@ var int   UnpauseCountdownTime;   // countdown start value (default 3)
 var PostProcessChain BangModDrunkChain;   // ChivPostProcess_drunk, from defaultproperties
 var bool bBangModDrunkChainAdded;         // true only when WE swapped the chain, so only we restore it
 
+var bool bBangModVoiceTrace;              // VoiceTrace: print remote talking notifications
+
 
 simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
 {
@@ -3097,6 +3099,19 @@ exec function ToggleSpeaking(bool bNowOn)
 }
 
 /** Reports every value that decides whether voice can work. Type VoiceDebug. */
+/**
+ * Print a line every time the voice interface reports someone else talking.
+ *
+ * The talking indicator you see when YOU press the key is LocalPlayerStartTalking, driven by
+ * your own keypress -- it lights up with the network dead. This is the other direction, and
+ * is the only client-side evidence that voice data is actually arriving.
+ */
+exec function VoiceTrace(optional bool bOn = true)
+{
+	bBangModVoiceTrace = bOn;
+	ClientDisplayConsoleMessage("VoiceTrace" @ (bOn ? "ON - talk and watch for lines" : "off"));
+}
+
 exec function VoiceDebug()
 {
 	local LocalPlayer LP;
@@ -3370,6 +3385,13 @@ function ClientNotifyPlayerTalking(UniqueNetId TalkingPlayer, bool bIsTalking)
 	local PlayerReplicationInfo PRI;
 	local Controller OwnerC;
 	local int i;
+
+	// This only fires when the Steamworks voice interface reports a REMOTE talker, so
+	// seeing a line here is proof that voice data is reaching this machine. Traced before
+	// the gates below, which can drop the notification for reasons unrelated to transport.
+	if (bBangModVoiceTrace)
+		ClientDisplayConsoleMessage("VoiceTrace: remote talker" @ TalkingPlayer.Uid.A $ ":" $ TalkingPlayer.Uid.B
+			@ "talking=" $ bIsTalking);
 
 	if (!bEnableProximityChat || WorldInfo.GRI == none || Pawn == none)
 		return;

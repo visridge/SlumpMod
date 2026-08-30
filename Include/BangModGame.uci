@@ -514,6 +514,79 @@ function BroadcastMessage(PlayerController Sender, string Message, EAOCFaction D
  * UTGame.uc:3396, so GameInfo.AllowPausing falls through to bAdminCanPause && IsAdmin, and
  * bAdminCanPause is false in UDKGame.ini. Restored on unpause.
  */
+/**
+ * BANGMOD: build the voice mute lists on join.
+ *
+ * AOCGame.SetupPlayerMuteList (:2154) is what pairs players for voice -- it walks every
+ * controller and calls GameplayUnmutePlayer both ways, which clears VoicePacketFilter and
+ * fires ClientUnmutePlayer. AOC's only live caller is the ChangeForceTeamVOIP exec (:659);
+ * the PostLogin call is commented out at :2139. So on a normal join nobody is ever paired.
+ *
+ * Not calling it directly: it dereferences CurrentFamilyInfo when bForceTeamVOIP is on, and
+ * that is None at PostLogin -- an accessed-None on every join. Same logic, guarded.
+ */
+function BangModSetupVoiceMuteList(AOCPlayerController Joiner)
+{
+    local AOCPlayerController Other;
+    local UniqueNetId ZeroId;
+    local int MyChannel, OtherChannel;
+    local bool bMute;
+
+    if (Joiner == none || Joiner.PlayerReplicationInfo == none
+        || Joiner.PlayerReplicationInfo.UniqueId == ZeroId)
+        return;
+
+    MyChannel = BangModVoiceChannelOf(Joiner);
+
+    foreach WorldInfo.AllControllers(class'AOCPlayerController', Other)
+    {
+        if (Other == Joiner || Other.PlayerReplicationInfo == none
+            || Other.PlayerReplicationInfo.UniqueId == ZeroId)
+            continue;
+
+        OtherChannel = BangModVoiceChannelOf(Other);
+
+        bMute = (MyChannel != OtherChannel)
+             || Joiner.bGlobalMute
+             || Other.bGlobalMute
+             || (AOCPRI(Other.PlayerReplicationInfo) != none && AOCPRI(Other.PlayerReplicationInfo).bIsAdminMuted)
+             || (AOCPRI(Joiner.PlayerReplicationInfo) != none && AOCPRI(Joiner.PlayerReplicationInfo).bIsAdminMuted);
+
+        if (bMute)
+        {
+            Joiner.GameplayMutePlayer(Other.PlayerReplicationInfo.UniqueId);
+            Other.GameplayMutePlayer(Joiner.PlayerReplicationInfo.UniqueId);
+        }
+        else
+        {
+            Joiner.GameplayUnmutePlayer(Other.PlayerReplicationInfo.UniqueId);
+            Other.GameplayUnmutePlayer(Joiner.PlayerReplicationInfo.UniqueId);
+        }
+    }
+}
+
+/** 0 = Agatha/all, 1 = Mason, 2 = spectator. Always 0 unless bForceTeamVOIP is on. */
+function int BangModVoiceChannelOf(AOCPlayerController PC)
+{
+    if (!bForceTeamVOIP)
+        return 0;
+
+    if (PC.IsVoluntarySpectator())
+        return 2;
+
+    // None until a class has been picked; treat as the default channel until then.
+    if (PC.CurrentFamilyInfo != none && PC.CurrentFamilyInfo.FamilyFaction == EFAC_MASON)
+        return 1;
+
+    return 0;
+}
+
+event PostLogin(PlayerController NewPlayer)
+{
+    super.PostLogin(NewPlayer);
+    BangModSetupVoiceMuteList(AOCPlayerController(NewPlayer));
+}
+
 function BangModAdminPause(AOCPlayerController Sender, bool bPause)
 {
     if (bPause)

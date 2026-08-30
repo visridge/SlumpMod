@@ -308,7 +308,10 @@ function HandleSober(AOCRConPacket Packet)
 	PlayerId = Packet.GetGUID();
 	PC = GetPlayerControllerFromGUID(PlayerId);
 	if (PC == none)
+	{
+		BangModAudit("SOBER_FAILED", DescribePlayer(PlayerId) @ "- no player controller with that id");
 		return;
+	}
 
 	BangModAudit("SOBER", PC.PlayerReplicationInfo.PlayerName);
 
@@ -428,7 +431,13 @@ function HandlePlayerListRequest()
 	local int i;
 
 	if (WorldInfo.GRI == none)
+	{
+		BangModAudit("PLAYER_LIST_FAILED", "no GameReplicationInfo yet");
+		Packet = new class'AOCRConPacket';
+		Packet.SetMessageType(RCONX_PLAYER_LIST_END);
+		SendPacket(Packet);
 		return;
+	}
 
 	for (i = 0; i < WorldInfo.GRI.PRIArray.Length; i++)
 	{
@@ -1148,8 +1157,18 @@ function SendPlayerPositions()
 	local Vector Loc;
 	local int Count, Yaw, bAlive;
 
+	// Bail out through the terminator, never by returning. The client swaps in a frame on
+	// PLAYER_POS_END; a bare return leaves it waiting and the map simply never updates,
+	// which is indistinguishable from the opcode not being implemented at all.
 	if (WorldInfo.GRI == none)
+	{
+		BangModAudit("PLAYER_POS_FAILED", "no GameReplicationInfo yet");
+		Reply = new class'AOCRConPacket';
+		Reply.SetMessageType(RCONX_PLAYER_POS_END);
+		Reply.AddInt(0);
+		SendPacket(Reply);
 		return;
+	}
 
 	foreach WorldInfo.GRI.PRIArray(PRI)
 	{
@@ -1218,7 +1237,12 @@ function HandleSetTournament(AOCRConPacket Packet)
 
 	Game = AOCGame(WorldInfo.Game);
 	if (Game == none || Game.GameReplicationInfo == none)
+	{
+		BangModAudit("TOURNAMENT_FAILED", (Game == none)
+			? "the game is not an AOCGame"
+			: "no GameReplicationInfo yet");
 		return;
+	}
 
 	Game.bTournamentMode = (bEnabled != 0);
 	AOCGRI(Game.GameReplicationInfo).bTournamentModeWaiting = Game.bTournamentMode;
