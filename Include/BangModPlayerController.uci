@@ -199,6 +199,8 @@ simulated event PostBeginPlay()
 	// the player re-enters spectate.
 	bBangModFPSpectate = true;
 
+	BangModRepairPersistedConfig();
+
 	// Sweep remote talkers into Steam's voice layer. Client-only; the guard inside the
 	// sweep handles Player not being set yet at this point.
 	if (WorldInfo.NetMode != NM_DedicatedServer && !bBangModVoiceSweepArmed)
@@ -3031,6 +3033,53 @@ exec function ToggleSpeaking(bool bNowOn)
  * whether this client considers someone else a live talker. Together they split capture
  * from transport, which the HUD indicator cannot.
  */
+/**
+ * Undo zeroed values an older build persisted into UDKSettings.ini.
+ *
+ * These are globalconfig, so the ini beats DefaultProperties. A build that wrote them out
+ * before they had sensible defaults leaves entries like
+ *
+ *     [bangmod.BangModFFAPlayerController]
+ *     bEnableProximityChat=False
+ *     ProximityChatDistance=0.000000
+ *     iBangModMinNetSpeed=0
+ *
+ * and those stick for every player who ever ran it -- silently disabling the talking
+ * indicator and the netspeed floor no matter what ships in DefaultBangMod.ini.
+ *
+ * Zero is not a legal value for either number (the netspeed opt-out is a NEGATIVE value),
+ * so treating it as "never set" is safe. The boolean is a heuristic: it is only restored
+ * when the distance is also zero, which is the stale-write signature rather than a choice
+ * -- nothing in the UI can set it.
+ */
+simulated function BangModRepairPersistedConfig()
+{
+	local bool bDirty;
+
+	if (ProximityChatDistance <= 0.0)
+	{
+		if (!bEnableProximityChat)
+			bEnableProximityChat = default.bEnableProximityChat;
+		ProximityChatDistance = default.ProximityChatDistance;
+		bDirty = true;
+	}
+
+	if (iBangModMinNetSpeed == 0)
+	{
+		iBangModMinNetSpeed = default.iBangModMinNetSpeed;
+		bDirty = true;
+	}
+
+	if (iBangModMinNetSpeedFallback == 0)
+	{
+		iBangModMinNetSpeedFallback = default.iBangModMinNetSpeedFallback;
+		bDirty = true;
+	}
+
+	if (bDirty)
+		SaveConfig();
+}
+
 exec function VoiceStatus()
 {
 	local OnlineVoiceInterface VI;
@@ -3050,9 +3099,14 @@ exec function VoiceStatus()
 		return;
 	}
 
+	// IsLocalPlayerTalking is broken for player 0 in the shipped binary: the impl tests
+	// GetVoiceDataReadyFlags() & (index*2), and index is always 0 on PC, so it returns
+	// False unconditionally. Printed for completeness, never trust it. The real capture
+	// signal is a VoiceTrace line carrying YOUR OWN uid -- the local talking delegate only
+	// fires after voice data has actually been read from Steam and queued for send.
 	ClientDisplayConsoleMessage("Headset/mic present:" @ VI.IsHeadsetPresent(LP.ControllerId));
-	ClientDisplayConsoleMessage("Capturing my mic:" @ VI.IsLocalPlayerTalking(LP.ControllerId)
-		@ "<-- hold the key and re-run; false here means Steam is not recording");
+	ClientDisplayConsoleMessage("IsLocalPlayerTalking:" @ VI.IsLocalPlayerTalking(LP.ControllerId)
+		@ "<-- ALWAYS False on PC (engine bug, index 0); use VoiceTrace instead");
 
 	if (WorldInfo.GRI == none)
 	{
@@ -3111,6 +3165,12 @@ function BangModVoiceSweep()
 		VI = OnlineSub.VoiceInterface;
 	if (VI == none || WorldInfo.GRI == none)
 		return;
+
+	// Nothing registers the local talker in a net game -- UTPlayerController only does it
+	// in standalone, and the binary has no native caller at all. Unregistered, the
+	// subsystem's local-talking delegate branch is gated off, so your own uid can never
+	// appear in VoiceTrace. Registering makes that line the end-to-end capture diagnostic.
+	VI.RegisterLocalTalker(LP.ControllerId);
 
 	VI.UnmuteAll(LP.ControllerId);
 
