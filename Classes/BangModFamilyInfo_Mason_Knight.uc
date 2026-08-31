@@ -15,9 +15,10 @@ DefaultProperties
 	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_Longsword',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
 	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_SwordOfWar',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
 	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Messer',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
-	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Flail',CForceTertiary=(class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
+	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Katana',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
 	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_HFlail',CForceTertiary=(class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
-	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_MasonFlag',CorrespondingDuelProp=EDUEL_SpearUse)
+	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_2HFlail',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
+	
 
 
 	NewSecondaryWeapons.empty;
@@ -29,7 +30,8 @@ DefaultProperties
 	NewSecondaryWeapons(5)=(CWeapon=class'BangModWeapon_WarAxe')
 	NewSecondaryWeapons(6)=(CWeapon=class'BangModWeapon_Dane')
 	NewSecondaryWeapons(7)=(CWeapon=class'BangModWeapon_Cudgel')
-
+	
+	
 	NewTertiaryWeapons.empty;
 	NewTertiaryWeapons(0)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
 	NewTertiaryWeapons(1)=(CWeapon=class'BangModWeapon_Kite_Agatha',bEnabledDefault=true)

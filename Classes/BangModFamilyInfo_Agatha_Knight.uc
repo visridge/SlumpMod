@@ -17,7 +17,8 @@ DefaultProperties
 	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_Messer',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
 	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Katana',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
 	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_HFlail',CForceTertiary=(class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
-	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_GrandHammer',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
+	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_2HFlail',CForceTertiary=(class'BangModWeapon_HuntingKnife', class'BangModWeapon_Kite_Agatha', class'BangModWeapon_TowerShield_Agatha'))
+	
 
 
 
