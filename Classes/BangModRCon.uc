@@ -1187,6 +1187,10 @@ function HandleSetTournament(AOCRConPacket Packet)
 		AOCGRI(Game.GameReplicationInfo).bBalanceTeams = false;
 		Game.bUseMaxPingLimit = false;
 		Game.bDisableTeamDamagePenalty = true;
+		// Vanilla's InitGame block also grants these (:3351); without bAdminCanPause an
+		// in-game admin's console pause is refused by AllowPausing even in tournament mode.
+		Game.bAdminCanPause = true;
+		Game.bAnyUserCanGetSteamID = true;
 	}
 	else
 	{
@@ -1272,7 +1276,7 @@ function HandleReadyAll(AOCRConPacket Packet)
  * Without the flip SetPause just returns false.
  *
  * bIsPaused lives on the BangMod PC subclasses and is not set here, so in-game "unpause"
- * (which checks the caller's own flag) cannot clear an RCON pause. Use RCON or !unpause.
+ * (which checks the caller's own flag) cannot clear an RCON pause -- unpause over RCON.
  */
 function HandleSetPause(AOCRConPacket Packet)
 {

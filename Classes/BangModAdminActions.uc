@@ -1,7 +1,6 @@
 /**
- * Admin actions wanted from both the chat commands in BangModGame.uci and the RCON handlers.
- * Statics on an Object rather than functions on the game, because the game class differs per
- * mode and BangModRCon has no single type to cast WorldInfo.Game to.
+ * Statics shared by the RCON handlers. On an Object rather than the game class because the
+ * game class differs per mode and BangModRCon has no single type to cast WorldInfo.Game to.
  */
 class BangModAdminActions extends Object;
 
@@ -11,41 +10,6 @@ const TELEPORT_RADIUS = 120.0;
 /** Vertical nudge, so an arrival is not clipped into the floor. */
 const TELEPORT_LIFT = 40.0;
 
-/**
- * Exactly one player by case-insensitive partial name. Reports the match count so a caller
- * can tell "no such player" from "three people match" -- guessing is how you slap the wrong one.
- */
-static function AOCPlayerController FindByName(WorldInfo WI, string Partial, out int MatchCount)
-{
-	local AOCPlayerController PC, Found;
-	local string Needle;
-
-	MatchCount = 0;
-	Needle = Locs(Partial);
-	if (Needle == "" || WI == none)
-		return none;
-
-	foreach WI.AllControllers(class'AOCPlayerController', PC)
-	{
-		if (PC.PlayerReplicationInfo == none)
-			continue;
-
-		// Exact name wins outright, so "Bob" stays reachable next to "Bobby" and "Bobcat".
-		if (Locs(PC.PlayerReplicationInfo.PlayerName) == Needle)
-		{
-			MatchCount = 1;
-			return PC;
-		}
-
-		if (InStr(Locs(PC.PlayerReplicationInfo.PlayerName), Needle) != INDEX_NONE)
-		{
-			MatchCount++;
-			Found = PC;
-		}
-	}
-
-	return (MatchCount == 1) ? Found : none;
-}
 
 /**
  * Puts Mover next to Dest. SetLocation returns FALSE when the spot is blocked, so this rings

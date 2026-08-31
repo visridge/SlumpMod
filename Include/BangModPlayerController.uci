@@ -86,6 +86,7 @@ var bool bBangModDrunkChainAdded;         // true only when WE swapped the chain
 var bool bBangModVoiceTrace;              // VoiceTrace: print remote talking notifications
 var globalconfig bool bBangModVoiceAutoRegister;  // sweep remote talkers into Steam's voice layer
 var bool bBangModVoiceSweepArmed;
+var bool bBangModLocalTalkerClaimed;
 
 
 simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
@@ -3017,62 +3018,38 @@ exec function ToggleSpeaking(bool bNowOn)
 }
 
 /** Reports every value that decides whether voice can work. Type VoiceDebug. */
+/** Print a line per talking notification -- the only client-side proof voice data moved. */
+/** Ground truth from the voice interface, bypassing the talking delegate. */
 /**
- * Print a line every time the voice interface reports someone else talking.
- *
- * The talking indicator you see when YOU press the key is LocalPlayerStartTalking, driven by
- * your own keypress -- it lights up with the network dead. This is the other direction, and
- * is the only client-side evidence that voice data is actually arriving.
- */
-/**
- * Ground truth from the voice interface, bypassing the talking delegate entirely.
- *
- * TalkingDelegates is filled from script but only ever invoked natively, so if it never
- * fires there is nothing script-side to inspect. These two calls are the real state:
- * IsLocalPlayerTalking says whether Steam is capturing our mic, IsRemotePlayerTalking says
- * whether this client considers someone else a live talker. Together they split capture
- * from transport, which the HUD indicator cannot.
- */
-/**
- * Undo zeroed values an older build persisted into UDKSettings.ini.
- *
- * These are globalconfig, so the ini beats DefaultProperties. A build that wrote them out
- * before they had sensible defaults leaves entries like
- *
- *     [bangmod.BangModFFAPlayerController]
- *     bEnableProximityChat=False
- *     ProximityChatDistance=0.000000
- *     iBangModMinNetSpeed=0
- *
- * and those stick for every player who ever ran it -- silently disabling the talking
- * indicator and the netspeed floor no matter what ships in DefaultBangMod.ini.
- *
- * Zero is not a legal value for either number (the netspeed opt-out is a NEGATIVE value),
- * so treating it as "never set" is safe. The boolean is a heuristic: it is only restored
- * when the distance is also zero, which is the stale-write signature rather than a choice
- * -- nothing in the UI can set it.
+ * Undo zeroed values an older build persisted into UDKSettings.ini -- globalconfig, so the
+ * ini beats DefaultProperties and the zeros stick for everyone who ever ran that build.
+ * Zero is not a legal value for either number (the netspeed opt-out is negative), so
+ * treating it as "never set" is safe; the bool is only restored alongside a zero distance,
+ * which is the stale-write signature.
  */
 simulated function BangModRepairPersistedConfig()
 {
 	local bool bDirty;
 
+	// Literals, NOT default.X: a globalconfig class default is itself loaded from the ini,
+	// so default.X IS the stale zero. Verified live.
 	if (ProximityChatDistance <= 0.0)
 	{
 		if (!bEnableProximityChat)
-			bEnableProximityChat = default.bEnableProximityChat;
-		ProximityChatDistance = default.ProximityChatDistance;
+			bEnableProximityChat = true;
+		ProximityChatDistance = 2048.0;
 		bDirty = true;
 	}
 
 	if (iBangModMinNetSpeed == 0)
 	{
-		iBangModMinNetSpeed = default.iBangModMinNetSpeed;
+		iBangModMinNetSpeed = 15000;
 		bDirty = true;
 	}
 
 	if (iBangModMinNetSpeedFallback == 0)
 	{
-		iBangModMinNetSpeedFallback = default.iBangModMinNetSpeedFallback;
+		iBangModMinNetSpeedFallback = 15000;
 		bDirty = true;
 	}
 
@@ -3099,14 +3076,17 @@ exec function VoiceStatus()
 		return;
 	}
 
-	// IsLocalPlayerTalking is broken for player 0 in the shipped binary: the impl tests
-	// GetVoiceDataReadyFlags() & (index*2), and index is always 0 on PC, so it returns
-	// False unconditionally. Printed for completeness, never trust it. The real capture
-	// signal is a VoiceTrace line carrying YOUR OWN uid -- the local talking delegate only
-	// fires after voice data has actually been read from Steam and queued for send.
+	// IsLocalPlayerTalking is flags & (index*2) in the binary -- index 0 on PC, so always
+	// False. The real capture signal is your own uid in VoiceTrace.
 	ClientDisplayConsoleMessage("Headset/mic present:" @ VI.IsHeadsetPresent(LP.ControllerId));
 	ClientDisplayConsoleMessage("IsLocalPlayerTalking:" @ VI.IsLocalPlayerTalking(LP.ControllerId)
-		@ "<-- ALWAYS False on PC (engine bug, index 0); use VoiceTrace instead");
+		@ "<-- ALWAYS False on PC (engine bug, index 0)");
+
+	// Claim OK: trace silence while speaking = Steam not capturing. Claim failed: the
+	// device was already claimed for user 0, so capture works and the trace is unavailable.
+	ClientDisplayConsoleMessage(bBangModLocalTalkerClaimed
+		? "Local talker claim: OK - self-lines in VoiceTrace are the capture test"
+		: "Local talker claim: FAILED (device already owned for user 0) - capture should work, but self-lines cannot appear; test with a listener");
 
 	if (WorldInfo.GRI == none)
 	{
@@ -3130,18 +3110,10 @@ exec function VoiceStatus()
 }
 
 /**
- * Register every other player with Steam's voice layer and clear any Steam-side mute.
- *
- * There are two mute layers and only one of them is ever touched. The engine's
- * GameplayVoiceMuteList / VoicePacketFilter decides what the SERVER relays;
- * MuteRemoteTalker / UnmuteRemoteTalker / MuteAll / UnmuteAll are Steam's own per-talker
- * state on THIS client. Nothing in AOC, UTGame or BangMod calls the second set at all, and
- * nothing script-side registers remote talkers in a net game -- the engine comment at
- * UTPlayerController.uc:469 says that happens automatically, which is only checkable by
- * doing it and seeing whether it changes anything.
- *
- * So this is the one lever script has on the receive path. Safe to run repeatedly:
- * registering an already-registered talker and unmuting an unmuted one are both no-ops.
+ * Register every other player with Steam's voice layer and clear Steam-side mute -- the
+ * second mute layer, which nothing in AOC/UTGame/BangMod ever touches. Talking delegates
+ * only fire for registered talkers (verified in the binary: no auto-registration exists).
+ * Idempotent, safe to run repeatedly.
  */
 exec function VoiceFix()
 {
@@ -3166,11 +3138,16 @@ function BangModVoiceSweep()
 	if (VI == none || WorldInfo.GRI == none)
 		return;
 
-	// Nothing registers the local talker in a net game -- UTPlayerController only does it
-	// in standalone, and the binary has no native caller at all. Unregistered, the
-	// subsystem's local-talking delegate branch is gated off, so your own uid can never
-	// appear in VoiceTrace. Registering makes that line the end-to-end capture diagnostic.
-	VI.RegisterLocalTalker(LP.ControllerId);
+	// THE capture fix. The device owner is constructed -1, StartLocalVoiceProcessing has no
+	// claim-if-free branch, and only RegisterLocalTalker claims -- which nothing calls
+	// outside standalone. Release-then-claim is safe whether or not the frontend already
+	// claimed; success also arms the local talking delegate.
+	if (!bBangModLocalTalkerClaimed)
+	{
+		VI.UnregisterLocalTalker(LP.ControllerId);
+		if (VI.RegisterLocalTalker(LP.ControllerId))
+			bBangModLocalTalkerClaimed = true;
+	}
 
 	VI.UnmuteAll(LP.ControllerId);
 
@@ -3420,17 +3397,10 @@ reliable client function ClientReceiveProximityTalker(PlayerReplicationInfo Talk
 
 // Override ClientNotifyPlayerTalking to handle proximity filtering
 /**
- * Fires when any player's talking state changes. Registered as the Steamworks talking
- * delegate at AOCPlayerController.uc:1067, so a call here means voice data arrived.
- *
- * Rewritten from a foreach DynamicActors sweep that ran on every notification -- Steam
- * raises those every 0.2s per talker, so holding the key meant a full actor sweep several
- * times a second, and a hitching client stops sending ServerMove on time. That was likely
- * the push-to-talk rubber-banding rather than anything wrong with voice itself.
- *
- * It was also broken: PRI.Owner is a Controller, so Pawn(PRI.Owner) always cast to none and
- * the proximity test could never pass. GRI.PRIArray is the replicated list, already
- * maintained, no iteration needed.
+ * Steamworks talking delegate (registered at AOCPlayerController.uc:1067) -- a call here
+ * means voice data arrived. Rewritten from a per-notification DynamicActors sweep that
+ * likely caused the push-to-talk rubber-banding, and whose Pawn(PRI.Owner) cast could
+ * never succeed (Owner is a Controller).
  */
 function ClientNotifyPlayerTalking(UniqueNetId TalkingPlayer, bool bIsTalking)
 {

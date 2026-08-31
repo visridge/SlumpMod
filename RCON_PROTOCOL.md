@@ -106,24 +106,13 @@ gate stays latched open from the previous round.
   * **60 TELEPORT** `QWord mover, QWord destination`
   * **61 SLAP** `QWord uid, int power` (clamped 50-2000 server-side, no damage)
 
-Both share `BangModAdminActions` with the in-game chat commands, so the placement logic
-exists once. `Actor.SetLocation` is `native(267)` and returns FALSE when the spot is taken,
-so `Teleport` walks a ring of eight positions around the destination before giving up --
-dropping a player inside another would otherwise fail silently or telefrag. Velocity is
-cleared so nobody arrives still carrying a sprint. Both players must be alive, and the
-failure reason is in the audit line.
+Placement logic lives in `BangModAdminActions`. `Actor.SetLocation` is `native(267)` and
+returns FALSE when the spot is taken, so `Teleport` walks a ring of eight positions around
+the destination before giving up. Velocity is cleared on arrival. Both players must be
+alive, and the failure reason is in the audit line.
 
-**In-game equivalents** are parsed out of chat in `BangModGame.BroadcastMessage`, the same
-way vanilla handles `!ready` / `!adminreadyall` (AOCGame.uc:727-755):
-
-    !bring <name>          pull a player to you
-    !goto <name>           go to a player
-    !slap <name> [power]   default power 400
-
-Admin-gated, partial names, and an ambiguous name reports the match count rather than
-guessing. The message is consumed rather than broadcast, so the command never appears in
-everyone's chat. A non-admin typing one gets it broadcast as ordinary chat, which is the
-right outcome -- silently eating it would be confusing.
+The in-game `!bring` / `!goto` / `!slap` / `!pause` chat commands were removed by decision
+on 2026-08-31 -- RCON covers all of it and the chat parser was not worth its surface area.
 
 ### 51-59 -- freeze, class, loadout, map
 
@@ -226,7 +215,7 @@ ChivAdmin ignores opcodes it does not know, so these cannot break it.
 | 41 | BAN_LIST_END | out | int count |
 | 42 | MUTE_PLAYER | in | qword uid, int mute |
 | 43 | SET_PAUSE | in | int paused |
-| | | | Goes to `AOCGame.SetPause`/`ClearPause`, not `PlayerController.SetPause` (BangMod's override there is admin-gated). `bPauseable` is forced on around the call: AOCGame inherits `bPauseable=False` from `UTGame.uc:3396`, and `bAdminCanPause=false` in UDKGame.ini, so `AllowPausing` refused every pause until this. In-game `unpause` only clears a pause the same controller set, so it cannot undo this -- use RCON or `!unpause`. |
+| | | | Goes to `AOCGame.SetPause`/`ClearPause`, not `PlayerController.SetPause` (BangMod's override there is admin-gated). `bPauseable` is forced on around the call: AOCGame inherits `bPauseable=False` from `UTGame.uc:3396`, and `bAdminCanPause=false` in UDKGame.ini, so `AllowPausing` refused every pause until this. In-game `unpause` only clears a pause the same controller set, so it cannot undo this -- unpause over RCON. |
 | 44 | END_MATCH | in | int winningTeam, string reason |
 | 45 | SET_AUTOBALANCE | in | int enabled |
 | 46 | SET_GAME_SPEED | in | int speedPercent (100 = normal, clamped 10-400) |

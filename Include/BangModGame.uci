@@ -473,44 +473,15 @@ function BroadcastMessage(PlayerController Sender, string Message, EAOCFaction D
         }
     }
 
-    // Admin chat commands are consumed here rather than broadcast. Doing it before the
-    // super call means "!slap bob" never appears in everyone's chat log.
-    if (!bSystemMessage && SenderPC != none && BangModHandleAdminCommand(SenderPC, Message))
-        return;
-
     super.BroadcastMessage(Sender, Message, DesignatedTeam, bSystemMessage, bUseCustomColor, Col);
 }
 
 /**
- * In-game admin commands typed into chat: !bring <name>, !goto <name>,
- * !slap <name> [power], !pause, !unpause. Returns true when the message was a command so
- * the caller drops it.
- *
- * Chat rather than execs so it works mid-fight without dropping to the console; vanilla
- * parses !ready the same way (AOCGame.uc:727-755). Every branch is gated on bAdmin, and a
- * non-admin's !slap just appears as chat rather than being silently eaten.
- */
-/**
- * Pause/unpause at the game level, so it works regardless of who owns the pause.
- *
- * bPauseable is forced on for the call: AOCGame inherits bPauseable=False from
- * UTGame.uc:3396, so GameInfo.AllowPausing falls through to bAdminCanPause && IsAdmin, and
- * bAdminCanPause is false in UDKGame.ini. Restored on unpause.
- */
-/**
- * Build the voice mute lists on join.
- *
- * AOCGame.SetupPlayerMuteList (:2154) pairs players for voice via GameplayUnmutePlayer,
- * which clears VoicePacketFilter and fires ClientUnmutePlayer. Its only live caller is the
- * ChangeForceTeamVOIP exec (:659) -- the PostLogin call is commented out at :2139, so on a
- * normal join nobody is ever paired. Confirmed live: running that exec over RCON, which does
- * nothing but this loop, revived voice on a server where it was dead both ways.
- *
- * Not calling it directly -- it dereferences CurrentFamilyInfo, which is None at PostLogin.
- * Same logic, guarded.
- *
- * Note AOC ties voice mute to bIsAdminMuted (:2198), the flag opcode 42 sets for TEXT mute:
- * text-muting also mutes voice, and unmuting does not rebuild the pairing.
+ * Build the voice mute lists on join. Vanilla's only live caller of SetupPlayerMuteList is
+ * the ChangeForceTeamVOIP exec (:659) -- the PostLogin call is commented out at :2139, so
+ * nobody is ever paired; confirmed live via RCON. Not called directly: it dereferences
+ * CurrentFamilyInfo, which is None at PostLogin. Note voice mute rides bIsAdminMuted
+ * (:2198), the same flag opcode 42 sets for text mute.
  */
 function BangModSetupVoiceMuteList(AOCPlayerController Joiner)
 {
@@ -574,159 +545,6 @@ event PostLogin(PlayerController NewPlayer)
     BangModSetupVoiceMuteList(AOCPlayerController(NewPlayer));
 }
 
-function BangModAdminPause(AOCPlayerController Sender, bool bPause)
-{
-    if (bPause)
-    {
-        if (WorldInfo.Pauser != none)
-        {
-            BangModTellAdmin(Sender, "The game is already paused.");
-            return;
-        }
-
-        Sender.bFire = 0;
-        bPauseable = true;
-
-        if (!SetPause(Sender))
-        {
-            bPauseable = default.bPauseable;
-            BangModTellAdmin(Sender, "The game refused the pause.");
-            return;
-        }
-        Sender.PauseRumbleForAllPlayers();
-    }
-    else
-    {
-        if (WorldInfo.Pauser == none)
-        {
-            BangModTellAdmin(Sender, "The game is not paused.");
-            return;
-        }
-
-        ClearPause();
-        bPauseable = default.bPauseable;
-        Sender.PauseRumbleForAllPlayers(false);
-    }
-
-    // SetPause broadcasts its own system message; ClearPause announces nothing.
-    if (!bPause)
-        BroadcastMessage(none, "An admin unpaused the match.", EFAC_ALL, true, true, "#4CC964");
-
-    BangModLogAdminAction(Sender, bPause ? "PAUSE" : "UNPAUSE", "");
-}
-
-function bool BangModHandleAdminCommand(AOCPlayerController Sender, string Message)
-{
-    local array<string> Parts;
-    local string Verb;
-    local AOCPlayerController Target;
-    local int Matches, Power;
-
-    if (Left(Message, 1) != "!")
-        return false;
-
-    ParseStringIntoArray(Message, Parts, " ", true);
-    if (Parts.Length == 0)
-        return false;
-
-    Verb = Locs(Parts[0]);
-    if (Verb != "!bring" && Verb != "!goto" && Verb != "!slap"
-        && Verb != "!pause" && Verb != "!unpause")
-        return false;   // not ours; let vanilla's own "!" handling see it
-
-    if (AOCPRI(Sender.PlayerReplicationInfo) == none
-        || !Sender.PlayerReplicationInfo.bAdmin)
-        return false;
-
-    // Vanilla's UnPause exec only clears a pause the SAME controller set, so it cannot
-    // undo an RCON pause. This can, and takes no target.
-    if (Verb == "!pause" || Verb == "!unpause")
-    {
-        BangModAdminPause(Sender, Verb == "!pause");
-        return true;
-    }
-
-    if (Parts.Length < 2)
-    {
-        BangModTellAdmin(Sender, "Usage:" @ Verb @ "<part of a player name>");
-        return true;
-    }
-
-    Target = class'BangModAdminActions'.static.FindByName(WorldInfo, Parts[1], Matches);
-    if (Target == none)
-    {
-        BangModTellAdmin(Sender, Matches > 1
-            ? ("\"" $ Parts[1] $ "\" matches" @ Matches @ "players - be more specific.")
-            : ("No player matching \"" $ Parts[1] $ "\"."));
-        return true;
-    }
-
-    if (Verb == "!slap")
-    {
-        Power = (Parts.Length > 2) ? int(Parts[2]) : 400;
-        Power = Clamp(Power, 50, 2000);
-
-        if (Target.Pawn == none)
-        {
-            BangModTellAdmin(Sender, Target.PlayerReplicationInfo.PlayerName @ "is not alive.");
-            return true;
-        }
-
-        class'BangModAdminActions'.static.Slap(Target.Pawn, Power);
-        BangModTellAdmin(Sender, "Slapped" @ Target.PlayerReplicationInfo.PlayerName @ "(" $ Power $ ").");
-        BangModLogAdminAction(Sender, "SLAP", Target.PlayerReplicationInfo.PlayerName @ Power);
-        return true;
-    }
-
-    // !bring and !goto are the same teleport with the ends swapped.
-    if (Sender.Pawn == none || Target.Pawn == none)
-    {
-        BangModTellAdmin(Sender, "Both players have to be alive for that.");
-        return true;
-    }
-
-    if (Verb == "!bring")
-    {
-        if (class'BangModAdminActions'.static.Teleport(Target.Pawn, Sender.Pawn))
-        {
-            BangModTellAdmin(Sender, "Brought" @ Target.PlayerReplicationInfo.PlayerName @ "to you.");
-            BangModLogAdminAction(Sender, "BRING", Target.PlayerReplicationInfo.PlayerName);
-        }
-        else
-        {
-            BangModTellAdmin(Sender, "No room around you to put them.");
-        }
-        return true;
-    }
-
-    if (class'BangModAdminActions'.static.Teleport(Sender.Pawn, Target.Pawn))
-    {
-        BangModTellAdmin(Sender, "Moved you to" @ Target.PlayerReplicationInfo.PlayerName $ ".");
-        BangModLogAdminAction(Sender, "GOTO", Target.PlayerReplicationInfo.PlayerName);
-    }
-    else
-    {
-        BangModTellAdmin(Sender, "No room around them to put you.");
-    }
-    return true;
-}
-
-/** Private reply to the admin who typed the command. */
-function BangModTellAdmin(AOCPlayerController PC, string Text)
-{
-    PC.ReceiveChatMessage(Text, EFAC_ALL, true, true, "#4DA3FF");
-}
-
-/**
- * Mirrors an in-game admin action into the server log, so chat commands land in the same
- * record as RCON ones. LogAlwaysInternal rather than the log macro -- FINAL_RELEASE makes
- * LogInternal private.
- */
-function BangModLogAdminAction(AOCPlayerController Sender, string Action, string Detail)
-{
-    LogAlwaysInternal("[BangModAdmin]" @ Action @ "by"
-        @ Sender.PlayerReplicationInfo.PlayerName @ "|" @ Detail);
-}
 
 /**
  * Spawn BangMod's remote console instead of the vanilla one. AOCGame.InitRemoteConsole
