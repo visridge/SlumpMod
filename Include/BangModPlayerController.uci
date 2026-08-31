@@ -84,6 +84,8 @@ var PostProcessChain BangModDrunkChain;   // ChivPostProcess_drunk, from default
 var bool bBangModDrunkChainAdded;         // true only when WE swapped the chain, so only we restore it
 
 var bool bBangModVoiceTrace;              // VoiceTrace: print remote talking notifications
+var globalconfig bool bBangModVoiceAutoRegister;  // sweep remote talkers into Steam's voice layer
+var bool bBangModVoiceSweepArmed;
 
 
 simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
@@ -196,6 +198,14 @@ simulated event PostBeginPlay()
 	// so the choice sticks for the whole session instead of resetting every time
 	// the player re-enters spectate.
 	bBangModFPSpectate = true;
+
+	// Sweep remote talkers into Steam's voice layer. Client-only; the guard inside the
+	// sweep handles Player not being set yet at this point.
+	if (WorldInfo.NetMode != NM_DedicatedServer && !bBangModVoiceSweepArmed)
+	{
+		bBangModVoiceSweepArmed = true;
+		SetTimer(5.0f, true, 'BangModVoiceSweepTick');
+	}
 }
 
 /*
@@ -3012,6 +3022,116 @@ exec function ToggleSpeaking(bool bNowOn)
  * your own keypress -- it lights up with the network dead. This is the other direction, and
  * is the only client-side evidence that voice data is actually arriving.
  */
+/**
+ * Ground truth from the voice interface, bypassing the talking delegate entirely.
+ *
+ * TalkingDelegates is filled from script but only ever invoked natively, so if it never
+ * fires there is nothing script-side to inspect. These two calls are the real state:
+ * IsLocalPlayerTalking says whether Steam is capturing our mic, IsRemotePlayerTalking says
+ * whether this client considers someone else a live talker. Together they split capture
+ * from transport, which the HUD indicator cannot.
+ */
+exec function VoiceStatus()
+{
+	local OnlineVoiceInterface VI;
+	local LocalPlayer LP;
+	local PlayerReplicationInfo PRI;
+	local int i, Others;
+
+	LP = LocalPlayer(Player);
+	VI = VoiceInterface;
+	if (VI == none && OnlineSub != none)
+		VI = OnlineSub.VoiceInterface;
+
+	ClientDisplayConsoleMessage("---- BangMod voice status ----");
+	if (VI == none || LP == none)
+	{
+		ClientDisplayConsoleMessage("No voice interface or no local player - nothing else can work.");
+		return;
+	}
+
+	ClientDisplayConsoleMessage("Headset/mic present:" @ VI.IsHeadsetPresent(LP.ControllerId));
+	ClientDisplayConsoleMessage("Capturing my mic:" @ VI.IsLocalPlayerTalking(LP.ControllerId)
+		@ "<-- hold the key and re-run; false here means Steam is not recording");
+
+	if (WorldInfo.GRI == none)
+	{
+		ClientDisplayConsoleMessage("No GRI yet.");
+		return;
+	}
+
+	for (i = 0; i < WorldInfo.GRI.PRIArray.Length; i++)
+	{
+		PRI = WorldInfo.GRI.PRIArray[i];
+		if (PRI == none || PRI == PlayerReplicationInfo)
+			continue;
+
+		Others++;
+		ClientDisplayConsoleMessage("  " $ PRI.PlayerName $ ": talking=" $ VI.IsRemotePlayerTalking(PRI.UniqueId));
+	}
+
+	if (Others == 0)
+		ClientDisplayConsoleMessage("  (nobody else on the server)");
+	ClientDisplayConsoleMessage("------------------------------");
+}
+
+/**
+ * Register every other player with Steam's voice layer and clear any Steam-side mute.
+ *
+ * There are two mute layers and only one of them is ever touched. The engine's
+ * GameplayVoiceMuteList / VoicePacketFilter decides what the SERVER relays;
+ * MuteRemoteTalker / UnmuteRemoteTalker / MuteAll / UnmuteAll are Steam's own per-talker
+ * state on THIS client. Nothing in AOC, UTGame or BangMod calls the second set at all, and
+ * nothing script-side registers remote talkers in a net game -- the engine comment at
+ * UTPlayerController.uc:469 says that happens automatically, which is only checkable by
+ * doing it and seeing whether it changes anything.
+ *
+ * So this is the one lever script has on the receive path. Safe to run repeatedly:
+ * registering an already-registered talker and unmuting an unmuted one are both no-ops.
+ */
+exec function VoiceFix()
+{
+	BangModVoiceSweep();
+	ClientDisplayConsoleMessage("VoiceFix applied - run VoiceStatus, then have someone talk.");
+}
+
+function BangModVoiceSweep()
+{
+	local OnlineVoiceInterface VI;
+	local LocalPlayer LP;
+	local PlayerReplicationInfo PRI;
+	local int i;
+
+	LP = LocalPlayer(Player);
+	if (LP == none)
+		return;
+
+	VI = VoiceInterface;
+	if (VI == none && OnlineSub != none)
+		VI = OnlineSub.VoiceInterface;
+	if (VI == none || WorldInfo.GRI == none)
+		return;
+
+	VI.UnmuteAll(LP.ControllerId);
+
+	for (i = 0; i < WorldInfo.GRI.PRIArray.Length; i++)
+	{
+		PRI = WorldInfo.GRI.PRIArray[i];
+		if (PRI == none || PRI == PlayerReplicationInfo)
+			continue;
+
+		VI.RegisterRemoteTalker(PRI.UniqueId);
+		VI.UnmuteRemoteTalker(LP.ControllerId, PRI.UniqueId, false);
+	}
+}
+
+/** Re-sweep periodically so players who join later are picked up too. */
+function BangModVoiceSweepTick()
+{
+	if (bBangModVoiceAutoRegister)
+		BangModVoiceSweep();
+}
+
 exec function VoiceTrace(optional bool bOn = true)
 {
 	bBangModVoiceTrace = bOn;
@@ -3467,6 +3587,7 @@ DefaultProperties
 	
 	// Proximity voice chat defaults
 	ProximityChatDistance=2048.0  // About 39 meters (typical medieval battle communication range)
+	bBangModVoiceAutoRegister=true
 	iBangModMinNetSpeed=15000
 	iBangModMinNetSpeedFallback=15000
 	bEnableProximityChat=true
