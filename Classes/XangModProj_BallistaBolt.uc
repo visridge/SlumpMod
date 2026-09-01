@@ -6,7 +6,7 @@
 * Bolt projectile for AOCSWPBallista.
 */
 
-class BangModProj_BallistaBolt extends AOCProj_BallistaBolt;
+class XangModProj_BallistaBolt extends AOCProj_BallistaBolt;
 
 var repnotify bool bCollidedWorld;
 var int PawnPassThroughCount;

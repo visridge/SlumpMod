@@ -1,4 +1,4 @@
-class BangModAOCDuelPawn extends BangModPawn;
+class XangModAOCDuelPawn extends XangModPawn;
 
-`include(BangMod/Include/BangModAOCDuel.uci)
-`include(BangMod/Include/BangModPawn.uci)
+`include(XangMod/Include/XangModAOCDuel.uci)
+`include(XangMod/Include/XangModPawn.uci)

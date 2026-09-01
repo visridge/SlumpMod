@@ -1,5 +1,5 @@
 
-class BangModCharacterInfo_Agatha_Archer extends AOCCharacterInfo_Agatha_Archer;
+class XangModCharacterInfo_Agatha_Archer extends AOCCharacterInfo_Agatha_Archer;
 defaultproperties
 {
 // ...existing code...

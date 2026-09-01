@@ -1,5 +1,5 @@
 
-class BangModCharacterInfo_Mason_Archer extends AOCCharacterInfo_Mason_Archer;
+class XangModCharacterInfo_Mason_Archer extends AOCCharacterInfo_Mason_Archer;
 defaultproperties
 {
 	/** Pull this out into the Helmets etc. arrays */
@@ -148,7 +148,7 @@ defaultproperties
 
 
 	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_Cowboy", StaticMeshPath="CH_SlumpMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
-	Helmets.Add((SkeletalMeshPath="CH_BangMod.SK_baseball", StaticMeshPath="CH_BangMod.SM_baseball", GearData=(GroupHexID="170000002457482", GearNameID=Oakland_As, bVisibleInSelectorIfUnowned=false)))
+	Helmets.Add((SkeletalMeshPath="CH_XangMod.SK_baseball", StaticMeshPath="CH_XangMod.SM_baseball", GearData=(GroupHexID="170000002457482", GearNameID=Oakland_As, bVisibleInSelectorIfUnowned=false)))
 	Helmets.Add((SkeletalMeshPath="TourneyHat.SK_mask", StaticMeshPath="TourneyHat.SM_mask", GearData=(GroupHexID="1700000027D5452", GearNameID=DMKS, bVisibleInSelectorIfUnowned=false)))
 
 }

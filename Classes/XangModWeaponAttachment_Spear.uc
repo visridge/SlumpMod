@@ -5,11 +5,11 @@
 *
 * Weapon Attachment: Spear.
 */
-class BangModWeaponAttachment_Spear extends AOCWeaponAttachment_Spear;
+class XangModWeaponAttachment_Spear extends AOCWeaponAttachment_Spear;
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -23,7 +23,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Spear
-	WeaponClass=class'BangModWeapon_Spear'
+	WeaponClass=class'XangModWeapon_Spear'
 	WeaponSocket=wep2hpoint
 	bUseAlternativeKick=true
 

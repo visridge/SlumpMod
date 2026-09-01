@@ -4,7 +4,7 @@
 * The weapon class to contain information for the Kanabo.
 * Based on GrandMace timings/values/animations.
 */
-class BangModWeapon_Kanabo extends BangModMeleeWeapon;
+class XangModWeapon_Kanabo extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -100,8 +100,8 @@ DefaultProperties
 	EncircleRadius=25.0f
 	EffectiveDistance=200.0f
 	
-	AttachmentClass=class'BangModWeaponAttachment_Kanabo'
-	InventoryAttachmentClass=class'BangModWeaponInventory_Kanabo'
+	AttachmentClass=class'XangModWeaponAttachment_Kanabo'
+	InventoryAttachmentClass=class'XangModWeaponInventory_Kanabo'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_GrandMace
 	CurrentShieldType=ESHIELD_None
@@ -214,7 +214,7 @@ DefaultProperties
 	BloodSprayTemplates(1)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
-	WeaponIdentifier="doubleaxe"  // Use doubleaxe for proper 2H idle stance; BangModDodge remaps this to "qstaff" for dodge anims
+	WeaponIdentifier="doubleaxe"  // Use doubleaxe for proper 2H idle stance; XangModDodge remaps this to "qstaff" for dodge anims
 	WeaponName="Kanabo"
 
 	CurrentGenWeaponType=EWT_2handsword

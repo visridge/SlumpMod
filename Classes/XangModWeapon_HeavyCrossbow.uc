@@ -5,7 +5,7 @@
 *
 * Crossbow.
 */
-class BangModWeapon_HeavyCrossbow extends BangModWeapon_Crossbow;
+class XangModWeapon_HeavyCrossbow extends XangModWeapon_Crossbow;
 
 DefaultProperties
 {

@@ -5,7 +5,7 @@
 * 
 * The weapon that is replicated to all clients: Morning Star
 */
-class BangModWeaponAttachment_MorningStar extends AOCWeaponAttachment_MorningStar;
+class XangModWeaponAttachment_MorningStar extends AOCWeaponAttachment_MorningStar;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -28,7 +28,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -42,7 +42,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Broadsword
-	WeaponClass=class'BangModWeapon_MorningStar'
+	WeaponClass=class'XangModWeapon_MorningStar'
 
 	WeaponSocket=wep1hpoint
 	WeaponStaticMeshScale=1

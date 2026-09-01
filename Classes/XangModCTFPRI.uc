@@ -1,4 +1,4 @@
-class BangModCTFPRI extends AOCPRI;
+class XangModCTFPRI extends AOCPRI;
 
-`include(BangMod/Include/BangModCTF.uci)
-`include(BangMod/Include/BangModPRI.uci)
+`include(XangMod/Include/XangModCTF.uci)
+`include(XangMod/Include/XangModPRI.uci)

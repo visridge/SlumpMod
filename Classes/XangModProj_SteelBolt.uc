@@ -5,7 +5,7 @@
 *
 * Steel Bolt
 */
-class BangModProj_SteelBolt extends AOCProj_SteelBolt;
+class XangModProj_SteelBolt extends AOCProj_SteelBolt;
 
 defaultproperties
 {

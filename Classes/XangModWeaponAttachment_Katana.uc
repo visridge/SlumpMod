@@ -5,7 +5,7 @@
 *
 * Weapon attachment: Katana (2H) - Mirrors Longsword values, uses DWKatana mesh
 */
-class BangModWeaponAttachment_Katana extends AOCWeaponAttachment_Longsword;
+class XangModWeaponAttachment_Katana extends AOCWeaponAttachment_Longsword;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -28,7 +28,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -44,7 +44,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Longsword
-	WeaponClass=class'BangModWeapon_Katana'
+	WeaponClass=class'XangModWeapon_Katana'
 	WeaponSocket=wep2hpoint
 
 	bUseAlternativeKick=true

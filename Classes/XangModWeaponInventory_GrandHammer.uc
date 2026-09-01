@@ -5,7 +5,7 @@
 *
 * The inventory attachment for weapons: Grand Hammer.
 */
-class BangModWeaponInventory_GrandHammer extends AOCInventoryAttachment;
+class XangModWeaponInventory_GrandHammer extends AOCInventoryAttachment;
 
 DefaultProperties
 {

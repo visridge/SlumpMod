@@ -4,7 +4,7 @@
 //to add even more variety. See the ParseOption function in Src\Engine\Classes\GameInfo.uc
 var config array<GameTypePrefix> SDKPrefixes;
 
-// Local stats bridge. These values are per game-mode class in DefaultBangMod.ini.
+// Local stats bridge. These values are per game-mode class in DefaultXangMod.ini.
 // Keep it disabled until the Chivalry dedicated server and local backend run on
 // the same machine, then configure a non-empty API key before enabling it.
 var config bool bEnableStatsReporting;
@@ -13,11 +13,11 @@ var config string StatsApiKey;
 var config string StatsServerId;
 var config float StatsReportInterval;
 
-// BANGMOD: watchdog on the tournament ready gate. Vanilla never gives up, so a gate that
+// XANGMOD: watchdog on the tournament ready gate. Vanilla never gives up, so a gate that
 // can never be satisfied leaves the server in a permanent pre-round. Turns a brick into
 // a delay.
-var config float fBangModTournamentHoldLimit;   // seconds before giving up; 0 disables
-var float fBangModTournamentHoldSince;          // when the gate first blocked; 0 = not blocking
+var config float fXangModTournamentHoldLimit;   // seconds before giving up; 0 disables
+var float fXangModTournamentHoldSince;          // when the gate first blocked; 0 = not blocking
 
 var string StatsMatchId;
 var bool bStatsRequestInFlight;
@@ -136,27 +136,27 @@ function bool ShouldCountDown()
 
         if (bReadyGateOpen)
         {
-            fBangModTournamentHoldSince = 0;
+            fXangModTournamentHoldSince = 0;
             return true;
         }
 
-        if (fBangModTournamentHoldSince == 0)
+        if (fXangModTournamentHoldSince == 0)
         {
-            fBangModTournamentHoldSince = WorldInfo.TimeSeconds;
+            fXangModTournamentHoldSince = WorldInfo.TimeSeconds;
         }
-        else if (fBangModTournamentHoldLimit > 0
-                 && WorldInfo.TimeSeconds - fBangModTournamentHoldSince > fBangModTournamentHoldLimit)
+        else if (fXangModTournamentHoldLimit > 0
+                 && WorldInfo.TimeSeconds - fXangModTournamentHoldSince > fXangModTournamentHoldLimit)
         {
             // Only StartRound clears bTournamentMode, and it cannot run while this
             // returns false -- so give up rather than hold the server hostage.
-            LogAlwaysInternal("[BangMod] Tournament ready gate held the pre-round for"
-                @ int(fBangModTournamentHoldLimit) @ "seconds. Dropping tournament mode.");
+            LogAlwaysInternal("[XangMod] Tournament ready gate held the pre-round for"
+                @ int(fXangModTournamentHoldLimit) @ "seconds. Dropping tournament mode.");
             S_BroadcastServerMessage("Tournament mode could not start the round. Starting normally.");
 
             bTournamentMode = false;
             if (AOCGRI(GameReplicationInfo) != none)
                 AOCGRI(GameReplicationInfo).bTournamentModeWaiting = false;
-            fBangModTournamentHoldSince = 0;
+            fXangModTournamentHoldSince = 0;
 
             return (bEachTeamHasAtleastOnePlayer || !bWaitForTeams);
         }
@@ -288,13 +288,13 @@ function StartMatch()
 
     BeginStatsReporting();
 
-    // BANGMOD: make catapults permanently destructible (see DisableCatapultRespawns). One
+    // XANGMOD: make catapults permanently destructible (see DisableCatapultRespawns). One
     // immediate pass covers catapults already on the map, and a low-frequency looping sweep
     // catches any destroyed or Kismet-spawned later in the round.
     DisableCatapultRespawns();
     SetTimer(3.0, true, 'DisableCatapultRespawns');
 
-    // BANGMOD: disable siege weapons and non-objective gates on Slumforest only.
+    // XANGMOD: disable siege weapons and non-objective gates on Slumforest only.
     // Objective-tied AOCInterpActor instances (e.g. Darkforest doors, peasant gates) are
     // excluded via IsPartOfObjective(). Repeated on a timer to catch Kismet-spawned actors.
     // DisableSiegeObjects();
@@ -483,7 +483,7 @@ function BroadcastMessage(PlayerController Sender, string Message, EAOCFaction D
  * CurrentFamilyInfo, which is None at PostLogin. Note voice mute rides bIsAdminMuted
  * (:2198), the same flag opcode 42 sets for text mute.
  */
-function BangModSetupVoiceMuteList(AOCPlayerController Joiner)
+function XangModSetupVoiceMuteList(AOCPlayerController Joiner)
 {
     local AOCPlayerController Other;
     local UniqueNetId ZeroId;
@@ -494,7 +494,7 @@ function BangModSetupVoiceMuteList(AOCPlayerController Joiner)
         || Joiner.PlayerReplicationInfo.UniqueId == ZeroId)
         return;
 
-    MyChannel = BangModVoiceChannelOf(Joiner);
+    MyChannel = XangModVoiceChannelOf(Joiner);
 
     foreach WorldInfo.AllControllers(class'AOCPlayerController', Other)
     {
@@ -502,7 +502,7 @@ function BangModSetupVoiceMuteList(AOCPlayerController Joiner)
             || Other.PlayerReplicationInfo.UniqueId == ZeroId)
             continue;
 
-        OtherChannel = BangModVoiceChannelOf(Other);
+        OtherChannel = XangModVoiceChannelOf(Other);
 
         bMute = (MyChannel != OtherChannel)
              || Joiner.bGlobalMute
@@ -524,7 +524,7 @@ function BangModSetupVoiceMuteList(AOCPlayerController Joiner)
 }
 
 /** 0 = Agatha/all, 1 = Mason, 2 = spectator. Always 0 unless bForceTeamVOIP is on. */
-function int BangModVoiceChannelOf(AOCPlayerController PC)
+function int XangModVoiceChannelOf(AOCPlayerController PC)
 {
     if (!bForceTeamVOIP)
         return 0;
@@ -542,13 +542,13 @@ function int BangModVoiceChannelOf(AOCPlayerController PC)
 event PostLogin(PlayerController NewPlayer)
 {
     super.PostLogin(NewPlayer);
-    BangModSetupVoiceMuteList(AOCPlayerController(NewPlayer));
+    XangModSetupVoiceMuteList(AOCPlayerController(NewPlayer));
 }
 
 
 /**
- * Spawn BangMod's remote console instead of the vanilla one. AOCGame.InitRemoteConsole
- * hardcodes Spawn(class'AOCRCon'), so this is the only hook needed -- BangModRCon extends
+ * Spawn XangMod's remote console instead of the vanilla one. AOCGame.InitRemoteConsole
+ * hardcodes Spawn(class'AOCRCon'), so this is the only hook needed -- XangModRCon extends
  * AOCRCon, so vanilla opcodes, auth and the GameEvent_* calls keep working untouched.
  * The AllActors sweep and dedicated-server check are vanilla's, kept verbatim.
  */
@@ -568,8 +568,8 @@ function InitRemoteConsole(string Options)
 
 	if (RemoteConsole == none)
 	{
-		RemoteConsole = Spawn(class'BangModRCon');
-		LogAlwaysInternal("[BangModRCon] remote console started (extended opcodes 23-37 available)");
+		RemoteConsole = Spawn(class'XangModRCon');
+		LogAlwaysInternal("[XangModRCon] remote console started (extended opcodes 23-37 available)");
 	}
 }
 
@@ -577,7 +577,7 @@ DefaultProperties
 {
     // Five minutes. Long enough that a real match night never trips it, short enough that a
     // stuck server recovers on its own instead of needing a restart. 0 disables.
-    fBangModTournamentHoldLimit=300.0
+    fXangModTournamentHoldLimit=300.0
 
     PlayerControllerClass=class'`{GAMEMODE}PlayerController'
     DefaultPawnClass=class'`{GAMEMODE}Pawn'
@@ -585,23 +585,23 @@ DefaultProperties
     PlayerReplicationInfoClass=class'`{GAMEMODE}PRI'
 
     // "addbots" bot AI: smarter melee bots (skill floor + better threat awareness).
-    // See BangMod/Classes/BangModAOCCombatBot.uc. Shared by every BangMod game mode.
-    DefaultAIControllerClass=class'BangModAOCCombatBot'
+    // See XangMod/Classes/XangModAOCCombatBot.uc. Shared by every XangMod game mode.
+    DefaultAIControllerClass=class'XangModAOCCombatBot'
 
     //This is the name that shows in the server browser for this mod:
     ModDisplayString="SlumpMod 2.5.0"
 
     Families.Empty;
-    Families(ECLASS_Archer)=class'BangModFamilyInfo_Agatha_Archer'
-    Families(ECLASS_ManAtArms)=class'BangModFamilyInfo_Agatha_ManAtArms'
-    Families(ECLASS_Vanguard)=class'BangModFamilyInfo_Agatha_Vanguard'
-    Families(ECLASS_Knight)=class'BangModFamilyInfo_Agatha_Knight'
-    Families(ECLASS_SiegeEngineer)=class'BangModFamilyInfo_Agatha_Assassin'
-    Families(5)=class'BangModFamilyInfo_Mason_Archer'
-    Families(6)=class'BangModFamilyInfo_Mason_ManAtArms'
-    Families(7)=class'BangModFamilyInfo_Mason_Vanguard'
-    Families(8)=class'BangModFamilyInfo_Mason_Knight'
-    Families(9)=class'BangModFamilyInfo_Mason_Assassin'
+    Families(ECLASS_Archer)=class'XangModFamilyInfo_Agatha_Archer'
+    Families(ECLASS_ManAtArms)=class'XangModFamilyInfo_Agatha_ManAtArms'
+    Families(ECLASS_Vanguard)=class'XangModFamilyInfo_Agatha_Vanguard'
+    Families(ECLASS_Knight)=class'XangModFamilyInfo_Agatha_Knight'
+    Families(ECLASS_SiegeEngineer)=class'XangModFamilyInfo_Agatha_Assassin'
+    Families(5)=class'XangModFamilyInfo_Mason_Archer'
+    Families(6)=class'XangModFamilyInfo_Mason_ManAtArms'
+    Families(7)=class'XangModFamilyInfo_Mason_Vanguard'
+    Families(8)=class'XangModFamilyInfo_Mason_Knight'
+    Families(9)=class'XangModFamilyInfo_Mason_Assassin'
 
     MinimumRespawnTime = 10.0f
     MaximumRespawnTime = 10.0f
@@ -614,7 +614,7 @@ DefaultProperties
 
 }
 
-// BANGMOD: Make catapults permanently destructible — once broken they stay a broken wreck for
+// XANGMOD: Make catapults permanently destructible — once broken they stay a broken wreck for
 // the rest of the round instead of self-repairing.
 //
 // Catapults (AOCSWCatapult) are placed directly in maps as the AOC class, so we can't subclass
@@ -653,7 +653,7 @@ function DisableCatapultRespawns()
 }
 
 // ---------------------------------------------------------------------------
-// BANGMOD: Disable ballistae, catapults, and non-objective gates on Slumforest.
+// XANGMOD: Disable ballistae, catapults, and non-objective gates on Slumforest.
 //
 // Ballistae / catapults: set health to zero and prevent repair so they stay as
 // broken wrecks (or are already destroyed).

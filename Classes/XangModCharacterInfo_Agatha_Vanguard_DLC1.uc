@@ -4,7 +4,7 @@
 * Original Author: Brady Brenot
 * 
 */
-class BangModCharacterInfo_Agatha_Vanguard_DLC1 extends AOCCharacterInfo_Agatha_Vanguard;
+class XangModCharacterInfo_Agatha_Vanguard_DLC1 extends AOCCharacterInfo_Agatha_Vanguard;
 
 defaultproperties
 {
@@ -14,14 +14,14 @@ defaultproperties
 
 	CharacterMeshPath="CH_AgathaVanguard_DLC1.models.SK_CH_3P_AgathaVanguard01"
 	DecapMeshPath="CH_AgathaVanguard_DLC1.models.SK_CH_3P_AgathaVanguard01_Gore"
-	OwnerMeshPath="BangmodCharacters.AgathaVanguardDLC1p"
+	OwnerMeshPath="XangmodCharacters.AgathaVanguardDLC1p"
 
 	HeadMaterialPath="CH_AgathaVanguard_DLC1.Materials.MI_CH_3P_MasonVanguard_DLC1_Body"
 	BodyMaterialPath="CH_AgathaVanguard_DLC1.Materials.MI_CH_3P_MasonArcher_Head"
 
 	StandinMesh=SkeletalMesh'CH_AgathaVanguard_DLC1.models.SK_CH_3P_AgathaVanguard01'
 	StandinDecapMesh=SkeletalMesh'CH_AgathaVanguard_DLC1.models.SK_CH_3P_AgathaVanguard01_Gore'
-	StandinOwnerMesh=SkeletalMesh'BangmodCharacters.AgathaVanguardDLC1p'
+	StandinOwnerMesh=SkeletalMesh'XangmodCharacters.AgathaVanguardDLC1p'
 	StandinHeadMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST'
 	StandinBodyMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST'
 

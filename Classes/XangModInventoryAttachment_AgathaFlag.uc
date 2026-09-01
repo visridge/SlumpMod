@@ -3,10 +3,10 @@
 *
 * Original Author: Michael Bao
 *
-* BangMod Inventory Attachment: Agatha Flag
+* XangMod Inventory Attachment: Agatha Flag
 * Flag will never be inventory.
 */
-class BangModInventoryAttachment_AgathaFlag extends AOCInventoryAttachment_AgathaFlag;
+class XangModInventoryAttachment_AgathaFlag extends AOCInventoryAttachment_AgathaFlag;
 
 DefaultProperties
 {

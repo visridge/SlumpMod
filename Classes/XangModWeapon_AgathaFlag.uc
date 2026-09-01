@@ -3,15 +3,15 @@
 *
 * Original Author: Michael Bao
 *
-* BangMod Weapon: Agatha Flag.
+* XangMod Weapon: Agatha Flag.
 * Extends AOCWeapon_AgathaFlag so we can nerf stats without touching AOC files.
 */
-class BangModWeapon_AgathaFlag extends AOCWeapon_AgathaFlag;
+class XangModWeapon_AgathaFlag extends AOCWeapon_AgathaFlag;
 
 defaultproperties
 {
-	AttachmentClass=class'BangModWeaponAttachment_AgathaFlag'
-	InventoryAttachmentClass=class'BangModInventoryAttachment_AgathaFlag'
+	AttachmentClass=class'XangModWeaponAttachment_AgathaFlag'
+	InventoryAttachmentClass=class'XangModInventoryAttachment_AgathaFlag'
 
 	// Reuse spear icon for loadout screen
 	WeaponFontSymbol="7"

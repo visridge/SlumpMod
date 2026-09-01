@@ -5,7 +5,7 @@
 *
 * Weapon: Grand Lance.
 */
-class BangModWeapon_GrandLance extends BangModMeleeWeapon;
+class XangModWeapon_GrandLance extends XangModMeleeWeapon;
 
 /** Normalized point (0-1) in the release where playback speed changes */
 var float fReleaseDilatePoint;
@@ -90,7 +90,7 @@ simulated state Release
 		// Enable forced sprint+forward on the pawn for stab releases.
 		if (CurrentFireMode == Attack_Stab && AOCOwner != none)
 		{
-			BangModPawn(AOCOwner).bForceSprintForward = true;
+			XangModPawn(AOCOwner).bForceSprintForward = true;
 
 			// Lock jump and crouch during the charge so the forced sprint isn't cancelled.
 			AOCOwner.StateVariables.bCanJump = false;
@@ -118,7 +118,7 @@ simulated state Release
 
 	/** Always stop on hit — enemy or teammate — same as vanilla team-hit flinch.
 	 *  The self-flinch for successful stab hits is handled server-side in
-	 *  BangModPawn.ProcessResolvedAttack. */
+	 *  XangModPawn.ProcessResolvedAttack. */
 	simulated function ActivateHitAnim(EDirection Direction, bool bSameTeam)
 	{
 		ClientSetHit(true);
@@ -209,7 +209,7 @@ simulated state Release
 		// Release the sprint-forward lock and restore jump/crouch on the pawn.
 		if (AOCOwner != none)
 		{
-			BangModPawn(AOCOwner).bForceSprintForward = false;
+			XangModPawn(AOCOwner).bForceSprintForward = false;
 			AOCOwner.StateVariables.bCanJump = true;
 			AOCOwner.StateVariables.bCanCrouch = true;
 		}
@@ -343,7 +343,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_GrandLance'
+	AttachmentClass=class'XangModWeaponAttachment_GrandLance'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Halberd'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Halberd

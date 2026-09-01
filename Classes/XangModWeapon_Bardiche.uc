@@ -5,7 +5,7 @@
 *
 * Weapon: Bardiche.
 */
-class BangModWeapon_Bardiche extends BangModMeleeWeapon;
+class XangModWeapon_Bardiche extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -216,7 +216,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Bardiche'
+	AttachmentClass=class'XangModWeaponAttachment_Bardiche'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Bardiche'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Bardiche

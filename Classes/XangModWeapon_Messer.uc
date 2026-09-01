@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Messer.
 */
-class BangModWeapon_Messer extends BangModMeleeWeapon;
+class XangModWeapon_Messer extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -167,7 +167,7 @@ Begin Object class=AnimNodeSequence Name=MeshSequenceA
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Messer'
+	AttachmentClass=class'XangModWeaponAttachment_Messer'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Messer'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Messer
@@ -176,7 +176,7 @@ Begin Object class=AnimNodeSequence Name=MeshSequenceA
 	WeaponIdentifier="longsword"
 
 	CurrentGenWeaponType=EWT_2handsword
-	AlternativeMode=class'BangModWeapon_Messer1H'
+	AlternativeMode=class'XangModWeapon_Messer1H'
 
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Messer]

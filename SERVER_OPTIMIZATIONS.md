@@ -1,4 +1,4 @@
-# BangMod 165Hz Server Optimizations (No Map Access Required)
+# XangMod 165Hz Server Optimizations (No Map Access Required)
 
 ## Current Performance Status
 
@@ -14,20 +14,20 @@
 ## ✅ Already Implemented & Working
 
 ### 1. 165Hz Player Network Updates
-**Location:** BangModPlayerController.uci line 410
+**Location:** XangModPlayerController.uci line 410
 ```unrealscript
 NetMoveDelta = 0.00606;  // ~165Hz vs vanilla 20Hz
 ```
 **Impact:** Smooth competitive netcode, low latency player movement
 
 ### 2. 165Hz Component Replication
-- **BangModPlayerController:** `NetUpdateFrequency=165`
-- **BangModPawn:** `NetUpdateFrequency=165`
-- **BangModWeaponAttachment:** `NetUpdateFrequency=165`
+- **XangModPlayerController:** `NetUpdateFrequency=165`
+- **XangModPawn:** `NetUpdateFrequency=165`
+- **XangModWeaponAttachment:** `NetUpdateFrequency=165`
 **Impact:** Synchronized updates across all player components
 
 ### 3. High Priority Player Replication
-**Location:** BangModPawn.uci lines 1282-1292
+**Location:** XangModPawn.uci lines 1282-1292
 ```unrealscript
 event float GetNetPriority(Actor Viewer, vector ViewLocation, float ViewDist)
 {
@@ -38,7 +38,7 @@ event float GetNetPriority(Actor Viewer, vector ViewLocation, float ViewDist)
 **Impact:** Players replicate before NPCs, environment, projectiles
 
 ### 4. Efficient Tick Override
-**Location:** BangModPawn.uci lines 112-121
+**Location:** XangModPawn.uci lines 112-121
 ```unrealscript
 simulated event Tick(float DeltaTime)
 {
@@ -49,7 +49,7 @@ simulated event Tick(float DeltaTime)
 **Impact:** Minimal overhead, fixes MAA stamina bug
 
 ### 5. Client-Only Ragdolls
-**Location:** BangMod rag
+**Location:** XangMod rag
 
 dolls removed after 0.5s on client
 **Impact:** Server doesn't process ragdoll physics, major CPU savings
@@ -61,7 +61,7 @@ dolls removed after 0.5s on client
 ### Optimization 1: Reduce Admin Tick Polling
 
 **Current Issue:** Admin tick time polling runs every 1 second
-**Location:** BangModPlayerController.uci line 1133
+**Location:** XangModPlayerController.uci line 1133
 
 **Before:**
 ```unrealscript
@@ -120,7 +120,7 @@ NumRecentlyDisconnectedTrackingTime=10.0
 
 **Current Issue:** Dead players still run some timers unnecessarily
 
-**Create:** `BangMod/Include/BangModPawnDeath.uci`
+**Create:** `XangMod/Include/XangModPawnDeath.uci`
 
 ```unrealscript
 // Override Died() to clear unnecessary timers for dead pawns
@@ -137,9 +137,9 @@ function Died(Controller Killer, class<DamageType> damageType, vector HitLocatio
 }
 ```
 
-**Add to BangModPawn.uc:**
+**Add to XangModPawn.uc:**
 ```unrealscript
-`include(BangMod/Include/BangModPawnDeath.uci)
+`include(XangMod/Include/XangModPawnDeath.uci)
 ```
 
 **Benefits:**
@@ -152,7 +152,7 @@ function Died(Controller Killer, class<DamageType> damageType, vector HitLocatio
 
 **Current Issue:** Countdown timer ticks every 1 second per player
 
-**Location:** BangModPlayerController.uci line 230
+**Location:** XangModPlayerController.uci line 230
 
 **Before:**
 ```unrealscript
@@ -161,23 +161,23 @@ SetTimer(1.0f, true, 'CountdownTick');
 
 **Optimized:** Make it server-authoritative instead of per-client
 
-**In BangModGame.uci, add:**
+**In XangModGame.uci, add:**
 ```unrealscript
 // Server-side countdown broadcaster (runs once, not per player)
 function BroadcastCountdownTick()
 {
-    local BangModPlayerController PC;
-    foreach WorldInfo.AllControllers(class'BangModPlayerController', PC)
+    local XangModPlayerController PC;
+    foreach WorldInfo.AllControllers(class'XangModPlayerController', PC)
     {
         PC.CountdownTick();
     }
 }
 ```
 
-**In BangModPlayerController.uci, change:**
+**In XangModPlayerController.uci, change:**
 ```unrealscript
 // Remove: SetTimer(1.0f, true, 'CountdownTick');
-// Countdown is now server-driven, called by BangModGame.BroadcastCountdownTick()
+// Countdown is now server-driven, called by XangModGame.BroadcastCountdownTick()
 ```
 
 **Benefits:**
@@ -192,7 +192,7 @@ function BroadcastCountdownTick()
 
 **Opportunity:** Batch certain HUD updates to reduce RPC spam
 
-**In BangModPlayerController.uci, add:**
+**In XangModPlayerController.uci, add:**
 ```unrealscript
 // Batch HUD updates (only send if value actually changed)
 var float LastReplicatedHealth;
@@ -273,7 +273,7 @@ You have two options:
 ### Option B: Contact Map Maker
 1. Get access to Dark Forest .udk source file
 2. Change final objective Kismet:
-   - Replace `AOCNPC_New_NoMove` → `BangModNPC_New_NoMove`
+   - Replace `AOCNPC_New_NoMove` → `XangModNPC_New_NoMove`
    - OR reduce 18 NPCs → 12 NPCs
 3. Recompile and redistribute map
 4. **This is the proper fix**
@@ -285,11 +285,11 @@ You have two options:
 **High Priority (Do These First):**
 1. ✅ Physics substeps config (PCServer-UDKEngine.ini)
 2. ✅ Spectator bandwidth reduction (PCServer-UDKEngine.ini)
-3. ✅ Clear timers on pawn death (BangModPawnDeath.uci)
+3. ✅ Clear timers on pawn death (XangModPawnDeath.uci)
 
 **Medium Priority:**
-4. ⚠️ Admin polling → 2s (BangModPlayerController.uci)
-5. ⚠️ Server-side countdown (BangModGame.uci + BangModPlayerController.uci)
+4. ⚠️ Admin polling → 2s (XangModPlayerController.uci)
+5. ⚠️ Server-side countdown (XangModGame.uci + XangModPlayerController.uci)
 
 **Low Priority (Micro-optimizations):**
 6. ℹ️ Batched HUD updates (minor gains, more code complexity)
@@ -299,7 +299,7 @@ You have two options:
 ## 🧪 Testing Checklist
 
 **After implementing optimizations:**
-1. ✅ Compile BangMod (check for errors)
+1. ✅ Compile XangMod (check for errors)
 2. ✅ Test with 12 players on Dark Forest
 3. ✅ Monitor server ms on all objectives (especially final)
 4. ✅ Verify trade window still functions (165Hz maintained)
@@ -317,8 +317,8 @@ You have two options:
 ## 🔮 Future Considerations
 
 **If you gain map access later:**
-- Implement BangModNPC_New_NoMove (1Hz standing NPCs)
-- Implement BangModNPC_New (30Hz moving NPCs)
+- Implement XangModNPC_New_NoMove (1Hz standing NPCs)
+- Implement XangModNPC_New (30Hz moving NPCs)
 - Expected result: ~10-12ms → ~7-8ms on final objective ✅
 
 **Alternative (No Map Access):**
@@ -328,7 +328,7 @@ You have two options:
 
 **Nuclear Option (Not Recommended):**
 - Fork vanilla Dark Forest map
-- Create "BangMod_DarkForest" with optimized NPCs
+- Create "XangMod_DarkForest" with optimized NPCs
 - Requires all clients to download custom map
 - Community fragmentation risk
 

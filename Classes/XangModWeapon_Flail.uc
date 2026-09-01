@@ -5,7 +5,7 @@
 * 
 * The weapon class to contain information for the Flail.
 */
-class BangModWeapon_Flail extends BangModMeleeWeapon;
+class XangModWeapon_Flail extends XangModMeleeWeapon;
 
 // Hold Animation for the Flail
 var array<AnimationInfo> HoldAnimations;
@@ -227,9 +227,9 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Flail'
+	AttachmentClass=class'XangModWeaponAttachment_Flail'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Flail'
-	AllowedShieldClass=class'BangModShield_Kite'
+	AllowedShieldClass=class'XangModShield_Kite'
 	CurrentWeaponType=EWEP_Flail
 	CurrentShieldType=ESHIELD_none
 	bHaveShield=true

@@ -5,11 +5,11 @@
 *
 * The weapon that is replicated to all clients: Falchion.
 */
-class BangModWeaponAttachment_Falchion extends AOCWeaponAttachment_Falchion;
+class XangModWeaponAttachment_Falchion extends AOCWeaponAttachment_Falchion;
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -23,7 +23,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Falchion
-	WeaponClass=class'BangModWeapon_Falchion'
+	WeaponClass=class'XangModWeapon_Falchion'
 	WeaponSocket=wep1hpoint
 
 	AttackTypeInfo(0)=(fBaseDamage=78.0, fForce=10000, cDamageType="AOC.AOCDmgType_SwingBlunt", iWorldHitLenience=6)

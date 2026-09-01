@@ -5,7 +5,7 @@
 * 
 * The weapon that is replicated to all clients: Crossbow.
 */
-class BangModWeaponAttachment_Crossbow extends AOCWeaponAttachment_Crossbow;
+class XangModWeaponAttachment_Crossbow extends AOCWeaponAttachment_Crossbow;
 
 // Node for determining which animation to play
 var AnimNodeBlendList AmmoNodeBlendList;
@@ -77,7 +77,7 @@ DefaultProperties
 	End Object
 
 	WeaponID=EWEP_Crossbow
-	WeaponClass=class'BangModWeapon_Crossbow'
+	WeaponClass=class'XangModWeapon_Crossbow'
 	WeaponSocket=CrossBowPoint
 	bHasAmmo=true
 

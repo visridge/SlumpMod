@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Maul
 */
-class BangModWeapon_Maul extends BangModMeleeWeapon;
+class XangModWeapon_Maul extends XangModMeleeWeapon;
 
 
 simulated state ParryRelease
@@ -97,7 +97,7 @@ DefaultProperties
 	FlinchTime2H=1.1
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Maul'
+	AttachmentClass=class'XangModWeaponAttachment_Maul'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Maul'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Maul

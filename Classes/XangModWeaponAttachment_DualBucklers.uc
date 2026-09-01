@@ -5,7 +5,7 @@
 *
 * The Weapon Attachment for Dual Bucklers.
 */
-class BangModWeaponAttachment_DualBucklers extends AOCWeaponAttachment_Fists;
+class XangModWeaponAttachment_DualBucklers extends AOCWeaponAttachment_Fists;
 
 var SkeletalMeshComponent LeftHandMesh;
 var SkeletalMeshComponent LeftHandOverlayMesh;
@@ -146,7 +146,7 @@ defaultproperties
 	End Object
 
 	WeaponID=EWEP_Fists
-	WeaponClass=class'BangModWeapon_DualBucklers'
+	WeaponClass=class'XangModWeapon_DualBucklers'
 	WeaponSocket=RightHand
 	LeftHandSocket=LeftHand
 	WeaponWidth=5.0

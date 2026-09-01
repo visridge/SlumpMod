@@ -1,5 +1,5 @@
 /**
-* BangMod standing NPC (final-objective targets / stationary AI).
+* XangMod standing NPC (final-objective targets / stationary AI).
 *
 * Netcode optimization over AOCNPC_New_NoMove:
 *  - bAlwaysRelevant=false + NetCullDistanceSquared: standing NPCs far from every player stop
@@ -10,10 +10,10 @@
 *    from AOCNPC_New_NoMove) already forces an immediate net update on hit, so the low idle rate
 *    costs nothing in responsiveness.
 *
-* Usage: swap AOCNPC_New_NoMove spawns for BangModNPC_New_NoMove in map Kismet. Tune
+* Usage: swap AOCNPC_New_NoMove spawns for XangModNPC_New_NoMove in map Kismet. Tune
 * NetCullDistanceSquared up if an objective needs these visible/hittable from farther away.
 */
-class BangModNPC_New_NoMove extends AOCNPC_New_NoMove;
+class XangModNPC_New_NoMove extends AOCNPC_New_NoMove;
 
 DefaultProperties
 {

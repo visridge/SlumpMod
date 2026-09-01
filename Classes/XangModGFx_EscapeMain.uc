@@ -7,14 +7,14 @@
 * Same thing as AOCGFx_FrontendNew except we don't load up the Profile stuff.
 * Keeping it separate to allow its own evolution.
 */
-class BangModGFx_EscapeMain extends AOCGFx_ViewManager;
+class XangModGFx_EscapeMain extends AOCGFx_ViewManager;
 
 // Options View
 var AOCView_Escape_Main OptionMenuView;
 
 // Config View
 var CDWView_Frontend_Config     ConfigView;
-var BangModView_Frontend_Customization  NewCustomizationOpView;
+var XangModView_Frontend_Customization  NewCustomizationOpView;
 
 // Join Game View
 var AOCView_Frontend_JoinGame       JoinGameView;
@@ -30,14 +30,14 @@ event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
 	local bool bResult;
 	bResult = false;
 
-	//LogAlwaysInternal("BangModGFx_EscapeMain::WidgetInitialized"@Widget);
+	//LogAlwaysInternal("XangModGFx_EscapeMain::WidgetInitialized"@Widget);
 
 	switch(WidgetName)
     {           
 		case ('Customization'):
 			if (NewCustomizationOpView == none)
 			{
-				NewCustomizationOpView = BangModView_Frontend_Customization(Widget);
+				NewCustomizationOpView = XangModView_Frontend_Customization(Widget);
 				ConfigureView(NewCustomizationOpView, WidgetName, WidgetPath);
 				bResult = true;
 			}
@@ -114,7 +114,7 @@ event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
 
 function LoadViewByName(string InputName)
 {
-	//LogAlwaysInternal("BangModGFx_EscapeMain::LoadViewByName"@InputName);
+	//LogAlwaysInternal("XangModGFx_EscapeMain::LoadViewByName"@InputName);
 	switch (InputName)
 	{
 	case "ConfigMain":
@@ -145,7 +145,7 @@ defaultproperties
 	// Bindings for Views
 	WidgetBindings.Add((WidgetName="EscapeOptions",WidgetClass=class'AOCView_Escape_Main'))
 	WidgetBindings.Add((WidgetName="ConfigMain",WidgetClass=class'CDWView_Frontend_Config'))
-	WidgetBindings.Add((WidgetName="Customization",WidgetClass=class'BangModView_Frontend_Customization'))
+	WidgetBindings.Add((WidgetName="Customization",WidgetClass=class'XangModView_Frontend_Customization'))
 
 	// View Data
 	AllViewData.Add((ViewName="EscapeOptions",ViewSWF="../UI_Escape_SWF/EscapeMenu.swf"))

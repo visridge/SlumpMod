@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the 1H Messer.
 */
-class BangModWeapon_Messer1H extends BangModMeleeWeapon;
+class XangModWeapon_Messer1H extends XangModMeleeWeapon;
 
 simulated state Release
 {

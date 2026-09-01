@@ -5,17 +5,17 @@
 * 
 * The weapon that is replicated to all clients: Longsword 1H
 */
-class BangModWeaponAttachment_Longsword1H extends AOCWeaponAttachment_Longsword1H;
+class XangModWeaponAttachment_Longsword1H extends AOCWeaponAttachment_Longsword1H;
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
 
 	WeaponID=EWEP_Longsword
-	WeaponClass=class'BangModWeapon_Longsword1H'
+	WeaponClass=class'XangModWeapon_Longsword1H'
 	WeaponSocket=wep1hpoint
 	
 	bUseAlternativeKick=true

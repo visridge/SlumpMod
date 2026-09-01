@@ -1,17 +1,17 @@
 /**
- * BangModRoll - The ninja-roll dodge for the Archer.
+ * XangModRoll - The ninja-roll dodge for the Archer.
  *
  * Contains ONLY the roll behaviour: parry/recovery cancel, 1H vs 2H roll-anim
- * selection, velocity kick and visual mesh offset. Extends BangModDodge so the
+ * selection, velocity kick and visual mesh offset. Extends XangModDodge so the
  * weapon-identifier remap plumbing is shared with the vanilla dodge.
  *
- * The roll only activates when the pawn's family is a BangModFamilyInfo_Archer with
+ * The roll only activates when the pawn's family is a XangModFamilyInfo_Archer with
  * bUseCustomDodgeAnims=true; otherwise this class passes straight through to the
  * standard dodge.
  */
-class BangModRoll extends BangModDodge;
+class XangModRoll extends XangModDodge;
 
-var BangModFamilyInfo_Archer CachedRollFI;
+var XangModFamilyInfo_Archer CachedRollFI;
 var bool bCachedRollFI;
 
 /** Lazy-cache the Archer family info (holds the roll config + tuning knobs). */
@@ -19,7 +19,7 @@ simulated function CacheRollFI()
 {
 	if (!bCachedRollFI && OwnerPawn != none && OwnerPawn.PawnFamily != none)
 	{
-		CachedRollFI = BangModFamilyInfo_Archer(OwnerPawn.PawnFamily);
+		CachedRollFI = XangModFamilyInfo_Archer(OwnerPawn.PawnFamily);
 		bCachedRollFI = true;
 	}
 }
@@ -138,7 +138,7 @@ simulated function StartDodgeSM(byte direction, byte WeaponId)
 
 		// Lower the visual mesh so the roll sits at ground level. SetTranslation is a
 		// component-space offset, separate from bone/RMM translation, so it does NOT
-		// affect movement or physics. Tune fCustomDodgeHeight in BangModFamilyInfo_Archer.
+		// affect movement or physics. Tune fCustomDodgeHeight in XangModFamilyInfo_Archer.
 		if (CachedRollFI.default.fCustomDodgeHeight != 0.f)
 		{
 			OwnerPawn.Mesh.SetTranslation(vect(0, 0, 0) + (vect(0, 0, 1) * CachedRollFI.default.fCustomDodgeHeight));

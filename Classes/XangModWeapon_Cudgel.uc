@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Cudgel.
 */
-class BangModWeapon_Cudgel extends BangModMeleeWeapon;
+class XangModWeapon_Cudgel extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -167,7 +167,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Cudgel'
+	AttachmentClass=class'XangModWeaponAttachment_Cudgel'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Cudgel'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Cudgel

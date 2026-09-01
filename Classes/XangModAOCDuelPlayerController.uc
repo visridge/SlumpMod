@@ -1,8 +1,8 @@
-class BangModAOCDuelPlayerController extends AOCDuelPlayerController
-    dependson(BangModAOCDuel);
+class XangModAOCDuelPlayerController extends AOCDuelPlayerController
+    dependson(XangModAOCDuel);
 
-`include(BangMod/Include/BangModAOCDuel.uci)
-`include(BangMod/Include/BangModPlayerController.uci)
+`include(XangMod/Include/XangModAOCDuel.uci)
+`include(XangMod/Include/XangModPlayerController.uci)
 
 function ChangeToNewClass()
 {
@@ -14,8 +14,8 @@ function ChangeToNewClass()
 		FindFirstAvailableLoadoutForCurrentFamilyInfo();
 	}
 
-	class'BangModCustomization'.static.GenerateSelectedWeaponDropSkinIndex(CustomizationInfo, self, WeaponDrops);
-	bIsCustomizationInfoValid = class'BangModCustomization'.static.AreCustomizationChoicesValidFor(CustomizationInfo, EFAC_FFA, CurrentFamilyInfo.ClassReference, PlayerReplicationInfo, WeaponDrops);
+	class'XangModCustomization'.static.GenerateSelectedWeaponDropSkinIndex(CustomizationInfo, self, WeaponDrops);
+	bIsCustomizationInfoValid = class'XangModCustomization'.static.AreCustomizationChoicesValidFor(CustomizationInfo, EFAC_FFA, CurrentFamilyInfo.ClassReference, PlayerReplicationInfo, WeaponDrops);
 
 	if(bIsCustomizationInfoValid)
 	{

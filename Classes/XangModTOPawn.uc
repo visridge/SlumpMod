@@ -1,4 +1,4 @@
-class BangModTOPawn extends BangModPawn;
+class XangModTOPawn extends XangModPawn;
 
-`include(BangMod/Include/BangModTO.uci)
-`include(BangMod/Include/BangModPawn.uci)
+`include(XangMod/Include/XangModTO.uci)
+`include(XangMod/Include/XangModPawn.uci)

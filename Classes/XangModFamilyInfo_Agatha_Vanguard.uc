@@ -1,4 +1,4 @@
-class BangModFamilyInfo_Agatha_Vanguard extends AOCFamilyInfo_Agatha_Vanguard;
+class XangModFamilyInfo_Agatha_Vanguard extends AOCFamilyInfo_Agatha_Vanguard;
 
 DefaultProperties
 {
@@ -6,27 +6,27 @@ DefaultProperties
     // ParryBoxTranslation=(X=10, Z=-28)
 
 	NewPrimaryWeapons.empty;
-	NewPrimaryWeapons(0)=(CWeapon=class'BangModWeapon_Greatsword',CorrespondingDuelProp=EDUEL_GreatswordUse)
-	NewPrimaryWeapons(1)=(CWeapon=class'BangModWeapon_Claymore',CorrespondingDuelProp=EDUEL_ClaymoreUse)
-	NewPrimaryWeapons(2)=(CWeapon=class'BangModWeapon_Zweihander',CorrespondingDuelProp=EDUEL_ZweihanderUse)
-	NewPrimaryWeapons(3)=(CWeapon=class'BangModWeapon_Bardiche',CorrespondingDuelProp=EDUEL_BardicheUse)
-	NewPrimaryWeapons(4)=(CWeapon=class'BangModWeapon_Bill',CorrespondingDuelProp=EDUEL_BillUse)
-	NewPrimaryWeapons(5)=(CWeapon=class'BangModWeapon_Halberd',CorrespondingDuelProp=EDUEL_HalberdUse)
-	NewPrimaryWeapons(6)=(CWeapon=class'BangModWeapon_PoleHammer',CorrespondingDuelProp=EDUEL_PoleHammerUse)
-	NewPrimaryWeapons(7)=(CWeapon=class'BangModWeapon_Nodachi',CorrespondingDuelProp=EDUEL_ZweihanderUse)
-	NewPrimaryWeapons(8)=(CWeapon=class'BangModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
-	NewPrimaryWeapons(9)=(CWeapon=class'BangModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
-	NewPrimaryWeapons(10)=(CWeapon=class'BangModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)
-	NewPrimaryWeapons(11)=(CWeapon=class'BangModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
+	NewPrimaryWeapons(0)=(CWeapon=class'XangModWeapon_Greatsword',CorrespondingDuelProp=EDUEL_GreatswordUse)
+	NewPrimaryWeapons(1)=(CWeapon=class'XangModWeapon_Claymore',CorrespondingDuelProp=EDUEL_ClaymoreUse)
+	NewPrimaryWeapons(2)=(CWeapon=class'XangModWeapon_Zweihander',CorrespondingDuelProp=EDUEL_ZweihanderUse)
+	NewPrimaryWeapons(3)=(CWeapon=class'XangModWeapon_Bardiche',CorrespondingDuelProp=EDUEL_BardicheUse)
+	NewPrimaryWeapons(4)=(CWeapon=class'XangModWeapon_Bill',CorrespondingDuelProp=EDUEL_BillUse)
+	NewPrimaryWeapons(5)=(CWeapon=class'XangModWeapon_Halberd',CorrespondingDuelProp=EDUEL_HalberdUse)
+	NewPrimaryWeapons(6)=(CWeapon=class'XangModWeapon_PoleHammer',CorrespondingDuelProp=EDUEL_PoleHammerUse)
+	NewPrimaryWeapons(7)=(CWeapon=class'XangModWeapon_Nodachi',CorrespondingDuelProp=EDUEL_ZweihanderUse)
+	NewPrimaryWeapons(8)=(CWeapon=class'XangModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
+	NewPrimaryWeapons(9)=(CWeapon=class'XangModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
+	NewPrimaryWeapons(10)=(CWeapon=class'XangModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)
+	NewPrimaryWeapons(11)=(CWeapon=class'XangModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
 	
 	NewSecondaryWeapons.empty;
 
-	NewSecondaryWeapons(0)=(CWeapon=class'BangModWeapon_Saber')
-	NewSecondaryWeapons(1)=(CWeapon=class'BangModWeapon_Cudgel')
-	NewSecondaryWeapons(3)=(CWeapon=class'BangModWeapon_WarAxe')
-	NewSecondaryWeapons(4)=(CWeapon=class'BangModWeapon_Dane')
-	NewSecondaryWeapons(5)=(CWeapon=class'BangModWeapon_Falchion')
-	NewSecondaryWeapons(6)=(CWeapon=class'BangModWeapon_Dagesse')
+	NewSecondaryWeapons(0)=(CWeapon=class'XangModWeapon_Saber')
+	NewSecondaryWeapons(1)=(CWeapon=class'XangModWeapon_Cudgel')
+	NewSecondaryWeapons(3)=(CWeapon=class'XangModWeapon_WarAxe')
+	NewSecondaryWeapons(4)=(CWeapon=class'XangModWeapon_Dane')
+	NewSecondaryWeapons(5)=(CWeapon=class'XangModWeapon_Falchion')
+	NewSecondaryWeapons(6)=(CWeapon=class'XangModWeapon_Dagesse')
 
 	DamageResistances(EDMG_Swing) = 0.6
 	DamageResistances(EDMG_Pierce) = 0.8
@@ -34,8 +34,8 @@ DefaultProperties
 
 
 	NewTertiaryWeapons.empty;
-	NewTertiaryWeapons(0)=(CWeapon=class'BangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
-	NewTertiaryWeapons(1)=(CWeapon=class'BangModWeapon_Buckler_Agatha',bEnabledDefault=false)
+	NewTertiaryWeapons(0)=(CWeapon=class'XangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
+	NewTertiaryWeapons(1)=(CWeapon=class'XangModWeapon_Buckler_Agatha',bEnabledDefault=false)
 	
 	bCanSprintAttack=false
 

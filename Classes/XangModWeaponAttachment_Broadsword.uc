@@ -5,11 +5,11 @@
 * 
 * The weapon that is replicated to all clients: Broadsword
 */
-class BangModWeaponAttachment_Broadsword extends AOCWeaponAttachment_Broadsword;
+class XangModWeaponAttachment_Broadsword extends AOCWeaponAttachment_Broadsword;
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);	
+	`include(XangMod/Include/XangModWeaponAttachment.uci);	
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -23,7 +23,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Broadsword
-	WeaponClass=class'BangModWeapon_Broadsword'
+	WeaponClass=class'XangModWeapon_Broadsword'
 	WeaponSocket = wep1hpoint
 
 	AttackTypeInfo(0)=(fBaseDamage=70.0, fForce=12000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)

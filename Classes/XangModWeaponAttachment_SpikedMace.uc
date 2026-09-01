@@ -5,7 +5,7 @@
 *
 * Weapon attachment: Spiked Mace - Bastard Sword behavior with scaled Holy Water Sprinkler visuals
 */
-class BangModWeaponAttachment_SpikedMace extends BangModWeaponAttachment_BastardSword;
+class XangModWeaponAttachment_SpikedMace extends XangModWeaponAttachment_BastardSword;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -25,7 +25,7 @@ DefaultProperties
 	End Object
 
 	WeaponID=EWEP_HolyWaterSprinkler
-	WeaponClass=class'BangModWeapon_SpikedMace'
+	WeaponClass=class'XangModWeapon_SpikedMace'
 	WeaponSocket=wep2hpoint
 	WeaponStaticMeshScale=1.3
 

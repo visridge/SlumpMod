@@ -3,7 +3,7 @@
  * 
  * Original Author: Brady Brenot
  */
-class BangModCustomizationTeam_Mason extends AOCCustomizationTeam_Mason;
+class XangModCustomizationTeam_Mason extends AOCCustomizationTeam_Mason;
 
 
 defaultproperties

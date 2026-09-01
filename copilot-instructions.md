@@ -1,7 +1,7 @@
-# BangMod - GitHub Copilot Instructions
+# XangMod - GitHub Copilot Instructions
 
 ## Project Overview
-**BangMod** is a competitive gameplay modification for **Chivalry: Medieval Warfare**. It extends the base game (AOC folder) with balance changes, netcode improvements, and quality-of-life features for tournament play.
+**XangMod** is a competitive gameplay modification for **Chivalry: Medieval Warfare**. It extends the base game (AOC folder) with balance changes, netcode improvements, and quality-of-life features for tournament play.
 
 ## Architecture
 
@@ -9,22 +9,22 @@
 ```
 Development/Src/
 ├── AOC/                    # Base game - vanilla Chivalry (DO NOT MODIFY)
-│   └── classes/            # Parent classes that BangMod extends
-└── BangMod/                # Our mod - extends/overrides AOC
+│   └── classes/            # Parent classes that XangMod extends
+└── XangMod/                # Our mod - extends/overrides AOC
     ├── Classes/            # UnrealScript class files (.uc)
     └── Include/            # Reusable code includes (.uci)
 ```
 
 ### Parent/Child Relationship
-- **BangMod classes EXTEND AOC classes** using UnrealScript inheritance
-- Example: `BangModPawn extends AOCPawn`
+- **XangMod classes EXTEND AOC classes** using UnrealScript inheritance
+- Example: `XangModPawn extends AOCPawn`
 - Always check AOC parent class for inherited behavior before modifying
 - Use `super.FunctionName()` to call parent implementation
 
 ### File Types
 - `.uc` - UnrealScript class files (compiled into game)
 - `.uci` - Include files (inserted at compile time via backtick includes)
-- `.ini` - Configuration files (DefaultBangMod.ini)
+- `.ini` - Configuration files (DefaultXangMod.ini)
 
 ## UnrealScript Language Quirks
 
@@ -64,7 +64,7 @@ function MyFunction()
 ### Common Patterns
 ```unrealscript
 // Include files (backtick syntax)
-`include(BangMod/Include/BangModPawn.uci)
+`include(XangMod/Include/XangModPawn.uci)
 
 // Parent class calls
 super.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType);
@@ -102,7 +102,7 @@ The UnrealScript VS Code extension **frequently reports incorrect errors**:
 
 **Rule of thumb:** If the code compiles successfully with UDK, the linter is wrong, so encourage the player to manually try compiling before fixing "errors" that don't make sense. And if it doesn't compile, the error is real and should be fixed and should be reported back to the AI agent.
 
-## Key Modifications in BangMod
+## Key Modifications in XangMod
 
 ### Netcode Improvements
 - **Stamina desync fix** - Server-authoritative stamina validation in combo transitions
@@ -115,15 +115,15 @@ The UnrealScript VS Code extension **frequently reports incorrect errors**:
 - **Parry mechanics** - Can parry out of Recovery state (consistency with other states)
 
 ### Customization System
-- **BangModCustomization** - Custom character/helmet/armor system
+- **XangModCustomization** - Custom character/helmet/armor system
 - **Uses vanilla config system** - Saves to `Customization.ini`
-- **BangModView_Frontend_Customization** - UI hooks for saving choices
+- **XangModView_Frontend_Customization** - UI hooks for saving choices
 
 ## Development Workflow
 
 ### Making Changes
 1. **Find parent class in AOC/** - Understand vanilla behavior
-2. **Create/modify child class in BangMod/** - Override specific functions
+2. **Create/modify child class in XangMod/** - Override specific functions
 3. **Test changes** - Requires dedicated server for netcode testing
 4. **Use `.uci` includes** - Share code between similar classes (weapons, pawns)
 
@@ -131,9 +131,9 @@ The UnrealScript VS Code extension **frequently reports incorrect errors**:
 
 **Adding a new weapon:**
 ```unrealscript
-class BangModWeapon_NewWeapon extends BangModMeleeWeapon;
+class XangModWeapon_NewWeapon extends XangModMeleeWeapon;
 
-// Weapon inherits all BangModMeleeWeapon fixes:
+// Weapon inherits all XangModMeleeWeapon fixes:
 // - Parry buffer system
 // - Stamina validation
 // - Recovery parrying
@@ -142,7 +142,7 @@ class BangModWeapon_NewWeapon extends BangModMeleeWeapon;
 
 **Modifying pawn behavior:**
 ```unrealscript
-// Changes go in BangModPawn.uci (shared across all pawns)
+// Changes go in XangModPawn.uci (shared across all pawns)
 // Or in specific pawn class if unique to one gamemode
 ```
 
@@ -165,17 +165,17 @@ DefaultProperties
 
 ## File Organization
 
-### BangMod/Classes/
-- `BangModMeleeWeapon.uc` - Base melee weapon (all weapons extend this)
-- `BangModPawn.uc` - Base pawn class (all pawns extend this)
-- `BangModWeapon_*.uc` - Individual weapon implementations
-- `BangModCharacterInfo_*.uc` - Character customization data
-- `BangModCustomization.uc` - Customization system override
+### XangMod/Classes/
+- `XangModMeleeWeapon.uc` - Base melee weapon (all weapons extend this)
+- `XangModPawn.uc` - Base pawn class (all pawns extend this)
+- `XangModWeapon_*.uc` - Individual weapon implementations
+- `XangModCharacterInfo_*.uc` - Character customization data
+- `XangModCustomization.uc` - Customization system override
 
-### BangMod/Include/
-- `BangModPawn.uci` - Shared pawn behavior (stats tracking, flinch logic)
-- `BangModPlayerController.uci` - Shared controller behavior
-- `BangModGame.uci` - Shared game mode behavior
+### XangMod/Include/
+- `XangModPawn.uci` - Shared pawn behavior (stats tracking, flinch logic)
+- `XangModPlayerController.uci` - Shared controller behavior
+- `XangModGame.uci` - Shared game mode behavior
 
 ## Testing Requirements
 
@@ -201,14 +201,14 @@ DefaultProperties
 
 - **AOC source code** - Always check parent class first
 - **Unreal Developer Network (UDN)** - Official UnrealScript documentation
-- **BangMod changelog** - CHANGELOG.md in root for feature history
+- **XangMod changelog** - CHANGELOG.md in root for feature history
 
 ## Contributing Guidelines
 
 - **Document changes** - Add comments explaining WHY, not just WHAT
 - **Test on dedicated server** - Netcode changes must be verified
 - **Preserve compatibility** - Don't break existing customization saves
-- **Follow naming conventions** - BangMod prefix for all custom classes
+- **Follow naming conventions** - XangMod prefix for all custom classes
 - **Use includes for shared code** - Don't duplicate logic across files
 
 ---

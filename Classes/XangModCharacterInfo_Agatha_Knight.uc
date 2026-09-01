@@ -1,19 +1,19 @@
 
-class BangModCharacterInfo_Agatha_Knight extends AOCCharacterInfo_Agatha_Knight;
+class XangModCharacterInfo_Agatha_Knight extends AOCCharacterInfo_Agatha_Knight;
 defaultproperties
 {
 	MobileBattleCry=SoundCue'A_VO_Manual.Agatha_Knight.Battlecry_Running_Agatha_Knight'
 
 	CharacterMeshPath="CH_AgathanKnight_PKG.models.SK_CH_3P_AgathaKnight"
 	DecapMeshPath="CH_AgathanKnight_PKG.models.SK_CH_3P_AgathaKnight_Gore"
-	OwnerMeshPath="BangmodCharacters.AgathaKnight1p"
+	OwnerMeshPath="XangmodCharacters.AgathaKnight1p"
 
 	HeadMaterialPath="CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Body"
 	BodyMaterialPath="CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Head"
 
 	StandinMesh=SkeletalMesh'CH_AgathanKnight_PKG.models.SK_CH_3P_AgathaKnight'
 	StandinDecapMesh=SkeletalMesh'CH_AgathanKnight_PKG.models.SK_CH_3P_AgathaKnight_Gore'
-	StandinOwnerMesh=SkeletalMesh'BangmodCharacters.AgathaKnight1p'
+	StandinOwnerMesh=SkeletalMesh'XangmodCharacters.AgathaKnight1p'
 	StandinHeadMaterial=MaterialInterface'CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Body'
 	StandinBodyMaterial=MaterialInterface'CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Head'
 

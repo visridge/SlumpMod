@@ -1,7 +1,7 @@
 /**
 * Firebug weapon attachment - Cudgel stats with torch skeletal mesh and fire particle effect.
 */
-class BangModWeaponAttachment_Firebug extends BangModWeaponAttachment_Cudgel;
+class XangModWeaponAttachment_Firebug extends XangModWeaponAttachment_Cudgel;
 
 simulated function AttachTo(UTPawn OwnerPawn)
 {
@@ -71,7 +71,7 @@ DefaultProperties
 		Scale=1.1
 	End Object
 
-	WeaponClass=class'BangModWeapon_Firebug'
+	WeaponClass=class'XangModWeapon_Firebug'
 	WeaponStaticMeshScale=1.1
 
 	WeaponPSSocket=Flame

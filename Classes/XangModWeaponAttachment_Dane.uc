@@ -5,11 +5,11 @@
 * 
 * The weapon that is replicated to all clients: Dane
 */
-class BangModWeaponAttachment_Dane extends AOCWeaponAttachment_Dane;
+class XangModWeaponAttachment_Dane extends AOCWeaponAttachment_Dane;
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -23,7 +23,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_WarAxe
-	WeaponClass=class'BangModWeapon_Dane'
+	WeaponClass=class'XangModWeapon_Dane'
 
 	WeaponSocket = wep1hpoint
 

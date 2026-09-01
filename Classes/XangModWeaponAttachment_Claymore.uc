@@ -5,7 +5,7 @@
 * 
 * The weapon that is replicated to all clients: Claymore.
 */
-class BangModWeaponAttachment_Claymore extends AOCWeaponAttachment_Claymore;
+class XangModWeaponAttachment_Claymore extends AOCWeaponAttachment_Claymore;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -28,7 +28,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -42,7 +42,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Claymore
-	WeaponClass=class'BangModWeapon_Claymore'
+	WeaponClass=class'XangModWeapon_Claymore'
 	WeaponSocket=wep2hpoint
 
 	bUseAlternativeKick=true

@@ -5,7 +5,7 @@
 * 
 * The weapon that is replicated to all clients: Holy Water Sprinkler
 */
-class BangModWeaponAttachment_HolyWaterSprinkler extends AOCWeaponAttachment_HolyWaterSprinkler;
+class XangModWeaponAttachment_HolyWaterSprinkler extends AOCWeaponAttachment_HolyWaterSprinkler;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -28,7 +28,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);		
+	`include(XangMod/Include/XangModWeaponAttachment.uci);		
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -44,7 +44,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_HolyWaterSprinkler
-	WeaponClass=class'BangModWeapon_HolyWaterSprinkler'
+	WeaponClass=class'XangModWeapon_HolyWaterSprinkler'
 	WeaponSocket=wep1hpoint
 
 	AttackTypeInfo(0)=(fBaseDamage=65.0, fForce=18000, cDamageType="AOC.AOCDmgType_PierceBlunt", iWorldHitLenience=6)

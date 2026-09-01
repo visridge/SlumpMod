@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Zweihander.
 */
-class BangModWeapon_Zweihander extends BangModMeleeWeapon;
+class XangModWeapon_Zweihander extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -165,7 +165,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Zweihander'
+	AttachmentClass=class'XangModWeaponAttachment_Zweihander'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Zweihander'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Zweihander

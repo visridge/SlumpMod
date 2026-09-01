@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Zweihander.
 */
-class BangModWeapon_Nodachi extends BangModMeleeWeapon;
+class XangModWeapon_Nodachi extends XangModMeleeWeapon;
 
 simulated state Release
 {
@@ -57,8 +57,8 @@ DefaultProperties
 	EffectiveDistance=200.0f
 	FlinchTime2H=1.10
 
-	AttachmentClass=class'BangModWeaponAttachment_Nodachi'
-	InventoryAttachmentClass=class'BangModWeaponInventory_Nodachi'
+	AttachmentClass=class'XangModWeaponAttachment_Nodachi'
+	InventoryAttachmentClass=class'XangModWeaponInventory_Nodachi'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Zweihander
 	CurrentShieldType=ESHIELD_None

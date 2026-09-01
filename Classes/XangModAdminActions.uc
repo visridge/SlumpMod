@@ -1,8 +1,8 @@
 /**
  * Statics shared by the RCON handlers. On an Object rather than the game class because the
- * game class differs per mode and BangModRCon has no single type to cast WorldInfo.Game to.
+ * game class differs per mode and XangModRCon has no single type to cast WorldInfo.Game to.
  */
-class BangModAdminActions extends Object;
+class XangModAdminActions extends Object;
 
 /** How far from the destination player we try to place someone, in unreal units. */
 const TELEPORT_RADIUS = 120.0;

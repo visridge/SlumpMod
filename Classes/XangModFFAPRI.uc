@@ -1,4 +1,4 @@
-class BangModFFAPRI extends AOCFFAPRI;
+class XangModFFAPRI extends AOCFFAPRI;
 
-`include(BangMod/Include/BangModFFA.uci)
-`include(BangMod/Include/BangModPRI.uci)
+`include(XangMod/Include/XangModFFA.uci)
+`include(XangMod/Include/XangModPRI.uci)

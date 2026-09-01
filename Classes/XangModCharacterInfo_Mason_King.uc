@@ -4,7 +4,7 @@
 * Original Author: Brady Brenot
 * 
 */
-class BangModCharacterInfo_Mason_King extends AOCCharacterInfo_King;
+class XangModCharacterInfo_Mason_King extends AOCCharacterInfo_King;
 
 defaultproperties
 {

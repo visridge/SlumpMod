@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Mace.
 */
-class BangModWeapon_Mace extends BangModMeleeWeapon;
+class XangModWeapon_Mace extends XangModMeleeWeapon;
 
 
 simulated state ParryRelease
@@ -167,7 +167,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Mace'
+	AttachmentClass=class'XangModWeaponAttachment_Mace'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Mace'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Mace

@@ -5,7 +5,7 @@
 *
 * Weapon class for the Hunting Knife.
 */
-class BangModWeapon_HuntingKnife extends BangModMeleeWeapon;
+class XangModWeapon_HuntingKnife extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -170,7 +170,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_HuntingKnife'
+	AttachmentClass=class'XangModWeaponAttachment_HuntingKnife'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_HuntingKnife'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_HuntingKnife

@@ -6,7 +6,7 @@
 * Weapon: Javelin (Throwing Mode)
 */
 
-class BangModWeapon_ShortSpearThrow extends AOCWeapon_ShortSpearThrow;
+class XangModWeapon_ShortSpearThrow extends AOCWeapon_ShortSpearThrow;
 
 // Auto-throw: short spear cannot be held drawn, fires immediately
 simulated state Hold
@@ -40,7 +40,7 @@ DefaultProperties
 	HorizontalRotateSpeed = 60000
 	VerticalRotateSpeed = 50000
 
-	AttachmentClass=class'BangModWeaponAttachment_ShortSpearThrow'
+	AttachmentClass=class'XangModWeaponAttachment_ShortSpearThrow'
 	// should never be part of inventory attachment
 	InventoryAttachmentClass=class'AOCInventoryAttachment_ShortSpear'
 	AllowedShieldClass=class'AOCShield_Buckler'
@@ -108,7 +108,7 @@ DefaultProperties
 	StrafeModify=0.75f
 	bCanDodge=false
 	bUseIdleForTopHalf=true
-	AlternativeMode=class'BangModWeapon_ShortSpearMelee'
+	AlternativeMode=class'XangModWeapon_ShortSpearMelee'
 
 	/* 
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_ShortSpearThrow]

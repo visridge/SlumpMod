@@ -1,4 +1,4 @@
-// BangMod Weapon Attachment Netcode Optimization
+// XangMod Weapon Attachment Netcode Optimization
 // Maximum performance: 120Hz for all weapon attachments
 
 // Netcode optimization: High priority replication for all weapon attachments
@@ -17,13 +17,13 @@ simulated function AttachTo(UTPawn OwnerPawn)
 	super.AttachTo(OwnerPawn);
 	if (AOCOwner == none)
 		return;
-	if (!class'BangModAOCDuelPlayerController'.default.bBangModParryBox)
+	if (!class'XangModAOCDuelPlayerController'.default.bXangModParryBox)
 	{
 		// Revert to vanilla AOC parry box
 		AOCOwner.ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
 		AOCOwner.ParryComponent.SetTranslation(vect(30, 0, -30));
 	}
-	else if (class'BangModAOCDuelPlayerController'.default.bSkeletalParry)
+	else if (class'XangModAOCDuelPlayerController'.default.bSkeletalParry)
 	{
 		// Skeletal parry: hitbox wraps the full player model instead of a directional shield
 		AOCOwner.ParryComponent.SetScale3D(vect(0.18, 0.17, 0.35));
@@ -33,7 +33,7 @@ simulated function AttachTo(UTPawn OwnerPawn)
 
 // // Secondary filter: strip the parry-box component flag if the attacker is behind the defender.
 // // This prevents the pawn from being added to ParryPawns via the ETracerType_ParryImmediately path.
-// // NOTE: The primary butt-parry fix is in DetectSuccessfulParry (BangModPawn.uci), which covers
+// // NOTE: The primary butt-parry fix is in DetectSuccessfulParry (XangModPawn.uci), which covers
 // // both parry-box hits AND body hits on a parrying pawn. This filter only handles the box-hit path.
 // simulated function HandleHitPawn(AOCPawn HitPawn, Vector HitLocation, Vector HitNormal, TraceHitInfo HitInfoTrace, Vector HitForce, optional ETracerType TracerType)
 // {

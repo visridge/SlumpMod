@@ -2,7 +2,7 @@
 * Firebug - Cudgel reskin using the torch skeletal mesh.
 * All combat stats, animations, and mechanics are identical to the Cudgel.
 */
-class BangModWeapon_Firebug extends BangModMeleeWeapon;
+class XangModWeapon_Firebug extends XangModMeleeWeapon;
 
 // // Left-click (Attack_Slash) switches to throw mode, just like javelin.
 // // All other attack types (overhead, stab, parry) behave as normal melee.
@@ -177,15 +177,15 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Firebug'
-	InventoryAttachmentClass=class'BangModWeaponAttachment_Firebug'
+	AttachmentClass=class'XangModWeaponAttachment_Firebug'
+	InventoryAttachmentClass=class'XangModWeaponAttachment_Firebug'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Cudgel
 	CurrentShieldType=ESHIELD_None
 	bHaveShield=true
 	bCanSwitchShield=true
 
-	// AlternativeMode=class'BangModWeapon_FirebugThrow'
+	// AlternativeMode=class'XangModWeapon_FirebugThrow'
 
 	CurrentGenWeaponType=EWT_1hand
 

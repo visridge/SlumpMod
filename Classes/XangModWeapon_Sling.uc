@@ -9,7 +9,7 @@
 * - Infinite Ammo
 * - 'Charge': Once in hold state, you do more damage and fly faster the longer you hold it. [Crosshairs will go from large to small]
 */
-class BangModWeapon_Sling extends BangModRangeWeapon;
+class XangModWeapon_Sling extends XangModRangeWeapon;
 
 var float    TimeToFullyCharge; // UDKNewWeapon.ini under [AOCWeapon_Sling]
 var float           StartChargeTime;

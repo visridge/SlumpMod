@@ -5,7 +5,7 @@
 *
 * Weapon: Smoke Pot
 */
-class BangModWeapon_SmokePot extends AOCWeapon_SmokePot;
+class XangModWeapon_SmokePot extends AOCWeapon_SmokePot;
 
 DefaultProperties
 {
@@ -15,7 +15,7 @@ DefaultProperties
 	MaxAmmoCount=3
 	AIRange=5000
 
-	WeaponProjectiles(0)=class'BangModProj_ThrownSmokePot'
+	WeaponProjectiles(0)=class'XangModProj_ThrownSmokePot'
 
 	AttachmentClass=class'AOCWeaponAttachment_SmokePot'
 	// should never be part of inventory attachment

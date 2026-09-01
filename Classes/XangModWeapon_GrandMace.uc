@@ -6,7 +6,7 @@
 * The weapon class to contain information for the GrandMace
 */
 
-class BangModWeapon_GrandMace extends BangModMeleeWeapon;
+class XangModWeapon_GrandMace extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -103,7 +103,7 @@ DefaultProperties
 	EncircleRadius=25.0f
 	EffectiveDistance=200.0f
 	
-	AttachmentClass=class'BangModWeaponAttachment_GrandMace'
+	AttachmentClass=class'XangModWeaponAttachment_GrandMace'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_GrandMace'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_PoleArm
@@ -218,7 +218,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_GrandMace'
+	AttachmentClass=class'XangModWeaponAttachment_GrandMace'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_GrandMace'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_GrandMace

@@ -1,5 +1,5 @@
 /**
-* BangMod moving NPC (patrols / combat AI).
+* XangMod moving NPC (patrols / combat AI).
 *
 * Netcode optimization over AOCNPC_New:
 *  - bAlwaysRelevant=false + NetCullDistanceSquared: NPCs far from every player are no longer
@@ -9,10 +9,10 @@
 *    receiving them.
 *  - NetUpdateFrequency reduced 50 -> 30Hz (still smooth for AI; players keep 120Hz).
 *
-* Usage: swap AOCNPC_New spawns for BangModNPC_New in map Kismet. Tune NetCullDistanceSquared
+* Usage: swap AOCNPC_New spawns for XangModNPC_New in map Kismet. Tune NetCullDistanceSquared
 * up if any objective requires seeing/hitting these NPCs from farther than the radius below.
 */
-class BangModNPC_New extends AOCNPC_New;
+class XangModNPC_New extends AOCNPC_New;
 
 // Always re-replicate immediately when hit so reduced frequency / relevancy never delays the
 // hit reaction reaching nearby clients.

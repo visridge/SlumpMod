@@ -5,7 +5,7 @@
 *
 * The weapon that is replicated to all clients: Grand Hammer.
 */
-class BangModWeaponAttachment_GrandHammer extends AOCWeaponAttachment_WarHammer;
+class XangModWeaponAttachment_GrandHammer extends AOCWeaponAttachment_WarHammer;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -28,7 +28,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 	KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -44,7 +44,7 @@ DefaultProperties
 	End Object
 
 	WeaponID=EWEP_WarHammer
-	WeaponClass=class'BangModWeapon_GrandHammer'
+	WeaponClass=class'XangModWeapon_GrandHammer'
 	WeaponSocket=wepPolepoint
 
 	WeaponStaticMeshScale=0.9

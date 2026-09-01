@@ -3,7 +3,7 @@
  * 
  * Original Author: Brady Brenot
  */
-class BangModCustomizationTeam_Agatha extends AOCCustomizationTeam_Agatha;
+class XangModCustomizationTeam_Agatha extends AOCCustomizationTeam_Agatha;
 
 
 defaultproperties

@@ -1,4 +1,4 @@
-class BangModKOTHHUD extends AOCKOTHHUD;
+class XangModKOTHHUD extends AOCKOTHHUD;
 
-`include(BangMod/Include/BangModKOTH.uci)
-`include(BangMod/Include/BangModHUD.uci)
+`include(XangMod/Include/XangModKOTH.uci)
+`include(XangMod/Include/XangModHUD.uci)

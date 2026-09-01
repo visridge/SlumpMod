@@ -1,11 +1,11 @@
 /**
-* BangMod Base Weapon Attachment
+* XangMod Base Weapon Attachment
 * 
-* Base class for all BangMod weapon attachments to apply netcode optimizations.
+* Base class for all XangMod weapon attachments to apply netcode optimizations.
 * Sets NetUpdateFrequency to 120Hz to match pawn and controller update rates.
 * Adds 40ms damage delay to help with through-parry issues.
 */
-class BangModWeaponAttachment extends AOCWeaponAttachment;
+class XangModWeaponAttachment extends AOCWeaponAttachment;
 
 // Damage delay system - prevents damage/flinch but allows parry stamina drain
 var bool bCanDoDamage;
@@ -61,14 +61,14 @@ simulated function HandleHitPawn(AOCPawn HitPawn, Vector HitLocation, Vector Hit
 	}
 	
 	// Normal hit processing (damage enabled OR non-parry after delay)
-	// BANGMOD: Stamp the client-side moment this swing connected so the server can order it
+	// XANGMOD: Stamp the client-side moment this swing connected so the server can order it
 	// against the target's swing for trade priority. Sent on the (pawn) channel right before
 	// AttackOtherPawn fires inside super, so it arrives first (reliable -> ordered).
-	if (AOCPawn(Owner) != none && BangModPawn(Owner) != none
+	if (AOCPawn(Owner) != none && XangModPawn(Owner) != none
 		&& (Owner.Role < ROLE_Authority || WorldInfo.NetMode == NM_Standalone
 			|| WorldInfo.NetMode == NM_ListenServer || AOCPawn(Owner).bIsBot))
 	{
-		BangModPawn(Owner).ServerStampHitTime(WorldInfo.TimeSeconds);
+		XangModPawn(Owner).ServerStampHitTime(WorldInfo.TimeSeconds);
 	}
 
 	super.HandleHitPawn(HitPawn, HitLocation, HitNormal, HitInfo, HitForce, TracerType);

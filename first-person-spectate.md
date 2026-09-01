@@ -11,10 +11,10 @@ this code.
 
 | File | What it holds |
 |------|---------------|
-| `BangMod/Include/BangModPlayerController.uci` | `BangModCanFPObserve` / `BangModApplyFPObserve` / `BangModClearFPObserve` / `BangModApplySpectatorPerspective` / `BangModRefreshSpectatorHUD`, the `FirstPersonSpectate` exec, and the `state Spectating` override |
-| `BangMod/Include/BangModHUD.uci` | `DrawHUD` override + `BangModDrawSpectatorTarget` / `BangModGetFactionColor` (the followed player's name and class) |
+| `XangMod/Include/XangModPlayerController.uci` | `XangModCanFPObserve` / `XangModApplyFPObserve` / `XangModClearFPObserve` / `XangModApplySpectatorPerspective` / `XangModRefreshSpectatorHUD`, the `FirstPersonSpectate` exec, and the `state Spectating` override |
+| `XangMod/Include/XangModHUD.uci` | `DrawHUD` override + `XangModDrawSpectatorTarget` / `XangModGetFactionColor` (the followed player's name and class) |
 
-Both includes are pulled into every BangMod player-controller / HUD subclass, so
+Both includes are pulled into every XangMod player-controller / HUD subclass, so
 this is effectively a shared override of `AOCPlayerController` and `AOCBaseHUD`.
 
 The old commented-out block (the two `Client*SpectatorHead` RPCs and the previous
@@ -28,8 +28,8 @@ The old commented-out block (the two `Client*SpectatorHead` RPCs and the previou
 
 - `AOCPlayerController.JoinSpectatorTeam()` → `GenericSwitchToObs(true, true)`
   → `ClientGotoState('Spectating')` + `ServerSpectate()`.
-- BangMod also exposes `AdminForceSpectate` / `AdminForceSpectateAll`
-  (`BangModPlayerController.uci` ~lines 1146–1206) which call
+- XangMod also exposes `AdminForceSpectate` / `AdminForceSpectateAll`
+  (`XangModPlayerController.uci` ~lines 1146–1206) which call
   `Target.JoinSpectatorTeam()`.
 
 ### 2.2 The input chain for "left click follows a player"
@@ -157,7 +157,7 @@ AOCPawn.BecomeFirstPersonObserved(self)
 
 So vanilla ends with the pawn flagged for a first-person **camera** but still in
 third-person **visuals**: 3P body drawn, helmet on, 1P mesh hidden. That is what
-"seeing inside their head" was. `BangModApplyFPObserve` calls
+"seeing inside their head" was. `XangModApplyFPObserve` calls
 `P.SetThirdPersonCamera(false)` immediately afterwards to put the meshes back
 into 1P state.
 
@@ -192,7 +192,7 @@ be deleted safely; it is a defensive copy, not load-bearing.**
 
 ### 4.5 Perspective toggle
 
-- First person is the default (`bBangModFPSpectate = true`, set in `PostBeginPlay`
+- First person is the default (`bXangModFPSpectate = true`, set in `PostBeginPlay`
   so the choice survives re-entering spectate).
 - **Space** (`SpectatorPerspective`, and `BehindView` which routes to it) flips
   between first person and the vanilla orbit follow.
@@ -205,7 +205,7 @@ Important gotcha handled here: `UTPlayerController.SetBehindView(false)` also se
 `!bFreeCamera` *before* `UpdateRotation()`. Leaving first person therefore has to
 call `SetBehindView(true)` to hand `bFreeCamera` back, otherwise the free camera
 is frozen and cannot even look around. Both exit paths (`SpectatorFreecam` and the
-"no live target" branch of `BangModApplySpectatorPerspective`) do this.
+"no live target" branch of `XangModApplySpectatorPerspective`) do this.
 
 ### 4.6 Spectator HUD
 
@@ -215,11 +215,11 @@ own (line 3667), and `ReplicatedStamina` is in `AOCPawn`'s general replication
 block, so the values reach every client. What was missing was visibility:
 `DisplayCompleteHUD()` is only called from `ShowHUDElements()` on possession, so
 somebody who joined straight into spectate never had the bars turned on.
-`BangModRefreshSpectatorHUD` calls it on target change and resets
+`XangModRefreshSpectatorHUD` calls it on target change and resets
 `PreviousHealth` / `PreviousStamina` to `-1` to defeat the change filter so the
 new target's values push immediately.
 
-**Name / class.** Drawn by `BangModDrawSpectatorTarget` in `BangModHUD.uci`
+**Name / class.** Drawn by `XangModDrawSpectatorTarget` in `XangModHUD.uci`
 (centred, ~88% down the screen, tinted by faction, with a drop shadow).
 
 Why not the vanilla sub-crosshair info box: `AOCBaseHUD.DrawHUD`'s spectator
@@ -235,7 +235,7 @@ none-check on its bot branch.
 
 ### 4.7 None-safety
 
-`BangModCanFPObserve` gates every apply/clear. It checks everything
+`XangModCanFPObserve` gates every apply/clear. It checks everything
 `BecomeFirstPersonObserved` and `SetThirdPersonCamera` dereference without their
 own none-checks (`OwnerMesh`, `CharacterAssetStore`, `HelmetMeshComp`,
 `HelmetEmitter`, `ShieldMesh`, `OverlayShieldMesh`, the
@@ -284,7 +284,7 @@ The 1P skeletal mesh **asset** is fine: `LoadCharacterAssets()` fetches
 `OwnerMeshPath` into `CharacterAssetStore.OwnerMesh` on every non-dedicated client
 with no locally-controlled gate. Only the component is missing.
 
-**Fix:** `BangModEnsureOwnerMesh()` in `BangModPawn.uci` rebuilds the component
+**Fix:** `XangModEnsureOwnerMesh()` in `XangModPawn.uci` rebuilds the component
 from the class-default archetype
 (`new(self) class'SkeletalMeshComponent'(default.OwnerMesh)`), re-applies the anim
 tree, anim sets, skeletal mesh and materials in the same order
@@ -295,39 +295,39 @@ and there is no other call site that assigns them. If they come back none the
 rebuild is reverted so the spectator stays in a clean third person rather than
 looking at a static ref-pose.
 
-It is driven from a `BecomeViewTarget` override in `BangModPawn.uci`, which fires
+It is driven from a `BecomeViewTarget` override in `XangModPawn.uci`, which fires
 from the native `SetViewTarget` inside `PlayerController.ClientSetViewTarget` —
-exactly one step ahead of where `BangModApplySpectatorPerspective()` runs on the
+exactly one step ahead of where `XangModApplySpectatorPerspective()` runs on the
 controller. Rebuild cost is one component + anim-tree init per pawn, once, cached
 for that pawn's lifetime.
 
 ### 4.9 Always establish a camera state (post-release fix)
 
 `state Spectating.ViewAPlayer` deliberately drops vanilla's
-`SetBehindView(true)` on every target change (see 4.1). That means BangMod is now
+`SetBehindView(true)` on every target change (see 4.1). That means XangMod is now
 solely responsible for setting the camera state, and the original
-`BangModApplySpectatorPerspective()` did not hold up its end:
+`XangModApplySpectatorPerspective()` did not hold up its end:
 
 ```unrealscript
-if (bBangModFPSpectate)
-    BangModApplyFPObserve(P);   // silently no-ops if the guard fails
+if (bXangModFPSpectate)
+    XangModApplyFPObserve(P);   // silently no-ops if the guard fails
 else
-    { BangModClearFPObserve(); SetBehindView(true); }
+    { XangModClearFPObserve(); SetBehindView(true); }
 ```
 
-When `BangModApplyFPObserve` bailed on its none-guard -- which, before 4.8, was
+When `XangModApplyFPObserve` bailed on its none-guard -- which, before 4.8, was
 **every single pawn on a client** -- neither branch touched `bBehindView` or
 `bFreeCamera`. The controller ran on whatever those flags happened to be left at,
 with nothing ever refreshing them. `state Spectating.PlayerMove` early-outs on
 `!bFreeCamera` before `UpdateRotation()`, so a stale `false` there means a camera
 that neither follows anybody nor accepts input.
 
-Fix: `BangModApplyFPObserve` now returns whether it succeeded, and
-`BangModApplySpectatorPerspective` falls through to an explicit
+Fix: `XangModApplyFPObserve` now returns whether it succeeded, and
+`XangModApplySpectatorPerspective` falls through to an explicit
 `SetBehindView(true)` when first person is not available -- so a definite camera
 state is always established, exactly as vanilla guaranteed.
 
-`BangModPerspectivePawn` tracks the pawn we have already settled on, so the
+`XangModPerspectivePawn` tracks the pawn we have already settled on, so the
 fallback runs once per pawn rather than every frame, while first person is still
 cheaply retried in case the 1P mesh only becomes rebuildable after the pawn's
 character assets finish streaming.
@@ -353,17 +353,17 @@ anyone ever script-instances a component in this codebase:
   nothing would ever try again — the "retry" in `PlayerTick` was a permanent no-op
   because it only re-checked a component that only that hook creates. `PlayerTick`
   now re-pokes `P.BecomeViewTarget(self)`, rate limited to twice a second via
-  `fBangModNextFPRetry`.
+  `fXangModNextFPRetry`.
 
 - **`AOCPlayerController.state Spectating.SetBehindView` dereferences
   `AOCGRI(WorldInfo.GRI)` unguarded**, and that is reachable the instant a joining
   client enters spectate, before the GRI has replicated.
-  `BangModRestoreVanillaCamera()` guards it and sets the flags directly in that
+  `XangModRestoreVanillaCamera()` guards it and sets the flags directly in that
   window.
 
 Still unverified by reading alone: whether the engine's native component attach
 fires `PostInitAnimTree` for a script-`new`'d `SkeletalMeshComponent`. The
-`OwnerAimNode == none` check in `BangModEnsureOwnerMesh` is the hedge — if it does
+`OwnerAimNode == none` check in `XangModEnsureOwnerMesh` is the hedge — if it does
 not fire, the rebuild reverts itself and you stay in a clean third person rather
 than looking at a frozen ref-pose. The log line it emits says which happened.
 
@@ -407,7 +407,7 @@ Two consequences:
    None, and only sets `CameraStyle` when it is not.
 
 Rather than fight that ordering, `ClientRestart` is overridden to schedule
-`BangModFixCameraAfterSpawn()` on a 0.05s timer. Once the transition has actually
+`XangModFixCameraAfterSpawn()` on a 0.05s timer. Once the transition has actually
 completed it destroys any surviving `PlayerCamera`, clears `bFreeCamera`, clears
 the FP-observer flags off our own pawn, forces the view-target transition to
 re-run (`SetViewTarget(none)` then `SetViewTarget(Pawn)`) so `BecomeViewTarget`
@@ -419,8 +419,8 @@ instead of preventing the wrong state. It also logs, via `LogAlwaysInternal`, on
 line before and one line after correcting:
 
 ```
-[BangModFPSpec] post-spawn State=PlayerWalking Pawn=... ViewTarget=... PlayerCamera=... bBehindView=... bFreeCamera=... PCLoc=...
-[BangModFPSpec] post-spawn-corrected ...
+[XangModFPSpec] post-spawn State=PlayerWalking Pawn=... ViewTarget=... PlayerCamera=... bBehindView=... bFreeCamera=... PCLoc=...
+[XangModFPSpec] post-spawn-corrected ...
 ```
 
 Read the *first* line to identify the real cause:
@@ -433,12 +433,12 @@ Read the *first* line to identify the real cause:
 
 ### 4.12 Diagnostic
 
-`FPSpectateDebug` (console exec, `BangModPlayerController.uci`) works in **any**
+`FPSpectateDebug` (console exec, `XangModPlayerController.uci`) works in **any**
 state, not just while spectating, and dumps: current state name, netmode, `Pawn`,
 `ViewTarget`, `RealViewTarget`, `PlayerCamera`, the perspective flags, both pawn
 trackers, then -- if the view target is a pawn -- `bIsBot` / `IsLocallyControlled`,
 `bIsBeingFPObserved`, the `OwnerMesh` component, `OwnerAimNode`, the asset store
-and its 1P mesh asset, every component `BangModCanFPObserve` gates on, and the
+and its 1P mesh asset, every component `XangModCanFPObserve` gates on, and the
 final verdict.
 
 Signatures to look for:
@@ -493,14 +493,14 @@ broken" report, prove the fix is actually in the build.
 | Path | Role |
 |------|------|
 | `C:\Users\Bindon\Documents\GitHub\SlumpMod` | the git repo |
-| `F:\SteamLibrary\...\Development\Src\BangMod` | what the SDK actually compiles |
+| `F:\SteamLibrary\...\Development\Src\XangMod` | what the SDK actually compiles |
 
 The second is a hand-made copy of the first. Editing only the repo changes
 nothing about the build.
 
 ```
 for f in .../SlumpMod/Include/*.uci; do
-    n=$(basename $f); md5sum "$f" ".../Development/Src/BangMod/Include/$n"
+    n=$(basename $f); md5sum "$f" ".../Development/Src/XangMod/Include/$n"
 done
 ```
 
@@ -509,14 +509,14 @@ done
 is loaded as DLC from:
 
 ```
-UDKGame\CookedSDK\BangMod_F70955F34DCA9EB5481E2392F9B0A2E1\BangMod.u
+UDKGame\CookedSDK\XangMod_F70955F34DCA9EB5481E2392F9B0A2E1\XangMod.u
 ```
 
 `.u` files store their name table as plain text, so a fix can be confirmed present
 without running the game:
 
 ```
-grep -a -c "BangModFixCameraAfterSpawn" .../CookedSDK/BangMod_*/BangMod.u
+grep -a -c "XangModFixCameraAfterSpawn" .../CookedSDK/XangMod_*/XangMod.u
 ```
 
 Zero means the build predates the fix, whatever the source says. Also compare the
@@ -525,7 +525,7 @@ Zero means the build predates the fix, whatever the source says. Also compare th
 **Script logging does not work in this build.** The client log
 (`Documents\My Games\Chivalry Medieval Warfare\UDKGame\Logs\Launch.log`) contains
 zero `ScriptLog` lines — script output is suppressed in the shipping build, so
-`LogAlwaysInternal` never appears. `BangModLogCameraState` is therefore inert here;
+`LogAlwaysInternal` never appears. `XangModLogCameraState` is therefore inert here;
 use the `FPSpectateDebug` exec instead, which goes through
 `ClientDisplayConsoleMessage` and renders in game.
 
@@ -588,8 +588,8 @@ Networking (this is where 4.8 bit -- do not sign off on host-only testing):
 ## 6. Notes / open items
 
 - **The "camera stranded on spawn" bug was never a spectate bug.** Commit `ed572f9`
-  (2026-07-21) renamed 26 asset references across 14 `BangModCharacterInfo_*`
-  classes to a package `BangmodCharacters` that was never created. Those classes —
+  (2026-07-21) renamed 26 asset references across 14 `XangModCharacterInfo_*`
+  classes to a package `XangmodCharacters` that was never created. Those classes —
   Knight and Vanguard in every variant, plus BARB Archers — therefore had no
   first-person mesh. `AOCPlayerCamera.UpdateCamera()` reads the camera position
   from a socket on that mesh, and `GetSocketWorldLocationAndRotation` returns
@@ -614,13 +614,13 @@ Networking (this is where 4.8 bit -- do not sign off on host-only testing):
   `OwnerMesh` socket is the one the game uses when you play normally. If it still
   reads wrong after this change, the next lever is the smoothing constant in
   `AOCPlayerController.state Spectating.GetPlayerViewPoint`
-  (`RInterpTo(CalcViewRotation, TempPOVRot, DeltaTime, 20.0f)`), which BangMod can
+  (`RInterpTo(CalcViewRotation, TempPOVRot, DeltaTime, 20.0f)`), which XangMod can
   override in its own state if needed.
 - `NextCameraAngle` is a no-op in first person and sets `iThirdPersonAngle = 1` in
   orbit follow, matching vanilla. If real cycling is ever wanted, the values live in
   `AOCPlayerController.ThirdPersonCameraPositions` and are consumed by
   `AOCPlayerCamera.CalcThirdPersonLocation`.
 - Status as of 2026-08-21: the 1P mesh rebuild (4.8) is **confirmed working on a
-  dedicated server** — `ScriptLog: BangModEnsureOwnerMesh: rebuilt 1P mesh
+  dedicated server** — `ScriptLog: XangModEnsureOwnerMesh: rebuilt 1P mesh
   SK_CH_1P_MAsonArcher` in the client log. First-person spectate is functional on
   any class whose 1P mesh actually loads.

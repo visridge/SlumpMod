@@ -5,7 +5,7 @@
 *
 * Weapon class for the Broad Dagger.
 */
-class BangModWeapon_BroadDagger extends BangModMeleeWeapon;
+class XangModWeapon_BroadDagger extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -151,7 +151,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_BroadDagger'
+	AttachmentClass=class'XangModWeaponAttachment_BroadDagger'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_BroadDagger'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_BroadDagger

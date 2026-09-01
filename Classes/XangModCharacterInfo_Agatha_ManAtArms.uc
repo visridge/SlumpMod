@@ -1,5 +1,5 @@
 
-class BangModCharacterInfo_Agatha_ManAtArms extends AOCCharacterInfo_Agatha_ManAtArms;
+class XangModCharacterInfo_Agatha_ManAtArms extends AOCCharacterInfo_Agatha_ManAtArms;
 defaultproperties
 {
 	/** Pull this out into the Helmets etc. arrays */

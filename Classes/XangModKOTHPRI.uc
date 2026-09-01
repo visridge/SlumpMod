@@ -1,4 +1,4 @@
-class BangModKOTHPRI extends AOCPRI;
+class XangModKOTHPRI extends AOCPRI;
 
-`include(BangMod/Include/BangModKOTH.uci)
-`include(BangMod/Include/BangModPRI.uci)
+`include(XangMod/Include/XangModKOTH.uci)
+`include(XangMod/Include/XangModPRI.uci)

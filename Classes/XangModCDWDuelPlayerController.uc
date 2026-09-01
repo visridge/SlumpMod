@@ -1,8 +1,8 @@
-class BangModCDWDuelPlayerController extends CDWDuelPlayerController
-    dependson(BangModCDWDuel);
+class XangModCDWDuelPlayerController extends CDWDuelPlayerController
+    dependson(XangModCDWDuel);
 
-`include(BangMod/Include/BangModCDWDuel.uci)
-`include(BangMod/Include/BangModPlayerController.uci)
+`include(XangMod/Include/XangModCDWDuel.uci)
+`include(XangMod/Include/XangModPlayerController.uci)
 
 function ChangeToNewClass()
 {
@@ -14,8 +14,8 @@ function ChangeToNewClass()
 		FindFirstAvailableLoadoutForCurrentFamilyInfo();
 	}
 
-	class'BangModCustomization'.static.GenerateSelectedWeaponDropSkinIndex(CustomizationInfo, self, WeaponDrops);
-	bIsCustomizationInfoValid = class'BangModCustomization'.static.AreCustomizationChoicesValidFor(CustomizationInfo, EFAC_FFA, CurrentFamilyInfo.ClassReference, PlayerReplicationInfo, WeaponDrops);
+	class'XangModCustomization'.static.GenerateSelectedWeaponDropSkinIndex(CustomizationInfo, self, WeaponDrops);
+	bIsCustomizationInfoValid = class'XangModCustomization'.static.AreCustomizationChoicesValidFor(CustomizationInfo, EFAC_FFA, CurrentFamilyInfo.ClassReference, PlayerReplicationInfo, WeaponDrops);
 
 	if(bIsCustomizationInfoValid)
 	{

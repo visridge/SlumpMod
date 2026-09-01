@@ -3,7 +3,7 @@
 *
 * A pawn that's used in Customization, etc.
 */
-class BangModPreviewPawn extends BangModPawn;
+class XangModPreviewPawn extends XangModPawn;
 
 simulated event FellOutOfWorld(class<DamageType> dmgType)
 {

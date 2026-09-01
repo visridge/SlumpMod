@@ -5,7 +5,7 @@
 *
 * Weapon: Bo Staff - Billhook timings/animations with scaled quarterstaff visuals.
 */
-class BangModWeapon_BoStaff extends BangModMeleeWeapon;
+class XangModWeapon_BoStaff extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -201,7 +201,7 @@ DefaultProperties
 	BloodSprayTemplates(1)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
-	AttachmentClass=class'BangModWeaponAttachment_BoStaff'
+	AttachmentClass=class'XangModWeaponAttachment_BoStaff'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Bill'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Bill

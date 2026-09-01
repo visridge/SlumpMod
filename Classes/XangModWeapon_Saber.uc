@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Saber.
 */
-class BangModWeapon_Saber extends BangModMeleeWeapon;
+class XangModWeapon_Saber extends XangModMeleeWeapon;
 
 
 simulated state ParryRelease
@@ -169,7 +169,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Saber'
+	AttachmentClass=class'XangModWeaponAttachment_Saber'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Saber'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Saber

@@ -5,7 +5,7 @@
 *
 * Weapon Attachment: Pole Arm.
 */
-class BangModWeaponAttachment_PoleAxeBack extends AOCWeaponAttachment;
+class XangModWeaponAttachment_PoleAxeBack extends AOCWeaponAttachment;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -41,7 +41,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_PaxeBack
-	WeaponClass=class'BangModWeapon_PoleAxeBack'
+	WeaponClass=class'XangModWeapon_PoleAxeBack'
 
 	WeaponSocket=wep2haxepoint
 	bUseAlternativeKick=true

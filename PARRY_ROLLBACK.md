@@ -2,11 +2,11 @@ Updated todo list
 
 I can edit fine — those two tool calls were interrupted by your new messages before they executed, so nothing was written (the file is still untouched, as you saw). Switching to ask-mode: I'll print everything. Let me confirm a couple of hierarchy/context details first so the blocks are exact.
 
-Read [](file:///c%3A/Program%20Files%20%28x86%29/Steam/steamapps/common/chivalrymedievalwarfare/Development/Src/BangMod/Include/BangModPawn.uci#14-33), lines 14 to 32
+Read [](file:///c%3A/Program%20Files%20%28x86%29/Steam/steamapps/common/chivalrymedievalwarfare/Development/Src/XangMod/Include/XangModPawn.uci#14-33), lines 14 to 32
 
 Read [](file:///c%3A/Program%20Files%20%28x86%29/Steam/steamapps/common/chivalrymedievalwarfare/Development/Src/AOC/classes/CDWDuelPawn.uc#1-61), lines 1 to 60
 
-Searched for files matching `^class (BangModCDWDuelPawn|CDWDuelPawn|GiantSlayersPawn|BangModAOCDuelPawn)\b`, 4 results
+Searched for files matching `^class (XangModCDWDuelPawn|CDWDuelPawn|GiantSlayersPawn|XangModAOCDuelPawn)\b`, 4 results
 
 
 
@@ -14,15 +14,15 @@ Searched for files matching `^class (BangModCDWDuelPawn|CDWDuelPawn|GiantSlayers
 
 
 
-Both mod duel pawns (`BangModAOCDuelPawn`, `BangModCDWDuelPawn`) extend `BangModPawn`, so they inherit the rewrite. Let me confirm they don't override `AttackOtherPawn`/`Tick` in a way that bypasses it.
-
-Searched for files matching `AttackOtherPawn|event Tick|ProcessResolvedAttack|ProcessPendingHits`.
+Both mod duel pawns (`XangModAOCDuelPawn`, `XangModCDWDuelPawn`) extend `XangModPawn`, so they inherit the rewrite. Let me confirm they don't override `AttackOtherPawn`/`Tick` in a way that bypasses it.
 
 Searched for files matching `AttackOtherPawn|event Tick|ProcessResolvedAttack|ProcessPendingHits`.
 
+Searched for files matching `AttackOtherPawn|event Tick|ProcessResolvedAttack|ProcessPendingHits`.
 
 
-Confirmed: the real mod pawns (`BangModAOCDuelPawn`, `BangModCDWDuelPawn`) extend `BangModPawn` and don't override these functions, so the rewrite covers bots-in-duel. Here's the complete decide‑once rewrite as copy‑paste blocks.
+
+Confirmed: the real mod pawns (`XangModAOCDuelPawn`, `XangModCDWDuelPawn`) extend `XangModPawn` and don't override these functions, so the rewrite covers bots-in-duel. Here's the complete decide‑once rewrite as copy‑paste blocks.
 
 ## Why it's currently broken
 At 0 ping, bots enter `Parry` within the flat 60 ms defer window → `RollbackRecentHits` clears the `ApplyDeferredReplication` timer → the **entire** hit (which was 100 % deferred) is dropped: no damage/sound/blood. And when it *doesn't* cancel, you get commit‑then‑refund (the "bloody but alive" bug).
@@ -31,11 +31,11 @@ The fix: **hold** an incoming swing only as long as an in‑flight parry could t
 
 ---
 
-### File 1 — `BangMod\Classes\BangModPawn.uc`
+### File 1 — `XangMod\Classes\XangModPawn.uc`
 **Replace lines 3–14** (the `RecentHitEntry` struct + 2 vars) with:
 
 ```unrealscript
-// BANGMOD: Parry rollback — "decide once" netcode.
+// XANGMOD: Parry rollback — "decide once" netcode.
 // An incoming melee swing is HELD on the defender for a latency-sized window (the time an
 // in-flight parry could still take to reach the server). Nothing is applied during the hold,
 // so a parry that lands inside the window suppresses the swing before any feedback plays —
@@ -45,7 +45,7 @@ The fix: **hold** an incoming swing only as long as an in‑flight parry could t
 struct PendingHit
 {
     var float fCommitTime;              // WorldInfo.TimeSeconds at which to commit the hit
-    var BangModPawn Attacker;           // pawn that swung (resolves the hit / takes the deflect)
+    var XangModPawn Attacker;           // pawn that swung (resolves the hit / takes the deflect)
     var HitInfo Info;                   // captured hit info
     var string DamageString;
     var bool bBoxParrySuccess;
@@ -60,12 +60,12 @@ var float fParryRollbackMinHoldSeconds;  // holds shorter than this resolve imme
 
 ---
 
-### File 2 — `BangMod\Include\BangModPawn.uci`
+### File 2 — `XangMod\Include\XangModPawn.uci`
 
 **(2a) Delete lines 18–30** (the deferred-state `var` block). Replace with nothing, or a one-liner:
 
 ```unrealscript
-// (Deferred-hit state removed — replaced by the PendingHits hold model in BangModPawn.uc)
+// (Deferred-hit state removed — replaced by the PendingHits hold model in XangModPawn.uc)
 ```
 
 **(2b) Tick — insert the commit poll.** Change the top of `Tick` (around line 271):
@@ -74,7 +74,7 @@ var float fParryRollbackMinHoldSeconds;  // holds shorter than this resolve imme
 	// Call parent first to do all normal tick logic
 	super.Tick(DeltaTime);
 
-	// BANGMOD: commit any held swings whose latency window elapsed without a parry.
+	// XANGMOD: commit any held swings whose latency window elapsed without a parry.
 	if (Role == ROLE_Authority)
 		ProcessPendingHits();
 
@@ -87,13 +87,13 @@ var float fParryRollbackMinHoldSeconds;  // holds shorter than this resolve imme
 **(2c) Replace the ENTIRE `AttackOtherPawn` function (current lines 1195–1714)** with these **two** functions:
 
 ```unrealscript
-// BANGMOD: Thin dispatcher. Validates the swing once on RPC arrival, then either holds it
+// XANGMOD: Thin dispatcher. Validates the swing once on RPC arrival, then either holds it
 // (so an in-flight parry can suppress it before any feedback plays) or resolves it immediately.
 // 'self' is the ATTACKER; Info.HitActor is the defender.
 reliable server function AttackOtherPawn(HitInfo Info, string DamageString, optional bool bCheckParryOnly = false, optional bool bBoxParrySuccess, optional bool bHitShield = false, optional SwingTypeImpactSound LastHit = ESWINGSOUND_Slash, optional bool bQuickKick = false)
 {
 	local PlayerReplicationInfo PRI;
-	local BangModPawn DefenderBM;
+	local XangModPawn DefenderBM;
 	local float fHold;
 	local PendingHit NewPending;
 
@@ -106,7 +106,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	LogHitTime(WorldInfo.TimeSeconds - fLastReleaseStartTime - 0.0087);
 
 	// Block attacks while the attacker is flinched (no trade window)
-	if (BangModMeleeWeapon(Weapon) != none && BangModMeleeWeapon(Weapon).IsInState('Flinch'))
+	if (XangModMeleeWeapon(Weapon) != none && XangModMeleeWeapon(Weapon).IsInState('Flinch'))
 		return;
 
 	// Authority / lag-comp validation happens once, when the swing RPC arrives.
@@ -116,7 +116,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// Decide whether to HOLD this swing so an in-flight parry can suppress it before any
 	// feedback plays. Only enemy melee swings that would land as a hit are eligible; the hold
 	// length is the defender's one-way latency (0 at 0 ping -> instant, vanilla behavior).
-	DefenderBM = BangModPawn(Info.HitActor);
+	DefenderBM = XangModPawn(Info.HitActor);
 	fHold = 0.0;
 	if (!bCheckParryOnly
 		&& DefenderBM != none
@@ -146,7 +146,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	ProcessResolvedAttack(Info, DamageString, bCheckParryOnly, bBoxParrySuccess, bHitShield, LastHit, bQuickKick);
 }
 
-// BANGMOD: The single commit path for a swing — damage, feedback, and replication applied at
+// XANGMOD: The single commit path for a swing — damage, feedback, and replication applied at
 // once. Called directly from AttackOtherPawn (no hold needed), or from ProcessPendingHits /
 // ResolvePendingHitsAsParry once a held swing's fate is decided. 'self' is the ATTACKER.
 // When bForceParry is true the swing resolves as a parry (the defender parried while this swing
@@ -167,7 +167,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	local bool bOnFire;
 	local bool bPassiveBlock;
 	local AOCWeaponAttachment HitActorWeaponAttachment;
-	local BangModMeleeWeapon DefendingMeleeWeapon;
+	local XangModMeleeWeapon DefendingMeleeWeapon;
 	local class<AOCWeapon> UsedWeapon;
 	local TraceHitInfo THI;
 	local bool bEnemyWasBot;
@@ -193,7 +193,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 		UsedWeapon = TertiaryWeapon;
 
 	HitActorWeaponAttachment = AOCWeaponAttachment(Info.HitActor.CurrentWeaponAttachment);
-	DefendingMeleeWeapon = BangModMeleeWeapon(Info.HitActor.Weapon);
+	DefendingMeleeWeapon = XangModMeleeWeapon(Info.HitActor.Weapon);
 
 	bSameTeam = IsOnSameTeam(self, Info.HitActor);
 	bFlinch = false;
@@ -258,7 +258,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	if (!CheckOtherPawnFacingMe(Info.HitActor) && !Info.DamageType.default.bIsProjectile && !bParry)
 		ActualDamage *= PawnFamily.fBackstabModifier;
 
-	if (Info.UsedWeapon == 0 && BangModWeapon_Crossbow(Weapon) != none && Info.DamageType.default.bIsProjectile)
+	if (Info.UsedWeapon == 0 && XangModWeapon_Crossbow(Weapon) != none && Info.DamageType.default.bIsProjectile)
 		ActualDamage *= Info.HitActor.PawnFamily.CrossbowLocationModifiers[GetBoneLocation(Info.BoneName)];
 	else
 		ActualDamage *= (Info.DamageType.default.bIsProjectile ? Info.HitActor.PawnFamily.ProjectileLocationModifiers[GetBoneLocation(Info.BoneName)] :
@@ -447,11 +447,11 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 		Info.HitActor.HandlePawnGetHit();
 
 	// Firebug ignition (after the blunt impact sound).
-	if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
+	if (XangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
 		&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
 		&& Info.HitActor.IsAliveAndWell())
 	{
-		Info.HitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
+		Info.HitActor.SetPawnOnFire(none, Controller, self, class'XangModDmgType_TorchBurn');
 	}
 }
 ```
@@ -459,7 +459,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 **(2d) Replace `ApplyDeferredReplication` (current lines 1729–1775)** with these three helpers, and **delete `RollbackRecentHits` entirely (current lines 1792–1883)**. Keep the `TakeDamage` override between them untouched.
 
 ```unrealscript
-// BANGMOD: How long to hold an incoming swing on THIS (defender) pawn so an in-flight parry
+// XANGMOD: How long to hold an incoming swing on THIS (defender) pawn so an in-flight parry
 // can still reach the server and suppress it. Equals the defender's one-way latency, capped.
 // Returns 0 on LAN/bots (no network crossing to compensate) -> swings resolve instantly.
 function float GetParryHoldSeconds()
@@ -478,7 +478,7 @@ function float GetParryHoldSeconds()
 	return fHold;
 }
 
-// BANGMOD: Commit held swings whose hold window elapsed without a parry. Runs on the defender
+// XANGMOD: Commit held swings whose hold window elapsed without a parry. Runs on the defender
 // (self) from Tick. Each commits exactly once through the normal hit path.
 function ProcessPendingHits()
 {
@@ -505,10 +505,10 @@ function ProcessPendingHits()
 	}
 }
 
-// BANGMOD: A parry landed while swings were still held on us — resolve every one as a parry
+// XANGMOD: A parry landed while swings were still held on us — resolve every one as a parry
 // BEFORE any hit feedback plays (decide-once). DetectSuccessfulParry still rejects illegal
 // parries (e.g. back hits), which then fall through to a normal hit. Runs on the defender (self)
-// from BangModMeleeWeapon.Parry.BeginState, after super sets bIsParrying/bIsActiveShielding.
+// from XangModMeleeWeapon.Parry.BeginState, after super sets bIsParrying/bIsActiveShielding.
 function ResolvePendingHitsAsParry()
 {
 	local int i;
@@ -538,7 +538,7 @@ function ResolvePendingHitsAsParry()
 
 ---
 
-### File 3 — `BangMod\Classes\BangModMeleeWeapon.uc`
+### File 3 — `XangMod\Classes\XangModMeleeWeapon.uc`
 **Replace `Parry`'s `BeginState` (lines 574–599)** with:
 
 ```unrealscript
@@ -552,12 +552,12 @@ function ResolvePendingHitsAsParry()
 		// Call parent first so bIsParrying / bIsActiveShielding are set before we resolve.
 		super.BeginState(PreviousStateName);
 
-		// BANGMOD: Suppress any swings currently HELD on us — resolve them as parries before
+		// XANGMOD: Suppress any swings currently HELD on us — resolve them as parries before
 		// any hit feedback plays. Must run AFTER super so parry validation sees the parry state.
-		if (Role == ROLE_Authority && AOCOwner != none && BangModPawn(AOCOwner) != none)
-			BangModPawn(AOCOwner).ResolvePendingHitsAsParry();
+		if (Role == ROLE_Authority && AOCOwner != none && XangModPawn(AOCOwner) != none)
+			XangModPawn(AOCOwner).ResolvePendingHitsAsParry();
 
-		// BANGMOD: Disable riposte for shields — must come AFTER super because
+		// XANGMOD: Disable riposte for shields — must come AFTER super because
 		// AOCMeleeWeapon.Parry.BeginState resets bCanParryHitCounter = true
 		if (bEquipShield)
 		{

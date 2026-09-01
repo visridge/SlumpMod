@@ -6,9 +6,9 @@
 * Weapon Attachment: Javelin.
 */
 
-class BangModWeaponAttachment_HeavyJavelinThrow extends AOCWeaponAttachment_HeavyJavelinThrow;
+class XangModWeaponAttachment_HeavyJavelinThrow extends AOCWeaponAttachment_HeavyJavelinThrow;
 
 DefaultProperties
 {
-	WeaponClass=class'BangModWeapon_HeavyJavelinThrow'
+	WeaponClass=class'XangModWeapon_HeavyJavelinThrow'
 }

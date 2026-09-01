@@ -5,7 +5,7 @@
 * 
 * The weapon that is replicated to all clients: Maul
 */
-class BangModWeaponAttachment_Maul extends AOCWeaponAttachment_Maul;
+class XangModWeaponAttachment_Maul extends AOCWeaponAttachment_Maul;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -29,7 +29,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -45,7 +45,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Maul
-	WeaponClass=class'BangModWeapon_Maul'
+	WeaponClass=class'XangModWeapon_Maul'
 
 	WeaponSocket=wep2haxepoint
 	bUseAlternativeKick=true

@@ -1,13 +1,13 @@
-class BangModView_Frontend_Customization extends AOCView_Frontend_Customization
-config(BangModCustomization);
+class XangModView_Frontend_Customization extends AOCView_Frontend_Customization
+config(XangModCustomization);
 
 // Assassin (5th class) customization storage.
 //
 // The parent struct TeamCustomizationChoicePair.ClassCustomizationChoices is a
-// fixed [4] array (AOC source, which BangMod does not modify). The 5th class --
+// fixed [4] array (AOC source, which XangMod does not modify). The 5th class --
 // ECLASS_SiegeEngineer, class index 4 -- does not fit in it, so its customization
 // choices live here in the subclass. These are loaded/saved through the same
-// BangModCustomization static paths as classes 0-3, keyed on class index 4.
+// XangModCustomization static paths as classes 0-3, keyed on class index 4.
 var SCustomizationChoice AssassinChoices[EAOCFaction];
 
 function OnEscapeKeyPress()
@@ -24,29 +24,29 @@ function PopulateCustomizationInfoArrays()
 
 	repInfo = class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo;
 	LogAlwaysInternal("PopulateCustomizationInfoArrays"@repInfo.UniqueId.Uid.A@repInfo.UniqueId.Uid.B);
-	//temp = class'BangModCustomization'.static.CheckMicroTxOwnership(1, repInfo);
+	//temp = class'XangModCustomization'.static.CheckMicroTxOwnership(1, repInfo);
 	//class'WorldInfo'.static.GetWorldInfo().Spawn.
 	for(i = 0; i < 4; ++i)
 	{
-		TeamCustomizationChoices[EFAC_Agatha].ClassCustomizationChoices[i] = class'BangModCustomization'.static.LocalGetCustomizationChoices(EFAC_Agatha, i);
-		TeamCustomizationChoices[EFAC_Mason].ClassCustomizationChoices[i] = class'BangModCustomization'.static.LocalGetCustomizationChoices(EFAC_Mason, i);
-		TeamCustomizationChoices[EFAC_FFA].ClassCustomizationChoices[i] = class'BangModCustomization'.static.LocalGetCustomizationChoices(EFAC_FFA, i);
+		TeamCustomizationChoices[EFAC_Agatha].ClassCustomizationChoices[i] = class'XangModCustomization'.static.LocalGetCustomizationChoices(EFAC_Agatha, i);
+		TeamCustomizationChoices[EFAC_Mason].ClassCustomizationChoices[i] = class'XangModCustomization'.static.LocalGetCustomizationChoices(EFAC_Mason, i);
+		TeamCustomizationChoices[EFAC_FFA].ClassCustomizationChoices[i] = class'XangModCustomization'.static.LocalGetCustomizationChoices(EFAC_FFA, i);
 	}
 
 	// Assassin (class 4) choices are kept in the subclass array, since the parent
 	// struct only holds classes 0-3.
-	AssassinChoices[EFAC_Agatha] = class'BangModCustomization'.static.LocalGetCustomizationChoices(EFAC_Agatha, 4);
-	AssassinChoices[EFAC_Mason] = class'BangModCustomization'.static.LocalGetCustomizationChoices(EFAC_Mason, 4);
-	AssassinChoices[EFAC_FFA] = class'BangModCustomization'.static.LocalGetCustomizationChoices(EFAC_FFA, 4);
+	AssassinChoices[EFAC_Agatha] = class'XangModCustomization'.static.LocalGetCustomizationChoices(EFAC_Agatha, 4);
+	AssassinChoices[EFAC_Mason] = class'XangModCustomization'.static.LocalGetCustomizationChoices(EFAC_Mason, 4);
+	AssassinChoices[EFAC_FFA] = class'XangModCustomization'.static.LocalGetCustomizationChoices(EFAC_FFA, 4);
 
 	for(i = 0; i < 4; ++i)
 	{
-		class'BangModCustomization'.static.LocalGetSelectedWeaponDrops(EFAC_MASON, i, TeamWeaponChoices[EFAC_MASON].Classes[i].Weapons, AOCPRI(repInfo));
-		class'BangModCustomization'.static.LocalGetSelectedWeaponDrops(EFAC_AGATHA, i, TeamWeaponChoices[EFAC_AGATHA].Classes[i].Weapons, AOCPRI(repInfo));
-		class'BangModCustomization'.static.LocalGetSelectedWeaponDrops(EFAC_FFA, i, TeamWeaponChoices[EFAC_FFA].Classes[i].Weapons, AOCPRI(repInfo));
+		class'XangModCustomization'.static.LocalGetSelectedWeaponDrops(EFAC_MASON, i, TeamWeaponChoices[EFAC_MASON].Classes[i].Weapons, AOCPRI(repInfo));
+		class'XangModCustomization'.static.LocalGetSelectedWeaponDrops(EFAC_AGATHA, i, TeamWeaponChoices[EFAC_AGATHA].Classes[i].Weapons, AOCPRI(repInfo));
+		class'XangModCustomization'.static.LocalGetSelectedWeaponDrops(EFAC_FFA, i, TeamWeaponChoices[EFAC_FFA].Classes[i].Weapons, AOCPRI(repInfo));
 	}
 
-	FactionSupportFavIconId = class'BangModCustomization'.static.LocalGetFactionSupporterId();
+	FactionSupportFavIconId = class'XangModCustomization'.static.LocalGetFactionSupporterId();
 }
 
 function SaveChoices()
@@ -56,15 +56,15 @@ function SaveChoices()
 	local SCustomizationChoice Choices;
 	for(i = 0; i < 4; ++i)
 	{
-		class'BangModCustomization'.static.LocalSetCustomizationChoices(TeamCustomizationChoices[EFAC_Agatha].ClassCustomizationChoices[i], EFAC_Agatha, i, TeamWeaponChoices[EFAC_AGATHA].Classes[i].Weapons, FactionSupportFavIconId);
-		class'BangModCustomization'.static.LocalSetCustomizationChoices(TeamCustomizationChoices[EFAC_Mason].ClassCustomizationChoices[i], EFAC_Mason, i, TeamWeaponChoices[EFAC_Mason].Classes[i].Weapons, FactionSupportFavIconId);
-		class'BangModCustomization'.static.LocalSetCustomizationChoices(TeamCustomizationChoices[EFAC_FFA].ClassCustomizationChoices[i], EFAC_FFA, i, TeamWeaponChoices[EFAC_FFA].Classes[i].Weapons, FactionSupportFavIconId);
+		class'XangModCustomization'.static.LocalSetCustomizationChoices(TeamCustomizationChoices[EFAC_Agatha].ClassCustomizationChoices[i], EFAC_Agatha, i, TeamWeaponChoices[EFAC_AGATHA].Classes[i].Weapons, FactionSupportFavIconId);
+		class'XangModCustomization'.static.LocalSetCustomizationChoices(TeamCustomizationChoices[EFAC_Mason].ClassCustomizationChoices[i], EFAC_Mason, i, TeamWeaponChoices[EFAC_Mason].Classes[i].Weapons, FactionSupportFavIconId);
+		class'XangModCustomization'.static.LocalSetCustomizationChoices(TeamCustomizationChoices[EFAC_FFA].ClassCustomizationChoices[i], EFAC_FFA, i, TeamWeaponChoices[EFAC_FFA].Classes[i].Weapons, FactionSupportFavIconId);
 	}
 
 	// Assassin (class 4) choices live in the subclass array.
-	class'BangModCustomization'.static.LocalSetCustomizationChoices(AssassinChoices[EFAC_Agatha], EFAC_Agatha, 4, TeamWeaponChoices[EFAC_AGATHA].Classes[4].Weapons, FactionSupportFavIconId);
-	class'BangModCustomization'.static.LocalSetCustomizationChoices(AssassinChoices[EFAC_Mason], EFAC_Mason, 4, TeamWeaponChoices[EFAC_MASON].Classes[4].Weapons, FactionSupportFavIconId);
-	class'BangModCustomization'.static.LocalSetCustomizationChoices(AssassinChoices[EFAC_FFA], EFAC_FFA, 4, TeamWeaponChoices[EFAC_FFA].Classes[4].Weapons, FactionSupportFavIconId);
+	class'XangModCustomization'.static.LocalSetCustomizationChoices(AssassinChoices[EFAC_Agatha], EFAC_Agatha, 4, TeamWeaponChoices[EFAC_AGATHA].Classes[4].Weapons, FactionSupportFavIconId);
+	class'XangModCustomization'.static.LocalSetCustomizationChoices(AssassinChoices[EFAC_Mason], EFAC_Mason, 4, TeamWeaponChoices[EFAC_MASON].Classes[4].Weapons, FactionSupportFavIconId);
+	class'XangModCustomization'.static.LocalSetCustomizationChoices(AssassinChoices[EFAC_FFA], EFAC_FFA, 4, TeamWeaponChoices[EFAC_FFA].Classes[4].Weapons, FactionSupportFavIconId);
 
 	AOCPlayerController(class'Worldinfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientUpdateCurrentCustomizationInfo();
 
@@ -73,7 +73,7 @@ function SaveChoices()
 	PC = AOCPlayerController(class'Worldinfo'.static.GetWorldInfo().GetALocalPlayerController());
 	if(PC != none && PC.CurrentFamilyInfo != none)
 	{
-		Choices = class'BangModCustomization'.static.LocalGetCustomizationChoices(PC.CurrentFamilyInfo.FamilyFaction, PC.CurrentFamilyInfo.ClassReference,
+		Choices = class'XangModCustomization'.static.LocalGetCustomizationChoices(PC.CurrentFamilyInfo.FamilyFaction, PC.CurrentFamilyInfo.ClassReference,
 			PC.PrimaryWeapon.default.CurrentWeaponType, PC.SecondaryWeapon.default.CurrentWeaponType, PC.TertiaryWeapon.default.CurrentWeaponType);
 		PC.ServerUpdateCurrentCustomizationInfo(Choices, PC.CurrentFamilyInfo.FamilyFaction, PC.CurrentFamilyInfo.ClassReference);
 	}
@@ -97,7 +97,7 @@ function OnFadeOutDone()
 		PreviewController = class'WorldInfo'.static.GetWorldInfo().Spawn(class'AOCAIController_NPC_Preview',,,PawnLocation);
 	}
 
-	PreviewPawn = class'WorldInfo'.static.GetWorldInfo().Spawn(class'BangModPreviewPawn',,,PawnLocation);
+	PreviewPawn = class'WorldInfo'.static.GetWorldInfo().Spawn(class'XangModPreviewPawn',,,PawnLocation);
 	PreviewPawn.bCollideWorld = false;
 	PreviewPawn.SetLocation(PawnLocation);
 	//class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().ClientAddTextureStreamingLoc(PreviewPawn.Location,100, false);
@@ -187,7 +187,7 @@ function OnFadeOutDone()
 	PC = AOCPlayerController(class'Worldinfo'.static.GetWorldInfo().GetALocalPlayerController());
     if(PC != none)
     {
-		Choices = class'BangModCustomization'.static.LocalGetCustomizationChoices(PC.CurrentFamilyInfo.FamilyFaction, PC.CurrentFamilyInfo.ClassReference,
+		Choices = class'XangModCustomization'.static.LocalGetCustomizationChoices(PC.CurrentFamilyInfo.FamilyFaction, PC.CurrentFamilyInfo.ClassReference,
 			PC.PrimaryWeapon.default.CurrentWeaponType, PC.SecondaryWeapon.default.CurrentWeaponType, PC.TertiaryWeapon.default.CurrentWeaponType);
         PC.ServerUpdateCurrentCustomizationInfo(Choices, PC.CurrentFamilyInfo.FamilyFaction, PC.CurrentFamilyInfo.ClassReference);
     }
@@ -249,7 +249,7 @@ function GFxObject PopulatePatternList(int CharID, out float selectedIndex)
 	{
 		ListDataProvider = Outer.CreateArray();
 
-		IDs = class'BangModCustomization'.static.GetAllTabardsFor(CharID);
+		IDs = class'XangModCustomization'.static.GetAllTabardsFor(CharID);
 		i = 0;
 		foreach IDs(GearID)
 		{
@@ -258,19 +258,19 @@ function GFxObject PopulatePatternList(int CharID, out float selectedIndex)
 			PurchaseName = "";
 			Price = "";
 
-			bIsOwned = class'BangModCustomization'.static.IsTabardOwnedBy(GearID, CharID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass);
-			if(bIsOwned || class'BangModCustomization'.static.IsTabardVisibleIfUnowned(GearID, CharID))
+			bIsOwned = class'XangModCustomization'.static.IsTabardOwnedBy(GearID, CharID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass);
+			if(bIsOwned || class'XangModCustomization'.static.IsTabardVisibleIfUnowned(GearID, CharID))
 			{
 				IndvElement = CreateObject("Object");
 				IndvElement.SetInt("tabardID", GearID);
 				IndvElement.SetBool("isLocked", !bIsOwned);
-				class'BangModCustomization'.static.GetTabardStoreDescription(GearID, CharID, bPromptToBuy, Price, MicroTxID, PurchaseName);
+				class'XangModCustomization'.static.GetTabardStoreDescription(GearID, CharID, bPromptToBuy, Price, MicroTxID, PurchaseName);
 				IndvElement.SetBool("isPurchasable", Bool(bPromptToBuy) && !bIsOwned);
 				IndvElement.SetString("price", Price);
 				IndvElement.SetInt("microTxnId", MicroTxID);
 
 				DiscountPercent = "";
-				if(class'BangModCustomization'.static.IsMicroTxnItemOnSale(MicroTxID, Price, DiscountPercent))
+				if(class'XangModCustomization'.static.IsMicroTxnItemOnSale(MicroTxID, Price, DiscountPercent))
 				{
 					IndvElement.SetBool("isItemOnSale", true);
 					IndvElement.SetBool("isNewItem", false);
@@ -280,7 +280,7 @@ function GFxObject PopulatePatternList(int CharID, out float selectedIndex)
 				else
 				{
 					IndvElement.SetBool("isItemOnSale", false);
-					if(class'BangModCustomization'.static.IsMicroTxnItemNew(MicroTxID))
+					if(class'XangModCustomization'.static.IsMicroTxnItemNew(MicroTxID))
 					{
 						IndvElement.SetBool("isNewItem", true);
 						AddItemToNotificationArray(MicroTxID);
@@ -289,14 +289,14 @@ function GFxObject PopulatePatternList(int CharID, out float selectedIndex)
 						IndvElement.SetBool("isNewItem", false);
 				}
 				
-				IndvElement.SetString("itemName", DiscountPercent@class'BangModCustomization'.static.GetTabardName(GearID, CharID));
+				IndvElement.SetString("itemName", DiscountPercent@class'XangModCustomization'.static.GetTabardName(GearID, CharID));
 				ListDataProvider.SetElementObject(i, IndvElement);
 
 				if(GearID == TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Tabard)
 				{
 					ShowBuyButton(Bool(bPromptToBuy) && !bIsOwned, Price);
 					selectedIndex = i;
-					SetItemNameLabel(class'BangModCustomization'.static.GetTabardName(GearID, CharID));
+					SetItemNameLabel(class'XangModCustomization'.static.GetTabardName(GearID, CharID));
 				}
 
 				++i;
@@ -331,7 +331,7 @@ function GFxObject PopulateShieldList(int CharID, out float selectedIndex)
 
 		if(IsAShieldWeapon(SelectedWeapon) && TeamWeaponChoices[SelectedTeam].Classes[SelectedClass].Weapons[SelectedWeapon] != 0)
 		{
-			class'BangModCustomization'.static.GetShieldDisplayInfo(TeamWeaponChoices[SelectedTeam].Classes[SelectedClass].Weapons[SelectedWeapon], class<AOCWeapon_Shield>(WeaponClasses[SelectedWeapon]).default.Shield, AllowedTeams, SkeletalMeshPath, StaticMeshPath, MaterialPath, bUseDefaultParameters, WeaponParameterSets, ShieldPatternNames, ShieldPatternPaths);
+			class'XangModCustomization'.static.GetShieldDisplayInfo(TeamWeaponChoices[SelectedTeam].Classes[SelectedClass].Weapons[SelectedWeapon], class<AOCWeapon_Shield>(WeaponClasses[SelectedWeapon]).default.Shield, AllowedTeams, SkeletalMeshPath, StaticMeshPath, MaterialPath, bUseDefaultParameters, WeaponParameterSets, ShieldPatternNames, ShieldPatternPaths);
 
 			for(i = 0; i < ShieldPatternPaths.Length; ++i)
 			{
@@ -347,7 +347,7 @@ function GFxObject PopulateShieldList(int CharID, out float selectedIndex)
 		}
 		else
 		{
-			IDs = class'BangModCustomization'.static.GetAllShieldPatternsFor(CharID);
+			IDs = class'XangModCustomization'.static.GetAllShieldPatternsFor(CharID);
 			i = 0;
 			foreach IDs(GearID)
 			{
@@ -356,16 +356,16 @@ function GFxObject PopulateShieldList(int CharID, out float selectedIndex)
 				PurchaseName = "";
 				Price = "";
 
-				bIsOwned = class'BangModCustomization'.static.IsShieldPatternOwnedBy(GearID, CharID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass);
-				if(bIsOwned || class'BangModCustomization'.static.IsShieldPatternVisibleIfUnowned(GearID, CharID))
+				bIsOwned = class'XangModCustomization'.static.IsShieldPatternOwnedBy(GearID, CharID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass);
+				if(bIsOwned || class'XangModCustomization'.static.IsShieldPatternVisibleIfUnowned(GearID, CharID))
 				{
 					IndvElement = CreateObject("Object");
 					IndvElement.SetInt("shieldID", GearID);
 					IndvElement.SetBool("isLocked", !bIsOwned);
-					class'BangModCustomization'.static.GetShieldStoreDescription(GearID, CharID, bPromptToBuy, Price, MicroTxID, PurchaseName);
+					class'XangModCustomization'.static.GetShieldStoreDescription(GearID, CharID, bPromptToBuy, Price, MicroTxID, PurchaseName);
 
 					DiscountPercent = "";
-					if(class'BangModCustomization'.static.IsMicroTxnItemOnSale(MicroTxID, Price, DiscountPercent))
+					if(class'XangModCustomization'.static.IsMicroTxnItemOnSale(MicroTxID, Price, DiscountPercent))
 					{
 						IndvElement.SetBool("isItemOnSale", true);
 						IndvElement.SetBool("isNewItem", false);
@@ -375,7 +375,7 @@ function GFxObject PopulateShieldList(int CharID, out float selectedIndex)
 					else
 					{
 						IndvElement.SetBool("isItemOnSale", false);
-						if(class'BangModCustomization'.static.IsMicroTxnItemNew(MicroTxID))
+						if(class'XangModCustomization'.static.IsMicroTxnItemNew(MicroTxID))
 							{
 								IndvElement.SetBool("isNewItem", true);
 								AddItemToNotificationArray(MicroTxID);
@@ -386,7 +386,7 @@ function GFxObject PopulateShieldList(int CharID, out float selectedIndex)
 
 					IndvElement.SetBool("isPurchasable", Bool(bPromptToBuy) && !bIsOwned);
 					IndvElement.SetString("price", Price);
-					IndvElement.SetString("itemName", DiscountPercent@class'BangModCustomization'.static.GetShieldPatternName(GearID, CharID));
+					IndvElement.SetString("itemName", DiscountPercent@class'XangModCustomization'.static.GetShieldPatternName(GearID, CharID));
 					IndvElement.SetInt("microTxnId", MicroTxID);
 					ListDataProvider.SetElementObject(i, IndvElement);
 
@@ -394,7 +394,7 @@ function GFxObject PopulateShieldList(int CharID, out float selectedIndex)
 					{
 						ShowBuyButton(Bool(bPromptToBuy) && !bIsOwned, Price);
 						selectedIndex = i;
-						SetItemNameLabel(class'BangModCustomization'.static.GetShieldPatternName(GearID, CharID));
+						SetItemNameLabel(class'XangModCustomization'.static.GetShieldPatternName(GearID, CharID));
 					}
 
 					++i;
@@ -422,7 +422,7 @@ function GFxObject PopulateEmblemList(out float selectedIndex)
 	{
 		ListDataProvider = Outer.CreateArray();
 
-		IDs = class'BangModCustomization'.static.GetAllEmblemsFor(SelectedTeam);
+		IDs = class'XangModCustomization'.static.GetAllEmblemsFor(SelectedTeam);
 		i = 0;
 		foreach IDs(GearID)
 		{
@@ -430,20 +430,20 @@ function GFxObject PopulateEmblemList(out float selectedIndex)
 			bPromptToBuy = 0;
 			PurchaseName = "";
 			Price = "";
-			bIsMicoTxnVisible = class'BangModCustomization'.static.IsMicroTxnEmblemVisible(GearID, SelectedTeam, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo);
+			bIsMicoTxnVisible = class'XangModCustomization'.static.IsMicroTxnEmblemVisible(GearID, SelectedTeam, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo);
 
 			if(bIsMicoTxnVisible)
 			{
-				bIsOwned = class'BangModCustomization'.static.IsEmblemOwnedBy(GearID, SelectedTeam, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass);
-				if(bIsOwned || class'BangModCustomization'.static.IsEmblemVisibleIfUnowned(GearID, SelectedTeam))
+				bIsOwned = class'XangModCustomization'.static.IsEmblemOwnedBy(GearID, SelectedTeam, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass);
+				if(bIsOwned || class'XangModCustomization'.static.IsEmblemVisibleIfUnowned(GearID, SelectedTeam))
 				{
 					IndvElement = CreateObject("Object");
 					IndvElement.SetInt("emblemID", GearID);
 					IndvElement.SetBool("isLocked", !bIsOwned);
-					class'BangModCustomization'.static.GetEmblemStoreDescription(GearID, SelectedTeam, bPromptToBuy, Price, MicroTxID, PurchaseName);
+					class'XangModCustomization'.static.GetEmblemStoreDescription(GearID, SelectedTeam, bPromptToBuy, Price, MicroTxID, PurchaseName);
 
 					DiscountPercent = "";
-					if(class'BangModCustomization'.static.IsMicroTxnItemOnSale(MicroTxID, Price, DiscountPercent))
+					if(class'XangModCustomization'.static.IsMicroTxnItemOnSale(MicroTxID, Price, DiscountPercent))
 					{
 						IndvElement.SetBool("isItemOnSale", true);
 						IndvElement.SetBool("isNewItem", false);
@@ -453,7 +453,7 @@ function GFxObject PopulateEmblemList(out float selectedIndex)
 					else
 					{
 						IndvElement.SetBool("isItemOnSale", false);
-						if(class'BangModCustomization'.static.IsMicroTxnItemNew(MicroTxID))
+						if(class'XangModCustomization'.static.IsMicroTxnItemNew(MicroTxID))
 						{
 							IndvElement.SetBool("isNewItem", true);
 							AddItemToNotificationArray(MicroTxID);
@@ -464,7 +464,7 @@ function GFxObject PopulateEmblemList(out float selectedIndex)
 
 					IndvElement.SetBool("isPurchasable", Bool(bPromptToBuy) && !bIsOwned);
 					IndvElement.SetInt("microTxnId", MicroTxID);
-					IndvElement.SetString("itemName", DiscountPercent@class'BangModCustomization'.static.GetEmblemName(GearID, SelectedTeam));
+					IndvElement.SetString("itemName", DiscountPercent@class'XangModCustomization'.static.GetEmblemName(GearID, SelectedTeam));
 					ListDataProvider.SetElementObject(i, IndvElement);
 
 					IndvElement.SetString("price", Price);
@@ -473,7 +473,7 @@ function GFxObject PopulateEmblemList(out float selectedIndex)
 					{
 						ShowBuyButton(Bool(bPromptToBuy) && !bIsOwned, Price);
 						selectedIndex = i;
-						SetItemNameLabel(class'BangModCustomization'.static.GetEmblemName(GearID, SelectedTeam));
+						SetItemNameLabel(class'XangModCustomization'.static.GetEmblemName(GearID, SelectedTeam));
 					}
 
 					++i;
@@ -525,18 +525,18 @@ function GFXObject PopulateWeaponList(int CharID, out float selectedIndex)
 				IndvElement = CreateObject("Object");
 				IndvElement.SetBool("isLocked", false);
 				IndvElement.SetInt("weaponType", WeaponClass.default.CurrentWeaponType);
-				//class'BangModCustomization'.static.GetWeaponSkinStoreDescription(GearID, CharacterID, bPromptToBuy, Price, MicroTxID, PurchaseName);
+				//class'XangModCustomization'.static.GetWeaponSkinStoreDescription(GearID, CharacterID, bPromptToBuy, Price, MicroTxID, PurchaseName);
 				IndvElement.SetBool("isPurchasable", false);
 				IndvElement.SetString("itemName", WeaponClass.default.WeaponName);
 				ListDataProvider.SetElementObject(i, IndvElement);
 
 				foreach AllOwnedOrPurchasableWeaponDrops[WeaponClass.default.CurrentWeaponType].Items(WeaponItem)
 				{
-					if(class'BangModCustomization'.static.IsMicroTxnItemOnSale(WeaponItem.GearData.MicroTxID, Price, DiscountPercent))
+					if(class'XangModCustomization'.static.IsMicroTxnItemOnSale(WeaponItem.GearData.MicroTxID, Price, DiscountPercent))
 					{
 						IsOnSale = true;
 					}
-					else if(class'BangModCustomization'.static.IsMicroTxnItemNew(WeaponItem.GearData.MicroTxID))
+					else if(class'XangModCustomization'.static.IsMicroTxnItemNew(WeaponItem.GearData.MicroTxID))
 					{
 						IsNew = true;
 					}
@@ -579,32 +579,32 @@ function GFxObject PopulateHelmetList(int CharID, out float selectedIndex)
 	local string Price,PurchaseName, DiscountPercent;
 	local int MicroTxID;
 
-	LogAlwaysInternal("BangMod PopulateHelmetList CharID="@CharID@" team="@SelectedTeam@" class="@SelectedClass);
-	AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("BangMod PopulateHelmetList team=" $ SelectedTeam $ " class=" $ SelectedClass);
+	LogAlwaysInternal("XangMod PopulateHelmetList CharID="@CharID@" team="@SelectedTeam@" class="@SelectedClass);
+	AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("XangMod PopulateHelmetList team=" $ SelectedTeam $ " class=" $ SelectedClass);
 
 	if(RightTabMode == RTAB_Helmet)
 	{
 		ListDataProvider = Outer.CreateArray();
 
-		IDs = class'BangModCustomization'.static.GetAllHelmetsFor(CharID);
-        LogAlwaysInternal("BangMod GetAllHelmetsFor count="@IDs.Length);
-		AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("BangMod HelmetList count=" $ IDs.Length);
+		IDs = class'XangModCustomization'.static.GetAllHelmetsFor(CharID);
+        LogAlwaysInternal("XangMod GetAllHelmetsFor count="@IDs.Length);
+		AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("XangMod HelmetList count=" $ IDs.Length);
 		i = 0;
 		foreach IDs(GearID)
 		{
-            LogAlwaysInternal("BangMod Helmet ID="@GearID);
-			AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("BangMod Helmet ID=" $ GearID);
-			// BangMod: restored GroupHexID gating for helmets. Non-group helmets
+            LogAlwaysInternal("XangMod Helmet ID="@GearID);
+			AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("XangMod Helmet ID=" $ GearID);
+			// XangMod: restored GroupHexID gating for helmets. Non-group helmets
 			// stay unlocked; group-locked helmets are hidden unless owned (or
 			// visible-if-unowned).
-			bIsOwned = class'BangModCustomization'.static.IsHelmetOwnedBy(GearID, CharID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass);
-			bIsMicoTxnVisible = class'BangModCustomization'.static.IsMicroTxnHelmetVisible(GearID, CharID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo);
+			bIsOwned = class'XangModCustomization'.static.IsHelmetOwnedBy(GearID, CharID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass);
+			bIsMicoTxnVisible = class'XangModCustomization'.static.IsMicroTxnHelmetVisible(GearID, CharID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo);
 			// (Commented out: old global-unlock behavior)
 			//bIsOwned = true;
 
 			if(bIsMicoTxnVisible)
 			{
-				if(bIsOwned || class'BangModCustomization'.static.IsHelmetVisibleIfUnowned(GearID, CharID))
+				if(bIsOwned || class'XangModCustomization'.static.IsHelmetVisibleIfUnowned(GearID, CharID))
 				{
 					IndvElement = CreateObject("Object");
 					IndvElement.SetInt("helmetID", GearID);
@@ -613,19 +613,19 @@ function GFxObject PopulateHelmetList(int CharID, out float selectedIndex)
 					IndvElement.SetBool("isNewItem", false);
 					IndvElement.SetBool("isPurchasable", false);
 					IndvElement.SetInt("microTxnId", 0);
-					IndvElement.SetString("itemName", class'BangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
-					LogAlwaysInternal("BangMod Helmet Name="@class'BangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
-					AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("BangMod Helmet Name=" $ class'BangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
+					IndvElement.SetString("itemName", class'XangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
+					LogAlwaysInternal("XangMod Helmet Name="@class'XangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
+					AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("XangMod Helmet Name=" $ class'XangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
 					IndvElement.SetString("price", "");
 					ListDataProvider.SetElementObject(i, IndvElement);
 
 					if(GearID == TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Helmet)
 					{
-						LogAlwaysInternal("BangMod Helmet Selected match id="@GearID);
-						AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("BangMod Helmet Selected=" $ GearID);
+						LogAlwaysInternal("XangMod Helmet Selected match id="@GearID);
+						AOCPlayerController(class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController()).ClientDisplayConsoleMessage("XangMod Helmet Selected=" $ GearID);
 						ShowBuyButton(false, "");
 						selectedIndex = i;
-						SetItemNameLabel(class'BangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
+						SetItemNameLabel(class'XangModCustomization'.static.GetHelmetName(GearID,TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character));
 					}
 
 					++i;
@@ -653,7 +653,7 @@ function GFxObject PopulateArmourList(out float selectedIndex)
 	{
 		ListDataProvider = Outer.CreateArray();
 
-		IDs = class'BangModCustomization'.static.GetAllCharactersFor(SelectedTeam, SelectedClass);
+		IDs = class'XangModCustomization'.static.GetAllCharactersFor(SelectedTeam, SelectedClass);
 		i = 0;
 		foreach IDs(GearID)
 		{
@@ -662,20 +662,20 @@ function GFxObject PopulateArmourList(out float selectedIndex)
 			PurchaseName = "";
 			Price = "";
 
-			bIsOwned = class'BangModCustomization'.static.IsCharacterOwnedBy(GearID, SelectedTeam, SelectedClass, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo);
-			bIsMicoTxnVisible = class'BangModCustomization'.static.IsMicroTxnCharacterVisible(GearID, SelectedTeam, SelectedClass, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo);
+			bIsOwned = class'XangModCustomization'.static.IsCharacterOwnedBy(GearID, SelectedTeam, SelectedClass, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo);
+			bIsMicoTxnVisible = class'XangModCustomization'.static.IsMicroTxnCharacterVisible(GearID, SelectedTeam, SelectedClass, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo);
 
 			if(bIsMicoTxnVisible)
 			{
-				if(bIsOwned || class'BangModCustomization'.static.IsCharacterVisibleIfUnowned(GearID, SelectedTeam, SelectedClass))
+				if(bIsOwned || class'XangModCustomization'.static.IsCharacterVisibleIfUnowned(GearID, SelectedTeam, SelectedClass))
 				{
 					IndvElement = CreateObject("Object");
 					IndvElement.SetInt("characterID", GearID);
 					IndvElement.SetBool("isLocked", !bIsOwned);
-					class'BangModCustomization'.static.GetCharacterStoreDescription(GearID, bPromptToBuy, Price, MicroTxID, PurchaseName);
+					class'XangModCustomization'.static.GetCharacterStoreDescription(GearID, bPromptToBuy, Price, MicroTxID, PurchaseName);
 
 					DiscountPercent = "";
-					if(class'BangModCustomization'.static.IsMicroTxnItemOnSale(MicroTxID, Price, DiscountPercent))
+					if(class'XangModCustomization'.static.IsMicroTxnItemOnSale(MicroTxID, Price, DiscountPercent))
 					{
 						IndvElement.SetBool("isItemOnSale", true);
 						IndvElement.SetBool("isNewItem", false);
@@ -686,7 +686,7 @@ function GFxObject PopulateArmourList(out float selectedIndex)
 					{
 						IndvElement.SetBool("isItemOnSale", false);
 
-						if(class'BangModCustomization'.static.IsMicroTxnItemNew(MicroTxID))
+						if(class'XangModCustomization'.static.IsMicroTxnItemNew(MicroTxID))
 						{
 							IndvElement.SetBool("isNewItem", true);
 							AddItemToNotificationArray(MicroTxID);
@@ -697,7 +697,7 @@ function GFxObject PopulateArmourList(out float selectedIndex)
 
 					IndvElement.SetBool("isPurchasable", Bool(bPromptToBuy) && !bIsOwned);
 					IndvElement.SetInt("microTxnId", MicroTxID);
-					IndvElement.SetString("itemName", DiscountPercent@class'BangModCustomization'.static.GetCharacterName(GearID));
+					IndvElement.SetString("itemName", DiscountPercent@class'XangModCustomization'.static.GetCharacterName(GearID));
 					ListDataProvider.SetElementObject(i, IndvElement);
 
 					IndvElement.SetString("price", Price);
@@ -706,7 +706,7 @@ function GFxObject PopulateArmourList(out float selectedIndex)
 					{
 						ShowBuyButton(Bool(bPromptToBuy) && !bIsOwned, Price);
 						selectedIndex = i;
-						SetItemNameLabel(class'BangModCustomization'.static.GetCharacterName(GearID));
+						SetItemNameLabel(class'XangModCustomization'.static.GetCharacterName(GearID));
 					}		
 
 					//only increment the list if the armour is visible
@@ -788,7 +788,7 @@ function PopulateWeaponModels()
 
 			foreach Weapons.Items(Weapon) // Iterate through each weapon
 		{
-			// BangMod: treat all weapon skins as owned and visible to mirror 2.2 working unlock behavior
+			// XangMod: treat all weapon skins as owned and visible to mirror 2.2 working unlock behavior
 			bIsOwned = true;
 			bIsMicoTxnVisible = true;
 
@@ -799,10 +799,10 @@ function PopulateWeaponModels()
 				if(bIsOwned || Weapon.GearData.bVisibleInSelectorIfUnowned)
 				{
 					IndvElement = CreateObject("Object");
-					class'BangModCustomization'.static.GetGearStoreDescription(Weapon.GearData, bPromptToBuy, Price, MicroTxID, PurchaseName);
+					class'XangModCustomization'.static.GetGearStoreDescription(Weapon.GearData, bPromptToBuy, Price, MicroTxID, PurchaseName);
 
 					DiscountPercent = "";
-					if(class'BangModCustomization'.static.IsMicroTxnItemOnSale(Weapon.GearData.MicroTxID, Price, DiscountPercent))
+					if(class'XangModCustomization'.static.IsMicroTxnItemOnSale(Weapon.GearData.MicroTxID, Price, DiscountPercent))
 					{
 						IndvElement.SetBool("isItemOnSale", true);
 						IndvElement.SetBool("isNewItem", false);
@@ -812,7 +812,7 @@ function PopulateWeaponModels()
 					else
 					{
 						IndvElement.SetBool("isItemOnSale", false);
-						if(class'BangModCustomization'.static.IsMicroTxnItemNew(Weapon.GearData.MicroTxID))
+						if(class'XangModCustomization'.static.IsMicroTxnItemNew(Weapon.GearData.MicroTxID))
 						{
 							IndvElement.SetBool("isNewItem", true);
 							AddItemToNotificationArray(MicroTxID);
@@ -879,8 +879,8 @@ function SetupColors(optional bool UpdateSwatch1 = true, optional bool UpdateSwa
 
 	for(ColourSwatchIndex = 0; ColourSwatchIndex < 2; ColourSwatchIndex++)
 	{		
-		NumberOfEmblemColours = class'BangModCustomization'.static.GetNumberOfEmblemColours(SelectedTeam);
-		NumberOfTabardColours = class'BangModCustomization'.static.GetNumberOfTabardColours(ColourSwatchIndex, SelectedTeam);
+		NumberOfEmblemColours = class'XangModCustomization'.static.GetNumberOfEmblemColours(SelectedTeam);
+		NumberOfTabardColours = class'XangModCustomization'.static.GetNumberOfTabardColours(ColourSwatchIndex, SelectedTeam);
 
 		NumberOfObjects.SetInt("NumberOfSwatches", (RightTabMode == RTAB_Emblem) ? NumberOfEmblemColours : NumberOfTabardColours);
 
@@ -890,7 +890,7 @@ function SetupColors(optional bool UpdateSwatch1 = true, optional bool UpdateSwa
 
 			if(RightTabMode == RTAB_Emblem)
 			{
-				swatchColour = class'BangModCustomization'.static.ConvertEmblemColorIndexToColor(j, SelectedTeam);
+				swatchColour = class'XangModCustomization'.static.ConvertEmblemColorIndexToColor(j, SelectedTeam);
 				ColourObj.SetInt("ra", swatchColour.R);
 				ColourObj.SetInt("ba", swatchColour.B);
 				ColourObj.SetInt("ga", swatchColour.G);
@@ -898,7 +898,7 @@ function SetupColors(optional bool UpdateSwatch1 = true, optional bool UpdateSwa
 			}
 			else
 			{
-				swatchColour = class'BangModCustomization'.static.ConvertTabardColorIndexToColor(j, SelectedTeam, ColourSwatchIndex);
+				swatchColour = class'XangModCustomization'.static.ConvertTabardColorIndexToColor(j, SelectedTeam, ColourSwatchIndex);
 				ColourObj.SetInt("ra", swatchColour.R);
 				ColourObj.SetInt("ba", swatchColour.B);
 				ColourObj.SetInt("ga", swatchColour.G);
@@ -919,7 +919,7 @@ function SetupColors(optional bool UpdateSwatch1 = true, optional bool UpdateSwa
 		//the third swatch is always fully populated
 		for(j = 0; j < 30; ++j)
 		{
-			swatchColour = class'BangModCustomization'.static.ConvertEmblemColorIndexToColor(j, SelectedTeam);
+			swatchColour = class'XangModCustomization'.static.ConvertEmblemColorIndexToColor(j, SelectedTeam);
 
 			ColourObj = CreateObject("Object");
 			ColourObj.SetInt("ra", swatchColour.R);
@@ -958,19 +958,19 @@ function OnRightListItemClicked(GFxClikWidget.EventData Params)
 		GearID = RightListDataProvider.GetElementObject(SelectedIndex).GetInt("tabardID");
 		TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Tabard = GearID;
 
-		SetItemNameLabel(class'BangModCustomization'.static.GetTabardName(GearID, CharacterID));
+		SetItemNameLabel(class'XangModCustomization'.static.GetTabardName(GearID, CharacterID));
 	}
 	else if(RightTabMode == RTAB_Emblem)
 	{
 		GearID = RightListDataProvider.GetElementObject(SelectedIndex).GetInt("emblemID");
 		TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Emblem = GearID;
-		SetItemNameLabel(class'BangModCustomization'.static.GetEmblemName(GearID, SelectedTeam));
+		SetItemNameLabel(class'XangModCustomization'.static.GetEmblemName(GearID, SelectedTeam));
 	}
 	else if(RightTabMode == RTAB_Shield)
 	{
 		GearID = RightListDataProvider.GetElementObject(SelectedIndex).GetInt("shieldID");
 		TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Shield = GearID;
-		SetItemNameLabel(class'BangModCustomization'.static.GetShieldPatternName(GearID, CharacterID));
+		SetItemNameLabel(class'XangModCustomization'.static.GetShieldPatternName(GearID, CharacterID));
 	}
 	else if(RightTabMode == RTAB_Weapon)
 	{
@@ -985,7 +985,7 @@ function OnRightListItemClicked(GFxClikWidget.EventData Params)
 	{
 		GearID = RightListDataProvider.GetElementObject(SelectedIndex).GetInt("helmetID");
 		TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Helmet = GearID;
-		SetItemNameLabel(class'BangModCustomization'.static.GetHelmetName(GearID,CharacterID));
+		SetItemNameLabel(class'XangModCustomization'.static.GetHelmetName(GearID,CharacterID));
 		FullPawnRefresh = true;
 		FullRefreshDisplayedPawn();
 	}
@@ -994,7 +994,7 @@ function OnRightListItemClicked(GFxClikWidget.EventData Params)
 		GearID = RightListDataProvider.GetElementObject(SelectedIndex).GetInt("characterID");
 		TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character = GearID;
 
-		SetItemNameLabel(class'BangModCustomization'.static.GetCharacterName(GearID));
+		SetItemNameLabel(class'XangModCustomization'.static.GetCharacterName(GearID));
 
 		//Reset the helmet, tabard, etc.; these aren't necessarily "equivalent" between characters
 		TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Helmet = 0;
@@ -1032,37 +1032,37 @@ function CheckLocks()
 	//LeftSelectedIndex = LeftList.GetFloat("selectedIndex");
 	//RightSelectedIndex = ItemList.GetFloat("selectedIndex");
 
-	// BangMod: global unlock, never show lock panel
+	// XangMod: global unlock, never show lock panel
 	bLocked = false;
 
-	if(RightTabMode == RTAB_Emblem && !class'BangModCustomization'.static.IsEmblemOwnedBy(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Emblem, SelectedTeam, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass))
+	if(RightTabMode == RTAB_Emblem && !class'XangModCustomization'.static.IsEmblemOwnedBy(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Emblem, SelectedTeam, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass))
 	{
-		LockText = class'BangModCustomization'.static.GetEmblemStoreDescription(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Emblem, SelectedTeam, bPromptToBuy, DisplayedMicroTxPurchasePrice, DisplayedMicroTxID, DisplayedMicroTxPurchaseName); 
+		LockText = class'XangModCustomization'.static.GetEmblemStoreDescription(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Emblem, SelectedTeam, bPromptToBuy, DisplayedMicroTxPurchasePrice, DisplayedMicroTxID, DisplayedMicroTxPurchaseName); 
 	}
-	else if(RightTabMode == RTAB_Armour && !class'BangModCustomization'.static.IsCharacterOwnedBy(CharacterID, SelectedTeam, SelectedClass, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo))
+	else if(RightTabMode == RTAB_Armour && !class'XangModCustomization'.static.IsCharacterOwnedBy(CharacterID, SelectedTeam, SelectedClass, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo))
 	{
-		LockText = class'BangModCustomization'.static.GetCharacterStoreDescription(CharacterID, bPromptToBuy, DisplayedMicroTxPurchasePrice, DisplayedMicroTxID, DisplayedMicroTxPurchaseName); 
+		LockText = class'XangModCustomization'.static.GetCharacterStoreDescription(CharacterID, bPromptToBuy, DisplayedMicroTxPurchasePrice, DisplayedMicroTxID, DisplayedMicroTxPurchaseName); 
 	}
-	else if(RightTabMode == RTAB_Pattern && !class'BangModCustomization'.static.IsTabardOwnedBy(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Tabard, TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass))
+	else if(RightTabMode == RTAB_Pattern && !class'XangModCustomization'.static.IsTabardOwnedBy(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Tabard, TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Character, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass))
 	{
-		LockText = class'BangModCustomization'.static.GetTabardStoreDescription(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Tabard, CharacterID, bPromptToBuy, DisplayedMicroTxPurchasePrice, DisplayedMicroTxID, DisplayedMicroTxPurchaseName);
+		LockText = class'XangModCustomization'.static.GetTabardStoreDescription(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Tabard, CharacterID, bPromptToBuy, DisplayedMicroTxPurchasePrice, DisplayedMicroTxID, DisplayedMicroTxPurchaseName);
 	}
-	else if(RightTabMode == RTAB_Shield && !class'BangModCustomization'.static.IsShieldPatternOwnedBy(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Shield, CharacterID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass))
+	else if(RightTabMode == RTAB_Shield && !class'XangModCustomization'.static.IsShieldPatternOwnedBy(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Shield, CharacterID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass))
 	{
-		LockText = class'BangModCustomization'.static.GetShieldStoreDescription(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Shield, CharacterID, bPromptToBuy, DisplayedMicroTxPurchasePrice, DisplayedMicroTxID, DisplayedMicroTxPurchaseName);
+		LockText = class'XangModCustomization'.static.GetShieldStoreDescription(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Shield, CharacterID, bPromptToBuy, DisplayedMicroTxPurchasePrice, DisplayedMicroTxID, DisplayedMicroTxPurchaseName);
 	}
-	else if(RightTabMode == RTAB_Helmet && !class'BangModCustomization'.static.IsHelmetOwnedBy(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Helmet, CharacterID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass))
+	else if(RightTabMode == RTAB_Helmet && !class'XangModCustomization'.static.IsHelmetOwnedBy(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Helmet, CharacterID, class'WorldInfo'.static.GetWorldInfo().GetALocalPlayerController().PlayerReplicationInfo, SelectedClass))
 	{
-		// BangMod: show the lock panel for group-locked helmets the player
+		// XangMod: show the lock panel for group-locked helmets the player
 		// doesn't own (e.g. Community Hat), while every other tab stays unlocked.
 		bLocked = true;
-		LockText = class'BangModCustomization'.static.GetHelmetStoreDescription(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Helmet, CharacterID, bPromptToBuy, DisplayedMicroTxPurchasePrice, DisplayedMicroTxID, DisplayedMicroTxPurchaseName); 
+		LockText = class'XangModCustomization'.static.GetHelmetStoreDescription(TeamCustomizationChoices[SelectedTeam].ClassCustomizationChoices[SelectedClass].Helmet, CharacterID, bPromptToBuy, DisplayedMicroTxPurchasePrice, DisplayedMicroTxID, DisplayedMicroTxPurchaseName); 
 	}
 	else if(RightTabMode == RTAB_Weapon)
 	{
 		// Global unlock: allow all weapon selections regardless of ownership.
 		// This makes weapon skins selectable like helmets.
-		bLocked = false; // BangMod: global unlock, never show lock panel
+		bLocked = false; // XangMod: global unlock, never show lock panel
 	}
 	else
 	{

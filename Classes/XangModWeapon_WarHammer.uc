@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the War Hammer.
 */
-class BangModWeapon_WarHammer extends BangModMeleeWeapon;
+class XangModWeapon_WarHammer extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -167,7 +167,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_WarHammer'
+	AttachmentClass=class'XangModWeaponAttachment_WarHammer'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_WarHammer'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_WarHammer

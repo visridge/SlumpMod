@@ -1,8 +1,8 @@
 /**
-* BangMod Kite Shield - Vanilla AOC behavior
+* XangMod Kite Shield - Vanilla AOC behavior
 */
 
-class BangModShield_Kite extends BangModBaseShield;
+class XangModShield_Kite extends XangModBaseShield;
 
 DefaultProperties
 {

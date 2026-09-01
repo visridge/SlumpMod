@@ -5,7 +5,7 @@
 *
 * Weapon: Spear.
 */
-class BangModWeapon_Spear extends BangModMeleeWeapon;
+class XangModWeapon_Spear extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -210,7 +210,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Spear'
+	AttachmentClass=class'XangModWeaponAttachment_Spear'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Spear'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Spear

@@ -1,5 +1,5 @@
 /**
-* BangMod combat bot — drop-in replacement for AOCAICombatController that makes "addbots"
+* XangMod combat bot — drop-in replacement for AOCAICombatController that makes "addbots"
 * bots noticeably less dumb in melee, with zero changes to the AI's decision logic. Only two
 * low-risk levers are pulled:
 *
@@ -17,28 +17,28 @@
 *     detection gives the bot a fairer chance to react and parry instead of eating free hits.
 *
 * Everything else (positioning, aggression, attack-direction randomness) is left at vanilla to
-* avoid bots over-committing or running into walls. Tune fBangModMinSkill / the menacing vars
-* below to taste. Wired in via DefaultAIControllerClass in BangMod/Include/BangModGame.uci.
+* avoid bots over-committing or running into walls. Tune fXangModMinSkill / the menacing vars
+* below to taste. Wired in via DefaultAIControllerClass in XangMod/Include/XangModGame.uci.
 */
-class BangModAOCCombatBot extends AOCAICombatController;
+class XangModAOCCombatBot extends AOCAICombatController;
 
 // Lower bound on bot skill (0.0-1.0). Applied after super.ChooseBehaviour() so it survives the
 // GameDifficulty overwrite. 0.85 ≈ markedly sharper than the 0.6 vanilla default without being
 // a frame-perfect aimbot.
-var float fBangModMinSkill;
+var float fXangModMinSkill;
 
 function ChooseBehaviour()
 {
 	super.ChooseBehaviour();
 
 	// Raise dumb-low bots up to our floor; never lower an admin's higher GameDifficulty.
-	if (fSkill < fBangModMinSkill)
-		SetSkill(fBangModMinSkill);
+	if (fSkill < fXangModMinSkill)
+		SetSkill(fXangModMinSkill);
 }
 
 DefaultProperties
 {
-	fBangModMinSkill=0.85f
+	fXangModMinSkill=0.85f
 
 	// Belt-and-suspenders: if GameDifficulty==0 (super leaves fSkill at the default), start high.
 	fSkill=0.85f

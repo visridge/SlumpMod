@@ -1,4 +1,4 @@
-class BangModLTSPRI extends AOCLTSPRI;
+class XangModLTSPRI extends AOCLTSPRI;
 
-`include(BangMod/Include/BangModLTS.uci)
-`include(BangMod/Include/BangModPRI.uci)
+`include(XangMod/Include/XangModLTS.uci)
+`include(XangMod/Include/XangModPRI.uci)

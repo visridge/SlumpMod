@@ -1,4 +1,4 @@
-class BangModCharacterInfo_Agatha_King extends AOCCharacterInfo_King;
+class XangModCharacterInfo_Agatha_King extends AOCCharacterInfo_King;
 
 defaultproperties
 {

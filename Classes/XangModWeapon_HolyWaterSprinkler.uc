@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Holy Water Sprinkler.
 */
-class BangModWeapon_HolyWaterSprinkler extends BangModMeleeWeapon;
+class XangModWeapon_HolyWaterSprinkler extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -150,7 +150,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_HolyWaterSprinkler'
+	AttachmentClass=class'XangModWeaponAttachment_HolyWaterSprinkler'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_HolyWaterSprinkler'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_HolyWaterSprinkler

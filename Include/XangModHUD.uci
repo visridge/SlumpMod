@@ -1,6 +1,6 @@
-var BangModGFx_EscapeMain     EscapeMenu;
+var XangModGFx_EscapeMain     EscapeMenu;
 
-var BangModGFx_HUDManager HUD;
+var XangModGFx_HUDManager HUD;
 
 
 exec function ShowEscapeMenu(optional bool bPlaySound = true)
@@ -13,7 +13,7 @@ exec function ShowEscapeMenu(optional bool bPlaySound = true)
 			AOCPlayerController(PlayerOwner).PlayEscapeMenuSound(true);
 
 		EscapeMenu = none;
-		EscapeMenu = BangModGFx_EscapeMain(OpenGFxScene(EscapeMenu, class'BangModGFx_EscapeMain', true, true, true, false));
+		EscapeMenu = XangModGFx_EscapeMain(OpenGFxScene(EscapeMenu, class'XangModGFx_EscapeMain', true, true, true, false));
 		EscapeMenu.Start();
 	}
 }
@@ -41,10 +41,10 @@ function RemoveEscapeMenu()
 function DrawHUD()
 {
 	super.DrawHUD();
-	BangModDrawSpectatorTarget();
+	XangModDrawSpectatorTarget();
 }
 
-function BangModDrawSpectatorTarget()
+function XangModDrawSpectatorTarget()
 {
 	local AOCPlayerController PC;
 	local AOCPawn P;
@@ -89,11 +89,11 @@ function BangModDrawSpectatorTarget()
 	Canvas.DrawText(Line, true);
 
 	Canvas.SetPos(X, Y);
-	Canvas.DrawColor = BangModGetFactionColor(Fac);
+	Canvas.DrawColor = XangModGetFactionColor(Fac);
 	Canvas.DrawText(Line, true);
 }
 
-function Color BangModGetFactionColor(EAOCFaction Fac)
+function Color XangModGetFactionColor(EAOCFaction Fac)
 {
 	local Color C;
 
@@ -117,6 +117,6 @@ function Color BangModGetFactionColor(EAOCFaction Fac)
 
 DefaultProperties
 {
-	PawnClass=class'BangModPawn'
-	HUDClass=class'BangModGFx_HUDManager'
+	PawnClass=class'XangModPawn'
+	HUDClass=class'XangModGFx_HUDManager'
 }

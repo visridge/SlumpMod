@@ -5,7 +5,7 @@
 *
 * Weapon: Javelin (Melee Mode)
 */
-class BangModWeapon_ShortSpearMelee extends AOCWeapon_ShortSpearMelee;
+class XangModWeapon_ShortSpearMelee extends AOCWeapon_ShortSpearMelee;
 
 DefaultProperties
 {
@@ -14,7 +14,7 @@ DefaultProperties
 	AIRange=5000
 	bCanCombo=false
 
-	AttachmentClass=class'BangModWeaponAttachment_ShortSpear'
+	AttachmentClass=class'XangModWeaponAttachment_ShortSpear'
 	// should never be part of inventory attachment
 	InventoryAttachmentClass=class'AOCInventoryAttachment_ShortSpear'
 	AllowedShieldClass=class'AOCShield_Buckler'
@@ -85,7 +85,7 @@ DefaultProperties
 	StrafeModify=0.75f
 	bFinishedEquip=false
 	bCanDodge=false
-	AlternativeMode=class'BangModWeapon_ShortSpearThrow'
+	AlternativeMode=class'XangModWeapon_ShortSpearThrow'
 
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_ShortSpearMelee]

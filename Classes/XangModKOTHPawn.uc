@@ -1,4 +1,4 @@
-class BangModKOTHPawn extends BangModPawn;
+class XangModKOTHPawn extends XangModPawn;
 
-`include(BangMod/Include/BangModKOTH.uci)
-`include(BangMod/Include/BangModPawn.uci)
+`include(XangMod/Include/XangModKOTH.uci)
+`include(XangMod/Include/XangModPawn.uci)

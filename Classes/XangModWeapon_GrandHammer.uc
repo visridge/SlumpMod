@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Grand Hammer.
 */
-class BangModWeapon_GrandHammer extends BangModMeleeWeapon;
+class XangModWeapon_GrandHammer extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -199,8 +199,8 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_GrandHammer'
-	InventoryAttachmentClass=class'BangModWeaponInventory_GrandHammer'
+	AttachmentClass=class'XangModWeaponAttachment_GrandHammer'
+	InventoryAttachmentClass=class'XangModWeaponInventory_GrandHammer'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_WarHammer
 	CurrentShieldType=ESHIELD_None

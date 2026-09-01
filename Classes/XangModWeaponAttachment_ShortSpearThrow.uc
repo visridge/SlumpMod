@@ -6,9 +6,9 @@
 * Weapon Attachment: Javelin.
 */
 
-class BangModWeaponAttachment_ShortSpearThrow extends AOCWeaponAttachment_ShortSpearThrow;
+class XangModWeaponAttachment_ShortSpearThrow extends AOCWeaponAttachment_ShortSpearThrow;
 
 DefaultProperties
 {
-	WeaponClass=class'BangModWeapon_ShortSpearThrow'
+	WeaponClass=class'XangModWeapon_ShortSpearThrow'
 }

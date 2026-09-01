@@ -4,7 +4,7 @@
 * Original Author: Brady Brenot
 * 
 */
-class BangModCharacterInfo_Mason_Knight extends AOCCharacterInfo_Mason_Knight;
+class XangModCharacterInfo_Mason_Knight extends AOCCharacterInfo_Mason_Knight;
 
 defaultproperties
 {
@@ -14,14 +14,14 @@ defaultproperties
 
 	CharacterMeshPath="CH_MasonKnight.models.SK_CH_3P_MasonKnight"
 	DecapMeshPath="CH_MasonKnight.models.SK_CH_3P_MasonKnight_Gore"
-	OwnerMeshPath="BangmodCharacters.MasonKnight1p"
+	OwnerMeshPath="XangmodCharacters.MasonKnight1p"
 
 	HeadMaterialPath="CH_MasonKnight.Materials.MI_CH_3P_MasonKnight_Body"
 	BodyMaterialPath="CH_MasonKnight.Materials.MI_CH_3P_MasonKnight_Head"
 
 	StandinMesh=SkeletalMesh'CH_MasonKnight.models.SK_CH_3P_MasonKnight'
 	StandinDecapMesh=SkeletalMesh'CH_MasonKnight.models.SK_CH_3P_MasonKnight_Gore'
-	StandinOwnerMesh=SkeletalMesh'BangmodCharacters.MasonKnight1p'
+	StandinOwnerMesh=SkeletalMesh'XangmodCharacters.MasonKnight1p'
 	StandinHeadMaterial=MaterialInterface'CH_MasonKnight.Materials.MI_CH_3P_MasonKnight_Body'
 	StandinBodyMaterial=MaterialInterface'CH_MasonKnight.Materials.MI_CH_3P_MasonKnight_Head'
 

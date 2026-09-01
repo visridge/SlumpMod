@@ -5,7 +5,7 @@
 *
 * The weapon that is replicated to all clients: Zweihander.
 */
-class BangModWeaponAttachment_Nodachi extends AOCWeaponAttachment_Zweihander;
+class XangModWeaponAttachment_Nodachi extends AOCWeaponAttachment_Zweihander;
 
 
 DefaultProperties
@@ -23,7 +23,7 @@ DefaultProperties
 
 
 	WeaponID=EWEP_Zweihander
-	WeaponClass=class'BangModWeapon_Nodachi'
+	WeaponClass=class'XangModWeapon_Nodachi'
 	WeaponSocket=wep2hpoint
 
 	bUseAlternativeKick=true

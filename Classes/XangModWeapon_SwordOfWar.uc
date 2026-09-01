@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the SwordOfWar
 */
-class BangModWeapon_SwordOfWar extends BangModMeleeWeapon;
+class XangModWeapon_SwordOfWar extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -164,7 +164,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_SwordOfWar'
+	AttachmentClass=class'XangModWeaponAttachment_SwordOfWar'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_SwordOfWar'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_SwordOfWar
@@ -173,7 +173,7 @@ DefaultProperties
 	WeaponIdentifier="longsword"
 
 	CurrentGenWeaponType=EWT_2handsword
-	AlternativeMode=class'BangModWeapon_SwordOfWar1H'
+	AlternativeMode=class'XangModWeapon_SwordOfWar1H'
 
 
 	/*

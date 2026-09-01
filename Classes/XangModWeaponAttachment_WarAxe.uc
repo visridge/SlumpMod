@@ -5,7 +5,7 @@
 * 
 * The weapon that is replicated to all clients: War Axe
 */
-class BangModWeaponAttachment_WarAxe extends AOCWeaponAttachment_WarAxe;
+class XangModWeaponAttachment_WarAxe extends AOCWeaponAttachment_WarAxe;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -28,7 +28,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -42,7 +42,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_WarAxe
-	WeaponClass=class'BangModWeapon_WarAxe'
+	WeaponClass=class'XangModWeapon_WarAxe'
 
 	WeaponSocket = wep1hpoint
 

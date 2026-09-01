@@ -5,7 +5,7 @@
 *
 * Warbow.
 */
-class BangModWeapon_Warbow extends BangModWeapon_Longbow;
+class XangModWeapon_Warbow extends XangModWeapon_Longbow;
 
 /** Remember previos state for the recovery state */
 var name PreviousState;

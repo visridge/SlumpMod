@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the 1H Longsword.
 */
-class BangModWeapon_Longsword1H extends BangModMeleeWeapon;
+class XangModWeapon_Longsword1H extends XangModMeleeWeapon;
 
 
 simulated state ParryRelease
@@ -150,7 +150,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Longsword1H'
+	AttachmentClass=class'XangModWeaponAttachment_Longsword1H'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Longsword1H'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Longsword
@@ -160,7 +160,7 @@ DefaultProperties
 	WeaponIdentifier="1hsharp"
 
 	CurrentGenWeaponType=EWT_1hand
-	AlternativeMode=class'BangModWeapon_Longsword'
+	AlternativeMode=class'XangModWeapon_Longsword'
 
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Longsword1H]

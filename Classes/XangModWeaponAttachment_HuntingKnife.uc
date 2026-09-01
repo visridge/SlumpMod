@@ -5,11 +5,11 @@
 * 
 * The Weapon Attachment for the Hunting Knife.
 */
-class BangModWeaponAttachment_HuntingKnife extends AOCWeaponAttachment_HuntingKnife;
+class XangModWeaponAttachment_HuntingKnife extends AOCWeaponAttachment_HuntingKnife;
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -25,7 +25,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_BroadDagger
-	WeaponClass=class'BangModWeapon_HuntingKnife'
+	WeaponClass=class'XangModWeapon_HuntingKnife'
 	WeaponSocket=wep1hpoint
 
 	AttackTypeInfo(0)=(fBaseDamage=40.0, fForce=8000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)

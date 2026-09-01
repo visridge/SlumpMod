@@ -5,7 +5,7 @@
 *
 * Weapon class for the Thrusting Dagger.
 */
-class BangModWeapon_ThrustDagger extends BangModMeleeWeapon;
+class XangModWeapon_ThrustDagger extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {

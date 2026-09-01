@@ -1,4 +1,4 @@
-class BangModAOCDuel extends AOCDuel;
+class XangModAOCDuel extends AOCDuel;
 
-`include(BangMod/Include/BangModAOCDuel.uci)
-`include(BangMod/Include/BangModGame.uci)
+`include(XangMod/Include/XangModAOCDuel.uci)
+`include(XangMod/Include/XangModGame.uci)

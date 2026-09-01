@@ -1,5 +1,5 @@
 // SlumpMod Team Objective gamemode-specific optimizations
-// This file is ONLY included by BangModTO.uc (the gamemode class)
+// This file is ONLY included by XangModTO.uc (the gamemode class)
 
 // Trigger a Kismet SeqEvent_Console by name (equivalent to "ce <EventName>" from PlayerController)
 // GameInfo can't use ConsoleCommand("ce ...") because "ce" is an exec function on PlayerController.

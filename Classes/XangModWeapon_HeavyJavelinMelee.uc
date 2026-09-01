@@ -5,9 +5,9 @@
 *
 * Weapon: Javelin (Melee Mode)
 */
-class BangModWeapon_HeavyJavelinMelee extends AOCWeapon_HeavyJavelinMelee;
+class XangModWeapon_HeavyJavelinMelee extends AOCWeapon_HeavyJavelinMelee;
 
-// BANGMOD: Timed shield parry for heater (matches BangModMeleeWeapon shield behavior)
+// XANGMOD: Timed shield parry for heater (matches XangModMeleeWeapon shield behavior)
 // Without these overrides, shields use vanilla held-block instead of timed parry.
 
 simulated state Parry
@@ -158,7 +158,7 @@ DefaultProperties
 	// set maximum ammo
 	bCanCombo=false
 
-	AttachmentClass=class'BangModWeaponAttachment_HeavyJavelin'
+	AttachmentClass=class'XangModWeaponAttachment_HeavyJavelin'
 	// should never be part of inventory attachment
 	InventoryAttachmentClass=class'AOCInventoryAttachment_HeavyJavelin'
 	AllowedShieldClass=class'AOCShield_Buckler'
@@ -226,7 +226,7 @@ DefaultProperties
 	StrafeModify=0.75f
 	bFinishedEquip=false
 	bCanDodge=false
-	AlternativeMode=class'BangModWeapon_HeavyJavelinThrow'
+	AlternativeMode=class'XangModWeapon_HeavyJavelinThrow'
 
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_HeavyJavelinMelee]

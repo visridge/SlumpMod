@@ -5,7 +5,7 @@
 *
 * Weapon: Throwing Knife.
 */
-class BangModWeapon_ThrowingKnife extends AOCWeapon_ThrowingKnife;
+class XangModWeapon_ThrowingKnife extends AOCWeapon_ThrowingKnife;
 
 simulated state Windup
 {
@@ -49,7 +49,7 @@ DefaultProperties
 	MaxAmmoCount=2
 	AIRange=5000
 
-	WeaponProjectiles(0)=class'BangModProj_ThrownDagger'
+	WeaponProjectiles(0)=class'XangModProj_ThrownDagger'
 
 	AttachmentClass=class'AOCWeaponAttachment_ThrowingKnife'
 	// should never be part of inventory attachment

@@ -1,7 +1,7 @@
-class BangModKOTH extends AOCKOTH;
+class XangModKOTH extends AOCKOTH;
 
-`include(BangMod/Include/BangModKOTH.uci)
-`include(BangMod/Include/BangModGame.uci)
+`include(XangMod/Include/XangModKOTH.uci)
+`include(XangMod/Include/XangModGame.uci)
 
 DefaultProperties
 {

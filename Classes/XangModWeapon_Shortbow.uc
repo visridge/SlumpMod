@@ -5,7 +5,7 @@
 *
 * Longbow.
 */
-class BangModWeapon_Shortbow extends BangModWeapon_Longbow
+class XangModWeapon_Shortbow extends XangModWeapon_Longbow
 	dependson(AOCPawn);
 
 /** Reload state - Allow sprinting while drawing (like sling) */

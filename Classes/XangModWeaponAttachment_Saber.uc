@@ -5,11 +5,11 @@
 * 
 * The weapon that is replicated to all clients: Saber
 */
-class BangModWeaponAttachment_Saber extends AOCWeaponAttachment_Saber;
+class XangModWeaponAttachment_Saber extends AOCWeaponAttachment_Saber;
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -23,7 +23,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Saber
-	WeaponClass=class'BangModWeapon_Saber'
+	WeaponClass=class'XangModWeapon_Saber'
 	WeaponSocket=wep1hpoint
 
 	WeaponStaticMeshScale=1

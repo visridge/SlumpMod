@@ -4,7 +4,7 @@
 * The weapon that is replicated to all clients: Kanabo.
 * Based on GrandMace attachment.
 */
-class BangModWeaponAttachment_Kanabo extends AOCWeaponAttachment_GrandMace;
+class XangModWeaponAttachment_Kanabo extends AOCWeaponAttachment_GrandMace;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -27,7 +27,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);		
+	`include(XangMod/Include/XangModWeaponAttachment.uci);		
 
 	KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -43,7 +43,7 @@ DefaultProperties
 	End Object
 
 	WeaponID=EWEP_GrandMace
-	WeaponClass=class'BangModWeapon_Kanabo'
+	WeaponClass=class'XangModWeapon_Kanabo'
 	WeaponSocket=wep2haxepoint
 
 	bUseAlternativeKick=true

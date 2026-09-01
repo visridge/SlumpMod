@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the SwordOfWar 1H
 */
-class BangModWeapon_SwordOfWar1H extends BangModMeleeWeapon;
+class XangModWeapon_SwordOfWar1H extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -149,7 +149,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_SwordOfWar1H'
+	AttachmentClass=class'XangModWeaponAttachment_SwordOfWar1H'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_SwordOfWar1H'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_SwordOfWar
@@ -159,7 +159,7 @@ DefaultProperties
 	WeaponIdentifier="1hsharp"
 
 	CurrentGenWeaponType=EWT_1hand
-	AlternativeMode=class'BangModWeapon_SwordOfWar'
+	AlternativeMode=class'XangModWeapon_SwordOfWar'
 
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_SwordOfWar1H]

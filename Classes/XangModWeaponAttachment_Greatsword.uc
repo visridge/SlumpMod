@@ -5,7 +5,7 @@
 *
 * The weapon that is replicated to all clients: Greatsword
 */
-class BangModWeaponAttachment_Greatsword extends AOCWeaponAttachment_Greatsword;
+class XangModWeaponAttachment_Greatsword extends AOCWeaponAttachment_Greatsword;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -29,7 +29,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -43,7 +43,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Greatsword
-	WeaponClass=class'BangModWeapon_Greatsword'
+	WeaponClass=class'XangModWeapon_Greatsword'
 	WeaponSocket=wep2hpoint
 
 	bUseAlternativeKick=true

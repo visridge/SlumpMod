@@ -1,4 +1,4 @@
-class BangModTDHUD extends AOCTDHUD;
+class XangModTDHUD extends AOCTDHUD;
 
-`include(BangMod/Include/BangModTD.uci)
-`include(BangMod/Include/BangModHUD.uci)
+`include(XangMod/Include/XangModTD.uci)
+`include(XangMod/Include/XangModHUD.uci)

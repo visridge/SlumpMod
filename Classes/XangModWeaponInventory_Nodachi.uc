@@ -3,7 +3,7 @@
  *
  * Inventory attachment for the Nodachi.
  */
-class BangModWeaponInventory_Nodachi extends AOCInventoryAttachment;
+class XangModWeaponInventory_Nodachi extends AOCInventoryAttachment;
 
 DefaultProperties
 {

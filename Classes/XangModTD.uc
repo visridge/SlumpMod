@@ -1,5 +1,5 @@
-class BangModTD extends AOCTD;
+class XangModTD extends AOCTD;
 
-`include(BangMod/Include/BangModTD.uci)
-`include(BangMod/Include/BangModGame.uci)
+`include(XangMod/Include/XangModTD.uci)
+`include(XangMod/Include/XangModGame.uci)
 

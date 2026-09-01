@@ -5,7 +5,7 @@
 *
 * Weapon class for Dual Bucklers.
 */
-class BangModWeapon_DualBucklers extends BangModMeleeWeapon;
+class XangModWeapon_DualBucklers extends XangModMeleeWeapon;
 
 simulated state Transition
 {
@@ -251,7 +251,7 @@ DefaultProperties
 	BloodSprayTemplates(1)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
-	AttachmentClass=class'BangModWeaponAttachment_DualBucklers'
+	AttachmentClass=class'XangModWeaponAttachment_DualBucklers'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Fists'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Fists

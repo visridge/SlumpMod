@@ -3,11 +3,11 @@
 *
 * The weapon that is replicated to all clients: Heavy Flail.
 */
-class BangModWeaponAttachment_HFlail extends AOCWeaponAttachment_HFlail;
+class XangModWeaponAttachment_HFlail extends AOCWeaponAttachment_HFlail;
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 	Begin Object Name=SkeletalMeshComponent0
 		Scale=1.4
@@ -17,7 +17,7 @@ DefaultProperties
 		Scale=1.4
 	End Object
 
-	WeaponClass=class'BangModWeapon_HFlail'
+	WeaponClass=class'XangModWeapon_HFlail'
 
 	WeaponStaticMeshScale=1.4
 

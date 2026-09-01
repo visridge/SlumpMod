@@ -1,16 +1,16 @@
 /**
- * BangMod remote console. Extends AOCRCon with ChivAdmin's command set plus our own.
+ * XangMod remote console. Extends AOCRCon with ChivAdmin's command set plus our own.
  *
  * 0-22 are vanilla, in AOCRCon's MessageType order. 23-28 exist only in the ChivAdmin
  * client (its mutator was never published); implementing them means an unmodified
  * ChivAdmin client works here. 29+ are ours -- unknown opcodes are ignored, so adding
  * them cannot break that client. Full table and payloads: RCON_PROTOCOL.md.
  *
- * Every state-changing command calls BangModAudit: logged, and echoed as
+ * Every state-changing command calls XangModAudit: logged, and echoed as
  * RCONX_ADMIN_AUDIT. RCON is password-authenticated but otherwise unrestricted, and
  * opcode 28 is arbitrary execution, so that power should be visible rather than quiet.
  */
-class BangModRCon extends AOCRCon;
+class XangModRCon extends AOCRCon;
 
 // ---- ChivAdmin mutator parity ------------------------------------------------
 const RCONX_PING_EXTENDED        = 23;
@@ -20,7 +20,7 @@ const RCONX_INEBRIATE            = 26;
 const RCONX_CHANGE_GAME_PASSWORD = 27;
 const RCONX_CONSOLE_COMMAND      = 28;
 
-// ---- BangMod additions -------------------------------------------------------
+// ---- XangMod additions -------------------------------------------------------
 const RCONX_PLAYER_LIST_REQUEST  = 29;  // in : (no body)
 const RCONX_PLAYER_INFO          = 30;  // out: one per player, see SendPlayerInfo
 const RCONX_PLAYER_LIST_END      = 31;  // out: marks the end of a list burst
@@ -67,13 +67,13 @@ const SCOPE_ALL_PLAYERS = 2;
  * Console verbs RCON refuses to run, matched case-insensitively on the first token.
  * Scope 1 runs on the SERVER-side controller, so "quit" on a player kills the server
  * (confirmed in testing). config(Game) is inherited, so admins can extend this in
- * UDKGame.ini under [BangMod.BangModRCon].
+ * UDKGame.ini under [XangMod.XangModRCon].
  */
-var config array<string> BangModBlockedConsoleCommands;
+var config array<string> XangModBlockedConsoleCommands;
 
 /** Set while opcode 43 has forced GameInfo.bPauseable on, with the value to put back. */
-var bool bBangModPauseForced;
-var bool bBangModPauseableWas;
+var bool bXangModPauseForced;
+var bool bXangModPauseableWas;
 
 
 /**
@@ -81,11 +81,11 @@ var bool bBangModPauseableWas;
  * LogAlwaysInternal rather than the log macro: FINAL_RELEASE builds make LogInternal
  * private and the macro stops compiling.
  */
-function BangModAudit(string Action, string Detail)
+function XangModAudit(string Action, string Detail)
 {
 	local AOCRConPacket Packet;
 
-	LogAlwaysInternal("[BangModRCon]" @ Action @ "|" @ Detail);
+	LogAlwaysInternal("[XangModRCon]" @ Action @ "|" @ Detail);
 
 	Packet = new class'AOCRConPacket';
 	Packet.SetMessageType(RCONX_ADMIN_AUDIT);
@@ -202,7 +202,7 @@ function HandleMessage(AOCRConPacket Packet)
 			default:
 				// Unknown opcode from a client newer than this server. Ignore it
 				// rather than dropping the connection.
-				LogAlwaysInternal("[BangModRCon] ignoring unknown opcode" @ Packet.MessageType);
+				LogAlwaysInternal("[XangModRCon] ignoring unknown opcode" @ Packet.MessageType);
 				return;
 		}
 	}
@@ -228,7 +228,7 @@ function HandleChangeScore(AOCRConPacket Packet)
 
 	PC.PlayerReplicationInfo.Score = NewScore;
 	PC.PlayerReplicationInfo.bNetDirty = true;
-	BangModAudit("CHANGE_SCORE", PC.PlayerReplicationInfo.PlayerName @ "->" @ NewScore);
+	XangModAudit("CHANGE_SCORE", PC.PlayerReplicationInfo.PlayerName @ "->" @ NewScore);
 }
 
 /** 25: kill a player where they stand. */
@@ -244,7 +244,7 @@ function HandleKillPlayer(AOCRConPacket Packet)
 	if (C == none || C.Pawn == none)
 		return;
 
-	BangModAudit("KILL_PLAYER", DescribeController(C));
+	XangModAudit("KILL_PLAYER", DescribeController(C));
 	C.Pawn.Died(C, class'AOCDmgType_Generic', C.Pawn.Location);
 }
 
@@ -259,7 +259,7 @@ function HandleInebriate(AOCRConPacket Packet)
 	if (PC == none)
 		return;
 
-	BangModAudit("INEBRIATE", PC.PlayerReplicationInfo.PlayerName);
+	XangModAudit("INEBRIATE", PC.PlayerReplicationInfo.PlayerName);
 
 	// ClientInebriate is the whole job. EnableDrunkSoundMode must NOT be called from here:
 	// it is a plain function, so on an RCON command it runs on the SERVER's copy of the
@@ -267,7 +267,7 @@ function HandleInebriate(AOCRConPacket Packet)
 	// dedicated server does not have. AOCBaseHUD already drives the sound mode on the
 	// player's own machine, from its fade in UpdateDrunkEffect.
 	//
-	// BangMod's ClientInebriate override also adds the drunk post-process chain when the
+	// XangMod's ClientInebriate override also adds the drunk post-process chain when the
 	// map has none, which is what lifts this off TO2 maps.
 	PC.ClientInebriate(true);
 }
@@ -286,11 +286,11 @@ function HandleSober(AOCRConPacket Packet)
 	PC = GetPlayerControllerFromGUID(PlayerId);
 	if (PC == none)
 	{
-		BangModAudit("SOBER_FAILED", DescribePlayer(PlayerId) @ "- no player controller with that id");
+		XangModAudit("SOBER_FAILED", DescribePlayer(PlayerId) @ "- no player controller with that id");
 		return;
 	}
 
-	BangModAudit("SOBER", PC.PlayerReplicationInfo.PlayerName);
+	XangModAudit("SOBER", PC.PlayerReplicationInfo.PlayerName);
 
 	// As with 26: client-side only. ToggleDrunkPostEffects(false) turns the sound mode off
 	// on the player's machine as part of the same call.
@@ -310,10 +310,10 @@ function HandleChangeGamePassword(AOCRConPacket Packet)
 	WorldInfo.Game.AccessControl.SetGamePassword(NewPassword);
 
 	// Never log the password itself.
-	BangModAudit("CHANGE_GAME_PASSWORD", (NewPassword == "") ? "cleared" : "set");
+	XangModAudit("CHANGE_GAME_PASSWORD", (NewPassword == "") ? "cleared" : "set");
 }
 
-/** True if Command's first token is on BangModBlockedConsoleCommands. */
+/** True if Command's first token is on XangModBlockedConsoleCommands. */
 function bool IsConsoleCommandBlocked(string Command)
 {
 	local string Verb;
@@ -331,9 +331,9 @@ function bool IsConsoleCommandBlocked(string Command)
 	if (Verb == "")
 		return false;
 
-	for (i = 0; i < BangModBlockedConsoleCommands.Length; i++)
+	for (i = 0; i < XangModBlockedConsoleCommands.Length; i++)
 	{
-		if (Locs(BangModBlockedConsoleCommands[i]) == Verb)
+		if (Locs(XangModBlockedConsoleCommands[i]) == Verb)
 			return true;
 	}
 
@@ -361,16 +361,16 @@ function HandleConsoleCommand(AOCRConPacket Packet)
 	// All three scopes run in the server's process, so one check covers them.
 	if (IsConsoleCommandBlocked(Command))
 	{
-		BangModAudit("CONSOLE_COMMAND(blocked)", Command);
+		XangModAudit("CONSOLE_COMMAND(blocked)", Command);
 		SendConsoleResult(Command, "Blocked: this command would take the server down."
-			@ "Edit BangModBlockedConsoleCommands in UDKGame.ini to change the list.");
+			@ "Edit XangModBlockedConsoleCommands in UDKGame.ini to change the list.");
 		return;
 	}
 
 	switch (Scope)
 	{
 		case SCOPE_GAME:
-			BangModAudit("CONSOLE_COMMAND(game)", Command);
+			XangModAudit("CONSOLE_COMMAND(game)", Command);
 			if (WorldInfo.Game != none)
 				SendConsoleResult(Command, WorldInfo.Game.ConsoleCommand(Command));
 			break;
@@ -379,7 +379,7 @@ function HandleConsoleCommand(AOCRConPacket Packet)
 			PC = GetPlayerControllerFromGUID(PlayerId);
 			if (PC == none)
 				return;
-			BangModAudit("CONSOLE_COMMAND(player)", DescribePlayer(PlayerId) @ ":" @ Command);
+			XangModAudit("CONSOLE_COMMAND(player)", DescribePlayer(PlayerId) @ ":" @ Command);
 			SendConsoleResult(Command, PC.ConsoleCommand(Command));
 			break;
 
@@ -389,12 +389,12 @@ function HandleConsoleCommand(AOCRConPacket Packet)
 				PC.ConsoleCommand(Command);
 				Count++;
 			}
-			BangModAudit("CONSOLE_COMMAND(all)", Command @ "on" @ Count @ "players");
+			XangModAudit("CONSOLE_COMMAND(all)", Command @ "on" @ Count @ "players");
 			break;
 	}
 }
 
-/* ============================ BangMod additions ============================= */
+/* ============================ XangMod additions ============================= */
 
 /**
  * 29 -> a burst of 30s then a 31.
@@ -409,7 +409,7 @@ function HandlePlayerListRequest()
 
 	if (WorldInfo.GRI == none)
 	{
-		BangModAudit("PLAYER_LIST_FAILED", "no GameReplicationInfo yet");
+		XangModAudit("PLAYER_LIST_FAILED", "no GameReplicationInfo yet");
 		Packet = new class'AOCRConPacket';
 		Packet.SetMessageType(RCONX_PLAYER_LIST_END);
 		SendPacket(Packet);
@@ -479,7 +479,7 @@ function HandleSetTeam(AOCRConPacket Packet)
 	if (PC == none || WorldInfo.Game == none)
 		return;
 
-	BangModForceTeam(PC, NewTeam);
+	XangModForceTeam(PC, NewTeam);
 }
 
 /**
@@ -490,7 +490,7 @@ function HandleSetTeam(AOCRConPacket Packet)
  * CurrentFamilyInfo first is the only thing that moves anyone -- same approach as
  * AOCGame.PerformDeathBasedAB. AOCGRI.FamilyInfos: 0-4 Agatha, 5-9 Mason.
  */
-function BangModForceTeam(AOCPlayerController PC, int NewTeam)
+function XangModForceTeam(AOCPlayerController PC, int NewTeam)
 {
 	local AOCFamilyInfo NewFamily;
 	local AOCGRI GRI;
@@ -500,7 +500,7 @@ function BangModForceTeam(AOCPlayerController PC, int NewTeam)
 	GRI = AOCGRI(WorldInfo.GRI);
 	if (GRI == none || PC.CurrentFamilyInfo == none)
 	{
-		BangModAudit("SET_TEAM_FAILED", DescribeController(PC) @ "- no GRI or player has not picked a class yet");
+		XangModAudit("SET_TEAM_FAILED", DescribeController(PC) @ "- no GRI or player has not picked a class yet");
 		return;
 	}
 
@@ -508,7 +508,7 @@ function BangModForceTeam(AOCPlayerController PC, int NewTeam)
 
 	if (PC.CurrentFamilyInfo.FamilyFaction == Target)
 	{
-		BangModAudit("SET_TEAM_NOOP", DescribeController(PC) @ "- already on" @ (Target == EFAC_MASON ? "Mason" : "Agatha"));
+		XangModAudit("SET_TEAM_NOOP", DescribeController(PC) @ "- already on" @ (Target == EFAC_MASON ? "Mason" : "Agatha"));
 		return;
 	}
 
@@ -518,14 +518,14 @@ function BangModForceTeam(AOCPlayerController PC, int NewTeam)
 
 	if (Index < 0 || Index > 9)
 	{
-		BangModAudit("SET_TEAM_FAILED", DescribeController(PC) @ "- bad family index" @ Index);
+		XangModAudit("SET_TEAM_FAILED", DescribeController(PC) @ "- bad family index" @ Index);
 		return;
 	}
 
 	NewFamily = GRI.FamilyInfos[Index];
 	if (NewFamily == none)
 	{
-		BangModAudit("SET_TEAM_FAILED", DescribeController(PC) @ "- FamilyInfos[" $ Index $ "] is none");
+		XangModAudit("SET_TEAM_FAILED", DescribeController(PC) @ "- FamilyInfos[" $ Index $ "] is none");
 		return;
 	}
 
@@ -542,7 +542,7 @@ function BangModForceTeam(AOCPlayerController PC, int NewTeam)
 	// to the other team. ServerChangeTeam consumes bMarkNewTeam for the broadcast.
 	PC.ServerChangeTeam(NewFamily.FamilyFaction);
 
-	BangModAudit("SET_TEAM", DescribeController(PC) @ "->" @ (Target == EFAC_MASON ? "Mason" : "Agatha") @ "as" @ NewFamily);
+	XangModAudit("SET_TEAM", DescribeController(PC) @ "->" @ (Target == EFAC_MASON ? "Mason" : "Agatha") @ "as" @ NewFamily);
 }
 
 /** Same idea as DescribePlayer, but when the controller is already resolved. */
@@ -576,7 +576,7 @@ function HandleUnbanFixed(AOCRConPacket Packet)
 	AC = AOCAccessControl(WorldInfo.Game.AccessControl);
 	if (AC == none)
 	{
-		BangModAudit("UNBAN_FAILED", "no AOCAccessControl");
+		XangModAudit("UNBAN_FAILED", "no AOCAccessControl");
 		return;
 	}
 
@@ -593,7 +593,7 @@ function HandleUnbanFixed(AOCRConPacket Packet)
 
 	if (Removed == "")
 	{
-		BangModAudit("UNBAN_FAILED", "no ban matching uid" @ NetID.Uid.A @ NetID.Uid.B
+		XangModAudit("UNBAN_FAILED", "no ban matching uid" @ NetID.Uid.A @ NetID.Uid.B
 			@ "- request the ban list (opcode 39) and unban with a uid from it");
 		return;
 	}
@@ -604,10 +604,10 @@ function HandleUnbanFixed(AOCRConPacket Packet)
 	// still lists the ban, so it comes straight back on the next server start.
 	AC.SaveConfig();
 
-	BangModAudit("UNBAN", Removed);
+	XangModAudit("UNBAN", Removed);
 }
 
-/** 33: force a player into spectate. Mirrors BangMod's AdminForceSpectate. */
+/** 33: force a player into spectate. Mirrors XangMod's AdminForceSpectate. */
 function HandleForceSpectate(AOCRConPacket Packet)
 {
 	local QWord PlayerId;
@@ -618,7 +618,7 @@ function HandleForceSpectate(AOCRConPacket Packet)
 	if (PC == none)
 		return;
 
-	BangModAudit("FORCE_SPECTATE", DescribePlayer(PlayerId));
+	XangModAudit("FORCE_SPECTATE", DescribePlayer(PlayerId));
 	PC.JoinSpectatorTeam();
 }
 
@@ -662,14 +662,14 @@ function HandleSetTeamScore(AOCRConPacket Packet)
 		Goal = LTS.GoalScore;
 		if (Goal > 0 && NewScore >= Goal)
 		{
-			BangModAudit("SET_TEAM_SCORE_WARNING",
+			XangModAudit("SET_TEAM_SCORE_WARNING",
 				"team" @ TeamIndex @ "is at or past the goal of" @ Goal
 				$ " - the end-of-round check is an exact match, so set" @ (Goal - 1)
 				@ "if the next round should decide it");
 		}
 	}
 
-	BangModAudit("SET_TEAM_SCORE", "team" @ TeamIndex @ "->" @ NewScore
+	XangModAudit("SET_TEAM_SCORE", "team" @ TeamIndex @ "->" @ NewScore
 		@ (LTS != none ? "(rounds won)" : ""));
 }
 
@@ -801,17 +801,17 @@ function HandleMutePlayer(AOCRConPacket Packet)
 	// AOCPlayerController.ReceiveChatMessage, and that check is skipped for Steam friends
 	// of the muted player and for the muted player's own copy of the message -- so a muted
 	// player still sees themselves talking, which looks exactly like mute not working.
-	// BangModGame.BroadcastMessage drops the message server-side instead.
+	// XangModGame.BroadcastMessage drops the message server-side instead.
 	APRI.bIsAdminMuted = bMute;
 	APRI.bForceNetUpdate = true;
-	BangModAudit(bMute ? "MUTE_PLAYER" : "UNMUTE_PLAYER", APRI.PlayerName);
+	XangModAudit(bMute ? "MUTE_PLAYER" : "UNMUTE_PLAYER", APRI.PlayerName);
 }
 
 /* ======================= freeze, class, loadout, map ======================== */
 
 /**
  * 60: send one player to another. Takes both ends because from here neither is "you".
- * Placement lives in BangModAdminActions: SetLocation returns false when the spot is
+ * Placement lives in XangModAdminActions: SetLocation returns false when the spot is
  * occupied, so it rings the destination rather than dropping someone inside them.
  */
 function HandleTeleport(AOCRConPacket Packet)
@@ -830,21 +830,21 @@ function HandleTeleport(AOCRConPacket Packet)
 
 	if (Mover == Dest)
 	{
-		BangModAudit("TELEPORT_FAILED", DescribeController(Mover) @ "- cannot send a player to themselves");
+		XangModAudit("TELEPORT_FAILED", DescribeController(Mover) @ "- cannot send a player to themselves");
 		return;
 	}
 
 	if (Mover.Pawn == none || Dest.Pawn == none)
 	{
-		BangModAudit("TELEPORT_FAILED",
+		XangModAudit("TELEPORT_FAILED",
 			DescribeController(Mover) @ "->" @ DescribeController(Dest) @ "- both must be alive");
 		return;
 	}
 
-	if (class'BangModAdminActions'.static.Teleport(Mover.Pawn, Dest.Pawn))
-		BangModAudit("TELEPORT", DescribeController(Mover) @ "->" @ DescribeController(Dest));
+	if (class'XangModAdminActions'.static.Teleport(Mover.Pawn, Dest.Pawn))
+		XangModAudit("TELEPORT", DescribeController(Mover) @ "->" @ DescribeController(Dest));
 	else
-		BangModAudit("TELEPORT_FAILED",
+		XangModAudit("TELEPORT_FAILED",
 			DescribeController(Mover) @ "->" @ DescribeController(Dest) @ "- no free space there");
 }
 
@@ -864,13 +864,13 @@ function HandleSlap(AOCRConPacket Packet)
 
 	if (PC.Pawn == none)
 	{
-		BangModAudit("SLAP_FAILED", DescribeController(PC) @ "- not alive");
+		XangModAudit("SLAP_FAILED", DescribeController(PC) @ "- not alive");
 		return;
 	}
 
 	Power = Clamp(Power, 50, 2000);
-	class'BangModAdminActions'.static.Slap(PC.Pawn, Power);
-	BangModAudit("SLAP", DescribeController(PC) @ "power" @ Power);
+	class'XangModAdminActions'.static.Slap(PC.Pawn, Power);
+	XangModAudit("SLAP", DescribeController(PC) @ "power" @ Power);
 }
 
 /**
@@ -881,7 +881,7 @@ function HandleSlap(AOCRConPacket Packet)
  * from performing some action. It's intended for SP/Tutorials." Enforcement is
  * client-side, so a modified client ignores it. Talk is left unblocked on purpose.
  */
-function BangModSetFrozen(AOCPlayerController PC, bool bFrozen)
+function XangModSetFrozen(AOCPlayerController PC, bool bFrozen)
 {
 	// bEnable == true means ALLOWED (ClientScriptToggleInput stores the negation), so
 	// freezing passes false.
@@ -918,8 +918,8 @@ function HandleSetFrozen(AOCRConPacket Packet)
 	if (PC == none)
 		return;
 
-	BangModSetFrozen(PC, bFrozen);
-	BangModAudit(bFrozen ? "FREEZE" : "UNFREEZE",
+	XangModSetFrozen(PC, bFrozen);
+	XangModAudit(bFrozen ? "FREEZE" : "UNFREEZE",
 		DescribeController(PC) @ "- client-side block, not cheat-proof");
 }
 
@@ -950,12 +950,12 @@ function HandleSetClass(AOCRConPacket Packet)
 
 	if (PC.CurrentFamilyInfo == none)
 	{
-		BangModAudit("SET_CLASS_FAILED", DescribeController(PC) @ "- has not picked a class yet");
+		XangModAudit("SET_CLASS_FAILED", DescribeController(PC) @ "- has not picked a class yet");
 		return;
 	}
 	if (ClassIndex < 0 || ClassIndex > 4)
 	{
-		BangModAudit("SET_CLASS_FAILED", DescribeController(PC) @ "- bad class index" @ ClassIndex);
+		XangModAudit("SET_CLASS_FAILED", DescribeController(PC) @ "- bad class index" @ ClassIndex);
 		return;
 	}
 
@@ -966,7 +966,7 @@ function HandleSetClass(AOCRConPacket Packet)
 	NewFamily = GRI.FamilyInfos[Index];
 	if (NewFamily == none)
 	{
-		BangModAudit("SET_CLASS_FAILED", DescribeController(PC) @ "- FamilyInfos[" $ Index $ "] is none");
+		XangModAudit("SET_CLASS_FAILED", DescribeController(PC) @ "- FamilyInfos[" $ Index $ "] is none");
 		return;
 	}
 
@@ -975,7 +975,7 @@ function HandleSetClass(AOCRConPacket Packet)
 	if (bImmediate != 0 && PC.Pawn != none)
 		PC.Pawn.Died(none, class'AOCDmgType_Swing', vect(0, 0, 0));
 
-	BangModAudit("SET_CLASS", DescribeController(PC) @ "->" @ NewFamily
+	XangModAudit("SET_CLASS", DescribeController(PC) @ "->" @ NewFamily
 		@ (bImmediate != 0 ? "(respawned now)" : "(applies on next spawn)"));
 }
 
@@ -1064,7 +1064,7 @@ function HandleSetLoadout(AOCRConPacket Packet)
 	// and clobbering it would drop the alternate mode of whatever they are holding.
 	PC.SetWeapons(Prim, PC.AltPrimaryWeapon, Sec, Tert);
 
-	BangModAudit("SET_LOADOUT", DescribeController(PC) @ "->" @ Prim @ "/" @ Sec @ "/" @ Tert
+	XangModAudit("SET_LOADOUT", DescribeController(PC) @ "->" @ Prim @ "/" @ Sec @ "/" @ Tert
 		@ "(applies on next spawn)");
 }
 
@@ -1089,7 +1089,7 @@ function SendPlayerPositions()
 	// which is indistinguishable from the opcode not being implemented at all.
 	if (WorldInfo.GRI == none)
 	{
-		BangModAudit("PLAYER_POS_FAILED", "no GameReplicationInfo yet");
+		XangModAudit("PLAYER_POS_FAILED", "no GameReplicationInfo yet");
 		Reply = new class'AOCRConPacket';
 		Reply.SetMessageType(RCONX_PLAYER_POS_END);
 		Reply.AddInt(0);
@@ -1165,7 +1165,7 @@ function HandleSetTournament(AOCRConPacket Packet)
 	Game = AOCGame(WorldInfo.Game);
 	if (Game == none || Game.GameReplicationInfo == none)
 	{
-		BangModAudit("TOURNAMENT_FAILED", (Game == none)
+		XangModAudit("TOURNAMENT_FAILED", (Game == none)
 			? "the game is not an AOCGame"
 			: "no GameReplicationInfo yet");
 		return;
@@ -1204,7 +1204,7 @@ function HandleSetTournament(AOCRConPacket Packet)
 
 	Game.GameReplicationInfo.bForceNetUpdate = true;
 
-	BangModAudit(Game.bTournamentMode ? "TOURNAMENT_ON" : "TOURNAMENT_OFF",
+	XangModAudit(Game.bTournamentMode ? "TOURNAMENT_ON" : "TOURNAMENT_OFF",
 		"ready threshold" @ int(Game.TournamentTeamReadyThreshold * 100) $ "%"
 		@ (Game.bTournamentMode
 			? "- applies in the pre-round, clears when the round starts"
@@ -1242,7 +1242,7 @@ function HandleReadyAll(AOCRConPacket Packet)
 		}
 
 		Game.BroadcastMessage(none, "An admin marked all players ready.", EFAC_ALL, true, true, "#4CC964");
-		BangModAudit("READY_ALL", "forced" @ Count @ "player(s) ready");
+		XangModAudit("READY_ALL", "forced" @ Count @ "player(s) ready");
 		return;
 	}
 
@@ -1260,14 +1260,14 @@ function HandleReadyAll(AOCRConPacket Packet)
 	Game.bAdminForcedTournamentReady = false;
 
 	Game.BroadcastMessage(none, "An admin cleared all ready flags.", EFAC_ALL, true, true, "#D1A04A");
-	BangModAudit("UNREADY_ALL", "cleared" @ Count @ "player(s) and the admin ready override");
+	XangModAudit("UNREADY_ALL", "cleared" @ Count @ "player(s) and the admin ready override");
 }
 
 /**
  * 43: pause / unpause. Borrows a controller to own the pause -- an admin if one is
  * connected, otherwise the first.
  *
- * Calls AOCGame.SetPause (:4801), not PlayerController.SetPause: BangMod's override of the
+ * Calls AOCGame.SetPause (:4801), not PlayerController.SetPause: XangMod's override of the
  * latter is admin-gated, and AOCGame's is what sets AOCGRI.Speed and calls NotifyPaused.
  *
  * bPauseable is forced on around the call and restored after. AOCGame inherits
@@ -1275,7 +1275,7 @@ function HandleReadyAll(AOCRConPacket Packet)
  * bAdminCanPause && IsAdmin -- false in the ini, and the borrowed controller is no admin.
  * Without the flip SetPause just returns false.
  *
- * bIsPaused lives on the BangMod PC subclasses and is not set here, so in-game "unpause"
+ * bIsPaused lives on the XangMod PC subclasses and is not set here, so in-game "unpause"
  * (which checks the caller's own flag) cannot clear an RCON pause -- unpause over RCON.
  */
 function HandleSetPause(AOCRConPacket Packet)
@@ -1304,7 +1304,7 @@ function HandleSetPause(AOCRConPacket Packet)
 
 	if (Chosen == none)
 	{
-		BangModAudit("SET_PAUSE_FAILED", "nobody connected to own the pause");
+		XangModAudit("SET_PAUSE_FAILED", "nobody connected to own the pause");
 		return;
 	}
 
@@ -1315,18 +1315,18 @@ function HandleSetPause(AOCRConPacket Packet)
 
 		Chosen.bFire = 0;
 
-		if (!bBangModPauseForced)
+		if (!bXangModPauseForced)
 		{
-			bBangModPauseableWas = Game.bPauseable;
-			bBangModPauseForced = true;
+			bXangModPauseableWas = Game.bPauseable;
+			bXangModPauseForced = true;
 		}
 		Game.bPauseable = true;
 
 		if (!Game.SetPause(Chosen))
 		{
-			Game.bPauseable = bBangModPauseableWas;
-			bBangModPauseForced = false;
-			BangModAudit("SET_PAUSE_FAILED", "the game refused the pause");
+			Game.bPauseable = bXangModPauseableWas;
+			bXangModPauseForced = false;
+			XangModAudit("SET_PAUSE_FAILED", "the game refused the pause");
 			return;
 		}
 		Chosen.PauseRumbleForAllPlayers();
@@ -1338,10 +1338,10 @@ function HandleSetPause(AOCRConPacket Packet)
 		Game.ClearPause();
 		Chosen.PauseRumbleForAllPlayers(false);
 
-		if (bBangModPauseForced)
+		if (bXangModPauseForced)
 		{
-			Game.bPauseable = bBangModPauseableWas;
-			bBangModPauseForced = false;
+			Game.bPauseable = bXangModPauseableWas;
+			bXangModPauseForced = false;
 		}
 	}
 
@@ -1350,7 +1350,7 @@ function HandleSetPause(AOCRConPacket Packet)
 	if (!bPause)
 		Game.BroadcastMessage(none, "An admin unpaused the match.", EFAC_ALL, true, true, "#4CC964");
 
-	BangModAudit("SET_PAUSE", (bPause ? "paused" : "unpaused") @ "via" @ DescribeController(Chosen));
+	XangModAudit("SET_PAUSE", (bPause ? "paused" : "unpaused") @ "via" @ DescribeController(Chosen));
 }
 
 /**
@@ -1383,7 +1383,7 @@ function HandleEndMatch(AOCRConPacket Packet)
 	if (Reason != "")
 		Game.BroadcastMessage(none, "Match ended by admin:" @ Reason, EFAC_ALL, true, true, "#D1A04A");
 
-	BangModAudit("END_MATCH", "team" @ WinningTeam @ "|" @ Reason);
+	XangModAudit("END_MATCH", "team" @ WinningTeam @ "|" @ Reason);
 	Game.EndGame(WinnerPRI, "Triggered");
 }
 
@@ -1398,7 +1398,7 @@ function HandleSetAutoBalance(AOCRConPacket Packet)
 		return;
 
 	AOCGRI(WorldInfo.GRI).bBalanceTeams = bEnable;
-	BangModAudit("SET_AUTOBALANCE", bEnable ? "on" : "off");
+	XangModAudit("SET_AUTOBALANCE", bEnable ? "on" : "off");
 }
 
 /**
@@ -1419,7 +1419,7 @@ function HandleSetGameSpeed(AOCRConPacket Packet)
 	if (WorldInfo.Game == none)
 		return;
 
-	BangModAudit("SET_GAME_SPEED", SpeedPercent $ "%");
+	XangModAudit("SET_GAME_SPEED", SpeedPercent $ "%");
 	WorldInfo.Game.SetGameSpeed(NewSpeed);
 }
 
@@ -1431,14 +1431,14 @@ function HandleRestartMatch()
 
 	// NOT RestartGame(): with bChangeLevels set it calls GetNextMap() and travels there, so
 	// it cycles the rotation instead of restarting -- and the map change clears tournament
-	// mode on the way. "?restart" is what BangMod's own AdminRestartMap uses.
-	BangModAudit("RESTART_MATCH", "reloading the current map");
+	// mode on the way. "?restart" is what XangMod's own AdminRestartMap uses.
+	XangModAudit("RESTART_MATCH", "reloading the current map");
 	WorldInfo.ServerTravel("?restart", false);
 }
 
 DefaultProperties
 {
-	BangModBlockedConsoleCommands(0)="quit"
-	BangModBlockedConsoleCommands(1)="exit"
-	BangModBlockedConsoleCommands(2)="debug"
+	XangModBlockedConsoleCommands(0)="quit"
+	XangModBlockedConsoleCommands(1)="exit"
+	XangModBlockedConsoleCommands(2)="debug"
 }

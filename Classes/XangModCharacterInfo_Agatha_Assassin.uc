@@ -5,7 +5,7 @@
  * adds the ninja-roll anim sets (same slot as the Archer uses), and is registered
  * for class slot 4 (ECLASS_SiegeEngineer index).
  */
-class BangModCharacterInfo_Agatha_Assassin extends BangModCharacterInfo_Agatha_ManAtArms;
+class XangModCharacterInfo_Agatha_Assassin extends XangModCharacterInfo_Agatha_ManAtArms;
 
 defaultproperties
 {

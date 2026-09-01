@@ -3,15 +3,15 @@
 *
 * Original Author: Michael Bao
 *
-* BangMod Weapon: Mason Flag.
+* XangMod Weapon: Mason Flag.
 * Extends AOCWeapon_MasonFlag so we can nerf stats without touching AOC files.
 */
-class BangModWeapon_MasonFlag extends AOCWeapon_MasonFlag;
+class XangModWeapon_MasonFlag extends AOCWeapon_MasonFlag;
 
 defaultproperties
 {
-	AttachmentClass=class'BangModWeaponAttachment_MasonFlag'
-	InventoryAttachmentClass=class'BangModInventoryAttachment_MasonFlag'
+	AttachmentClass=class'XangModWeaponAttachment_MasonFlag'
+	InventoryAttachmentClass=class'XangModInventoryAttachment_MasonFlag'
 
 	// Reuse spear icon for loadout screen
 	WeaponFontSymbol="7"

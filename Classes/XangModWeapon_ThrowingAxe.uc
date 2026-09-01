@@ -6,7 +6,7 @@
 * The weapon class to contain information for the Throwing Axe.
 */
 
-class BangModWeapon_ThrowingAxe extends AOCWeapon_ThrowingAxe;
+class XangModWeapon_ThrowingAxe extends AOCWeapon_ThrowingAxe;
 
 simulated state Windup
 {

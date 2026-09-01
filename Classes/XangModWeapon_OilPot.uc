@@ -1,4 +1,4 @@
-class BangModWeapon_OilPot extends AOCWeapon_OilPot;
+class XangModWeapon_OilPot extends AOCWeapon_OilPot;
 
 DefaultProperties
 {
@@ -8,7 +8,7 @@ DefaultProperties
 	MaxAmmoCount=1
 	AIRange=5000
 
-	WeaponProjectiles(0)=class'BangModProj_ThrownOilPot'
+	WeaponProjectiles(0)=class'XangModProj_ThrownOilPot'
 
 	AttachmentClass=class'AOCWeaponAttachment_OilPot'
 	// should never be part of inventory attachment

@@ -1,4 +1,4 @@
-class BangModCharacterInfo_Mason_Footman extends AOCCharacterInfo_Vanguard;
+class XangModCharacterInfo_Mason_Footman extends AOCCharacterInfo_Vanguard;
 
 defaultproperties
 {

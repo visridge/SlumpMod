@@ -6,7 +6,7 @@
 * The weapon class to contain information for the Bearded Axe.
 */
 
-class BangModWeapon_Bearded extends BangModMeleeWeapon;
+class XangModWeapon_Bearded extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -94,7 +94,7 @@ DefaultProperties
 	AlternativeMode=none
 	bTwoHander=true
 	FlinchTime2H=1.1
-	AttachmentClass=class'BangModWeaponAttachment_Bearded'
+	AttachmentClass=class'XangModWeaponAttachment_Bearded'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Bearded'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Bearded

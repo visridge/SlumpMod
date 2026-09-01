@@ -6,7 +6,7 @@
 * The weapon that is replicated to all clients: Bearded Axe
 */
 
-class BangModWeaponAttachment_Bearded extends AOCWeaponAttachment_Bearded;
+class XangModWeaponAttachment_Bearded extends AOCWeaponAttachment_Bearded;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -29,7 +29,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);	
+	`include(XangMod/Include/XangModWeaponAttachment.uci);	
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -45,7 +45,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Bearded
-	WeaponClass=class'BangModWeapon_Bearded'
+	WeaponClass=class'XangModWeapon_Bearded'
 
 	WeaponSocket=wep2haxepoint
 	bUseAlternativeKick=true

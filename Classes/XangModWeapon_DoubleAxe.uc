@@ -6,7 +6,7 @@
 * The weapon class to contain information for the Double Axe.
 */
 
-class BangModWeapon_DoubleAxe extends BangModMeleeWeapon;
+class XangModWeapon_DoubleAxe extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -93,7 +93,7 @@ DefaultProperties
 {
 	bTwoHander=true
 	FlinchTime2H=1.1
-	AttachmentClass=class'BangModWeaponAttachment_DoubleAxe'
+	AttachmentClass=class'XangModWeaponAttachment_DoubleAxe'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_DoubleAxe'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_DoubleAxe

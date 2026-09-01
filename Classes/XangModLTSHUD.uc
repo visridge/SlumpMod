@@ -1,4 +1,4 @@
-class BangModLTSHUD extends AOCLTSHUD;
+class XangModLTSHUD extends AOCLTSHUD;
 
-`include(BangMod/Include/BangModLTS.uci)
-`include(BangMod/Include/BangModHUD.uci)
+`include(XangMod/Include/XangModLTS.uci)
+`include(XangMod/Include/XangModHUD.uci)

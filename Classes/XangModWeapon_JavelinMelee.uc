@@ -5,9 +5,9 @@
 *
 * Weapon: Javelin (Melee Mode)
 */
-class BangModWeapon_JavelinMelee extends AOCWeapon_JavelinMelee;
+class XangModWeapon_JavelinMelee extends AOCWeapon_JavelinMelee;
 
-// BANGMOD: Timed shield parry for buckler (matches BangModMeleeWeapon shield behavior)
+// XANGMOD: Timed shield parry for buckler (matches XangModMeleeWeapon shield behavior)
 // Without these overrides, buckler uses vanilla held-block while other shields use timed parry.
 
 simulated state Parry
@@ -161,7 +161,7 @@ DefaultProperties
 
 	bUseDirParryHitAnims=true
 
-	AttachmentClass=class'BangModWeaponAttachment_Javelin'
+	AttachmentClass=class'XangModWeaponAttachment_Javelin'
 	// should never be part of inventory attachment
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Javelin'
 	//PermanentAttachmentClass(0)=class'AOCInventoryAttachment_JavelinQuiver'
@@ -231,7 +231,7 @@ DefaultProperties
 	StrafeModify=0.75f
 	bFinishedEquip=false
 	bCanDodge=false
-	AlternativeMode=class'BangModWeapon_JavelinThrow'
+	AlternativeMode=class'XangModWeapon_JavelinThrow'
 
 	bAllowedToSwitch=false
 	bIgnoreShieldReplacement=true

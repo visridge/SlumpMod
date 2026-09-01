@@ -14,14 +14,14 @@ var float fRiposteGracePeriod;                  // Grace period after parry wher
 // var bool bWasBastardSwordSprinting;
 var bool bKanaboExtraJumpUsed;
 var CylinderComponent OuterCylinderComp; // Reference to the OuterCylinder component (player collision bubble)
-var bool bBangModWarnedNoOwnerMesh;      // one-shot log guard: 1P -> 3P camera socket fallback
-var bool bBangModWarnedNoCameraSocket;   // one-shot log guard: neither mesh usable
-var bool bBangModWarnedStock1PMesh;      // one-shot log guard: stock 1P mesh substituted
+var bool bXangModWarnedNoOwnerMesh;      // one-shot log guard: 1P -> 3P camera socket fallback
+var bool bXangModWarnedNoCameraSocket;   // one-shot log guard: neither mesh usable
+var bool bXangModWarnedStock1PMesh;      // one-shot log guard: stock 1P mesh substituted
 
-// (Deferred-hit state removed — replaced by the PendingHits hold model in BangModPawn.uc)
+// (Deferred-hit state removed — replaced by the PendingHits hold model in XangModPawn.uc)
 
-// BANGMOD: Client-timestamp hit-trade priority state/tunables (see RecentIncomingHit in
-// BangModPawn.uc and the helpers/arbitration further down).
+// XANGMOD: Client-timestamp hit-trade priority state/tunables (see RecentIncomingHit in
+// XangModPawn.uc and the helpers/arbitration further down).
 var float fClientClockOffset;          // EMA of (serverTime - oneWayPing - clientStamp)
 var bool  bClientClockOffsetInit;      // has the offset EMA been seeded yet?
 var float fPendingHitClientTime;       // last client hit-moment stamp received (their clock); consumed by AttackOtherPawn
@@ -106,7 +106,7 @@ simulated function WeaponAttachmentChanged()
 	// WeaponEquipping::BeginState runs only on authority/local clients;
 	// remote clients get the attachment via replication and need this hook
 	// to apply the correct skeletal mesh.
-	if (CurrentWeaponAttachment.Class == class'BangModWeaponAttachment_PoleAxeBack')
+	if (CurrentWeaponAttachment.Class == class'XangModWeaponAttachment_PoleAxeBack')
 	{
 		CurrentWeaponAttachment.Mesh.SetSkeletalMesh(
 			SkeletalMesh'SlumpWep_PaxeBack.SlumpWep_PaxeBack');
@@ -115,11 +115,11 @@ simulated function WeaponAttachmentChanged()
 				SkeletalMesh'SlumpWep_PaxeBack.SlumpWep_PaxeBack');
 	}
 
-	// BANGMOD: Fix heater shield orientation for javelin — javelin animations
+	// XANGMOD: Fix heater shield orientation for javelin — javelin animations
 	// hold the arm differently, causing the heater to face skyward like a saucer.
 	// Rotate it 90° around Y (yaw) so the shield face points outward instead of upward.
 	// if (Weapon != none && StateVariables.bShieldEquipped
-	// 	&& (BangModWeapon_JavelinMelee(Weapon) != none || BangModWeapon_HeavyJavelinMelee(Weapon) != none))
+	// 	&& (XangModWeapon_JavelinMelee(Weapon) != none || XangModWeapon_HeavyJavelinMelee(Weapon) != none))
 	// {
 	// 	ShieldMesh.SetRotation(rot(16384, 0, 0));  // 90° yaw — rotates shield face outward
 	// 	if (OverlayShieldMesh != none)
@@ -130,7 +130,7 @@ simulated function WeaponAttachmentChanged()
 /** Check if a pawn is currently in a riposte (for flinch immunity) */
 simulated function bool IsInRiposte(Pawn CheckPawn) {
 	local AOCMeleeWeapon MeleeWep;
-	local BangModPawn BangPawn;
+	local XangModPawn BangPawn;
 	
 	if (CheckPawn == none || CheckPawn.Weapon == none)
 		return false;
@@ -148,7 +148,7 @@ simulated function bool IsInRiposte(Pawn CheckPawn) {
 		return true;
 	
 	// Damage grace period disabled.
-	// BangPawn = BangModPawn(CheckPawn);
+	// BangPawn = XangModPawn(CheckPawn);
 	// if (BangPawn != none && MeleeWep.bParryHitCounter 
 	// 	&& (WorldInfo.TimeSeconds - BangPawn.fLastParrySuccessTime) <= BangPawn.fRiposteGracePeriod)
 	// 	return true;
@@ -186,8 +186,8 @@ simulated function bool ShouldActivateFlinch(HitInfo Info, class<AOCWeapon> Used
 	// Damage grace period disabled.
 	// if (AOCMeleeWeapon(Info.HitActor.Weapon) != none
 	// 	&& AOCMeleeWeapon(Info.HitActor.Weapon).bParryHitCounter == true
-	// 	&& BangModPawn(Info.HitActor) != none
-	// 	&& (WorldInfo.TimeSeconds - BangModPawn(Info.HitActor).fLastParrySuccessTime) <= BangModPawn(Info.HitActor).fRiposteGracePeriod
+	// 	&& XangModPawn(Info.HitActor) != none
+	// 	&& (WorldInfo.TimeSeconds - XangModPawn(Info.HitActor).fLastParrySuccessTime) <= XangModPawn(Info.HitActor).fRiposteGracePeriod
 	// )
 	// 	return false;
 	
@@ -282,7 +282,7 @@ simulated event Tick(float DeltaTime)
 	// Call parent first to do all normal tick logic
 	super.Tick(DeltaTime);
 
-	// BANGMOD: commit any held swings whose latency window elapsed without a parry.
+	// XANGMOD: commit any held swings whose latency window elapsed without a parry.
 	if (Role == ROLE_Authority)
 		ProcessPendingHits();
 
@@ -291,7 +291,7 @@ simulated event Tick(float DeltaTime)
 		bKanaboExtraJumpUsed = false;
 	}
 
-	// BANGMOD: Grand Lance — force sprint+forward during stab release.
+	// XANGMOD: Grand Lance — force sprint+forward during stab release.
 	if (bForceSprintForward)
 	{
 		bIsCrouching = false;
@@ -309,7 +309,7 @@ simulated event Tick(float DeltaTime)
 }
 
 
-// BANGMOD: Override SprintState to block sprint-off during Grand Lance charge.
+// XANGMOD: Override SprintState to block sprint-off during Grand Lance charge.
 // Prevents the player from resetting the sprint speed ramp by tapping the sprint key.
 exec function SprintState(optional bool bSprint = false, optional bool bForceToggleSprint)
 {
@@ -320,7 +320,7 @@ exec function SprintState(optional bool bSprint = false, optional bool bForceTog
 }
 
 
-// BANGMOD: Override ToggleSprint to prevent sprint-off from any source during charge.
+// XANGMOD: Override ToggleSprint to prevent sprint-off from any source during charge.
 function ToggleSprint(bool bSprint, optional bool bForce)
 {
 	if (bForceSprintForward && !bSprint)
@@ -330,7 +330,7 @@ function ToggleSprint(bool bSprint, optional bool bForce)
 }
 
 
-// BANGMOD: Override PerformCrouch to block client-side crouch during Grand Lance charge.
+// XANGMOD: Override PerformCrouch to block client-side crouch during Grand Lance charge.
 // PerformCrouch intentionally skips the bCanCrouch check (see AOCPawn comment), so without
 // this override a held crouch key would set bIsCrouching = true locally each frame even
 // though the server correctly rejects it via bCanCrouch. Blocking it here keeps the client
@@ -344,7 +344,7 @@ simulated function PerformCrouch(bool bCrouch)
 }
 
 
-// BANGMOD: Override ModifyVelocity to steer the Grand Lance stab charge in the full 3D
+// XANGMOD: Override ModifyVelocity to steer the Grand Lance stab charge in the full 3D
 // direction the player is looking — pitch included. Gravity is intentionally suppressed each
 // frame by overwriting Velocity (Z included) with the look-direction vector, producing the
 // "witch's broom" effect: look up to fly up, look down to dive.
@@ -387,7 +387,7 @@ function ModifyVelocity(float DeltaTime, vector OldVelocity)
 
 	/*
 	bUsingBastardSword = Weapon != none
-		&& Weapon.Class == class'BangModWeapon_BastardSword';
+		&& Weapon.Class == class'XangModWeapon_BastardSword';
 
 	if (bUsingBastardSword)
 	{
@@ -446,14 +446,14 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 	local vector AttackerDir;
 
 	// Don't (non-shield) parry oil pots or smoke pots
-	if (!Info.HitActor.StateVariables.bIsActiveShielding && (AOCWeapon_OilPot(Info.Instigator.Weapon) != none || BangModWeapon_SmokePot(Info.Instigator.Weapon) != none))
+	if (!Info.HitActor.StateVariables.bIsActiveShielding && (AOCWeapon_OilPot(Info.Instigator.Weapon) != none || XangModWeapon_SmokePot(Info.Instigator.Weapon) != none))
 		return false;
 
 	// Prevent butt-parrying: attacker must be in the front hemisphere of the defender.
 	// self = attacker, Info.HitActor = defender.
 	// AttackerDir points from defender toward attacker; defender.Rotation is their forward vector.
 	// If dot < 0 the attacker is behind the defender — strip the parry entirely.
-	if (class'BangModAOCDuelPlayerController'.default.bDisableButtParries)
+	if (class'XangModAOCDuelPlayerController'.default.bDisableButtParries)
 	{
 		AttackerDir = Normal(Location - Info.HitActor.Location);
 		if ((AttackerDir dot vector(Info.HitActor.Rotation)) < 0.0)
@@ -482,8 +482,8 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 	AOCWeapon(Info.HitActor.Weapon).NotifySuccessfulParry(Info.AttackType, ParryLR);
 	
 	// Damage grace period disabled.
-	// if (BangModPawn(Info.HitActor) != none)
-	// 	BangModPawn(Info.HitActor).fLastParrySuccessTime = WorldInfo.TimeSeconds;
+	// if (XangModPawn(Info.HitActor) != none)
+	// 	XangModPawn(Info.HitActor).fLastParrySuccessTime = WorldInfo.TimeSeconds;
 
 	// If it hit the shield
 	if(Info.HitActor.StateVariables.bIsActiveShielding) {
@@ -492,7 +492,7 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 		// Only lose stamina if it was a melee attack
 		if (!Info.DamageType.default.bIsProjectile) {
 
-			// BANGMOD: Shields take reduced stamina drain from weapon blocks
+			// XANGMOD: Shields take reduced stamina drain from weapon blocks
 			// Kicks still flinch through shields (handled below)
 			StaminaDamage = 3;
 
@@ -538,9 +538,9 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 	else if (Info.HitActor.StateVariables.bIsParrying) {
 		AOCWeaponAttachment(Info.HitActor.CurrentWeaponAttachment).PlayParrySound(false);
 		fParryTimeSeconds = WorldInfo.TimeSeconds;
-        bRewardableParry = BangModPawn(Info.HitActor).fLastParryTimeSeconds > 0 &&
-                           fParryTimeSeconds - BangModPawn(Info.HitActor).fLastParryTimeSeconds <= fSuccessiveParryThresholdSeconds;
-        BangModPawn(Info.HitActor).fLastParryTimeSeconds = fParryTimeSeconds;
+        bRewardableParry = XangModPawn(Info.HitActor).fLastParryTimeSeconds > 0 &&
+                           fParryTimeSeconds - XangModPawn(Info.HitActor).fLastParryTimeSeconds <= fSuccessiveParryThresholdSeconds;
+        XangModPawn(Info.HitActor).fLastParryTimeSeconds = fParryTimeSeconds;
 
         // Take no stamina damage if within successive parry reward threshold, lose 15 stamina for projectiles, otherwise calculate stamina loss
         if (bRewardableParry)
@@ -597,7 +597,7 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 
 function int CalcDodgeCost() {
 	// Check if player is holding a Hatchet - use custom dodge cost
-	if (BangModWeapon_Hatchet(Weapon) != none) {
+	if (XangModWeapon_Hatchet(Weapon) != none) {
 		return 22;
 	}
 	
@@ -610,7 +610,7 @@ simulated function bool CanAirJump()
 {
 	/*
 	return Weapon != none
-		&& Weapon.Class == class'BangModWeapon_Kanabo'
+		&& Weapon.Class == class'XangModWeapon_Kanabo'
 		&& StateVariables.bCanJump
 		&& bJumpCapable
 		&& !bIsCrouching
@@ -808,18 +808,18 @@ simulated function FinishDodgeFlinch() {
 
 simulated function RestoreDodgeWeaponAttachment()
 {
-	if (BangModDodge(DodgeSM) != none)
+	if (XangModDodge(DodgeSM) != none)
 	{
-		BangModDodge(DodgeSM).RestoreOriginalWeaponAttachment();
+		XangModDodge(DodgeSM).RestoreOriginalWeaponAttachment();
 	}
 }
 
-/** Override to use BangModRoll (ninja-roll for Archer) with the shared weapon-identifier remap. */
+/** Override to use XangModRoll (ninja-roll for Archer) with the shared weapon-identifier remap. */
 simulated function VerifyDodgeSMInitialize()
 {
 	if (DodgeSM == none)
 	{
-		DodgeSM = new(Outer) class'BangModRoll';
+		DodgeSM = new(Outer) class'XangModRoll';
 		DodgeSM.OwnerPawn = self;
 	}
 }
@@ -1300,13 +1300,13 @@ unreliable client function LogHitTime(float funcTime)
 		AOCPlayerController(Controller).ClientDisplayConsoleMessage("Your swing hit " @string(funcTime) @"seconds after release");
 }
 
-// BANGMOD: Thin dispatcher. Validates the swing once on RPC arrival, then either holds it
+// XANGMOD: Thin dispatcher. Validates the swing once on RPC arrival, then either holds it
 // (so an in-flight parry can suppress it before any feedback plays) or resolves it immediately.
 // 'self' is the ATTACKER; Info.HitActor is the defender.
 reliable server function AttackOtherPawn(HitInfo Info, string DamageString, optional bool bCheckParryOnly = false, optional bool bBoxParrySuccess, optional bool bHitShield = false, optional SwingTypeImpactSound LastHit = ESWINGSOUND_Slash, optional bool bQuickKick = false)
 {
 	local PlayerReplicationInfo PRI;
-	local BangModPawn DefenderBM;
+	local XangModPawn DefenderBM;
 	local float fHold;
 	local PendingHit NewPending;
 	local float fHitActionServerTime;
@@ -1317,7 +1317,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 		PRI = PlayerReplicationInfo;
 	Info.PRI = PRI;
 
-	// BANGMOD: Map this swing's client hit-moment stamp (sent just before us by ServerStampHitTime)
+	// XANGMOD: Map this swing's client hit-moment stamp (sent just before us by ServerStampHitTime)
 	// onto our timeline for trade ordering, then consume it so a later stampless swing falls back
 	// to ping reconstruction instead of reusing a stale value.
 	fHitActionServerTime = ReconstructActionTime(fPendingHitClientTime);
@@ -1326,7 +1326,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	LogHitTime(WorldInfo.TimeSeconds - fLastReleaseStartTime - 0.0087);
 
 	// Block attacks while the attacker is flinched (no trade window)
-	if (BangModMeleeWeapon(Weapon) != none && BangModMeleeWeapon(Weapon).IsInState('Flinch'))
+	if (XangModMeleeWeapon(Weapon) != none && XangModMeleeWeapon(Weapon).IsInState('Flinch'))
 		return;
 
 	// Authority / lag-comp validation happens once, when the swing RPC arrives.
@@ -1336,7 +1336,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	// Decide whether to HOLD this swing so an in-flight parry can suppress it before any
 	// feedback plays. Only enemy melee swings that would land as a hit are eligible; the hold
 	// length is the defender's one-way latency (0 at 0 ping -> instant, vanilla behavior).
-	DefenderBM = BangModPawn(Info.HitActor);
+	DefenderBM = XangModPawn(Info.HitActor);
 	fHold = 0.0;
 	if (!bCheckParryOnly
 		&& DefenderBM != none
@@ -1367,7 +1367,7 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 	ProcessResolvedAttack(Info, DamageString, bCheckParryOnly, bBoxParrySuccess, bHitShield, LastHit, bQuickKick, false, fHitActionServerTime);
 }
 
-// BANGMOD: The single commit path for a swing — damage, feedback, and replication applied at
+// XANGMOD: The single commit path for a swing — damage, feedback, and replication applied at
 // once. Called directly from AttackOtherPawn (no hold needed), or from ProcessPendingHits /
 // ResolvePendingHitsAsParry once a held swing's fate is decided. 'self' is the ATTACKER.
 // When bForceParry is true the swing resolves as a parry (the defender parried while this swing
@@ -1388,7 +1388,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	local bool bOnFire;
 	local bool bPassiveBlock;
 	local AOCWeaponAttachment HitActorWeaponAttachment;
-	local BangModMeleeWeapon DefendingMeleeWeapon;
+	local XangModMeleeWeapon DefendingMeleeWeapon;
 	local class<AOCWeapon> UsedWeapon;
 	local TraceHitInfo THI;
 	local bool bEnemyWasBot;
@@ -1407,7 +1407,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	Info.PRI = PRI;
 	bBallistaBolt = (Info.DamageType == class'AOCDmgType_BallistaBolt');
 
-	// BANGMOD: Client-timestamp trade priority. If THIS opponent hit us (or has a swing held on
+	// XANGMOD: Client-timestamp trade priority. If THIS opponent hit us (or has a swing held on
 	// us that will hit) clearly before our own swing landed — beyond fTradeWindowSeconds — the
 	// trade is too staggered, so drop our swing and let whoever connected first win. Swings
 	// within the window still trade. Only real enemy melee swings are eligible; parries (those
@@ -1418,19 +1418,19 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 		&& bEnableTradeCancellation
 		&& fActionServerTime > 0.0
 		&& Info.HitActor != none
-		&& BangModPawn(Info.HitActor) != none
+		&& XangModPawn(Info.HitActor) != none
 		&& !Info.DamageType.default.bIsProjectile
 		&& Info.AttackType != Attack_Shove
 		&& !IsOnSameTeam(self, Info.HitActor)
 		&& !IsRiposteAttack()
-		&& ShouldCancelTradeSwing(BangModPawn(Info.HitActor), fActionServerTime))
+		&& ShouldCancelTradeSwing(XangModPawn(Info.HitActor), fActionServerTime))
 	{
 		if (bShowHitTime && AOCPlayerController(Controller) != none)
 			AOCPlayerController(Controller).ClientDisplayConsoleMessage("Trade swing cancelled (opponent hit first)");
 		return;
 	}
 
-	// BangMod: Ping-normalized trade window for fair competitive play
+	// XangMod: Ping-normalized trade window for fair competitive play
 	// Goal: Remove ping advantage for players under 70ms
 	// 
 	// How it works:
@@ -1452,11 +1452,11 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	// - Fair window = 64ms + 24ms = 88ms
 	// - If low-ping player was flinched <88ms ago, both hits count (trade)
 	// - If >88ms ago, only high-ping player's hit counts (they won)
-	// if (BangModMeleeWeapon(Weapon) != none && 
-	//     BangModMeleeWeapon(Weapon).IsInState('Flinch'))
+	// if (XangModMeleeWeapon(Weapon) != none && 
+	//     XangModMeleeWeapon(Weapon).IsInState('Flinch'))
 	// {
 	// 	// How long have we been flinched?
-	// 	fFlinchDuration = WorldInfo.TimeSeconds - BangModMeleeWeapon(Weapon).fFlinchStateStartTime;
+	// 	fFlinchDuration = WorldInfo.TimeSeconds - XangModMeleeWeapon(Weapon).fFlinchStateStartTime;
 		
 	// 	// Get both players' ping in seconds (ExactPing is in seconds, Ping is in 0-250 range)
 	// 	fAttackerPing = PlayerReplicationInfo != none ? PlayerReplicationInfo.ExactPing : 0.060;
@@ -1491,7 +1491,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 		UsedWeapon = TertiaryWeapon;
 
 	HitActorWeaponAttachment = AOCWeaponAttachment(Info.HitActor.CurrentWeaponAttachment);
-	DefendingMeleeWeapon = BangModMeleeWeapon(Info.HitActor.Weapon);
+	DefendingMeleeWeapon = XangModMeleeWeapon(Info.HitActor.Weapon);
 
 	// Is the player on the same team?
 	bSameTeam = IsOnSameTeam(self, Info.HitActor);
@@ -1556,7 +1556,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 		// Grand Lance: self-flinch the attacker on successful enemy stab hit
 		if (!bSameTeam && Info.AttackType == Attack_Stab
 			&& !bParry
-			&& BangModWeapon_GrandLance(Info.Instigator.Weapon) != none)
+			&& XangModWeapon_GrandLance(Info.Instigator.Weapon) != none)
 		{
 			AOCWeapon(Info.Instigator.Weapon).ActivateFlinch(true, Info.Instigator.GetHitDirection(Location), false, false, true);
 		}
@@ -1576,7 +1576,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 		ActualDamage *= PawnFamily.fBackstabModifier;
 
 	// If the hit was in a critical location, increase the damage
-	if (Info.UsedWeapon == 0 && BangModWeapon_Crossbow(Weapon) != none && Info.DamageType.default.bIsProjectile)
+	if (Info.UsedWeapon == 0 && XangModWeapon_Crossbow(Weapon) != none && Info.DamageType.default.bIsProjectile)
 		ActualDamage *= Info.HitActor.PawnFamily.CrossbowLocationModifiers[GetBoneLocation(Info.BoneName)];
 	else
 		ActualDamage *= (Info.DamageType.default.bIsProjectile ? Info.HitActor.PawnFamily.ProjectileLocationModifiers[GetBoneLocation(Info.BoneName)] :
@@ -1837,7 +1837,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	// Firebug ignition — delayed so the blunt impact sound plays cleanly before
 	// the fire scream SFX kicks in. Without the delay the scream drowns out the
 	// weapon impact cue since both fire in the same frame on the same channel.
-	if (BangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
+	if (XangModWeapon_Firebug(Weapon) != none && Info.HitActor != none
 		&& ActualDamage > 0.0f && !bParry && !bSameTeam && !Info.HitActor.bIsBurning
 		&& Info.HitActor.IsAliveAndWell())
 	{
@@ -1845,18 +1845,18 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 		StoredFirebugHitActor = Info.HitActor;
 	}
 
-	// BANGMOD: Remember this hit on the victim so, if their counter-swing is still in flight, the
+	// XANGMOD: Remember this hit on the victim so, if their counter-swing is still in flight, the
 	// server can see it landed clearly later and drop it (trade priority). Real enemy melee hits
 	// only — parries, kicks, projectiles and team hits don't gate a trade.
 	if (!bParry && !bSameTeam
 		&& bEnableTradeCancellation
 		&& fActionServerTime > 0.0
 		&& Info.HitActor != none
-		&& BangModPawn(Info.HitActor) != none
+		&& XangModPawn(Info.HitActor) != none
 		&& !Info.DamageType.default.bIsProjectile
 		&& Info.AttackType != Attack_Shove)
 	{
-		BangModPawn(Info.HitActor).RecordIncomingHit(self, fActionServerTime);
+		XangModPawn(Info.HitActor).RecordIncomingHit(self, fActionServerTime);
 	}
 }
 
@@ -1874,7 +1874,7 @@ function Set_bShowHitTime(bool set)
 }
 
 // ===========================================================================================
-// BANGMOD: Client-timestamp hit-trade priority — helpers + client->server stamp RPCs.
+// XANGMOD: Client-timestamp hit-trade priority — helpers + client->server stamp RPCs.
 // ===========================================================================================
 
 // One-way latency in seconds. ExactPing is round-trip (seconds), so halve it. Capped so a
@@ -1910,10 +1910,10 @@ function UpdateClockOffset(float fClientStamp)
 	}
 }
 
-// BANGMOD: Seed this pawn's client-clock offset from the controller's persisted value (carried
+// XANGMOD: Seed this pawn's client-clock offset from the controller's persisted value (carried
 // from the player's previous pawn before it died). Lets the hit-trade timestamp system start
 // warm on respawn instead of cold-starting into pure ping reconstruction. Called from
-// BangModPlayerController.Possess. Server-only.
+// XangModPlayerController.Possess. Server-only.
 function SeedClockOffset(float fOffset)
 {
 	fClientClockOffset = fOffset;
@@ -1959,7 +1959,7 @@ function PruneRecentIncomingHits()
 
 // Remember a hit we just took (on the victim pawn) so a counter-swing still in flight can be
 // recognised as a staggered trade and dropped.
-function RecordIncomingHit(BangModPawn FromPawn, float fActionServerTime)
+function RecordIncomingHit(XangModPawn FromPawn, float fActionServerTime)
 {
 	local RecentIncomingHit NewEntry;
 
@@ -1978,13 +1978,13 @@ function RecordIncomingHit(BangModPawn FromPawn, float fActionServerTime)
 // would otherwise line up as a staggered trade.
 function bool IsRiposteAttack()
 {
-	return BangModMeleeWeapon(Weapon) != none && BangModMeleeWeapon(Weapon).bParryHitCounter;
+	return XangModMeleeWeapon(Weapon) != none && XangModMeleeWeapon(Weapon).bParryHitCounter;
 }
 
 // True when OUR swing should be dropped: this opponent hit us (or has a swing held on us that
 // will hit) clearly earlier than our swing landed — beyond the trade window. Checking held
 // swings too means the rollback hold can never let a staggered hit slip through as a trade.
-function bool ShouldCancelTradeSwing(BangModPawn Opponent, float fSwingActionTime)
+function bool ShouldCancelTradeSwing(XangModPawn Opponent, float fSwingActionTime)
 {
 	local int i;
 
@@ -2041,7 +2041,7 @@ reliable server function ServerStampParryTime(float fClientParryTime)
 	fLastParryStampServerTime = WorldInfo.TimeSeconds;
 }
 
-// BANGMOD: How long to hold an incoming swing on THIS (defender) pawn so an in-flight parry
+// XANGMOD: How long to hold an incoming swing on THIS (defender) pawn so an in-flight parry
 // can still reach the server and suppress it. Equals the defender's one-way latency, capped.
 // Returns 0 on LAN/bots (no network crossing to compensate) -> swings resolve instantly.
 function float GetParryHoldSeconds()
@@ -2060,7 +2060,7 @@ function float GetParryHoldSeconds()
 	return fHold;
 }
 
-// BANGMOD: Commit held swings whose hold window elapsed without a parry. Runs on the defender
+// XANGMOD: Commit held swings whose hold window elapsed without a parry. Runs on the defender
 // (self) from Tick. Each commits exactly once through the normal hit path.
 function ProcessPendingHits()
 {
@@ -2087,22 +2087,22 @@ function ProcessPendingHits()
 	}
 }
 
-// BANGMOD: Delayed Firebug ignition — lets the blunt impact sound finish before the fire
+// XANGMOD: Delayed Firebug ignition — lets the blunt impact sound finish before the fire
 // scream plays, so both audio cues are audible instead of the scream drowning out the impact.
 function DelayedFirebugIgnite()
 {
 	if (StoredFirebugHitActor != none && StoredFirebugHitActor.IsAliveAndWell()
 		&& !StoredFirebugHitActor.bIsBurning)
 	{
-		StoredFirebugHitActor.SetPawnOnFire(none, Controller, self, class'BangModDmgType_TorchBurn');
+		StoredFirebugHitActor.SetPawnOnFire(none, Controller, self, class'XangModDmgType_TorchBurn');
 	}
 	StoredFirebugHitActor = none;
 }
 
-// BANGMOD: A parry landed while swings were still held on us — resolve every one as a parry
+// XANGMOD: A parry landed while swings were still held on us — resolve every one as a parry
 // BEFORE any hit feedback plays (decide-once). DetectSuccessfulParry still rejects illegal
 // parries (e.g. back hits), which then fall through to a normal hit. Runs on the defender (self)
-// from BangModMeleeWeapon.Parry.BeginState, after super sets bIsParrying/bIsActiveShielding.
+// from XangModMeleeWeapon.Parry.BeginState, after super sets bIsParrying/bIsActiveShielding.
 // fParryActionServerTime is when the parry went active (server timeline); a held swing is only
 // resolved as a parry if the parry wasn't clearly later than the swing (timestamp gate). Swings
 // that the parry was too late for stay held and commit as normal hits when their hold expires.
@@ -2152,12 +2152,12 @@ event TakeDamage(int Damage, Controller InstigatedBy, vector HitLocation, vector
 	super.TakeDamage(Damage, InstigatedBy, HitLocation, Momentum, DamageType, HitInfo, DamageCauser);
 }
 
-// BANGMOD: Suppress burning scream voice lines. Fire crackle SFX still plays via ActivateFireSFX.
+// XANGMOD: Suppress burning scream voice lines. Fire crackle SFX still plays via ActivateFireSFX.
 simulated function ActivateBurnScream()
 {
 }
 
-// Override to reset parry box to AOC defaults when BangMod parry box is disabled
+// Override to reset parry box to AOC defaults when XangMod parry box is disabled
 simulated function AOCSetCharacterClassFromInfo(AOCFamilyInfo Info)
 {
 	super.AOCSetCharacterClassFromInfo(Info);
@@ -2165,24 +2165,24 @@ simulated function AOCSetCharacterClassFromInfo(AOCFamilyInfo Info)
 	// NOTE: Do NOT guard on Controller != none here. This function fires during pawn setup,
 	// before the controller is associated, so that check would always fail and the reset
 	// would never run on the server.
-	if (!class'BangModAOCDuelPlayerController'.default.bBangModParryBox)
+	if (!class'XangModAOCDuelPlayerController'.default.bXangModParryBox)
 	{
 		// Revert to vanilla AOC parry box dimensions
 		ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
 		ParryComponent.SetTranslation(vect(30, 0, -30));
 	}
-	else if (class'BangModAOCDuelPlayerController'.default.bSkeletalParry)
+	else if (class'XangModAOCDuelPlayerController'.default.bSkeletalParry)
 	{
 		// Skeletal parry: full-body coverage
 		ParryComponent.SetScale3D(vect(0.18, 0.17, 0.35));
 		ParryComponent.SetTranslation(vect(10, 5, -28));
 	}
-	// else: BangMod parry enabled, non-skeletal — super already applied FamilyInfo values
+	// else: XangMod parry enabled, non-skeletal — super already applied FamilyInfo values
 
 	// Apply admin-controlled collision bubble radius (OuterCylinder)
 	if (OuterCylinderComp != none)
 	{
-		OuterCylinderComp.SetCylinderSize(class'BangModAOCDuelPlayerController'.default.fBangModCollisionRadius, 65.0);
+		OuterCylinderComp.SetCylinderSize(class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius, 65.0);
 	}
 }
 
@@ -2225,14 +2225,14 @@ simulated function SetThirdPersonCamera(bool bNewBehindView)
 {
 	super.SetThirdPersonCamera(bNewBehindView);
 
-	if (BangModWeaponAttachment_DualBucklers(CurrentWeaponAttachment) != none)
+	if (XangModWeaponAttachment_DualBucklers(CurrentWeaponAttachment) != none)
 	{
-		BangModWeaponAttachment_DualBucklers(CurrentWeaponAttachment).UpdateLeftHandVisibility(bNewBehindView);
+		XangModWeaponAttachment_DualBucklers(CurrentWeaponAttachment).UpdateLeftHandVisibility(bNewBehindView);
 	}
 
-	if (BangModWeaponAttachment_WarHammer(CurrentWeaponAttachment) != none)
+	if (XangModWeaponAttachment_WarHammer(CurrentWeaponAttachment) != none)
 	{
-		BangModWeaponAttachment_WarHammer(CurrentWeaponAttachment).UpdateLeftHandVisibility(bNewBehindView);
+		XangModWeaponAttachment_WarHammer(CurrentWeaponAttachment).UpdateLeftHandVisibility(bNewBehindView);
 	}
 }
 
@@ -2282,7 +2282,7 @@ simulated function SetThirdPersonCamera(bool bNewBehindView)
  * OwnerTopHalfSlot, OwnerBlendAnimationListNode and friends. There is no other
  * call site that assigns those.
  */
-simulated function bool BangModEnsureOwnerMesh()
+simulated function bool XangModEnsureOwnerMesh()
 {
 	local class<AOCCharacterInfo> Info;
 	local AnimSet TempSet;
@@ -2344,30 +2344,30 @@ simulated function bool BangModEnsureOwnerMesh()
 		// the prevent_direct_calls define), so it fails to compile. LogAlwaysInternal is
 		// the public equivalent and is what AOC itself uses. Every other log macro in
 		// this repo is commented out for the same reason.
-		LogAlwaysInternal(self@"BangModEnsureOwnerMesh: anim tree did not initialise (OwnerAimNode="$OwnerAimNode$", OwnerBlendAnimationListNode="$OwnerBlendAnimationListNode$") -- reverting");
+		LogAlwaysInternal(self@"XangModEnsureOwnerMesh: anim tree did not initialise (OwnerAimNode="$OwnerAimNode$", OwnerBlendAnimationListNode="$OwnerBlendAnimationListNode$") -- reverting");
 		DetachComponent(OwnerMesh);
 		OwnerMesh = none;
 		return false;
 	}
 
-	LogAlwaysInternal(self@"BangModEnsureOwnerMesh: rebuilt 1P mesh"@CharacterAssetStore.OwnerMesh);
+	LogAlwaysInternal(self@"XangModEnsureOwnerMesh: rebuilt 1P mesh"@CharacterAssetStore.OwnerMesh);
 	return true;
 }
 
 /**
  * Rebuild the 1P mesh as soon as a local spectator starts viewing this pawn, so it
- * exists by the time BangModApplyFPObserve() runs on the controller side.
+ * exists by the time XangModApplyFPObserve() runs on the controller side.
  *
  * BecomeViewTarget fires from the native SetViewTarget inside
  * PlayerController.ClientSetViewTarget, which is exactly one step ahead of where
- * BangModPlayerController applies the perspective.
+ * XangModPlayerController applies the perspective.
  */
 simulated event BecomeViewTarget(PlayerController PC)
 {
 	if (PC != none && PC.IsLocalPlayerController()
 		&& AOCPlayerController(PC) != none && AOCPlayerController(PC).IsInState('Spectating'))
 	{
-		BangModEnsureOwnerMesh();
+		XangModEnsureOwnerMesh();
 	}
 
 	super.BecomeViewTarget(PC);
@@ -2394,7 +2394,7 @@ simulated event BecomeViewTarget(PlayerController PC)
  * hundreds of metres away -- the pawn plays normally underneath while the screen
  * shows a fixed corner of the map.
  *
- * This bit BangMod badly: several classes ship OwnerMeshPaths whose package was
+ * This bit XangMod badly: several classes ship OwnerMeshPaths whose package was
  * not installed, and content packages live in the DLC folder, which a script cook
  * wipes. Rather than depend on every 1P asset always being present, degrade:
  *
@@ -2409,7 +2409,7 @@ simulated event BecomeViewTarget(PlayerController PC)
  **************************************************************************/
 
 /** True when this component can actually resolve CameraSocket. */
-simulated function bool BangModCanUseCameraSocket(SkeletalMeshComponent SMC)
+simulated function bool XangModCanUseCameraSocket(SkeletalMeshComponent SMC)
 {
 	return SMC != none
 		&& SMC.SkeletalMesh != none
@@ -2427,7 +2427,7 @@ simulated function GetCameraSocketLocationAndRotation(bool bFirstPerson, out vec
 	// bone is missing, spacebases not yet valid -- leaves the caller's values
 	// untouched. That is the whole bug: stale values read as a frozen camera. Pre-fill
 	// them and a silent bail degrades to "camera at the pawn's eyes" instead.
-	BangModEyeViewPoint(CameraLocation, CameraRotation);
+	XangModEyeViewPoint(CameraLocation, CameraRotation);
 
 	if (bFirstPerson)
 		Wanted = OwnerMesh;
@@ -2435,7 +2435,7 @@ simulated function GetCameraSocketLocationAndRotation(bool bFirstPerson, out vec
 		Wanted = Mesh;
 
 	// Normal path: the mesh that was asked for can resolve the socket.
-	if (BangModCanUseCameraSocket(Wanted))
+	if (XangModCanUseCameraSocket(Wanted))
 	{
 		super.GetCameraSocketLocationAndRotation(bFirstPerson, CameraLocation, CameraRotation);
 		return;
@@ -2444,12 +2444,12 @@ simulated function GetCameraSocketLocationAndRotation(bool bFirstPerson, out vec
 	// First person asked for but no usable 1P mesh -- borrow the 3P one. It is
 	// animated, so aim pitch still works. AOCPlayerCamera zeroes roll for us on the
 	// first-person path, so the 3P mesh's lean does not leak through.
-	if (bFirstPerson && BangModCanUseCameraSocket(Mesh))
+	if (bFirstPerson && XangModCanUseCameraSocket(Mesh))
 	{
-		if (!bBangModWarnedNoOwnerMesh)
+		if (!bXangModWarnedNoOwnerMesh)
 		{
-			bBangModWarnedNoOwnerMesh = true;
-			LogAlwaysInternal(self@"BangMod: no usable 1P camera mesh (OwnerMesh="$OwnerMesh$"), falling back to the 3P camera socket.");
+			bXangModWarnedNoOwnerMesh = true;
+			LogAlwaysInternal(self@"XangMod: no usable 1P camera mesh (OwnerMesh="$OwnerMesh$"), falling back to the 3P camera socket.");
 		}
 
 		super.GetCameraSocketLocationAndRotation(false, CameraLocation, CameraRotation);
@@ -2462,20 +2462,20 @@ simulated function GetCameraSocketLocationAndRotation(bool bFirstPerson, out vec
 		//
 		// Deliberately NOT GetBaseAimRotation(): it calls Controller.GetPlayerViewPoint,
 		// which comes straight back here via AOCPlayerCamera.UpdateCamera.
-		BangModAimRotation(CameraRotation);
+		XangModAimRotation(CameraRotation);
 		return;
 	}
 
 	// Neither mesh is usable. The seed above already holds the eye view point.
-	if (!bBangModWarnedNoCameraSocket)
+	if (!bXangModWarnedNoCameraSocket)
 	{
-		bBangModWarnedNoCameraSocket = true;
-		LogAlwaysInternal(self@"BangMod: no usable camera socket on either mesh; using the pawn's eye position.");
+		bXangModWarnedNoCameraSocket = true;
+		LogAlwaysInternal(self@"XangMod: no usable camera socket on either mesh; using the pawn's eye position.");
 	}
 }
 
 /** Where this pawn is looking, without re-entering the camera path. */
-simulated function BangModAimRotation(out rotator OutRot)
+simulated function XangModAimRotation(out rotator OutRot)
 {
 	if (Controller != none)
 	{
@@ -2491,17 +2491,17 @@ simulated function BangModAimRotation(out rotator OutRot)
 }
 
 /** Last-resort view point: the pawn's own eyes. Never leaves the caller holding stale values. */
-simulated function BangModEyeViewPoint(out vector OutLoc, out rotator OutRot)
+simulated function XangModEyeViewPoint(out vector OutLoc, out rotator OutRot)
 {
 	OutLoc = Location;
 	OutLoc.Z += EyeHeight;
-	BangModAimRotation(OutRot);
+	XangModAimRotation(OutRot);
 }
 
 /* ************************************************************************
  * STOCK 1P MESH SUBSTITUTION
  *
- * Several BangMod classes set OwnerMeshPath to an object in a content package that
+ * Several XangMod classes set OwnerMeshPath to an object in a content package that
  * is not installed at runtime, so CharacterAssetStore.OwnerMesh comes back none and
  * the player has no first-person arms at all.
  *
@@ -2516,7 +2516,7 @@ simulated function BangModEyeViewPoint(out vector OutLoc, out rotator OutRot)
  **************************************************************************/
 
 /** Object name from a "Package.Object" or "Package.Group.Object" path. */
-simulated function string BangModObjectName(string Path)
+simulated function string XangModObjectName(string Path)
 {
 	local int i;
 
@@ -2535,18 +2535,18 @@ simulated function string BangModObjectName(string Path)
  * class ships with, so these are the arms Chivalry itself uses for that character.
  *
  * Matched on the OBJECT NAME only, deliberately ignoring the package. The custom
- * character package has been renamed once already (SlumpCharacters -> BangmodCharacters)
+ * character package has been renamed once already (SlumpCharacters -> XangmodCharacters)
  * and the classes are currently split across both spellings, so keying on the full
  * path would silently stop matching the moment either name moves again.
  */
-simulated function SkeletalMesh BangModStock1PMesh(class<AOCCharacterInfo> Info)
+simulated function SkeletalMesh XangModStock1PMesh(class<AOCCharacterInfo> Info)
 {
 	local string Want, Path;
 
 	if (Info == none)
 		return none;
 
-	Want = BangModObjectName(Info.default.OwnerMeshPath);
+	Want = XangModObjectName(Info.default.OwnerMeshPath);
 
 	// Knights
 	if (Want ~= "AgathaKnight1p")
@@ -2604,16 +2604,16 @@ simulated function SetCharacterAppearance(AssetStore_AOCPawn_Character AssetStor
 		&& AssetStore.OwnerMesh == none
 		&& AssetStore.OwnerMeshPath ~= AssetStore.CharacterInfo.default.OwnerMeshPath)
 	{
-		Stock = BangModStock1PMesh(AssetStore.CharacterInfo);
+		Stock = XangModStock1PMesh(AssetStore.CharacterInfo);
 
 		if (Stock != none)
 		{
 			AssetStore.OwnerMesh = Stock;
 
-			if (!bBangModWarnedStock1PMesh)
+			if (!bXangModWarnedStock1PMesh)
 			{
-				bBangModWarnedStock1PMesh = true;
-				LogAlwaysInternal(self@"BangMod: 1P mesh"@AssetStore.CharacterInfo.default.OwnerMeshPath@"did not load; substituting stock"@Stock);
+				bXangModWarnedStock1PMesh = true;
+				LogAlwaysInternal(self@"XangMod: 1P mesh"@AssetStore.CharacterInfo.default.OwnerMeshPath@"did not load; substituting stock"@Stock);
 			}
 		}
 	}
@@ -2632,8 +2632,8 @@ simulated function SetCharacterAppearance(AssetStore_AOCPawn_Character AssetStor
 		&& OwnerMesh != none
 		&& AssetStore.OwnerMesh != none
 		&& AssetStore.BodyMaterial != none
-		&& (AssetStore.CharacterInfo == class'BangModCharacterInfo_Agatha_Assassin'
-			|| AssetStore.CharacterInfo == class'BangModCharacterInfo_Mason_Assassin'))
+		&& (AssetStore.CharacterInfo == class'XangModCharacterInfo_Agatha_Assassin'
+			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Assassin'))
 	{
 		for (i = 0; i < AssetStore.OwnerMesh.Materials.Length; ++i)
 		{
@@ -2684,12 +2684,12 @@ simulated function ResetBlends(optional float BlendOutTime = 0.3f, optional bool
  *
  * Picking one of the archer's "ninja" primary weapons (SpikedMace, BastardSword,
  * Kanabo, Katana, GrandHammer -- indexes 6..10 in
- * BangModFamilyInfo_*_Archer) makes the pawn spawn with the Assassin (ninja)
+ * XangModFamilyInfo_*_Archer) makes the pawn spawn with the Assassin (ninja)
  * mesh instead of the archer mesh, with no new UI slot and no Flash asset.
  *
  * The Assassin presentation already exists and is fully registered:
- *   - BangModCharacterInfo_Agatha_Assassin / _Mason_Assassin (SlumpCharacters.NinjaMesh*)
- *   - BangModCustomizationContent.GetDefaultCharacterIDFor maps ECLASS_SiegeEngineer
+ *   - XangModCharacterInfo_Agatha_Assassin / _Mason_Assassin (SlumpCharacters.NinjaMesh*)
+ *   - XangModCustomizationContent.GetDefaultCharacterIDFor maps ECLASS_SiegeEngineer
  *     -> the faction Assassin CharacterInfo.
  *
  * AOCPawn.LoadCharacterAssets() resolves the mesh from
@@ -2699,13 +2699,13 @@ simulated function ResetBlends(optional float BlendOutTime = 0.3f, optional bool
  **************************************************************************/
 
 /** True when the equipped primary is one of the archer's ninja weapons (indexes 6..10). */
-simulated function bool BangModIsNinjaPrimary()
+simulated function bool XangModIsNinjaPrimary()
 {
-	return PawnInfo.myPrimary == class'BangModWeapon_SpikedMace'
-		|| PawnInfo.myPrimary == class'BangModWeapon_BastardSword'
-		|| PawnInfo.myPrimary == class'BangModWeapon_Kanabo'
-		|| PawnInfo.myPrimary == class'BangModWeapon_Katana'
-		|| PawnInfo.myPrimary == class'BangModWeapon_GrandHammer';
+	return PawnInfo.myPrimary == class'XangModWeapon_SpikedMace'
+		|| PawnInfo.myPrimary == class'XangModWeapon_BastardSword'
+		|| PawnInfo.myPrimary == class'XangModWeapon_Kanabo'
+		|| PawnInfo.myPrimary == class'XangModWeapon_Katana'
+		|| PawnInfo.myPrimary == class'XangModWeapon_GrandHammer';
 }
 
 /** Rewrite the character ID to the Assassin before the character mesh is loaded. */
@@ -2713,7 +2713,7 @@ simulated function LoadCharacterAssets()
 {
 	local EAOCFaction TeamID;
 
-	if (PawnFamily != none && BangModIsNinjaPrimary())
+	if (PawnFamily != none && XangModIsNinjaPrimary())
 	{
 		TeamID = GetCustomizationFactionFromActualFaction(PawnFamily.FamilyFaction);
 		PawnInfo.myCustomization.Character =
@@ -2758,7 +2758,7 @@ DefaultProperties
 	// Netcode optimization: 120Hz server->client pawn updates (matches server tickrate and ReplicateMove rate)
 	NetUpdateFrequency=120
 
-	CustomizationClass=class'BangModCustomization'
+	CustomizationClass=class'XangModCustomization'
 
 	OuterCylinderComp=OuterCylinder
 

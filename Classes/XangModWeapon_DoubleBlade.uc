@@ -6,7 +6,7 @@
 * DoubleBlade — uses quarterstaff animation set with dual tracers
 * (one for each side of the weapon, since it's held in the middle).
 */
-class BangModWeapon_DoubleBlade extends BangModMeleeWeapon;
+class XangModWeapon_DoubleBlade extends XangModMeleeWeapon;
 
 simulated state Release
 {
@@ -203,7 +203,7 @@ defaultproperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_DoubleBlade'
+	AttachmentClass=class'XangModWeaponAttachment_DoubleBlade'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_QuarterStaff'
 	CurrentWeaponType=EWEP_QStaff
 	WeaponIdentifier="qstaff"

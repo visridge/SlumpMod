@@ -5,11 +5,11 @@
 *
 * Weapon Attachment: Brandistock.
 */
-class BangModWeaponAttachment_Brandistock extends AOCWeaponAttachment_Brandistock;
+class XangModWeaponAttachment_Brandistock extends AOCWeaponAttachment_Brandistock;
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);	
+	`include(XangMod/Include/XangModWeaponAttachment.uci);	
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -23,7 +23,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Brandistock
-	WeaponClass=class'BangModWeapon_Brandistock'
+	WeaponClass=class'XangModWeapon_Brandistock'
 	WeaponSocket=wep2hpoint
 
 	AttackTypeInfo(0)=(fBaseDamage=50.0, fForce=30000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)

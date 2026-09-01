@@ -5,7 +5,7 @@
 *
 * The weapon that is replicated to all clients: Zweihander.
 */
-class BangModWeaponAttachment_Zweihander extends AOCWeaponAttachment_Zweihander;
+class XangModWeaponAttachment_Zweihander extends AOCWeaponAttachment_Zweihander;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -28,7 +28,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -42,7 +42,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Zweihander
-	WeaponClass=class'BangModWeapon_Zweihander'
+	WeaponClass=class'XangModWeapon_Zweihander'
 	WeaponSocket=wep2hpoint
 
 	bUseAlternativeKick=true

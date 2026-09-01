@@ -5,7 +5,7 @@
 *
 * Weapon: Fork.
 */
-class BangModWeapon_Fork extends BangModMeleeWeapon;
+class XangModWeapon_Fork extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -210,7 +210,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Fork'
+	AttachmentClass=class'XangModWeaponAttachment_Fork'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Fork'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Fork

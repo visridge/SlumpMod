@@ -1,4 +1,4 @@
-class BangModProj_ThrownDagger extends AOCProj_ThrownDagger;
+class XangModProj_ThrownDagger extends AOCProj_ThrownDagger;
 
 DefaultProperties
 {

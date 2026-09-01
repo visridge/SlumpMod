@@ -6,7 +6,7 @@
 * The weapon class to contain information for the Heavy Flail.
 * The original version of this file is Reason #92012341 artists shouldn't code. :P
 */
-class BangModWeapon_HFlail extends BangModWeapon_Flail;
+class XangModWeapon_HFlail extends XangModWeapon_Flail;
 
 DefaultProperties
 {
@@ -129,9 +129,9 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_HFlail'
+	AttachmentClass=class'XangModWeaponAttachment_HFlail'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_HFlail'
-	AllowedShieldClass=class'BangModShield_Kite'
+	AllowedShieldClass=class'XangModShield_Kite'
 	CurrentWeaponType=EWEP_HFlail
 	bHaveShield=true
 	WeaponIdentifier="hflail"
@@ -247,7 +247,7 @@ DefaultProperties
 	AlternateRecoveryAnimations(8)=(AnimationName=3p_flail_dazedB01,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.9,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=true)
 	AlternateRecoveryAnimations(9)=(AnimationName=3p_flail_dazedB01,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.9,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=true)
 
-        // BANGMOD: Prevent dodging while HFlail is equipped (weapon is too heavy/cumbersome)
+        // XANGMOD: Prevent dodging while HFlail is equipped (weapon is too heavy/cumbersome)
         bCanDodge=false
 
 	}

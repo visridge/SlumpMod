@@ -5,7 +5,7 @@
 *
 * The weapon that is replicated to all clients: Flail.
 */
-class BangModWeaponAttachment_Flail extends AOCWeaponAttachment_Flail;
+class XangModWeaponAttachment_Flail extends AOCWeaponAttachment_Flail;
 
 var Vector PreviousBucklerLoc;
 
@@ -27,7 +27,7 @@ simulated state Release
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 	bUseWeaponPhysics = true
 	Begin Object Name=SkeletalMeshComponent0
@@ -63,7 +63,7 @@ DefaultProperties
 	End Object
 
 	WeaponID=EWEP_Flail
-	WeaponClass=class'BangModWeapon_Flail'
+	WeaponClass=class'XangModWeapon_Flail'
 	WeaponSocket = wep2hpoint
 
 	WeaponNumTracers=1

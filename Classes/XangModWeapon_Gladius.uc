@@ -5,7 +5,7 @@
 *
 * Weapon: Gladius - Standalone longsword gameplay with shortsword visuals, no 1H swap
 */
-class BangModWeapon_Gladius extends BangModMeleeWeapon;
+class XangModWeapon_Gladius extends XangModMeleeWeapon;
 
 simulated state Release
 {
@@ -163,7 +163,7 @@ DefaultProperties
 	BloodSprayTemplates(1)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
-	AttachmentClass=class'BangModWeaponAttachment_Gladius'
+	AttachmentClass=class'XangModWeaponAttachment_Gladius'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Dagesse'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Dagesse

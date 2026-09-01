@@ -5,7 +5,7 @@
 *
 * Weapon: Katana (2H Mode) - Mirrors Longsword values, uses DWKatana mesh
 */
-class BangModWeapon_Katana extends BangModMeleeWeapon;
+class XangModWeapon_Katana extends XangModMeleeWeapon;
 
 simulated state Release
 {
@@ -166,7 +166,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Katana'
+	AttachmentClass=class'XangModWeaponAttachment_Katana'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Longsword'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Longsword

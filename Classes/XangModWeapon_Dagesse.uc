@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Dagesse.
 */
-class BangModWeapon_Dagesse extends BangModMeleeWeapon;
+class XangModWeapon_Dagesse extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -150,7 +150,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Dagesse'
+	AttachmentClass=class'XangModWeaponAttachment_Dagesse'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Dagesse'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Dagesse

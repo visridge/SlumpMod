@@ -1,9 +1,9 @@
 /**
-* BangMod OilPot Burn Damage Type
+* XangMod OilPot Burn Damage Type
 * Custom damage type with 0 DamageOverTime so SetPawnOnFire only applies visual effects
 * All actual damage is handled manually by the projectile
 */
-class BangModDmgType_OilPotBurn extends AOCDmgType_Burn;
+class XangModDmgType_OilPotBurn extends AOCDmgType_Burn;
 
 DefaultProperties
 {

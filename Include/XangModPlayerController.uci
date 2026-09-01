@@ -1,4 +1,4 @@
-var BangModCustomizationContent CustomizationBaseDummy;
+var XangModCustomizationContent CustomizationBaseDummy;
 var float InterpYaw;
 var float InterpPitch;
 
@@ -22,93 +22,93 @@ var bool bIsTalking;  // Is local player currently talking
 var array<AOCPRI> NearbyTalkers;  // List of PRIs currently talking within range
 
 // Parry box toggle
-var globalconfig bool bBangModParryBox;  // When true, use BangMod parry box values; when false, revert to vanilla AOC defaults
+var globalconfig bool bXangModParryBox;  // When true, use XangMod parry box values; when false, revert to vanilla AOC defaults
 var globalconfig bool bSkeletalParry;    // When true, parry hitbox wraps the full player model (skeletal parry) instead of directional shield-style
 var globalconfig bool bDisableButtParries;  // When true, attacks from behind the defender cannot be parried
 
 // Collision bubble radius (OuterCylinder)
-var globalconfig float fBangModCollisionRadius;  // Radius of the player collision bubble; vanilla AOC default is 39.0
+var globalconfig float fXangModCollisionRadius;  // Radius of the player collision bubble; vanilla AOC default is 39.0
 
-// BANGMOD: Persisted client-clock offset (server-only) for the hit-trade timestamp system.
-// The offset is accumulated on the pawn (BangModPawn.fClientClockOffset); we stash it here when
+// XANGMOD: Persisted client-clock offset (server-only) for the hit-trade timestamp system.
+// The offset is accumulated on the pawn (XangModPawn.fClientClockOffset); we stash it here when
 // the pawn dies and re-seed the next pawn on Possess, so the system isn't cold (falling back to
 // pure ping reconstruction) for the first hit or two after every respawn.
 var float fPersistedClientClockOffset;
 var bool  bPersistedClockOffsetInit;
 
-// BANGMOD: First-person spectator (see the FIRST-PERSON SPECTATOR block further down).
-var bool    bBangModFPSpectate;      // desired perspective while following a player (true = first person)
-var AOCPawn BangModFPObservedPawn;   // pawn we currently have first-person-observer state applied to
-var AOCPawn BangModHUDPawn;          // pawn the spectator health/stamina HUD is currently showing
-var AOCPawn BangModPerspectivePawn;  // pawn we have already established a camera perspective for
-var float   fBangModNextFPRetry;     // WorldInfo.TimeSeconds gate for re-poking a pawn to rebuild its 1P mesh
-var AOCPawn BangModFPBlockLoggedPawn; // pawn whose first-person refusal we have already logged
+// XANGMOD: First-person spectator (see the FIRST-PERSON SPECTATOR block further down).
+var bool    bXangModFPSpectate;      // desired perspective while following a player (true = first person)
+var AOCPawn XangModFPObservedPawn;   // pawn we currently have first-person-observer state applied to
+var AOCPawn XangModHUDPawn;          // pawn the spectator health/stamina HUD is currently showing
+var AOCPawn XangModPerspectivePawn;  // pawn we have already established a camera perspective for
+var float   fXangModNextFPRetry;     // WorldInfo.TimeSeconds gate for re-poking a pawn to rebuild its 1P mesh
+var AOCPawn XangModFPBlockLoggedPawn; // pawn whose first-person refusal we have already logged
 
-// BANGMOD: health/stamina bar enforcement (see BangModEnforceLifeBars)
-var AOCPawn BangModLifeBarPawn;          // pawn the bars are currently showing
-var float   fBangModNextLifeBarAssert;   // throttle for re-asserting bar visibility
-var int     iBangModLastHealthShown;
-var float   fBangModLastStaminaShown;
+// XANGMOD: health/stamina bar enforcement (see XangModEnforceLifeBars)
+var AOCPawn XangModLifeBarPawn;          // pawn the bars are currently showing
+var float   fXangModNextLifeBarAssert;   // throttle for re-asserting bar visibility
+var int     iXangModLastHealthShown;
+var float   fXangModLastStaminaShown;
 
-// BANGMOD: spectator field-of-view lock (see BangModEnforceSpectateFOV)
-var float   fBangModFOVCaught;       // last wrong FOV value we corrected while spectating
-var name    nBangModFOVCaughtWhere;  // which hook caught it -- reported by FPSpectateDebug
+// XANGMOD: spectator field-of-view lock (see XangModEnforceSpectateFOV)
+var float   fXangModFOVCaught;       // last wrong FOV value we corrected while spectating
+var name    nXangModFOVCaughtWhere;  // which hook caught it -- reported by FPSpectateDebug
 
-// BANGMOD: minimum client send rate (see BangModRestoreNetSpeed).
+// XANGMOD: minimum client send rate (see XangModRestoreNetSpeed).
 //   0 (or absent from the ini) = use the built-in default of 15000
 //   negative                   = opt out entirely
 // Deliberately NOT relying on globalconfig to deliver the default: measured on a
-// live client this read back 0 even with iBangModMinNetSpeed=15000 in
+// live client this read back 0 even with iXangModMinNetSpeed=15000 in
 // defaultproperties, the key absent from every ini, and no competing
 // defaultproperties block in the including class. So 0 is treated as unset.
-var globalconfig int iBangModMinNetSpeed;
-var int iBangModMinNetSpeedFallback;  // plain var: config cannot zero this one
-var float fBangModNextNetSpeedCheck;  // throttle for the tick-side assert
-var name  nBangModNetSpeedBlock;      // why the last automatic attempt did nothing
-var int   iBangModNetSpeedTries;      // how many times it has tried
+var globalconfig int iXangModMinNetSpeed;
+var int iXangModMinNetSpeedFallback;  // plain var: config cannot zero this one
+var float fXangModNextNetSpeedCheck;  // throttle for the tick-side assert
+var name  nXangModNetSpeedBlock;      // why the last automatic attempt did nothing
+var int   iXangModNetSpeedTries;      // how many times it has tried
 
-// BANGMOD: spectator team lock (see BangModMayView)
-var int     iBangModViewBlocks;      // times we refused an out-of-team view target
-var name    nBangModViewBlockWhere;  // which hook refused it, for FPSpectateDebug
+// XANGMOD: spectator team lock (see XangModMayView)
+var int     iXangModViewBlocks;      // times we refused an out-of-team view target
+var name    nXangModViewBlockWhere;  // which hook refused it, for FPSpectateDebug
 
-// BANGMOD: admin-only pause control (ported from NateMod). Pausing is restricted
+// XANGMOD: admin-only pause control (ported from NateMod). Pausing is restricted
 // to admins; unpausing is also admin-only and runs a short 3-2-1-GO countdown so
 // players get a heads-up before the action resumes.
 var bool  bIsPaused;              // true while an admin has the game paused
 var int   UnpauseCountdownTime;   // countdown start value (default 3)
 
-// BANGMOD: inebriate on any map (see the block above ClientInebriate for the why).
+// XANGMOD: inebriate on any map (see the block above ClientInebriate for the why).
 // Declared up here because UnrealScript requires every var before the first function
 // in the class body -- and this .uci is pasted straight into one.
-var PostProcessChain BangModDrunkChain;   // ChivPostProcess_drunk, from defaultproperties
-var bool bBangModDrunkChainAdded;         // true only when WE swapped the chain, so only we restore it
+var PostProcessChain XangModDrunkChain;   // ChivPostProcess_drunk, from defaultproperties
+var bool bXangModDrunkChainAdded;         // true only when WE swapped the chain, so only we restore it
 
-var bool bBangModVoiceTrace;              // VoiceTrace: print remote talking notifications
-var globalconfig bool bBangModVoiceAutoRegister;  // sweep remote talkers into Steam's voice layer
-var bool bBangModVoiceSweepArmed;
-var bool bBangModLocalTalkerClaimed;
+var bool bXangModVoiceTrace;              // VoiceTrace: print remote talking notifications
+var globalconfig bool bXangModVoiceAutoRegister;  // sweep remote talkers into Steam's voice layer
+var bool bXangModVoiceSweepArmed;
+var bool bXangModLocalTalkerClaimed;
 
 
-simulated function SetAllParryBoxClassDefaults(bool bEnableBangMod, bool bEnableSkeletal)
+simulated function SetAllParryBoxClassDefaults(bool bEnableXangMod, bool bEnableSkeletal)
 {
-	class'BangModAOCDuelPlayerController'.default.bBangModParryBox = bEnableBangMod;
-	class'BangModAOCDuelPlayerController'.default.bSkeletalParry = bEnableSkeletal;
-	class'BangModCDWDuelPlayerController'.default.bBangModParryBox = bEnableBangMod;
-	class'BangModCDWDuelPlayerController'.default.bSkeletalParry = bEnableSkeletal;
-	class'BangModCTFPlayerController'.default.bBangModParryBox = bEnableBangMod;
-	class'BangModCTFPlayerController'.default.bSkeletalParry = bEnableSkeletal;
-	class'BangModFFAPlayerController'.default.bBangModParryBox = bEnableBangMod;
-	class'BangModFFAPlayerController'.default.bSkeletalParry = bEnableSkeletal;
-	class'BangModKOTHPlayerController'.default.bBangModParryBox = bEnableBangMod;
-	class'BangModKOTHPlayerController'.default.bSkeletalParry = bEnableSkeletal;
-	class'BangModLTSPlayerController'.default.bBangModParryBox = bEnableBangMod;
-	class'BangModLTSPlayerController'.default.bSkeletalParry = bEnableSkeletal;
-	class'BangModTDPlayerController'.default.bBangModParryBox = bEnableBangMod;
-	class'BangModTDPlayerController'.default.bSkeletalParry = bEnableSkeletal;
-	class'BangModTOPlayerController'.default.bBangModParryBox = bEnableBangMod;
-	class'BangModTOPlayerController'.default.bSkeletalParry = bEnableSkeletal;
-	class'BangModTUTPlayerController'.default.bBangModParryBox = bEnableBangMod;
-	class'BangModTUTPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModAOCDuelPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModAOCDuelPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModCDWDuelPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModCDWDuelPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModCTFPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModCTFPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModFFAPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModFFAPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModKOTHPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModKOTHPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModLTSPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModLTSPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModTDPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModTDPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModTOPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModTOPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModTUTPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModTUTPlayerController'.default.bSkeletalParry = bEnableSkeletal;
 }
 
 simulated function ApplyParryBoxSettingsToCurrentPawn()
@@ -122,14 +122,14 @@ simulated function ApplyParryBoxSettingsToCurrentPawn()
 		return;
 	}
 
-	if (!class'BangModAOCDuelPlayerController'.default.bBangModParryBox)
+	if (!class'XangModAOCDuelPlayerController'.default.bXangModParryBox)
 	{
 		CurrentPawn.ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
 		CurrentPawn.ParryComponent.SetTranslation(vect(30, 0, -30));
 		return;
 	}
 
-	if (class'BangModAOCDuelPlayerController'.default.bSkeletalParry)
+	if (class'XangModAOCDuelPlayerController'.default.bSkeletalParry)
 	{
 		CurrentPawn.ParryComponent.SetScale3D(vect(0.18, 0.17, 0.35));
 		CurrentPawn.ParryComponent.SetTranslation(vect(10, 5, -28));
@@ -146,68 +146,68 @@ simulated function ApplyParryBoxSettingsToCurrentPawn()
 	CurrentPawn.ParryComponent.SetTranslation(ParryBoxTranslation);
 }
 
-reliable client function ClientSyncParryBoxSettings(bool bEnableBangMod, bool bEnableSkeletal)
+reliable client function ClientSyncParryBoxSettings(bool bEnableXangMod, bool bEnableSkeletal)
 {
-	bBangModParryBox = bEnableBangMod;
+	bXangModParryBox = bEnableXangMod;
 	bSkeletalParry = bEnableSkeletal;
-	SetAllParryBoxClassDefaults(bEnableBangMod, bEnableSkeletal);
+	SetAllParryBoxClassDefaults(bEnableXangMod, bEnableSkeletal);
 	ApplyParryBoxSettingsToCurrentPawn();
 }
 
 simulated function SetAllCollisionRadiusClassDefaults(float Radius)
 {
-	class'BangModAOCDuelPlayerController'.default.fBangModCollisionRadius = Radius;
-	class'BangModCDWDuelPlayerController'.default.fBangModCollisionRadius = Radius;
-	class'BangModCTFPlayerController'.default.fBangModCollisionRadius = Radius;
-	class'BangModFFAPlayerController'.default.fBangModCollisionRadius = Radius;
-	class'BangModKOTHPlayerController'.default.fBangModCollisionRadius = Radius;
-	class'BangModLTSPlayerController'.default.fBangModCollisionRadius = Radius;
-	class'BangModTDPlayerController'.default.fBangModCollisionRadius = Radius;
-	class'BangModTOPlayerController'.default.fBangModCollisionRadius = Radius;
-	class'BangModTUTPlayerController'.default.fBangModCollisionRadius = Radius;
+	class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModCDWDuelPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModCTFPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModFFAPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModKOTHPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModLTSPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModTDPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModTOPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModTUTPlayerController'.default.fXangModCollisionRadius = Radius;
 }
 
 simulated function ApplyCollisionRadiusToCurrentPawn()
 {
-	local BangModAOCDuelPawn BMP;
+	local XangModAOCDuelPawn BMP;
 
-	BMP = BangModAOCDuelPawn(Pawn);
+	BMP = XangModAOCDuelPawn(Pawn);
 	if (BMP == none || BMP.OuterCylinderComp == none)
 		return;
 
-	BMP.OuterCylinderComp.SetCylinderSize(class'BangModAOCDuelPlayerController'.default.fBangModCollisionRadius, 65.0);
+	BMP.OuterCylinderComp.SetCylinderSize(class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius, 65.0);
 }
 
 reliable client function ClientSyncCollisionRadius(float Radius)
 {
-	fBangModCollisionRadius = Radius;
+	fXangModCollisionRadius = Radius;
 	SetAllCollisionRadiusClassDefaults(Radius);
 	ApplyCollisionRadiusToCurrentPawn();
 }
 
-// Ensure BangMod uses its customization class everywhere
+// Ensure XangMod uses its customization class everywhere
 simulated event PostBeginPlay()
 {
 	super.PostBeginPlay();
-	if (CustomizationClass != class'BangModCustomization')
+	if (CustomizationClass != class'XangModCustomization')
 	{
-		CustomizationClass = class'BangModCustomization';
+		CustomizationClass = class'XangModCustomization';
 	}
 
-	// BANGMOD: follow players in first person by default; Space toggles back to
+	// XANGMOD: follow players in first person by default; Space toggles back to
 	// the vanilla orbit follow. Set here rather than in state Spectating.BeginState
 	// so the choice sticks for the whole session instead of resetting every time
 	// the player re-enters spectate.
-	bBangModFPSpectate = true;
+	bXangModFPSpectate = true;
 
-	BangModRepairPersistedConfig();
+	XangModRepairPersistedConfig();
 
 	// Sweep remote talkers into Steam's voice layer. Client-only; the guard inside the
 	// sweep handles Player not being set yet at this point.
-	if (WorldInfo.NetMode != NM_DedicatedServer && !bBangModVoiceSweepArmed)
+	if (WorldInfo.NetMode != NM_DedicatedServer && !bXangModVoiceSweepArmed)
 	{
-		bBangModVoiceSweepArmed = true;
-		SetTimer(5.0f, true, 'BangModVoiceSweepTick');
+		bXangModVoiceSweepArmed = true;
+		SetTimer(5.0f, true, 'XangModVoiceSweepTick');
 	}
 }
 
@@ -219,7 +219,7 @@ simulated function bool CanBastardSwordSprintAttack(AOCPawn AOCP)
 		return false;
 	}
 
-	return AOCP.Weapon.Class == class'BangModWeapon_BastardSword'
+	return AOCP.Weapon.Class == class'XangModWeapon_BastardSword'
 		&& AOCP.bIsSprintMaxSpeed;
 }
 */
@@ -333,7 +333,7 @@ function ProcessViewRotation( float DeltaTime, out Rotator out_ViewRotation, Rot
 	}
 	else if ( AOCPawn(Pawn) != None )
 	{	
-		// BANGMOD turncap desync fix. StateVariables is a *replicated* struct, so on a dedicated
+		// XANGMOD turncap desync fix. StateVariables is a *replicated* struct, so on a dedicated
 		// server the server's snapshot of bIsAttacking periodically clobbers the owning client's
 		// locally-predicted value. During rapid combos that bool can read false for a frame or two
 		// between chained attacks; on those frames the gate below skipped the yaw clamp entirely
@@ -377,7 +377,7 @@ function ProcessViewRotation( float DeltaTime, out Rotator out_ViewRotation, Rot
 				}
 			}
 			
-			// BANGMOD: Loosen turn cap during parry animation - use Holy Water Sprinkler esque speeds
+			// XANGMOD: Loosen turn cap during parry animation - use Holy Water Sprinkler esque speeds
 			if (AOCPawn(Pawn).StateVariables.bIsParrying)
 			{
 				MaxTurnSpeed = 75000.0;
@@ -465,11 +465,11 @@ event Possess(Pawn inPawn, bool bVehicleTransition)
 {
 	super.Possess(inPawn, bVehicleTransition);
 
-	// BANGMOD: Re-seed the client-clock offset carried from this player's previous pawn so the
+	// XANGMOD: Re-seed the client-clock offset carried from this player's previous pawn so the
 	// hit-trade timestamp system starts warm instead of cold (pure ping reconstruction) for the
 	// first hit or two after respawn. Offset is captured in PawnDied below. Server-only.
-	if (Role == ROLE_Authority && bPersistedClockOffsetInit && BangModPawn(inPawn) != none)
-		BangModPawn(inPawn).SeedClockOffset(fPersistedClientClockOffset);
+	if (Role == ROLE_Authority && bPersistedClockOffsetInit && XangModPawn(inPawn) != none)
+		XangModPawn(inPawn).SeedClockOffset(fPersistedClientClockOffset);
 	
 	// Force ragdolls disabled on every spawn (catches players with read-only configs)
 	ConsoleCommand("SetRagdollLimit 0");
@@ -479,9 +479,9 @@ event Possess(Pawn inPawn, bool bVehicleTransition)
 	// late joins don't keep stale client-side defaults.
 	// if (Role == ROLE_Authority)
 	// {
-	// 	ClientSyncParryBoxSettings(class'BangModAOCDuelPlayerController'.default.bBangModParryBox,
-	// 		class'BangModAOCDuelPlayerController'.default.bSkeletalParry);
-	// 	ClientSyncCollisionRadius(class'BangModAOCDuelPlayerController'.default.fBangModCollisionRadius);
+	// 	ClientSyncParryBoxSettings(class'XangModAOCDuelPlayerController'.default.bXangModParryBox,
+	// 		class'XangModAOCDuelPlayerController'.default.bSkeletalParry);
+	// 	ClientSyncCollisionRadius(class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius);
 	// }
 	
 	// Show optimization tip once when player first spawns
@@ -492,13 +492,13 @@ event Possess(Pawn inPawn, bool bVehicleTransition)
 	}
 }
 
-// BANGMOD: Capture the dying pawn's accumulated client-clock offset so the next pawn can start
+// XANGMOD: Capture the dying pawn's accumulated client-clock offset so the next pawn can start
 // warm (re-seeded in Possess). Runs before super so the pawn is still valid. Server-only.
 function PawnDied(Pawn P)
 {
-	if (Role == ROLE_Authority && BangModPawn(P) != none && BangModPawn(P).bClientClockOffsetInit)
+	if (Role == ROLE_Authority && XangModPawn(P) != none && XangModPawn(P).bClientClockOffsetInit)
 	{
-		fPersistedClientClockOffset = BangModPawn(P).fClientClockOffset;
+		fPersistedClientClockOffset = XangModPawn(P).fClientClockOffset;
 		bPersistedClockOffsetInit = true;
 	}
 
@@ -715,17 +715,17 @@ simulated event tick(float DeltaTime)
 	super.tick(DeltaTime);
 
 	// Runs in every state, so it covers both playing and spectating.
-	BangModEnforceLifeBars();
+	XangModEnforceLifeBars();
 
 	// Belt and braces on the ClientCapBandwidth override. That hook catches the cap the
 	// server applies at PostLogin, but it is a single ordering-dependent call -- if it
 	// ever fires before Player is valid, or something else lowers the rate later, the
 	// client is left throttled with no second chance. Cheap to just re-check: the
 	// function early-outs on a comparison, and this only runs twice a second.
-	if (WorldInfo.TimeSeconds >= fBangModNextNetSpeedCheck)
+	if (WorldInfo.TimeSeconds >= fXangModNextNetSpeedCheck)
 	{
-		fBangModNextNetSpeedCheck = WorldInfo.TimeSeconds + 0.5f;
-		BangModRestoreNetSpeed();
+		fXangModNextNetSpeedCheck = WorldInfo.TimeSeconds + 0.5f;
+		XangModRestoreNetSpeed();
 	}
 	
 	if (bShowGroundSpeed)
@@ -914,7 +914,7 @@ function ReplicateMove(float DeltaTime, vector NewAccel, eDoubleClickDir DoubleC
 
 	if ( PendingMove == None )
 	{
-		// BangMod: Fixed 120Hz update rate for improved netcode
+		// XangMod: Fixed 120Hz update rate for improved netcode
 		// Original code had dynamic rates: 90Hz (<=10 players) or 45Hz+ (>10 players) on listen servers, 20Hz on dedicated
 		// Setting to 0.00833 (~120Hz) matches the server's max tickrate for optimal smoothness
 		NetMoveDelta = 0.00833;
@@ -1063,9 +1063,9 @@ exec function SetAssassinCustom(int TeamIndex, string Field, int Value, optional
 	Faction = (TeamIndex == 0) ? EFAC_AGATHA : EFAC_MASON;
 
 	// Read the current Assassin choices through the same path the UI uses.
-	Choices = class'BangModCustomization'.static.LocalGetCustomizationChoices(Faction, 4);
-	class'BangModCustomization'.static.LocalGetSelectedWeaponDrops(Faction, 4, WeaponDrops, AOCPRI(PlayerReplicationInfo));
-	FavIcon = class'BangModCustomization'.static.LocalGetFactionSupporterId();
+	Choices = class'XangModCustomization'.static.LocalGetCustomizationChoices(Faction, 4);
+	class'XangModCustomization'.static.LocalGetSelectedWeaponDrops(Faction, 4, WeaponDrops, AOCPRI(PlayerReplicationInfo));
+	FavIcon = class'XangModCustomization'.static.LocalGetFactionSupporterId();
 
 	Field = Locs(Field);
 
@@ -1104,7 +1104,7 @@ exec function SetAssassinCustom(int TeamIndex, string Field, int Value, optional
 	}
 
 	// Persist to the local Customization.ini (mirrors the menu's SaveChoices).
-	class'BangModCustomization'.static.LocalSetCustomizationChoices(Choices, Faction, 4, WeaponDrops, FavIcon);
+	class'XangModCustomization'.static.LocalSetCustomizationChoices(Choices, Faction, 4, WeaponDrops, FavIcon);
 
 	// If the player is CURRENTLY the Assassin, push the change to the server so it
 	// applies to the next spawn without reconnecting (same sync the menu does).
@@ -1127,7 +1127,7 @@ exec function AdminTournamentMode(optional bool bEnable = true)
 	ClientDisplayConsoleMessage("Enable: Admin TournamentMode 1");
 }
 
-// Override AdminLoginHidden to prevent silent admin logins on BangMod servers.
+// Override AdminLoginHidden to prevent silent admin logins on XangMod servers.
 // Redirects to the standard AdminLogin which broadcasts to all players.
 exec function AdminLoginHidden(string Password)
 {
@@ -1151,15 +1151,15 @@ exec function AdminToggleParryBox(optional bool bEnable = true)
 reliable server function S_AdminToggleParryBox(bool bEnable) {
 	if (!IsAdmin())
 		return;
-	// Must set on the class default — pawn reads class'BangModAOCDuelPlayerController'.default.bBangModParryBox
-	class'BangModAOCDuelPlayerController'.default.bBangModParryBox = bEnable;
-	class'BangModAOCDuelPlayerController'.static.StaticSaveConfig();
-	ClientSyncParryBoxSettings(class'BangModAOCDuelPlayerController'.default.bBangModParryBox,
-		class'BangModAOCDuelPlayerController'.default.bSkeletalParry);
+	// Must set on the class default — pawn reads class'XangModAOCDuelPlayerController'.default.bXangModParryBox
+	class'XangModAOCDuelPlayerController'.default.bXangModParryBox = bEnable;
+	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
+	ClientSyncParryBoxSettings(class'XangModAOCDuelPlayerController'.default.bXangModParryBox,
+		class'XangModAOCDuelPlayerController'.default.bSkeletalParry);
 	if (bEnable)
-		S_AdminBroadcastMessage("BangMod parry box ENABLED (respawn to apply)", false);
+		S_AdminBroadcastMessage("XangMod parry box ENABLED (respawn to apply)", false);
 	else
-		S_AdminBroadcastMessage("BangMod parry box DISABLED - using vanilla AOC parry box (respawn to apply)", false);
+		S_AdminBroadcastMessage("XangMod parry box DISABLED - using vanilla AOC parry box (respawn to apply)", false);
 }
 
 exec function AdminEnableSkeletalParry(optional bool bEnable = true)
@@ -1174,10 +1174,10 @@ exec function AdminEnableSkeletalParry(optional bool bEnable = true)
 reliable server function S_AdminEnableSkeletalParry(bool bEnable) {
 	if (!IsAdmin())
 		return;
-	class'BangModAOCDuelPlayerController'.default.bSkeletalParry = bEnable;
-	class'BangModAOCDuelPlayerController'.static.StaticSaveConfig();
-	ClientSyncParryBoxSettings(class'BangModAOCDuelPlayerController'.default.bBangModParryBox,
-		class'BangModAOCDuelPlayerController'.default.bSkeletalParry);
+	class'XangModAOCDuelPlayerController'.default.bSkeletalParry = bEnable;
+	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
+	ClientSyncParryBoxSettings(class'XangModAOCDuelPlayerController'.default.bXangModParryBox,
+		class'XangModAOCDuelPlayerController'.default.bSkeletalParry);
 	if (bEnable)
 		S_AdminBroadcastMessage("Skeletal parry ENABLED - parry box covers full body (respawn to apply)", false);
 	else
@@ -1198,8 +1198,8 @@ exec function AdminDisableButtParries(optional bool bEnable = true)
 reliable server function S_AdminDisableButtParries(bool bEnable) {
 	if (!IsAdmin())
 		return;
-	class'BangModAOCDuelPlayerController'.default.bDisableButtParries = bEnable;
-	class'BangModAOCDuelPlayerController'.static.StaticSaveConfig();
+	class'XangModAOCDuelPlayerController'.default.bDisableButtParries = bEnable;
+	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
 	if (bEnable)
 		S_AdminBroadcastMessage("Butt-parry prevention ENABLED - attacks from behind cannot be parried", false);
 	else
@@ -1224,14 +1224,14 @@ reliable server function S_AdminSetCollisionRadius(float NewRadius) {
 	// Clamp to a sane range to prevent griefing (1 to 200)
 	NewRadius = FClamp(NewRadius, 1.0, 200.0);
 
-	class'BangModAOCDuelPlayerController'.default.fBangModCollisionRadius = NewRadius;
-	class'BangModAOCDuelPlayerController'.static.StaticSaveConfig();
+	class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius = NewRadius;
+	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
 
 	// Sync all connected players
 	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
 	{
-		if (BangModAOCDuelPlayerController(PC) != none)
-			BangModAOCDuelPlayerController(PC).ClientSyncCollisionRadius(NewRadius);
+		if (XangModAOCDuelPlayerController(PC) != none)
+			XangModAOCDuelPlayerController(PC).ClientSyncCollisionRadius(NewRadius);
 	}
 
 	S_AdminBroadcastMessage("Collision bubble radius set to" @ NewRadius @ "(respawn to apply)", false);
@@ -1248,12 +1248,12 @@ exec function AdminCEAutoskip()
 }
 
 reliable server function S_AdminCEAutoskip() {
-	local BangModTO TOGame;
+	local XangModTO TOGame;
 
 	if (!IsAdmin())
 		return;
 
-	TOGame = BangModTO(WorldInfo.Game);
+	TOGame = XangModTO(WorldInfo.Game);
 	if (TOGame == none) {
 		ClientDisplayConsoleMessage("CE Autoskip only works in Team Objective.");
 		return;
@@ -1592,12 +1592,12 @@ reliable server function S_AdminForceSpectateAll() {
 }
 
 exec function Reload() {
-	if(!ScriptBlockedInputs[EINBLOCK_Reload] && BangModWeapon_Crossbow(Pawn.Weapon) != none)
-		BangModWeapon_Crossbow(Pawn.Weapon).ActivateReload();
+	if(!ScriptBlockedInputs[EINBLOCK_Reload] && XangModWeapon_Crossbow(Pawn.Weapon) != none)
+		XangModWeapon_Crossbow(Pawn.Weapon).ActivateReload();
 }
 
 exec function PerformAim() {
-	if (class<BangModWeapon_Crossbow>(Pawn.Weapon.Class) != none)
+	if (class<XangModWeapon_Crossbow>(Pawn.Weapon.Class) != none)
 		StartFire(1);
 }
 
@@ -1763,11 +1763,11 @@ state PlayerWalking
 			
 			bLastMoveForward = bMoveForward;
 
-			// BANGMOD: Grand Lance stab charge — lock movement input to pure forward.
+			// XANGMOD: Grand Lance stab charge — lock movement input to pure forward.
 			// aForward / aStrafe and the sprint-cancel check all read these axes below, so
 			// clamping here prevents S from triggering DisableSprint, removes backward/strafe
 			// acceleration from NewAccel, and stops A/D from deflecting the charge.
-			if (BangModPawn(Pawn) != none && BangModPawn(Pawn).bForceSprintForward)
+			if (XangModPawn(Pawn) != none && XangModPawn(Pawn).bForceSprintForward)
 			{
 				PlayerInput.aForward = 1.0;
 				PlayerInput.aStrafe  = 0.0;
@@ -1846,7 +1846,7 @@ state PlayerWalking
 				UpdateRotation( DeltaTime * AOCPawn(Pawn).ModAnimRate ); //update rotation !!!!!!!!!!!!!!! importantttttttttttttttttttttttttttttttttttttttttttttttttttttt!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			bDoubleJump = false;
 			bPressedJump = bPressedJump && !ScriptBlockedInputs[EINBLOCK_Jump];
-			if( bPressedJump && Pawn.CannotJumpNow() && (BangModPawn(Pawn) == none || !BangModPawn(Pawn).CanAirJump()) )
+			if( bPressedJump && Pawn.CannotJumpNow() && (XangModPawn(Pawn) == none || !XangModPawn(Pawn).CanAirJump()) )
 			{
 				bSaveJump = true;
 				bPressedJump = false;
@@ -2042,24 +2042,24 @@ simulated function PrintAndClearConsoleDamage()
 exec function ToggleReleaseHitMessage() //toggles messages that show how far into release you hit your opponent
 {
 	if (bPCShowHitTime){
-		BangModPawn(Pawn).Set_bShowHitTime(true);
+		XangModPawn(Pawn).Set_bShowHitTime(true);
 		ClientDisplayConsoleMessage("release hit time messages off");
 	}
 	else {
-		BangModPawn(Pawn).Set_bShowHitTime(false);
+		XangModPawn(Pawn).Set_bShowHitTime(false);
 		ClientDisplayConsoleMessage("release hit time messages on");
 	}
 }
 // this is dumb, just let ppl set it
 exec function EnableReleaseHitMessage() //toggles messages that show how far into release you hit your opponent
 {
-	BangModPawn(Pawn).Set_bShowHitTime(true);
+	XangModPawn(Pawn).Set_bShowHitTime(true);
 	ClientDisplayConsoleMessage("release hit time messages on");
 }
 
 exec function DisableReleaseHitMessage() //toggles messages that show how far into release you hit your opponent
 {
-	BangModPawn(Pawn).Set_bShowHitTime(true);
+	XangModPawn(Pawn).Set_bShowHitTime(true);
 	ClientDisplayConsoleMessage("release hit time messages off");
 }
 
@@ -2242,9 +2242,9 @@ reliable server function ServerUpdateCustomizationInfo(SCustomizationChoice NewC
  **************************************************************************/
 
 /** One-line camera dump to the log. Use with the FPSpectateDebug exec when chasing camera bugs. */
-simulated function BangModLogCameraState(string Tag)
+simulated function XangModLogCameraState(string Tag)
 {
-	LogAlwaysInternal("[BangModFPSpec]" @ Tag
+	LogAlwaysInternal("[XangModFPSpec]" @ Tag
 		@ "State=" $ GetStateName()
 		@ "Pawn=" $ Pawn
 		@ "ViewTarget=" $ ViewTarget
@@ -2255,14 +2255,14 @@ simulated function BangModLogCameraState(string Tag)
 }
 
 /** Fired on a short timer from ClientRestart, after EnterStartState has run. */
-simulated function BangModFixCameraAfterSpawn()
+simulated function XangModFixCameraAfterSpawn()
 {
 	local AOCPawn MyPawn;
 
 	if (!IsLocalPlayerController())
 		return;
 
-	BangModLogCameraState("post-spawn");
+	XangModLogCameraState("post-spawn");
 
 	if (Pawn == none || IsInState('Spectating') || IsInState('SpecialSpectating'))
 		return;
@@ -2294,7 +2294,7 @@ simulated function BangModFixCameraAfterSpawn()
 	// onto the spectator camera position every frame.
 	SetLocation(Pawn.Location);
 
-	BangModLogCameraState("post-spawn-corrected");
+	XangModLogCameraState("post-spawn-corrected");
 }
 
 reliable client function ClientRestart(Pawn NewPawn)
@@ -2302,7 +2302,7 @@ reliable client function ClientRestart(Pawn NewPawn)
 	super.ClientRestart(NewPawn);
 
 	if (NewPawn != none && IsLocalPlayerController())
-		SetTimer(0.05f, false, 'BangModFixCameraAfterSpawn');
+		SetTimer(0.05f, false, 'XangModFixCameraAfterSpawn');
 }
 
 /* ************************************************************************
@@ -2313,7 +2313,7 @@ reliable client function ClientRestart(Pawn NewPawn)
  * state Spectating.ViewAPlayer force-calls SetBehindView(true) and BehindView() is an
  * empty stub.
  *
- * BangMod re-declares state Spectating to route target changes through it. Once
+ * XangMod re-declares state Spectating to route target changes through it. Once
  * bIsBeingFPObserved is actually set, the hand-rolled workarounds are unnecessary:
  * AOCPlayerCamera.UpdateCamera takes its FP branch and zeroes CameraRotation.Roll
  * (the sprint-lean tilt fix), and SetThirdPersonCamera(false) shows the 1P mesh so
@@ -2333,7 +2333,7 @@ reliable client function ClientRestart(Pawn NewPawn)
  * so it is none on most pawns, and SetThirdPersonCamera dereferences it unguarded anyway --
  * requiring it refused first person for nearly everyone and bought no safety.
  */
-simulated function string BangModFPObserveBlocker(AOCPawn P)
+simulated function string XangModFPObserveBlocker(AOCPawn P)
 {
 	if (P == none)
 		return "pawn is none";
@@ -2357,9 +2357,9 @@ simulated function string BangModFPObserveBlocker(AOCPawn P)
 	return "";
 }
 
-simulated function bool BangModCanFPObserve(AOCPawn P)
+simulated function bool XangModCanFPObserve(AOCPawn P)
 {
-	return BangModFPObserveBlocker(P) == "";
+	return XangModFPObserveBlocker(P) == "";
 }
 
 /**
@@ -2371,56 +2371,56 @@ simulated function bool BangModCanFPObserve(AOCPawn P)
  * before the flag is set. Vanilla's own order leaves the pawn flagged for a 1P camera but
  * visually in 3P, which is the "inside the head" view. The meshes are put back afterwards.
  */
-simulated function bool BangModApplyFPObserve(AOCPawn P)
+simulated function bool XangModApplyFPObserve(AOCPawn P)
 {
 	local string Blocker;
 
 	if (P == none || !IsLocalPlayerController())
 		return false;
 
-	Blocker = BangModFPObserveBlocker(P);
+	Blocker = XangModFPObserveBlocker(P);
 	if (Blocker != "")
 	{
 		// Once per pawn: silence is what made this hard to diagnose the first time.
-		if (BangModFPBlockLoggedPawn != P)
+		if (XangModFPBlockLoggedPawn != P)
 		{
-			BangModFPBlockLoggedPawn = P;
-			LogAlwaysInternal("[BangModFPSpec] first person refused for"@P$":"@Blocker);
+			XangModFPBlockLoggedPawn = P;
+			LogAlwaysInternal("[XangModFPSpec] first person refused for"@P$":"@Blocker);
 		}
 		return false;
 	}
 
-	if (BangModFPObservedPawn != none && BangModFPObservedPawn != P)
-		BangModClearFPObserve();
+	if (XangModFPObservedPawn != none && XangModFPObservedPawn != P)
+		XangModClearFPObserve();
 
 	SetBehindView(false);
 	P.SetThirdPersonCamera(false);
 
-	BangModFPObservedPawn = P;
+	XangModFPObservedPawn = P;
 	return true;
 }
 
 /**
- * Undoes BangModApplyFPObserve on whichever pawn we last applied it to.
+ * Undoes XangModApplyFPObserve on whichever pawn we last applied it to.
  * AOCPawn.EndViewTarget() clears bIsBeingFPObserved / CurrentObserver but does
  * NOT restore mesh visibility, so a pawn we stop following would keep its 1P
  * mesh unhidden and its 3P body flagged owner-no-see.
  */
-simulated function BangModClearFPObserve()
+simulated function XangModClearFPObserve()
 {
 	local AOCPawn P;
 
-	if (BangModFPObservedPawn == none)
+	if (XangModFPObservedPawn == none)
 		return;
 
-	P = BangModFPObservedPawn;
-	BangModFPObservedPawn = none;
+	P = XangModFPObservedPawn;
+	XangModFPObservedPawn = none;
 
 	P.bIsBeingFPObserved = false;
 	if (P.CurrentObserver == self)
 		P.CurrentObserver = none;
 
-	if (BangModCanFPObserve(P))
+	if (XangModCanFPObserve(P))
 		P.SetThirdPersonCamera(true);
 }
 
@@ -2433,7 +2433,7 @@ simulated function BangModClearFPObserve()
  * setting the flags directly in that window; PlayerTick re-establishes properly
  * once a real target arrives.
  */
-simulated function BangModRestoreVanillaCamera()
+simulated function XangModRestoreVanillaCamera()
 {
 	if (WorldInfo.GRI != none)
 	{
@@ -2459,7 +2459,7 @@ simulated function BangModRestoreVanillaCamera()
  * found, so this does not claim to fix a proven cause -- it enforces the rule everywhere we
  * control and counts refusals, so FPSpectateDebug can say whether the server gate leaks.
  */
-simulated function bool BangModMayView(PlayerReplicationInfo TargetPRI)
+simulated function bool XangModMayView(PlayerReplicationInfo TargetPRI)
 {
 	local AOCPRI MyPRI;
 
@@ -2480,14 +2480,14 @@ simulated function bool BangModMayView(PlayerReplicationInfo TargetPRI)
 }
 
 /** Records a refusal so FPSpectateDebug can report whether this ever actually fires. */
-simulated function BangModNoteViewBlock(name Where)
+simulated function XangModNoteViewBlock(name Where)
 {
-	iBangModViewBlocks++;
-	nBangModViewBlockWhere = Where;
+	iXangModViewBlocks++;
+	nXangModViewBlockWhere = Where;
 }
 
 /** Applies whichever perspective the spectator currently wants to the current view target. */
-simulated function BangModApplySpectatorPerspective()
+simulated function XangModApplySpectatorPerspective()
 {
 	local AOCPawn P;
 
@@ -2499,27 +2499,27 @@ simulated function BangModApplySpectatorPerspective()
 	// Never put a player into first person on somebody they are not allowed to watch.
 	// First person is the worst case of the leak: it hands over the exact view, the
 	// health and stamina bars, and any HUD marker that pawn's team can see.
-	if (P != none && !BangModMayView(P.PlayerReplicationInfo))
+	if (P != none && !XangModMayView(P.PlayerReplicationInfo))
 	{
-		BangModNoteViewBlock('Perspective');
+		XangModNoteViewBlock('Perspective');
 		P = none;
 	}
 
 	if (P == none || P.Health <= 0)
 	{
-		BangModClearFPObserve();
-		BangModPerspectivePawn = none;
+		XangModClearFPObserve();
+		XangModPerspectivePawn = none;
 
 		// SetBehindView(false) cleared bFreeCamera (UTPlayerController.SetBehindView).
 		// Hand it back, or the free camera can neither move nor look around --
 		// state Spectating.PlayerMove early-outs on !bFreeCamera before UpdateRotation.
-		BangModRestoreVanillaCamera();
+		XangModRestoreVanillaCamera();
 		return;
 	}
 
-	BangModPerspectivePawn = P;
+	XangModPerspectivePawn = P;
 
-	if (bBangModFPSpectate && BangModApplyFPObserve(P))
+	if (bXangModFPSpectate && XangModApplyFPObserve(P))
 		return;
 
 	// Either the spectator asked for the orbit follow, or this pawn cannot be
@@ -2531,8 +2531,8 @@ simulated function BangModApplySpectatorPerspective()
 	// state the controller is left running on whatever bBehindView / bFreeCamera
 	// happened to be left over -- which is how you end up with a camera that is
 	// neither following anybody nor accepting input.
-	BangModClearFPObserve();
-	BangModRestoreVanillaCamera(); // state Spectating.SetBehindView re-enables bFreeCamera
+	XangModClearFPObserve();
+	XangModRestoreVanillaCamera(); // state Spectating.SetBehindView re-enables bFreeCamera
 }
 
 /**
@@ -2547,7 +2547,7 @@ simulated function BangModApplySpectatorPerspective()
  * So assert the desired state every tick instead. Throttled to a visibility re-assert twice
  * a second plus a value push only on change. Never HIDES -- vanilla owns that.
  */
-simulated function BangModEnforceLifeBars()
+simulated function XangModEnforceLifeBars()
 {
 	local AOCBaseHUD H;
 	local AOCPawn Subject;
@@ -2572,42 +2572,42 @@ simulated function BangModEnforceLifeBars()
 		// no team test, so it pushed health and stamina for whatever the view target
 		// happened to be -- including an enemy on the death camera, in any state, not
 		// just while spectating. That was this function's bug, not vanilla's.
-		if (Subject != none && !BangModMayView(Subject.PlayerReplicationInfo))
+		if (Subject != none && !XangModMayView(Subject.PlayerReplicationInfo))
 		{
-			BangModNoteViewBlock('LifeBars');
+			XangModNoteViewBlock('LifeBars');
 			Subject = none;
 		}
 	}
 
 	if (Subject == none || Subject.Health <= 0)
 	{
-		BangModLifeBarPawn = none;
+		XangModLifeBarPawn = none;
 		return;
 	}
 
 	// Re-assert visibility whenever the subject changes, and twice a second after
 	// that, so anything which hides the bars behind our back is corrected quickly.
-	if (Subject != BangModLifeBarPawn || WorldInfo.TimeSeconds >= fBangModNextLifeBarAssert)
+	if (Subject != XangModLifeBarPawn || WorldInfo.TimeSeconds >= fXangModNextLifeBarAssert)
 	{
-		BangModLifeBarPawn = Subject;
-		fBangModNextLifeBarAssert = WorldInfo.TimeSeconds + 0.5f;
+		XangModLifeBarPawn = Subject;
+		fXangModNextLifeBarAssert = WorldInfo.TimeSeconds + 0.5f;
 
 		H.DisplayCompleteHUD();
 
 		// Force a value push on the next two tests regardless of the change filter.
-		iBangModLastHealthShown = -1;
-		fBangModLastStaminaShown = -1.f;
+		iXangModLastHealthShown = -1;
+		fXangModLastStaminaShown = -1.f;
 	}
 
-	if (Subject.Health != iBangModLastHealthShown)
+	if (Subject.Health != iXangModLastHealthShown)
 	{
-		iBangModLastHealthShown = Subject.Health;
+		iXangModLastHealthShown = Subject.Health;
 		H.SetHealthValues(Subject.Health, Subject.HealthMax);
 	}
 
-	if (Subject.Stamina != fBangModLastStaminaShown)
+	if (Subject.Stamina != fXangModLastStaminaShown)
 	{
-		fBangModLastStaminaShown = Subject.Stamina;
+		fXangModLastStaminaShown = Subject.Stamina;
 		H.SetStaminaValues(Subject.Stamina, Subject.MaxStamina);
 	}
 }
@@ -2627,7 +2627,7 @@ simulated function BangModEnforceLifeBars()
  *
  * Gated on Pawn == none: weapon zoom drives DesiredFOV in live play and must not be fought.
  */
-simulated function BangModEnforceSpectateFOV(name Where)
+simulated function XangModEnforceSpectateFOV(name Where)
 {
 	if (!IsLocalPlayerController() || Pawn != none)
 		return;
@@ -2642,12 +2642,12 @@ simulated function BangModEnforceSpectateFOV(name Where)
 
 	// Record what we caught, so FPSpectateDebug can finally name the culprit.
 	if (FOVAngle != MyFOV)
-		fBangModFOVCaught = FOVAngle;
+		fXangModFOVCaught = FOVAngle;
 	else if (DesiredFOV != MyFOV)
-		fBangModFOVCaught = DesiredFOV;
+		fXangModFOVCaught = DesiredFOV;
 	else
-		fBangModFOVCaught = DefaultFOV;
-	nBangModFOVCaughtWhere = Where;
+		fXangModFOVCaught = DefaultFOV;
+	nXangModFOVCaughtWhere = Where;
 
 	DefaultFOV = MyFOV;
 	DesiredFOV = MyFOV;
@@ -2657,25 +2657,25 @@ simulated function BangModEnforceSpectateFOV(name Where)
 /** Console toggle, in case somebody wants to default to the vanilla orbit follow. */
 exec function FirstPersonSpectate(optional bool bEnable = true)
 {
-	bBangModFPSpectate = bEnable;
+	bXangModFPSpectate = bEnable;
 	if (IsInState('Spectating'))
-		BangModApplySpectatorPerspective();
+		XangModApplySpectatorPerspective();
 }
 
 /**
  * Diagnostic for first-person spectate. Type "FPSpectateDebug" in the console
  * while following a player.
  *
- * The usual failure is "OwnerMesh: None" -- see BangModEnsureOwnerMesh in
- * BangModPawn.uci for why the 1P mesh gets stripped and how it is rebuilt.
+ * The usual failure is "OwnerMesh: None" -- see XangModEnsureOwnerMesh in
+ * XangModPawn.uci for why the 1P mesh gets stripped and how it is rebuilt.
  */
 exec function FPSpectateDebug()
 {
 	local AOCPawn P;
 
-	ClientDisplayConsoleMessage("---- BangMod camera / spectate state ----");
+	ClientDisplayConsoleMessage("---- XangMod camera / spectate state ----");
 	ClientDisplayConsoleMessage("State:" @ GetStateName() @ "| NetMode:" @ int(WorldInfo.NetMode) @ "| LocalPC:" @ IsLocalPlayerController());
-	ClientDisplayConsoleMessage("bBangModFPSpectate:" @ bBangModFPSpectate @ "| bBehindView:" @ bBehindView @ "| bFreeCamera:" @ bFreeCamera);
+	ClientDisplayConsoleMessage("bXangModFPSpectate:" @ bXangModFPSpectate @ "| bBehindView:" @ bBehindView @ "| bFreeCamera:" @ bFreeCamera);
 	ClientDisplayConsoleMessage("Pawn:" @ Pawn);
 	ClientDisplayConsoleMessage("ViewTarget:" @ ViewTarget @ "| RealViewTarget:" @ RealViewTarget);
 
@@ -2683,17 +2683,17 @@ exec function FPSpectateDebug()
 	// engine reads the view straight off it and ignores Pawn/ViewTarget entirely.
 	ClientDisplayConsoleMessage("PlayerCamera:" @ PlayerCamera @ " <-- should be None during normal play");
 	ClientDisplayConsoleMessage("FOV: MyFOV=" $ MyFOV @ "Default=" $ DefaultFOV @ "Desired=" $ DesiredFOV @ "Angle=" $ FOVAngle);
-	if (iBangModViewBlocks > 0)
-		ClientDisplayConsoleMessage("Team lock: refused" @ iBangModViewBlocks @ "out-of-team view target(s), last in" @ nBangModViewBlockWhere);
+	if (iXangModViewBlocks > 0)
+		ClientDisplayConsoleMessage("Team lock: refused" @ iXangModViewBlocks @ "out-of-team view target(s), last in" @ nXangModViewBlockWhere);
 	else
 		ClientDisplayConsoleMessage("Team lock: no out-of-team view target has been refused.");
 
-	if (nBangModFOVCaughtWhere != '')
-		ClientDisplayConsoleMessage("FOV lock: last corrected a stray" @ fBangModFOVCaught @ "in" @ nBangModFOVCaughtWhere);
+	if (nXangModFOVCaughtWhere != '')
+		ClientDisplayConsoleMessage("FOV lock: last corrected a stray" @ fXangModFOVCaught @ "in" @ nXangModFOVCaughtWhere);
 	else
 		ClientDisplayConsoleMessage("FOV lock: has not had to correct anything yet.");
 
-	ClientDisplayConsoleMessage("FPObservedPawn:" @ BangModFPObservedPawn @ "| PerspectivePawn:" @ BangModPerspectivePawn);
+	ClientDisplayConsoleMessage("FPObservedPawn:" @ XangModFPObservedPawn @ "| PerspectivePawn:" @ XangModPerspectivePawn);
 
 	if (Pawn != none && ViewTarget != Pawn)
 		ClientDisplayConsoleMessage("!! ViewTarget is not our own Pawn while we have one -- that is the frozen-camera signature.");
@@ -2721,10 +2721,10 @@ exec function FPSpectateDebug()
 	ClientDisplayConsoleMessage("HelmetMeshComp:" @ P.HelmetMeshComp @ "| HelmetEmitter:" @ P.HelmetEmitter);
 	ClientDisplayConsoleMessage("ShieldMesh:" @ P.ShieldMesh @ "| OverlayShieldMesh:" @ P.OverlayShieldMesh);
 	ClientDisplayConsoleMessage("WeaponAttachment:" @ AOCWeaponAttachment(P.CurrentWeaponAttachment));
-	if (BangModCanFPObserve(P))
+	if (XangModCanFPObserve(P))
 		ClientDisplayConsoleMessage("=> CanFPObserve: TRUE");
 	else
-		ClientDisplayConsoleMessage("=> CanFPObserve: FALSE --" @ BangModFPObserveBlocker(P));
+		ClientDisplayConsoleMessage("=> CanFPObserve: FALSE --" @ XangModFPObserveBlocker(P));
 	ClientDisplayConsoleMessage("---------------------------------------");
 }
 
@@ -2735,27 +2735,27 @@ state Spectating
 		super.BeginState(PreviousStateName);
 
 		// super sets SetViewTarget(none), so nothing is observed yet.
-		BangModFPObservedPawn = none;
-		BangModHUDPawn = none;
-		BangModPerspectivePawn = none;
+		XangModFPObservedPawn = none;
+		XangModHUDPawn = none;
+		XangModPerspectivePawn = none;
 
 		// Claim the field of view the moment we arrive, before the first frame renders.
-		BangModEnforceSpectateFOV('BeginState');
+		XangModEnforceSpectateFOV('BeginState');
 	}
 
 	function EndState(Name NextStateName)
 	{
-		BangModClearFPObserve();
+		XangModClearFPObserve();
 
 		// Deliberately does NOT touch the HUD. An earlier version called
 		// ClearHUDOnDeath() here and cost every player their bars, crosshair and ammo
 		// count for a whole life: on spawn the server's Possess() fires
 		// ShowHUDElements() -> DisplayCompleteHUD() BEFORE ClientRestart() reaches
 		// EnterStartState(), so hiding here undid vanilla a moment after it showed them.
-		// BangModEnforceLifeBars() now owns bar visibility; vanilla owns hiding on death.
-		BangModLifeBarPawn = none;
-		BangModHUDPawn = none;
-		BangModPerspectivePawn = none;
+		// XangModEnforceLifeBars() now owns bar visibility; vanilla owns hiding on death.
+		XangModLifeBarPawn = none;
+		XangModHUDPawn = none;
+		XangModPerspectivePawn = none;
 
 		super.EndState(NextStateName);
 	}
@@ -2779,12 +2779,12 @@ state Spectating
 
 		// Belt and braces on top of GetNextViewablePlayer, which already consults
 		// AOCGame.CanSpectate for every candidate. If that gate works this is dead code
-		// and iBangModViewBlocks stays at zero; if it is leaking, this stops it here on
+		// and iXangModViewBlocks stays at zero; if it is leaking, this stops it here on
 		// the server -- where it matters, since a client cannot be trusted to refuse a
 		// view target it has already been given.
-		if (!BangModMayView(PRI))
+		if (!XangModMayView(PRI))
 		{
-			BangModNoteViewBlock('ViewAPlayer');
+			XangModNoteViewBlock('ViewAPlayer');
 			return;
 		}
 
@@ -2801,14 +2801,14 @@ state Spectating
 	{
 		// Restore the outgoing pawn before the native SetViewTarget inside super
 		// fires EndViewTarget on it (EndViewTarget does not restore its meshes).
-		if (BangModFPObservedPawn != none && BangModFPObservedPawn != A)
-			BangModClearFPObserve();
+		if (XangModFPObservedPawn != none && XangModFPObservedPawn != A)
+			XangModClearFPObserve();
 
 		super.ClientSetViewTarget(A, TransitionParams);
 
-		BangModApplySpectatorPerspective();
+		XangModApplySpectatorPerspective();
 
-		BangModHUDPawn = AOCPawn(ViewTarget);
+		XangModHUDPawn = AOCPawn(ViewTarget);
 	}
 
 	/**
@@ -2838,8 +2838,8 @@ state Spectating
 		if (AOCPawn(ViewTarget) == none)
 			return; // free camera / nobody followed -- nothing to toggle
 
-		bBangModFPSpectate = !bBangModFPSpectate;
-		BangModApplySpectatorPerspective();
+		bXangModFPSpectate = !bXangModFPSpectate;
+		XangModApplySpectatorPerspective();
 	}
 
 	/** Same key path, reached via UTPlayerController.BehindView bindings. */
@@ -2851,7 +2851,7 @@ state Spectating
 	/** Camera angles only mean anything in the orbit follow. */
 	exec function NextCameraAngle()
 	{
-		if (bBangModFPSpectate && AOCPawn(ViewTarget) != none)
+		if (bXangModFPSpectate && AOCPawn(ViewTarget) != none)
 			return;
 
 		iThirdPersonAngle = 1;
@@ -2860,15 +2860,15 @@ state Spectating
 	/** Right click. */
 	exec function SpectatorFreecam()
 	{
-		BangModClearFPObserve();
+		XangModClearFPObserve();
 		super.SpectatorFreecam();
 
 		// Restore bFreeCamera, which SetBehindView(false) zeroed on the way into
 		// first person. Without this the free camera is frozen in place.
 		SetBehindView(true);
 
-		BangModHUDPawn = none;
-		BangModPerspectivePawn = none;
+		XangModHUDPawn = none;
+		XangModPerspectivePawn = none;
 	}
 
 	/**
@@ -2877,12 +2877,12 @@ state Spectating
 	 * Vanilla's version hands FOVAngle to ViewTarget.CalcCamera as an out parameter, so
 	 * a view target is free to overwrite the spectator's field of view every single
 	 * frame -- which a tick-time correction would lose to, since tick runs first.
-	 * Re-asserting here closes that ordering hole; see BangModEnforceSpectateFOV.
+	 * Re-asserting here closes that ordering hole; see XangModEnforceSpectateFOV.
 	 */
 	simulated event GetPlayerViewPoint( out vector POVLocation, out Rotator POVRotation )
 	{
 		super.GetPlayerViewPoint(POVLocation, POVRotation);
-		BangModEnforceSpectateFOV('GetPlayerViewPoint');
+		XangModEnforceSpectateFOV('GetPlayerViewPoint');
 	}
 
 	event PlayerTick(float DeltaTime)
@@ -2892,7 +2892,7 @@ state Spectating
 		super.PlayerTick(DeltaTime);
 
 		// Covers whatever moves the value outside the render path.
-		BangModEnforceSpectateFOV('PlayerTick');
+		XangModEnforceSpectateFOV('PlayerTick');
 
 		if (!IsLocalPlayerController())
 			return;
@@ -2903,33 +2903,33 @@ state Spectating
 
 		if (P == none)
 		{
-			if (BangModFPObservedPawn != none)
+			if (XangModFPObservedPawn != none)
 			{
-				BangModClearFPObserve();
-				BangModPerspectivePawn = none;
-				BangModRestoreVanillaCamera();
+				XangModClearFPObserve();
+				XangModPerspectivePawn = none;
+				XangModRestoreVanillaCamera();
 			}
 		}
-		else if (BangModPerspectivePawn != P)
+		else if (XangModPerspectivePawn != P)
 		{
 			// New pawn (target switch, or the old one respawned as a new object).
 			// Establish a definite camera state exactly once.
-			BangModApplySpectatorPerspective();
+			XangModApplySpectatorPerspective();
 		}
-		else if (bBangModFPSpectate && !P.bIsBeingFPObserved)
+		else if (bXangModFPSpectate && !P.bIsBeingFPObserved)
 		{
 			// Keep retrying first person on the pawn we already settled on.
 			if (P.OwnerMesh != none)
 			{
-				BangModApplyFPObserve(P);
+				XangModApplyFPObserve(P);
 			}
-			else if (WorldInfo.TimeSeconds >= fBangModNextFPRetry)
+			else if (WorldInfo.TimeSeconds >= fXangModNextFPRetry)
 			{
 				// The 1P mesh is rebuilt by the pawn's BecomeViewTarget override, which
 				// only fires on a view-target change. If its character assets had not
 				// streamed in by then, nothing would ever try again -- so poke it. Rate
 				// limited so a pawn that genuinely cannot be rebuilt costs us nothing.
-				fBangModNextFPRetry = WorldInfo.TimeSeconds + 0.5f;
+				fXangModNextFPRetry = WorldInfo.TimeSeconds + 0.5f;
 				P.BecomeViewTarget(self);
 			}
 		}
@@ -2947,13 +2947,13 @@ state Spectating
 			P.OwnerAimNode.Aim.Y = P.AimNode.Aim.Y;
 		}
 
-		BangModHUDPawn = P;
+		XangModHUDPawn = P;
 	}
 }
 
 /* ************************************************************************
  * PROXIMITY VOICE CHAT IMPLEMENTATION
- * BangMod adds working proximity voice chat functionality
+ * XangMod adds working proximity voice chat functionality
  **************************************************************************/
 
 // Push-to-talk command (bound to G key by default)
@@ -3027,7 +3027,7 @@ exec function ToggleSpeaking(bool bNowOn)
  * treating it as "never set" is safe; the bool is only restored alongside a zero distance,
  * which is the stale-write signature.
  */
-simulated function BangModRepairPersistedConfig()
+simulated function XangModRepairPersistedConfig()
 {
 	local bool bDirty;
 
@@ -3041,15 +3041,15 @@ simulated function BangModRepairPersistedConfig()
 		bDirty = true;
 	}
 
-	if (iBangModMinNetSpeed == 0)
+	if (iXangModMinNetSpeed == 0)
 	{
-		iBangModMinNetSpeed = 15000;
+		iXangModMinNetSpeed = 15000;
 		bDirty = true;
 	}
 
-	if (iBangModMinNetSpeedFallback == 0)
+	if (iXangModMinNetSpeedFallback == 0)
 	{
-		iBangModMinNetSpeedFallback = 15000;
+		iXangModMinNetSpeedFallback = 15000;
 		bDirty = true;
 	}
 
@@ -3069,7 +3069,7 @@ exec function VoiceStatus()
 	if (VI == none && OnlineSub != none)
 		VI = OnlineSub.VoiceInterface;
 
-	ClientDisplayConsoleMessage("---- BangMod voice status ----");
+	ClientDisplayConsoleMessage("---- XangMod voice status ----");
 	if (VI == none || LP == none)
 	{
 		ClientDisplayConsoleMessage("No voice interface or no local player - nothing else can work.");
@@ -3084,7 +3084,7 @@ exec function VoiceStatus()
 
 	// Claim OK: trace silence while speaking = Steam not capturing. Claim failed: the
 	// device was already claimed for user 0, so capture works and the trace is unavailable.
-	ClientDisplayConsoleMessage(bBangModLocalTalkerClaimed
+	ClientDisplayConsoleMessage(bXangModLocalTalkerClaimed
 		? "Local talker claim: OK - self-lines in VoiceTrace are the capture test"
 		: "Local talker claim: FAILED (device already owned for user 0) - capture should work, but self-lines cannot appear; test with a listener");
 
@@ -3111,17 +3111,17 @@ exec function VoiceStatus()
 
 /**
  * Register every other player with Steam's voice layer and clear Steam-side mute -- the
- * second mute layer, which nothing in AOC/UTGame/BangMod ever touches. Talking delegates
+ * second mute layer, which nothing in AOC/UTGame/XangMod ever touches. Talking delegates
  * only fire for registered talkers (verified in the binary: no auto-registration exists).
  * Idempotent, safe to run repeatedly.
  */
 exec function VoiceFix()
 {
-	BangModVoiceSweep();
+	XangModVoiceSweep();
 	ClientDisplayConsoleMessage("VoiceFix applied - run VoiceStatus, then have someone talk.");
 }
 
-function BangModVoiceSweep()
+function XangModVoiceSweep()
 {
 	local OnlineVoiceInterface VI;
 	local LocalPlayer LP;
@@ -3142,11 +3142,11 @@ function BangModVoiceSweep()
 	// claim-if-free branch, and only RegisterLocalTalker claims -- which nothing calls
 	// outside standalone. Release-then-claim is safe whether or not the frontend already
 	// claimed; success also arms the local talking delegate.
-	if (!bBangModLocalTalkerClaimed)
+	if (!bXangModLocalTalkerClaimed)
 	{
 		VI.UnregisterLocalTalker(LP.ControllerId);
 		if (VI.RegisterLocalTalker(LP.ControllerId))
-			bBangModLocalTalkerClaimed = true;
+			bXangModLocalTalkerClaimed = true;
 	}
 
 	VI.UnmuteAll(LP.ControllerId);
@@ -3163,15 +3163,15 @@ function BangModVoiceSweep()
 }
 
 /** Re-sweep periodically so players who join later are picked up too. */
-function BangModVoiceSweepTick()
+function XangModVoiceSweepTick()
 {
-	if (bBangModVoiceAutoRegister)
-		BangModVoiceSweep();
+	if (bXangModVoiceAutoRegister)
+		XangModVoiceSweep();
 }
 
 exec function VoiceTrace(optional bool bOn = true)
 {
-	bBangModVoiceTrace = bOn;
+	bXangModVoiceTrace = bOn;
 	ClientDisplayConsoleMessage("VoiceTrace" @ (bOn ? "ON - talk and watch for lines" : "off"));
 }
 
@@ -3181,7 +3181,7 @@ exec function VoiceDebug()
 
 	LP = LocalPlayer(Player);
 
-	ClientDisplayConsoleMessage("---- BangMod voice state ----");
+	ClientDisplayConsoleMessage("---- XangMod voice state ----");
 	ClientDisplayConsoleMessage("OnlineSub:" @ OnlineSub);
 	ClientDisplayConsoleMessage("PC.VoiceInterface:" @ VoiceInterface);
 	if (OnlineSub != none)
@@ -3204,12 +3204,12 @@ exec function VoiceDebug()
 	// what the server knows about your position, which is why a little saturation feels
 	// like a lot of rubber-banding.
 	ClientDisplayConsoleMessage("Move send interval: 0.05s (20 Hz) on dedicated -- AOCPlayerController.uc:9239");
-	ClientDisplayConsoleMessage("Auto-netspeed: config=" $ iBangModMinNetSpeed @ "fallback=" $ iBangModMinNetSpeedFallback @ "tries=" $ iBangModNetSpeedTries @ "last=" $ nBangModNetSpeedBlock);
+	ClientDisplayConsoleMessage("Auto-netspeed: config=" $ iXangModMinNetSpeed @ "fallback=" $ iXangModMinNetSpeedFallback @ "tries=" $ iXangModNetSpeedTries @ "last=" $ nXangModNetSpeedBlock);
 	ClientDisplayConsoleMessage("-----------------------------");
 }
 
 /**
- * Raise this client's own send budget at runtime. Usage: BangModNetSpeed 100000, then hold
+ * Raise this client's own send budget at runtime. Usage: XangModNetSpeed 100000, then hold
  * push-to-talk and check stat net.
  *
  * "Connection saturated!" is IsNetReady(0) judged against Player.CurrentNetSpeed, not any
@@ -3230,61 +3230,61 @@ exec function VoiceDebug()
  *
  * 15000 because that is where the engine clamps -- 0x3A98 is a hardcoded immediate in the
  * net driver, and SetNetSpeed(100000) was observed landing on exactly 15000. This only
- * raises what THIS client sends. Set iBangModMinNetSpeed negative to opt out.
+ * raises what THIS client sends. Set iXangModMinNetSpeed negative to opt out.
  */
-simulated function BangModRestoreNetSpeed()
+simulated function XangModRestoreNetSpeed()
 {
 	local int Target;
 
 	// Every bail-out records WHY. The automatic path was reported as doing nothing while
-	// the identical SetNetSpeed call from the BangModNetSpeed exec worked, so the
+	// the identical SetNetSpeed call from the XangModNetSpeed exec worked, so the
 	// difference has to be one of these guards -- and naming which one beats another
 	// round of me speculating about it.
 	if (Player == none)
 	{
-		nBangModNetSpeedBlock = 'Player_is_none';
+		nXangModNetSpeedBlock = 'Player_is_none';
 		return;
 	}
 	// 0 means "config never delivered a value" -- fall back rather than do nothing.
-	Target = iBangModMinNetSpeed;
+	Target = iXangModMinNetSpeed;
 	if (Target == 0)
-		Target = default.iBangModMinNetSpeedFallback;
+		Target = default.iXangModMinNetSpeedFallback;
 
 	if (Target < 0)
 	{
-		nBangModNetSpeedBlock = 'opted_out';
+		nXangModNetSpeedBlock = 'opted_out';
 		return;
 	}
 	if (!IsLocalPlayerController())
 	{
-		nBangModNetSpeedBlock = 'not_local_PC';
+		nXangModNetSpeedBlock = 'not_local_PC';
 		return;
 	}
 	if (Player.CurrentNetSpeed >= Target)
 	{
-		nBangModNetSpeedBlock = 'already_at_or_above';
+		nXangModNetSpeedBlock = 'already_at_or_above';
 		return;
 	}
 
-	iBangModNetSpeedTries++;
+	iXangModNetSpeedTries++;
 	SetNetSpeed(Target);
 
 	// Did the call actually stick? If SetNetSpeed silently refuses in this context the
 	// value will not have moved, and that is a different problem from never being called.
 	if (Player.CurrentNetSpeed < Target)
-		nBangModNetSpeedBlock = 'SetNetSpeed_refused';
+		nXangModNetSpeedBlock = 'SetNetSpeed_refused';
 	else
-		nBangModNetSpeedBlock = 'applied';
+		nXangModNetSpeedBlock = 'applied';
 }
 
 /** The server caps us here at login; put it back afterwards. */
 reliable client function ClientCapBandwidth(int Cap)
 {
 	super.ClientCapBandwidth(Cap);
-	BangModRestoreNetSpeed();
+	XangModRestoreNetSpeed();
 }
 
-exec function BangModNetSpeed(int NewSpeed)
+exec function XangModNetSpeed(int NewSpeed)
 {
 	if (Player == none)
 		return;
@@ -3411,7 +3411,7 @@ function ClientNotifyPlayerTalking(UniqueNetId TalkingPlayer, bool bIsTalking)
 	// This only fires when the Steamworks voice interface reports a REMOTE talker, so
 	// seeing a line here is proof that voice data is reaching this machine. Traced before
 	// the gates below, which can drop the notification for reasons unrelated to transport.
-	if (bBangModVoiceTrace)
+	if (bXangModVoiceTrace)
 		ClientDisplayConsoleMessage("VoiceTrace: remote talker" @ TalkingPlayer.Uid.A $ ":" $ TalkingPlayer.Uid.B
 			@ "talking=" $ bIsTalking);
 
@@ -3490,7 +3490,7 @@ function ProcessVOIPQueue()
  * ============================================================================= */
 
 /** True when the active chain can already render the drunk effect. */
-simulated function bool BangModHasDrunkEffects()
+simulated function bool XangModHasDrunkEffects()
 {
 	local LocalPlayer LP;
 
@@ -3505,39 +3505,39 @@ simulated function bool BangModHasDrunkEffects()
 }
 
 /** Makes the drunk effect available on this map, if it is not already. */
-simulated function bool BangModEnsureDrunkChain()
+simulated function bool XangModEnsureDrunkChain()
 {
 	local LocalPlayer LP;
 
-	if (BangModHasDrunkEffects())
+	if (XangModHasDrunkEffects())
 		return true;                          // map already brought a chain with it
 
 	LP = LocalPlayer(Player);
-	if (LP == none || myHUD == none || BangModDrunkChain == none)
+	if (LP == none || myHUD == none || XangModDrunkChain == none)
 		return false;
 
 	// Replace, do not append -- see the note above. bInClone deep-copies the effects so the
 	// shared asset is never mutated by one player's session.
 	LP.RemoveAllPostProcessingChains();
-	if (!LP.InsertPostProcessingChain(BangModDrunkChain, INDEX_NONE, true))
+	if (!LP.InsertPostProcessingChain(XangModDrunkChain, INDEX_NONE, true))
 	{
 		// Put the map back the way it was rather than leaving the player with no chain.
-		BangModRestoreWorldChain();
+		XangModRestoreWorldChain();
 		return false;
 	}
 
 	// Re-cache AOCBaseHUD's DrunkEffect / BlackoutEffect pointers against the new chain.
 	myHUD.NotifyBindPostProcessEffects();
 
-	bBangModDrunkChainAdded = BangModHasDrunkEffects();
-	if (!bBangModDrunkChainAdded)
-		BangModRestoreWorldChain();
+	bXangModDrunkChainAdded = XangModHasDrunkEffects();
+	if (!bXangModDrunkChainAdded)
+		XangModRestoreWorldChain();
 
-	return bBangModDrunkChainAdded;
+	return bXangModDrunkChainAdded;
 }
 
 /** Puts the map's own post-process chain back. Mirrors GameInfo.uc:1585-1592. */
-simulated function BangModRestoreWorldChain()
+simulated function XangModRestoreWorldChain()
 {
 	local LocalPlayer LP;
 	local PostProcessChain WorldChain;
@@ -3561,16 +3561,16 @@ simulated function BangModRestoreWorldChain()
 }
 
 /**
- * Undoes BangModEnsureDrunkChain. Guarded on the flag so that a map which supplied its own
+ * Undoes XangModEnsureDrunkChain. Guarded on the flag so that a map which supplied its own
  * drunk chain keeps it -- on those maps we never swapped anything and must not "restore".
  */
-simulated function BangModDropDrunkChain()
+simulated function XangModDropDrunkChain()
 {
-	if (!bBangModDrunkChainAdded)
+	if (!bXangModDrunkChainAdded)
 		return;
 
-	bBangModDrunkChainAdded = false;
-	BangModRestoreWorldChain();
+	bXangModDrunkChainAdded = false;
+	XangModRestoreWorldChain();
 }
 
 /**
@@ -3588,7 +3588,7 @@ reliable client function ClientInebriate(bool bEnable)
 
 	if (bEnable)
 	{
-		if (!BangModEnsureDrunkChain())
+		if (!XangModEnsureDrunkChain())
 		{
 			ClientDisplayConsoleMessage("Inebriate: no drunk post-process chain available on this map.");
 			return;
@@ -3598,7 +3598,7 @@ reliable client function ClientInebriate(bool bEnable)
 	}
 
 	super.ClientInebriate(false);
-	BangModDropDrunkChain();
+	XangModDropDrunkChain();
 }
 
 
@@ -3609,29 +3609,29 @@ DefaultProperties
 	MaxClientUpdateInterval=0.00833  // 1/120 = 0.00833 seconds between client updates
 	suicideDelay = 1.0f
 	UnpauseCountdownTime = 3
-	CustomizationClass=class'BangModCustomization'
+	CustomizationClass=class'XangModCustomization'
 	// Sibling of the default chain (ChivPostProcess_noToneMap) in the same base-game
 	// package, so referencing it costs no new content on any map.
-	BangModDrunkChain=PostProcessChain'CHV_PPC_Pack.PostProcessChain.ChivPostProcess_drunk'
+	XangModDrunkChain=PostProcessChain'CHV_PPC_Pack.PostProcessChain.ChivPostProcess_drunk'
 	bShowDeathMessages = true
 	
 	// Proximity voice chat defaults
 	ProximityChatDistance=2048.0  // About 39 meters (typical medieval battle communication range)
-	bBangModVoiceAutoRegister=true
-	iBangModMinNetSpeed=15000
-	iBangModMinNetSpeedFallback=15000
+	bXangModVoiceAutoRegister=true
+	iXangModMinNetSpeed=15000
+	iXangModMinNetSpeedFallback=15000
 	bEnableProximityChat=true
 	bIsTalking=false
 
-	// Parry box toggle default (disabled = use vanilla AOC values until an admin enables BangMod parry)
-	bBangModParryBox=false
+	// Parry box toggle default (disabled = use vanilla AOC values until an admin enables XangMod parry)
+	bXangModParryBox=false
 	// Skeletal parry default (disabled = use directional/shield-style parry box)
 	bSkeletalParry=false
 	// Butt-parry prevention default (disabled = attacks from behind are parryable, vanilla behaviour)
 	bDisableButtParries=false
 
 	// Collision bubble radius default (39.0 = vanilla AOC OuterCylinder radius)
-	fBangModCollisionRadius=39.0
+	fXangModCollisionRadius=39.0
 
 }
 

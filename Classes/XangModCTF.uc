@@ -1,5 +1,5 @@
-class BangModCTF extends AOCCTF;
+class XangModCTF extends AOCCTF;
 
-`include(BangMod/Include/BangModCTF.uci)
-`include(BangMod/Include/BangModGame.uci)
+`include(XangMod/Include/XangModCTF.uci)
+`include(XangMod/Include/XangModGame.uci)
 

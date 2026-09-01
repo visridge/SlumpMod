@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Morning Star.
 */
-class BangModWeapon_MorningStar extends BangModMeleeWeapon;
+class XangModWeapon_MorningStar extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -53,7 +53,7 @@ DefaultProperties
 	bUseSprintLeanAnims=true
 	bUseRMMDazed=true
 	bUseDirHitAnims=true
-	AttachmentClass=class'BangModWeaponAttachment_MorningStar'
+	AttachmentClass=class'XangModWeaponAttachment_MorningStar'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_MorningStar'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_MorningStar

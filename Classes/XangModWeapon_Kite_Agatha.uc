@@ -10,7 +10,7 @@
 * when the shield is holstered on the players back.
 */
 
-class BangModWeapon_Kite_Agatha extends AOCWeapon_Kite_Agatha;
+class XangModWeapon_Kite_Agatha extends AOCWeapon_Kite_Agatha;
 
 DefaultProperties
 {
@@ -19,7 +19,7 @@ DefaultProperties
 
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Kite_Agatha'
 
-	OtherTeamWeapon(EFAC_MASON)=class'BangModWeapon_Kite_Mason'
+	OtherTeamWeapon(EFAC_MASON)=class'XangModWeapon_Kite_Mason'
 
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Kite_Agatha]

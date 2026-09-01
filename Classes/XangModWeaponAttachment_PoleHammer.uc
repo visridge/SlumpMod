@@ -5,7 +5,7 @@
 *
 * Pole Hammer Weapon Attachment.
 */
-class BangModWeaponAttachment_PoleHammer extends AOCWeaponAttachment_PoleHammer;
+class XangModWeaponAttachment_PoleHammer extends AOCWeaponAttachment_PoleHammer;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -28,7 +28,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 defaultproperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -42,7 +42,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_PoleHammer
-	WeaponClass=class'BangModWeapon_PoleHammer'
+	WeaponClass=class'XangModWeapon_PoleHammer'
 
 	WeaponSocket=wepPolePoint
 	bUseAlternativeKick=true

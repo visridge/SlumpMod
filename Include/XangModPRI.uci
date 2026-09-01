@@ -94,20 +94,20 @@ function CopyProperties(PlayerReplicationInfo PRI)
             - A dynamic cast for the current gamemode: `{GAMEMODE}PRI(PRI)...
                 This fails because the current gamemode is not always the one we are transitioning to.
 
-            - A common parent: BangModPRI(PRI)...
+            - A common parent: XangModPRI(PRI)...
                 This is preferably avoided since one must exclude the AOC leaf classes from the new class's heritage.
 
         Isn't that epic?
      */
-    BangModAOCDuelPRI(PRI).OriginalName = OriginalName;
-    BangModCDWDuelPRI(PRI).OriginalName = OriginalName;
-    BangModCTFPRI(PRI).OriginalName = OriginalName;
-    BangModFFAPRI(PRI).OriginalName = OriginalName;
-    BangModKOTHPRI(PRI).OriginalName = OriginalName;
-    BangModLTSPRI(PRI).OriginalName = OriginalName;
-    BangModTDPRI(PRI).OriginalName = OriginalName;
-    BangModTOPRI(PRI).OriginalName = OriginalName;
-    BangModTUTPRI(PRI).OriginalName = OriginalName;
+    XangModAOCDuelPRI(PRI).OriginalName = OriginalName;
+    XangModCDWDuelPRI(PRI).OriginalName = OriginalName;
+    XangModCTFPRI(PRI).OriginalName = OriginalName;
+    XangModFFAPRI(PRI).OriginalName = OriginalName;
+    XangModKOTHPRI(PRI).OriginalName = OriginalName;
+    XangModLTSPRI(PRI).OriginalName = OriginalName;
+    XangModTDPRI(PRI).OriginalName = OriginalName;
+    XangModTOPRI(PRI).OriginalName = OriginalName;
+    XangModTUTPRI(PRI).OriginalName = OriginalName;
 }
 
 

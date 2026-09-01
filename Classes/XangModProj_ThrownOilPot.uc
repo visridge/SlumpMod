@@ -1,14 +1,14 @@
 /**
-* BangMod Custom OilPot Projectile
+* XangMod Custom OilPot Projectile
 * Implements delayed fire damage - 1 second grace period, then 10 damage/sec for 6 seconds
 * Direct hit damage: 1 (inherited from base class)
 * 
 * Vanilla comparison:
 * - Vanilla: 6 damage per tick via SetPawnOnFire for 5 seconds (varies by tick interval)
-* - BangMod: 1 sec grace, then 10 damage/sec for 6 seconds (70 total max damage)
+* - XangMod: 1 sec grace, then 10 damage/sec for 6 seconds (70 total max damage)
 */
 
-class BangModProj_ThrownOilPot extends AOCProj_ThrownOilPot;
+class XangModProj_ThrownOilPot extends AOCProj_ThrownOilPot;
 
 var float fGracePeriod;        // Time before damage starts (1 second)
 var float fDamagePerSecond;    // Damage dealt per second after grace period
@@ -80,11 +80,11 @@ function checkNearPlayersToBurn()
 				if (!P.bIsBurning)
 				{
 					// Set visual fire effect (1 second duration) only when we damage
-					P.SetPawnOnFire(FirePS, OwnerPawn.Controller, OwnerPawn, class'BangModDmgType_OilPotBurn', 1.0);
+					P.SetPawnOnFire(FirePS, OwnerPawn.Controller, OwnerPawn, class'XangModDmgType_OilPotBurn', 1.0);
 				}
 				
 				// Deal our custom damage every tick
-				P.TakeDamage(damageAmount, OwnerPawn.Controller, P.Location, vect(0,0,0), class'BangModDmgType_OilPotBurn');
+				P.TakeDamage(damageAmount, OwnerPawn.Controller, P.Location, vect(0,0,0), class'XangModDmgType_OilPotBurn');
 			}
 		}
 	}

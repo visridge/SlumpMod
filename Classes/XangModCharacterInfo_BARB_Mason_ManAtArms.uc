@@ -4,7 +4,7 @@
 * Original Author: Brady Brenot
 * 
 */
-class BangModCharacterInfo_BARB_Mason_ManAtArms extends AOCCharacterInfo_ManAtArms;
+class XangModCharacterInfo_BARB_Mason_ManAtArms extends AOCCharacterInfo_ManAtArms;
 
 defaultproperties
 {

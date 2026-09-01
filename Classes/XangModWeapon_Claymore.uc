@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Longsword
 */
-class BangModWeapon_Claymore extends BangModMeleeWeapon;
+class XangModWeapon_Claymore extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -147,7 +147,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Claymore'
+	AttachmentClass=class'XangModWeaponAttachment_Claymore'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Claymore'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Claymore

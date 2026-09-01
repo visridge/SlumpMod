@@ -6,7 +6,7 @@
 * Weapon Attachment: Javelin.
 */
 
-class BangModWeaponAttachment_Javelin extends AOCWeaponAttachment_Javelin;
+class XangModWeaponAttachment_Javelin extends AOCWeaponAttachment_Javelin;
 
 
 DefaultProperties
@@ -24,7 +24,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Javelin
-	WeaponClass=class'BangModWeapon_JavelinMelee'
+	WeaponClass=class'XangModWeapon_JavelinMelee'
 	WeaponSocket =JavelinPoint
 
 	//WeaponPSSocket=Flame

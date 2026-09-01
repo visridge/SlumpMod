@@ -3,14 +3,14 @@
 *
 * Original Author: Michael Bao
 *
-* BangMod Weapon Attachment: Agatha Flag
+* XangMod Weapon Attachment: Agatha Flag
 */
-class BangModWeaponAttachment_AgathaFlag extends AOCWeaponAttachment_AgathaFlag;
+class XangModWeaponAttachment_AgathaFlag extends AOCWeaponAttachment_AgathaFlag;
 
 DefaultProperties
 {
-	// Override WeaponClass to point to BangMod version
-	WeaponClass=class'BangModWeapon_AgathaFlag'
+	// Override WeaponClass to point to XangMod version
+	WeaponClass=class'XangModWeapon_AgathaFlag'
 
 	// Scale down by 30% (same pattern as SpikedMace scale-up)
 	Begin Object Name=SkeletalMeshComponent0

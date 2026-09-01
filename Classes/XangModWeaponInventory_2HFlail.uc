@@ -8,7 +8,7 @@
 * Carries the purpose-built Flale mesh (held two-handed like a double axe
 * while holstered) and spawns the matching static mesh when dropped.
 */
-class BangModWeaponInventory_2HFlail extends AOCInventoryAttachment;
+class XangModWeaponInventory_2HFlail extends AOCInventoryAttachment;
 
 DefaultProperties
 {

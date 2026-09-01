@@ -1,7 +1,7 @@
-# BangMod RCON protocol
+# XangMod RCON protocol
 
-Server side: `Src\BangMod\Classes\BangModRCon.uc` (opcodes 23-61) (extends `AOCRCon`), spawned by the
-`InitRemoteConsole` override in `Src\BangMod\Include\BangModGame.uci`.
+Server side: `Src\XangMod\Classes\XangModRCon.uc` (opcodes 23-61) (extends `AOCRCon`), spawned by the
+`InitRemoteConsole` override in `Src\XangMod\Include\XangModGame.uci`.
 
 **Status: limited testing in a development environment.** Tournament controls, loadout,
 freeze, bans, map and the fun commands have been exercised on a live server; the fixes
@@ -15,7 +15,7 @@ client** -- its Java classes for them are marked `implements CustomChivEvent`, w
 javadoc says "for non-vanilla CMW messages sent from the server. This is the case when
 the 'ChivAdmin' mod is installed." That mutator was never published.
 
-So implementing 23-28 makes an **unmodified ChivAdmin client** work against a BangMod
+So implementing 23-28 makes an **unmodified ChivAdmin client** work against a XangMod
 server. Every layout below was read off the client's own encoders/decoders, not guessed.
 
 ## Wire format (unchanged from vanilla)
@@ -28,7 +28,7 @@ Big-endian. `AOCRConPacket` provides:
     SetMessageType(int)    takes a plain int, so custom opcodes need no enum change
 
 Auth is untouched: challenge string, 50-byte password packet, `RCON_Connecting` ->
-`RCON_Connected`. `BangModRCon.HandleMessage` checks `RCON_Connected` before dispatching
+`RCON_Connected`. `XangModRCon.HandleMessage` checks `RCON_Connected` before dispatching
 anything extended, so an unauthenticated peer reaches none of it.
 
 ## Opcodes
@@ -42,7 +42,7 @@ PLAYER_DISCONNECT, SAY_ALL, SAY_ALL_BIG, SAY, MAP_CHANGED, MAP_LIST, CHANGE_MAP,
 ROTATE_MAP, TEAM_CHANGED, NAME_CHANGED, KILL, SUICIDE, KICK_PLAYER, TEMP_BAN_PLAYER,
 BAN_PLAYER, UNBAN_PLAYER, ROUND_END, PING
 
-One exception: **UNBAN_PLAYER (20) is intercepted** by `BangModRCon.HandleUnbanFixed`
+One exception: **UNBAN_PLAYER (20) is intercepted** by `XangModRCon.HandleUnbanFixed`
 before it reaches `super`. Vanilla's `AOCAccessControl.UnbanByUID` removes the entry
 from the in-memory `Bans` array and stops -- it never calls `SaveConfig()`, while
 `AddBan` does, so the ban is still sitting in the ini and comes back on the next server
@@ -59,7 +59,7 @@ mutator did, and the field order is theirs: uid, ping, score, idleTime, kills,
 teamDamageDealt, rank. `AOCPRI.IdleTime` is a byte of quarter-scale seconds
 (`AOCPRI.uc:558`), so it is multiplied by 4 on the way out and saturates at 1020s.
 
-Opcode **48 (SOBER_PLAYER)** is BangMod-only and undoes 26. ChivAdmin's Inebriate carries
+Opcode **48 (SOBER_PLAYER)** is XangMod-only and undoes 26. ChivAdmin's Inebriate carries
 only a UID and is one-way; 26 is left wire-compatible with that rather than growing a flag.
 
 ### 49-50 -- tournament control
@@ -71,12 +71,12 @@ only a UID and is one-way; 26 is left wire-compatible with that rather than grow
     runtime-only on purpose.
   * **50 READY_ALL** `int ready (1 = ready all, 0 = clear all)`
 
-**BangMod deliberately disabled vanilla's own tournament command.** `BangModGame.uci:137`
+**XangMod deliberately disabled vanilla's own tournament command.** `XangModGame.uci:137`
 carries `// Deprecated` and an empty `function AdminTournamentMode(bool bEnable){}`, which
 neuters `AOCGame.AdminTournamentMode` -- and that is no loss, because the vanilla version
 writes the flag to config with `SaveConfig` and then calls
 `WorldInfo.ServerTravel("?restart")`. In other words the in-game `AdminTournamentMode`
-command does nothing on a BangMod server, and opcode 49 is not a duplicate of it but the
+command does nothing on a XangMod server, and opcode 49 is not a duplicate of it but the
 only working way to toggle the mode. Do not "restore" the vanilla behaviour without asking:
 a map restart per toggle is exactly what was removed.
 
@@ -106,7 +106,7 @@ gate stays latched open from the previous round.
   * **60 TELEPORT** `QWord mover, QWord destination`
   * **61 SLAP** `QWord uid, int power` (clamped 50-2000 server-side, no damage)
 
-Placement logic lives in `BangModAdminActions`. `Actor.SetLocation` is `native(267)` and
+Placement logic lives in `XangModAdminActions`. `Actor.SetLocation` is `native(267)` and
 returns FALSE when the spot is taken, so `Teleport` walks a ring of eight positions around
 the destination before giving up. Velocity is cleared on arrival. Both players must be
 alive, and the failure reason is in the audit line.
@@ -160,7 +160,7 @@ to be right:
     `LocalPlayer.PlayerPostProcess`, and Torn Banner's comment beside it says "if the PPC
     doesn't have a drunk effect, this does nothing". The default chain is
     `CHV_PPC_Pack.ChivPostProcess_noToneMap`; the drunk nodes live in the sibling chain
-    `ChivPostProcess_drunk` in the same base-game package. BangMod's `ClientInebriate`
+    `ChivPostProcess_drunk` in the same base-game package. XangMod's `ClientInebriate`
     override **swaps the whole chain** and re-binds when the map has none of its own, using
     the engine's own idiom from `GameInfo.uc:1585-1592`:
 
@@ -173,7 +173,7 @@ to be right:
     `ChivPostProcess_noToneMap`, so leaving the map's chain in place runs two full chains
     back to back and uber-post-processes (tone map, bloom, motion blur) the scene twice.
     Sober-up restores `Engine.static.GetWorldPostProcessChain()` the same way, and only when
-    BangMod was the one that swapped it.
+    XangMod was the one that swapped it.
 
 
 | # | Name | Dir | Payload |
@@ -192,7 +192,7 @@ Scope: `0` = game, `1` = that player, `2` = all players.
 packet per player. `idleTime` and `rank` are sent as 0 -- nothing in `AOCPRI` or
 `PlayerReplicationInfo` tracks either, and inventing values would be worse than the gap.
 
-### 29-37 -- BangMod additions
+### 29-37 -- XangMod additions
 
 ChivAdmin ignores opcodes it does not know, so these cannot break it.
 
@@ -215,7 +215,7 @@ ChivAdmin ignores opcodes it does not know, so these cannot break it.
 | 41 | BAN_LIST_END | out | int count |
 | 42 | MUTE_PLAYER | in | qword uid, int mute |
 | 43 | SET_PAUSE | in | int paused |
-| | | | Goes to `AOCGame.SetPause`/`ClearPause`, not `PlayerController.SetPause` (BangMod's override there is admin-gated). `bPauseable` is forced on around the call: AOCGame inherits `bPauseable=False` from `UTGame.uc:3396`, and `bAdminCanPause=false` in UDKGame.ini, so `AllowPausing` refused every pause until this. In-game `unpause` only clears a pause the same controller set, so it cannot undo this -- unpause over RCON. |
+| | | | Goes to `AOCGame.SetPause`/`ClearPause`, not `PlayerController.SetPause` (XangMod's override there is admin-gated). `bPauseable` is forced on around the call: AOCGame inherits `bPauseable=False` from `UTGame.uc:3396`, and `bAdminCanPause=false` in UDKGame.ini, so `AllowPausing` refused every pause until this. In-game `unpause` only clears a pause the same controller set, so it cannot undo this -- unpause over RCON. |
 | 44 | END_MATCH | in | int winningTeam, string reason |
 | 45 | SET_AUTOBALANCE | in | int enabled |
 | 46 | SET_GAME_SPEED | in | int speedPercent (100 = normal, clamped 10-400) |
@@ -256,7 +256,7 @@ match with no winner rather than failing silently.
 Scope 1 runs against the **server-side** controller for that player, so it reaches
 server functions and admin execs. It does not execute on their machine.
 
-That single opcode exposes everything BangMod already has without a per-command opcode:
+That single opcode exposes everything XangMod already has without a per-command opcode:
 `AdminKick`, `AdminKickBan`, `AdminUnban`, `AdminBanNetID`, `AdminChangeTeam`,
 `AdminCoinFlip`, `AdminReadyAll`, `AdminCancelVote`, `AdminTournamentMode`,
 `AdminToggleParryBox`, `AdminEnableSkeletalParry`, `AdminDisableButtParries`,
@@ -265,12 +265,12 @@ That single opcode exposes everything BangMod already has without a per-command 
 It is also arbitrary execution against a live server, gated only by the RCON password.
 
 Because scope 1 runs in the server's process, `quit` on a player quits the **server** --
-confirmed in testing. `BangModBlockedConsoleCommands` (config, `[BangMod.BangModRCon]` in
+confirmed in testing. `XangModBlockedConsoleCommands` (config, `[XangMod.XangModRCon]` in
 UDKGame.ini) refuses the first token of a command; defaults are `quit`, `exit`, `debug`.
 
 ## Auditing
 
-Every state-changing command calls `BangModAudit(Action, Detail)`, which:
+Every state-changing command calls `XangModAudit(Action, Detail)`, which:
 
   * logs via `LogAlwaysInternal` (not the log macro -- FINAL_RELEASE makes `LogInternal`
     private and the macro stops compiling), and
@@ -305,10 +305,10 @@ ChivAdmin's own naming and the server.
 
 ## Adding an opcode
 
-1. `const RCONX_YOURTHING = 38;` in `BangModRCon.uc`.
+1. `const RCONX_YOURTHING = 38;` in `XangModRCon.uc`.
 2. A `case` in `HandleMessage`'s extended switch.
 3. A handler that reads with `GetGUID`/`GetInt`/`GetString` **in the order the client
-   writes them** and calls `BangModAudit` if it changes state.
+   writes them** and calls `XangModAudit` if it changes state.
 4. Document it in the table above.
 
 Unknown opcodes are logged and ignored, never fatal -- a newer client cannot drop the
@@ -332,7 +332,7 @@ calls it with `CurrentFamilyInfo.FamilyFaction` anyway.
 
 The only thing that moves a player is changing `CurrentFamilyInfo` first. The one place
 in the stock game that force-swaps a live player is `AOCGame.PerformDeathBasedAB`
-(AOCGame.uc:4962), and `BangModForceTeam` follows it:
+(AOCGame.uc:4962), and `XangModForceTeam` follows it:
 
   1. `NewFamily = AOCGRI.FamilyInfos[ClassReference]`, `+5` for Mason. The array is
      laid out 0-4 Agatha, 5-9 Mason, indexed by `ClassReference`.
@@ -361,7 +361,7 @@ So a muted player still watches their own chat go through, which is exactly what
 looking broken looks like when testing. `ServerAdminMutePlayer` (:7304) sets the flag and
 has its `UpdateGameplayMuteList` follow-up commented out, so nothing else covers it.
 
-`BangModGame.BroadcastMessage` now drops the message server-side before it reaches the
+`XangModGame.BroadcastMessage` now drops the message server-side before it reaches the
 wire, and tells the sender they are muted. VOIP was already covered -- `AOCGame.uc:2198`
 checks the flag when building voice channels.
 
@@ -381,7 +381,7 @@ with no UID cannot be lifted by opcode 20; the dialog greys that case out.
 
   * The C# client changes have not been compiled -- no .NET SDK was reachable from this
     session. `BanManagerDialog.cs` is a new file in `ChivRcon.App`.
-  * `BangModForceTeam` against a player who is mid-respawn, in a vehicle, or a King class
+  * `XangModForceTeam` against a player who is mid-respawn, in a vehicle, or a King class
     (`FamilyInfos` only covers the five standard classes).
   * `AC.Bans.Remove(i, 1)` + `SaveConfig()` from outside `AOCAccessControl` -- legal
     UnrealScript, but the write happens on whatever ini `AOCAccessControl` is configured

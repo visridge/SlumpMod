@@ -1,4 +1,4 @@
-class BangModCharacterInfo_Agatha_Turtle extends AOCCharacterInfo_Agatha_Knight;
+class XangModCharacterInfo_Agatha_Turtle extends AOCCharacterInfo_Agatha_Knight;
 defaultproperties
 {
 	MobileBattleCry=SoundCue'A_VO_Manual.Agatha_Knight.Battlecry_Running_Agatha_Knight'

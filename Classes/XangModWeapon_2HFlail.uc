@@ -3,17 +3,17 @@
 *
 * Original Author: Michael Bao
 *
-* BangMod 2-Handed Flail.
+* XangMod 2-Handed Flail.
 *
 * A two-handed flail that uses the doubleaxe animation set on the pawn
 * (WeaponIdentifier="doubleaxe" so idle/run/turn/start-stop sequences all
 * resolve to the doubleaxe set) while the weapon mesh itself is the vanilla
-* physics-driven flail (see BangModWeaponAttachment_2HFlail).  The chain and
+* physics-driven flail (see XangModWeaponAttachment_2HFlail).  The chain and
 * flail head hang from PhysX and whip in response to camera/body movement,
 * exactly like the stock flail, and the swing tracer runs from the handle
 * socket to the head socket through that physics-driven mesh.
 */
-class BangModWeapon_2HFlail extends BangModMeleeWeapon;
+class XangModWeapon_2HFlail extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -106,8 +106,8 @@ DefaultProperties
 	bUseSprintLeanAnims=true
 	bUseRMMDazed=true
 	bUseDirHitAnims=true
-	AttachmentClass=class'BangModWeaponAttachment_2HFlail'
-	InventoryAttachmentClass=class'BangModWeaponInventory_2HFlail'
+	AttachmentClass=class'XangModWeaponAttachment_2HFlail'
+	InventoryAttachmentClass=class'XangModWeaponInventory_2HFlail'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_HFlail
 	CurrentShieldType=ESHIELD_None

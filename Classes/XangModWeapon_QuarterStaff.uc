@@ -5,7 +5,7 @@
 *
 * Quarter Staff.
 */
-class BangModWeapon_QuarterStaff extends BangModMeleeWeapon;
+class XangModWeapon_QuarterStaff extends XangModMeleeWeapon;
 
 simulated state Release
 {
@@ -174,7 +174,7 @@ defaultproperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_QuarterStaff'
+	AttachmentClass=class'XangModWeaponAttachment_QuarterStaff'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_QuarterStaff'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_QStaff

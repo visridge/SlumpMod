@@ -5,7 +5,7 @@
 *
 * Weapon: Billhook.
 */
-class BangModWeapon_Bill extends BangModMeleeWeapon;
+class XangModWeapon_Bill extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -209,7 +209,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Bill'
+	AttachmentClass=class'XangModWeaponAttachment_Bill'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Bill'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Bill

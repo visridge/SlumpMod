@@ -5,7 +5,7 @@
 * 
 * The base weapon class for melee weapons.
 */
-class BangModMeleeWeapon extends AOCMeleeWeapon
+class XangModMeleeWeapon extends AOCMeleeWeapon
 	dependson(AOCPawn)
 	abstract;
 
@@ -203,7 +203,7 @@ simulated state Flinch
 		if (FireModeNum == Attack_Parry)
 		{
 			// BufferParryInput();
-			// BANGMOD: Use bSpecialDazed instead of bFullBodyDazed — bFullBodyDazed is always
+			// XANGMOD: Use bSpecialDazed instead of bFullBodyDazed — bFullBodyDazed is always
 			// true because ActivateFlinch is always called with bFullBody=true.
 			// bSpecialDazed=true only for stamina-out dazes, which matches the BeginState intent:
 			// "Ensure parry is always allowed during flinch except stam-out dazes"
@@ -253,7 +253,7 @@ simulated state Flinch
 		}
 		else
 		{
-			// BANGMOD: Ensure parry is always allowed during flinch except stam-out dazes
+			// XANGMOD: Ensure parry is always allowed during flinch except stam-out dazes
 			AOCOwner.StateVariables.bCanParry = true;
 		}
 
@@ -285,7 +285,7 @@ simulated state Hit
 		if (FireModeNum == Attack_Parry)
 		{
 			// BufferParryInput();
-			// BANGMOD: Use bSpecialDazed instead of bFullBodyDazed (same fix as Flinch.BeginFire)
+			// XANGMOD: Use bSpecialDazed instead of bFullBodyDazed (same fix as Flinch.BeginFire)
 			if (!bSpecialDazed)
 			{
 				ClearParryBuffer();
@@ -328,7 +328,7 @@ simulated state Hit
 		}
 		else
 		{
-			// BANGMOD: Ensure parry is always allowed during hit except stam-out dazes
+			// XANGMOD: Ensure parry is always allowed during hit except stam-out dazes
 			AOCOwner.StateVariables.bCanParry = true;
 		}
 
@@ -566,7 +566,7 @@ simulated state Deflect
 // 	return Clamp(iDamage, 5, 25) * 1.5;
 // }
 
-/** BANGMOD: Force shield parry to end after timed window */
+/** XANGMOD: Force shield parry to end after timed window */
 simulated function ForceEndShieldParry()
 {
 	if (bEquipShield && IsInState('ShieldUpIdle'))
@@ -577,7 +577,7 @@ simulated function ForceEndShieldParry()
 	}
 }
 
-/** BANGMOD: Prevent holding shield up - parry ends after timed window */
+/** XANGMOD: Prevent holding shield up - parry ends after timed window */
 simulated function LowerShield()
 {
 	if (bEquipShield && IsInState('Parry'))
@@ -595,19 +595,19 @@ simulated function LowerShield()
 	}
 }
 
-/** BANGMOD: Stamp the client-side moment the parry goes active so the server can order it
+/** XANGMOD: Stamp the client-side moment the parry goes active so the server can order it
  *  against incoming hits (hit-vs-parry trade priority). The stamp rides the pawn channel; the
  *  server's Parry.BeginState reads it back via GetParryActionServerTime(). */
 simulated function ActivateParry()
 {
-	if (AOCOwner != none && AOCOwner.IsLocallyControlled() && BangModPawn(AOCOwner) != none)
-		BangModPawn(AOCOwner).ServerStampParryTime(WorldInfo.TimeSeconds);
+	if (AOCOwner != none && AOCOwner.IsLocallyControlled() && XangModPawn(AOCOwner) != none)
+		XangModPawn(AOCOwner).ServerStampParryTime(WorldInfo.TimeSeconds);
 
 	super.ActivateParry();
 }
 
 /** 
- * BANGMOD: Override Parry state to track server-side timestamp for grace period validation
+ * XANGMOD: Override Parry state to track server-side timestamp for grace period validation
  * This fixes "through-parry" issues by giving the server accurate timing information
  * Grace period covers replication lag (client->server latency)
  */
@@ -624,14 +624,14 @@ simulated state Parry
 		// Call parent first so bIsParrying / bIsActiveShielding are set before we resolve.
 		super.BeginState(PreviousStateName);
 
-		// BANGMOD: Suppress any swings currently HELD on us — resolve them as parries before
+		// XANGMOD: Suppress any swings currently HELD on us — resolve them as parries before
 		// any hit feedback plays. Must run AFTER super so parry validation sees the parry state.
 		// Pass when the parry went active (server timeline) so swings the parry was clearly too
 		// late for fall through and commit as hits instead.
-		if (Role == ROLE_Authority && AOCOwner != none && BangModPawn(AOCOwner) != none)
-			BangModPawn(AOCOwner).ResolvePendingHitsAsParry(BangModPawn(AOCOwner).GetParryActionServerTime());
+		if (Role == ROLE_Authority && AOCOwner != none && XangModPawn(AOCOwner) != none)
+			XangModPawn(AOCOwner).ResolvePendingHitsAsParry(XangModPawn(AOCOwner).GetParryActionServerTime());
 
-		// BANGMOD: Disable riposte for shields - must come AFTER super because
+		// XANGMOD: Disable riposte for shields - must come AFTER super because
 		// AOCMeleeWeapon.Parry.BeginState resets bCanParryHitCounter = true
 		if (bEquipShield)
 		{
@@ -639,7 +639,7 @@ simulated state Parry
 		}
 	}
 	
-	/** BANGMOD: Override shield flow - route to ParryRelease instead of ShieldUpIdle
+	/** XANGMOD: Override shield flow - route to ParryRelease instead of ShieldUpIdle
 	 *  This gives shields the same timed parry window as weapons (~500ms active, ~400ms recovery)
 	 *  instead of the vanilla held-block behavior.
 	 *  If the shield already blocked during the raise animation, skip ParryRelease
@@ -668,7 +668,7 @@ simulated state Parry
 		}
 	}
 	
-	/** BANGMOD: Shield-specific parry hit during the raise animation.
+	/** XANGMOD: Shield-specific parry hit during the raise animation.
 	 *  Vanilla Parry.SuccessfulParry calls super.SuccessfulParry for shields which
 	 *  may trigger ChooseDirParryHitAnim (movement freeze bug). Override to just
 	 *  flag success - OnStateAnimationEnd will route to Recovery when the raise ends.
@@ -692,7 +692,7 @@ simulated state Parry
 	}
 }
 /** 
- * BANGMOD: ShieldUpIdle safety net - shields should never reach this state under timed parry
+ * XANGMOD: ShieldUpIdle safety net - shields should never reach this state under timed parry
  * Parry state now routes shields to ParryRelease instead of ShieldUpIdle
  * If we somehow end up here, immediately go to Recovery
  */
@@ -700,7 +700,7 @@ simulated state ShieldUpIdle
 {
 	simulated event BeginState(Name PreviousStateName)
 	{
-		// Shields should never be in ShieldUpIdle under BangMod timed parry system
+		// Shields should never be in ShieldUpIdle under XangMod timed parry system
 		// Safety redirect to Recovery
 		bShieldRaised = false;
 		AOCOwner.StateVariables.bIsActiveShielding = false;
@@ -710,7 +710,7 @@ simulated state ShieldUpIdle
 }
 
 /** 
- * BANGMOD: Override ParryRelease for shields - timed parry window with no riposte
+ * XANGMOD: Override ParryRelease for shields - timed parry window with no riposte
  * Shields use the same ParryRelease path as weapons (~500ms active window)
  * but cannot riposte. After the window, auto-drops into Recovery.
  */
@@ -729,7 +729,7 @@ simulated state ParryRelease
 		{
 			AOCOwner.StateVariables.bIsActiveShielding = true;
 			bCanParryHitCounter = false;  // No riposte for shields
-			// BANGMOD: Reduce shield active window by 50ms (450ms instead of vanilla 500ms)
+			// XANGMOD: Reduce shield active window by 50ms (450ms instead of vanilla 500ms)
 			ClearTimer('AllowLowerParry');
 			SetTimer(0.4f, false, 'AllowLowerParry');
 		}
@@ -788,7 +788,7 @@ simulated state ParryRelease
 		super.LowerShield();
 	}
 	
-	/** BANGMOD: Shield-specific successful parry handling.
+	/** XANGMOD: Shield-specific successful parry handling.
 	 *  AOCMeleeWeapon.ParryRelease.SuccessfulParry calls ChooseDirParryHitAnim() which
 	 *  explicitly rejects shields (!bShieldEquipped), returning an empty AnimationInfo with
 	 *  fModifiedMovement=0.0. ReplicateCompressedAnimation then applies an indefinite
@@ -921,23 +921,23 @@ simulated state Release
 	{
 		super.BeginState(PreviousStateName);
 		
-		// BANGMOD: Record when the swing's release began (server clock) for the optional hit-time
+		// XANGMOD: Record when the swing's release began (server clock) for the optional hit-time
 		// debug readout (Set_bShowHitTime -> LogHitTime in AttackOtherPawn). Authority only.
-		if (Role == ROLE_Authority && AOCOwner != none && BangModPawn(AOCOwner) != none)
-			BangModPawn(AOCOwner).Set_fLastReleaseStartTime(WorldInfo.TimeSeconds);
+		if (Role == ROLE_Authority && AOCOwner != none && XangModPawn(AOCOwner) != none)
+			XangModPawn(AOCOwner).Set_fLastReleaseStartTime(WorldInfo.TimeSeconds);
 		
 		// Delay damage before traces can deal hits.
 		// This gives a defending parry time to serialize on dedicated servers.
-		if (BangModWeaponAttachment(AOCWepAttachment) != none)
+		if (XangModWeaponAttachment(AOCWepAttachment) != none)
 		{
 			if (fDamageTraceActivationDelay > 0)
 			{
 				SetTimer(fDamageTraceActivationDelay, false, 'ActivateDamageTracing');
-				BangModWeaponAttachment(AOCWepAttachment).bCanDoDamage = false;
+				XangModWeaponAttachment(AOCWepAttachment).bCanDoDamage = false;
 			}
 			else
 			{
-				BangModWeaponAttachment(AOCWepAttachment).bCanDoDamage = true;
+				XangModWeaponAttachment(AOCWepAttachment).bCanDoDamage = true;
 			}
 		}
 	}
@@ -945,9 +945,9 @@ simulated state Release
 	/** Enable damage tracing after the configured delay. */
 	simulated function ActivateDamageTracing()
 	{
-		if (BangModWeaponAttachment(AOCWepAttachment) != none)
+		if (XangModWeaponAttachment(AOCWepAttachment) != none)
 		{
-			BangModWeaponAttachment(AOCWepAttachment).bCanDoDamage = true;
+			XangModWeaponAttachment(AOCWepAttachment).bCanDoDamage = true;
 		}
 	}
 	
@@ -1037,8 +1037,8 @@ simulated state Release
 		ClearTimer('ActivateDamageTracing');
 		
 		// Ensure damage is re-enabled for next attack
-		if (BangModWeaponAttachment(AOCWepAttachment) != none)
-			BangModWeaponAttachment(AOCWepAttachment).bCanDoDamage = true;
+		if (XangModWeaponAttachment(AOCWepAttachment) != none)
+			XangModWeaponAttachment(AOCWepAttachment).bCanDoDamage = true;
 			
 		super.EndState(NextStateName);
 

@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Dane.
 */
-class BangModWeapon_Dane extends BangModMeleeWeapon;
+class XangModWeapon_Dane extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -55,7 +55,7 @@ DefaultProperties
 	bUseDirHitAnims=true
 	FlinchTime1H=1.0
 
-	AttachmentClass=class'BangModWeaponAttachment_Dane'
+	AttachmentClass=class'XangModWeaponAttachment_Dane'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Dane'
 	AllowedShieldClass=none
 	bHaveShield=true

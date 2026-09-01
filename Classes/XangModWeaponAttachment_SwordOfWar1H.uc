@@ -5,11 +5,11 @@
 * 
 * The weapon that is replicated to all clients: Sword Of War 1H
 */
-class BangModWeaponAttachment_SwordOfWar1H extends AOCWeaponAttachment_SwordOfWar1H;
+class XangModWeaponAttachment_SwordOfWar1H extends AOCWeaponAttachment_SwordOfWar1H;
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -23,7 +23,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_SwordOfWar
-	WeaponClass=class'BangModWeapon_SwordOfWar1H'
+	WeaponClass=class'XangModWeapon_SwordOfWar1H'
 	WeaponSocket=wep1hpoint
 
 	bUseAlternativeKick=true

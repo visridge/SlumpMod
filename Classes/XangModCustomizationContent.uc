@@ -1,26 +1,26 @@
-class BangModCustomizationContent extends AOCCustomizationContent;
+class XangModCustomizationContent extends AOCCustomizationContent;
 static function int GetDefaultCharacterIDFor(int Team, int PawnClass)
 {
     LogAlwaysInternal("GetDefaultCharacterIDFor"@Team@PawnClass);
     switch(PawnClass)
     {
     case ECLASS_Archer:
-        return Team == EFAC_Agatha ? default.Characters.Find(class'BangModCharacterInfo_Agatha_Archer') : default.Characters.Find(class'BangModCharacterInfo_Mason_Archer');
+        return Team == EFAC_Agatha ? default.Characters.Find(class'XangModCharacterInfo_Agatha_Archer') : default.Characters.Find(class'XangModCharacterInfo_Mason_Archer');
         break;
     case ECLASS_ManAtArms:
-        return Team == EFAC_Agatha ? default.Characters.Find(class'BangModCharacterInfo_Agatha_ManAtArms') : default.Characters.Find(class'BangModCharacterInfo_Mason_ManAtArms');
+        return Team == EFAC_Agatha ? default.Characters.Find(class'XangModCharacterInfo_Agatha_ManAtArms') : default.Characters.Find(class'XangModCharacterInfo_Mason_ManAtArms');
         break;
     case ECLASS_Vanguard:
-        return Team == EFAC_Agatha ? default.Characters.Find(class'BangModCharacterInfo_Agatha_Vanguard') : default.Characters.Find(class'BangModCharacterInfo_Mason_Vanguard');
+        return Team == EFAC_Agatha ? default.Characters.Find(class'XangModCharacterInfo_Agatha_Vanguard') : default.Characters.Find(class'XangModCharacterInfo_Mason_Vanguard');
         break;
     case ECLASS_Knight:
-        return Team == EFAC_Agatha ? default.Characters.Find(class'BangModCharacterInfo_Agatha_Knight') : default.Characters.Find(class'BangModCharacterInfo_Mason_Knight');
+        return Team == EFAC_Agatha ? default.Characters.Find(class'XangModCharacterInfo_Agatha_Knight') : default.Characters.Find(class'XangModCharacterInfo_Mason_Knight');
         break;
     case ECLASS_SiegeEngineer:
-        return Team == EFAC_Agatha ? default.Characters.Find(class'BangModCharacterInfo_Agatha_Assassin') : default.Characters.Find(class'BangModCharacterInfo_Mason_Assassin');
+        return Team == EFAC_Agatha ? default.Characters.Find(class'XangModCharacterInfo_Agatha_Assassin') : default.Characters.Find(class'XangModCharacterInfo_Mason_Assassin');
         break;
     case ECLASS_King:
-        return Team == EFAC_Agatha ? default.Characters.Find(class'BangModCharacterInfo_Agatha_King') : default.Characters.Find(class'BangModCharacterInfo_Mason_King');
+        return Team == EFAC_Agatha ? default.Characters.Find(class'XangModCharacterInfo_Agatha_King') : default.Characters.Find(class'XangModCharacterInfo_Mason_King');
         break;
     case ECLASS_Peasant:
     default:
@@ -35,46 +35,46 @@ defaultproperties
 	//This ordering shouldn't change. Nothing terrible will happen as long (as the server and clients have the same ordering), but users' customization choices will be altered.
 	Characters.Add(class'AOCCharacterInfo_Skeleton') //Placeholder invalid entry
 	Characters.Add(class'AOCCharacterInfo_Skeleton')
-	Characters.Add(class'BangModCharacterInfo_Agatha_Archer')
-	Characters.Add(class'BangModCharacterInfo_Agatha_King')
-	Characters.Add(class'BangModCharacterInfo_Agatha_Knight')
-	Characters.Add(class'BangModCharacterInfo_Agatha_ManAtArms')
-	Characters.Add(class'BangModCharacterInfo_Agatha_Vanguard')
-	Characters.Add(class'BangModCharacterInfo_Mason_Archer')
-	Characters.Add(class'BangModCharacterInfo_Mason_King')
-	Characters.Add(class'BangModCharacterInfo_Mason_Knight')
-	Characters.Add(class'BangModCharacterInfo_Mason_ManAtArms')
-	Characters.Add(class'BangModCharacterInfo_Mason_Vanguard')
+	Characters.Add(class'XangModCharacterInfo_Agatha_Archer')
+	Characters.Add(class'XangModCharacterInfo_Agatha_King')
+	Characters.Add(class'XangModCharacterInfo_Agatha_Knight')
+	Characters.Add(class'XangModCharacterInfo_Agatha_ManAtArms')
+	Characters.Add(class'XangModCharacterInfo_Agatha_Vanguard')
+	Characters.Add(class'XangModCharacterInfo_Mason_Archer')
+	Characters.Add(class'XangModCharacterInfo_Mason_King')
+	Characters.Add(class'XangModCharacterInfo_Mason_Knight')
+	Characters.Add(class'XangModCharacterInfo_Mason_ManAtArms')
+	Characters.Add(class'XangModCharacterInfo_Mason_Vanguard')
 	Characters.Add(class'AOCCharacterInfo_Peasant')
 	Characters.Add(class'AOCCharacterInfo_Playable_Peasant')
 	// Characters.Add(class'AOCCharacterInfo_Playable_Skeleton')
 
-	Characters.Add(class'BangModCharacterInfo_Agatha_Knight_DLC1')
-	Characters.Add(class'BangModCharacterInfo_Mason_Knight_DLC1')
+	Characters.Add(class'XangModCharacterInfo_Agatha_Knight_DLC1')
+	Characters.Add(class'XangModCharacterInfo_Mason_Knight_DLC1')
 	
-	Characters.Add(class'BangModCharacterInfo_Mason_Vanguard_DLC1')
-	Characters.Add(class'BangModCharacterInfo_Agatha_Vanguard_DLC1')
+	Characters.Add(class'XangModCharacterInfo_Mason_Vanguard_DLC1')
+	Characters.Add(class'XangModCharacterInfo_Agatha_Vanguard_DLC1')
 	
-	Characters.Add(class'BangModCharacterInfo_BARB_Agatha_Archer')
-	Characters.Add(class'BangModCharacterInfo_BARB_Agatha_Knight')
-	Characters.Add(class'BangModCharacterInfo_BARB_Agatha_ManAtArms')
-	Characters.Add(class'BangModCharacterInfo_BARB_Agatha_Vanguard')
-	Characters.Add(class'BangModCharacterInfo_BARB_Mason_Archer')
-	Characters.Add(class'BangModCharacterInfo_BARB_Mason_Knight')
-	Characters.Add(class'BangModCharacterInfo_BARB_Mason_ManAtArms')
-	Characters.Add(class'BangModCharacterInfo_BARB_Mason_Vanguard')
+	Characters.Add(class'XangModCharacterInfo_BARB_Agatha_Archer')
+	Characters.Add(class'XangModCharacterInfo_BARB_Agatha_Knight')
+	Characters.Add(class'XangModCharacterInfo_BARB_Agatha_ManAtArms')
+	Characters.Add(class'XangModCharacterInfo_BARB_Agatha_Vanguard')
+	Characters.Add(class'XangModCharacterInfo_BARB_Mason_Archer')
+	Characters.Add(class'XangModCharacterInfo_BARB_Mason_Knight')
+	Characters.Add(class'XangModCharacterInfo_BARB_Mason_ManAtArms')
+	Characters.Add(class'XangModCharacterInfo_BARB_Mason_Vanguard')
 	Characters.Add(class'AOCCharacterInfo_Playable_PeasantRevolt')
-	Characters.Add(class'BangModCharacterInfo_Agatha_Footman')
-	Characters.Add(class'BangModCharacterInfo_Mason_Footman')
-	Characters.Add(class'BangModCharacterInfo_Mason_Saint')
-	Characters.Add(class'BangModCharacterInfo_Agatha_Turtle')
-	Characters.Add(class'BangModCharacterInfo_Agatha_Assassin')
-	Characters.Add(class'BangModCharacterInfo_Mason_Assassin')
+	Characters.Add(class'XangModCharacterInfo_Agatha_Footman')
+	Characters.Add(class'XangModCharacterInfo_Mason_Footman')
+	Characters.Add(class'XangModCharacterInfo_Mason_Saint')
+	Characters.Add(class'XangModCharacterInfo_Agatha_Turtle')
+	Characters.Add(class'XangModCharacterInfo_Agatha_Assassin')
+	Characters.Add(class'XangModCharacterInfo_Mason_Assassin')
 
     Teams.Empty()
-    Teams.Add(class'BangModCustomizationTeam_Agatha') //0
-    Teams.Add(class'BangModCustomizationTeam_Mason') // 1
-    Teams.Add(class'BangModCustomizationTeam_FFA') //5
+    Teams.Add(class'XangModCustomizationTeam_Agatha') //0
+    Teams.Add(class'XangModCustomizationTeam_Mason') // 1
+    Teams.Add(class'XangModCustomizationTeam_FFA') //5
 
 
 	Drops(0)=()

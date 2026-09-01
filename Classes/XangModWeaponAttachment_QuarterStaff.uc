@@ -5,11 +5,11 @@
 * 
 * Quarter Staff Weapon Attachment.
 */
-class BangModWeaponAttachment_QuarterStaff extends AOCWeaponAttachment_QuarterStaff;
+class XangModWeaponAttachment_QuarterStaff extends AOCWeaponAttachment_QuarterStaff;
 
 defaultproperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -23,7 +23,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_QStaff
-	WeaponClass=class'BangModWeapon_QuarterStaff'
+	WeaponClass=class'XangModWeapon_QuarterStaff'
 
 	WeaponSocket=wepQstaffpoint
 	bUseAlternativeKick=true

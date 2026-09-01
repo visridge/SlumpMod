@@ -5,7 +5,7 @@
 *
 * Pole Hammer.
 */
-class BangModWeapon_PoleHammer extends  BangModMeleeWeapon;
+class XangModWeapon_PoleHammer extends  XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -209,7 +209,7 @@ defaultproperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_PoleHammer'
+	AttachmentClass=class'XangModWeaponAttachment_PoleHammer'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_PoleHammer'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_PoleHammer

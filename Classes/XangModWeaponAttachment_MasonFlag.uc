@@ -3,14 +3,14 @@
 *
 * Original Author: Michael Bao
 *
-* BangMod Weapon Attachment: Mason Flag
+* XangMod Weapon Attachment: Mason Flag
 */
-class BangModWeaponAttachment_MasonFlag extends AOCWeaponAttachment_MasonFlag;
+class XangModWeaponAttachment_MasonFlag extends AOCWeaponAttachment_MasonFlag;
 
 DefaultProperties
 {
-	// Override WeaponClass to point to BangMod version
-	WeaponClass=class'BangModWeapon_MasonFlag'
+	// Override WeaponClass to point to XangMod version
+	WeaponClass=class'XangModWeapon_MasonFlag'
 
 	// Scale down by 30% (same pattern as SpikedMace scale-up)
 	Begin Object Name=SkeletalMeshComponent0

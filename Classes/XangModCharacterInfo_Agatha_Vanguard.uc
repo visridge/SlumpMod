@@ -1,5 +1,5 @@
 
-class BangModCharacterInfo_Agatha_Vanguard extends AOCCharacterInfo_Agatha_Vanguard;
+class XangModCharacterInfo_Agatha_Vanguard extends AOCCharacterInfo_Agatha_Vanguard;
 defaultproperties
 {
 	/** Pull this out into the Helmets etc. arrays */
@@ -8,7 +8,7 @@ defaultproperties
 
 	CharacterMeshPath="CH_A_Vanguard_PKG.AgathaVanguardANIMRIG"
 	DecapMeshPath="CH_A_Vanguard_PKG.SkeletalMesh.SK_CH_3P_Vanguard_Gore"
-	OwnerMeshPath="BangmodCharacters.AgathaVanguard1p"
+	OwnerMeshPath="XangmodCharacters.AgathaVanguard1p"
 
 	HeadMaterialPath="CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST"
 	BodyMaterialPath="CH_A_Vanguard_PKG.Materials.M_Vanguard_Head_INST"
@@ -17,7 +17,7 @@ defaultproperties
 
 	StandinMesh=SkeletalMesh'CH_A_Vanguard_PKG.AgathaVanguardANIMRIG'
 	StandinDecapMesh=SkeletalMesh'CH_A_Vanguard_PKG.SkeletalMesh.SK_CH_3P_Vanguard_Gore'
-	StandinOwnerMesh=SkeletalMesh'BangmodCharacters.AgathaVanguard1p'
+	StandinOwnerMesh=SkeletalMesh'XangmodCharacters.AgathaVanguard1p'
 	StandinHeadMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST'
 	StandinBodyMaterial=MaterialInterface'CH_A_Vanguard_PKG.Materials.M_A_Vanguard_INST'
 

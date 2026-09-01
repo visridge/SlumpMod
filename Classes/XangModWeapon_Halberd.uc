@@ -5,7 +5,7 @@
 *
 * Weapon: Halberd.
 */
-class BangModWeapon_Halberd extends BangModMeleeWeapon;
+class XangModWeapon_Halberd extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -210,7 +210,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Halberd'
+	AttachmentClass=class'XangModWeaponAttachment_Halberd'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Halberd'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Halberd

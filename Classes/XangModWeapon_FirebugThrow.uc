@@ -4,7 +4,7 @@
 * Firebug (Throwing Mode).
 * Auto-throws like JavelinThrow — one-use, single projectile, ignites on hit.
 */
-class BangModWeapon_FirebugThrow extends AOCWeapon_JavelinThrow;
+class XangModWeapon_FirebugThrow extends AOCWeapon_JavelinThrow;
 
 // Auto-throw: fires immediately, cannot be held drawn
 simulated state Hold
@@ -40,7 +40,7 @@ DefaultProperties
 	WeaponProjectiles(0)=class'AOCProj_ThrownTorch'
 	WeaponProjectiles(3)=class'AOCProj_ThrownTorch'
 
-	AttachmentClass=class'BangModWeaponAttachment_FirebugThrow'
+	AttachmentClass=class'XangModWeaponAttachment_FirebugThrow'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Torch'
 	AllowedShieldClass=none
 	bHaveShield=false
@@ -64,7 +64,7 @@ DefaultProperties
 	StrafeModify=0.75f
 	bCanDodge=false
 	bUseIdleForTopHalf=true
-	AlternativeMode=class'BangModWeapon_Firebug'
+	AlternativeMode=class'XangModWeapon_Firebug'
 	bAlternativeFireStopped=false
 	bHasFired=false
 	bIgnoreShieldReplacement=true

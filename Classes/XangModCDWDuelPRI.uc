@@ -1,4 +1,4 @@
-class BangModCDWDuelPRI extends CDWDuelPRI;
+class XangModCDWDuelPRI extends CDWDuelPRI;
 
-`include(BangMod/Include/BangModCDWDuel.uci)
-`include(BangMod/Include/BangModPRI.uci)
+`include(XangMod/Include/XangModCDWDuel.uci)
+`include(XangMod/Include/XangModPRI.uci)

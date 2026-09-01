@@ -1,4 +1,4 @@
-# BangMod 165Hz Server Optimization Guide
+# XangMod 165Hz Server Optimization Guide
 
 ## Current Performance Bottlenecks (Dark Forest Final Objective)
 
@@ -12,33 +12,33 @@
 
 ### 1. NPC NetUpdateFrequency Reduction ✅
 
-**BangModNPC_New_NoMove.uc** (Standing NPCs - Final Objective Targets)
+**XangModNPC_New_NoMove.uc** (Standing NPCs - Final Objective Targets)
 ```unrealscript
 NetUpdateFrequency = 1.0  // Down from vanilla 3.0Hz (66% reduction)
 ```
 - **Impact:** 648 updates/sec → 216 updates/sec = **432 fewer updates/second**
 - **Rationale:** Standing NPCs only need updates when hit (handled by bForceNetUpdate)
-- **Usage:** Replace `AOCNPC_New_NoMove` spawns with `BangModNPC_New_NoMove` in map Kismet
+- **Usage:** Replace `AOCNPC_New_NoMove` spawns with `XangModNPC_New_NoMove` in map Kismet
 
-**BangModNPC_New.uc** (Moving NPCs - Patrols/Combat AI)
+**XangModNPC_New.uc** (Moving NPCs - Patrols/Combat AI)
 ```unrealscript
 NetUpdateFrequency = 30.0  // Down from vanilla 50.0Hz (40% reduction)
 ```
 - **Impact:** 40% less network overhead per moving NPC
 - **Rationale:** 30Hz is still smooth for AI, players get 165Hz for competitive feel
-- **Usage:** Replace `AOCNPC_New` spawns with `BangModNPC_New` in map Kismet
+- **Usage:** Replace `AOCNPC_New` spawns with `XangModNPC_New` in map Kismet
 
 ---
 
 ## Recommended Map-Level Optimizations
 
-### Option A: Use BangMod NPC Classes in Kismet
+### Option A: Use XangMod NPC Classes in Kismet
 **Location:** Dark Forest map Kismet sequences (final objective)
 
 **Change Kismet Spawn Actions:**
 1. Open Dark Forest map in UDK Editor
 2. Find final objective NPC spawn sequences
-3. Change spawn class from `AOCNPC_New_NoMove` → `BangModNPC_New_NoMove`
+3. Change spawn class from `AOCNPC_New_NoMove` → `XangModNPC_New_NoMove`
 4. Recompile map and test
 
 **Expected Result:** Server ms drops from ~10-12ms → ~7-8ms on final objective
@@ -77,7 +77,7 @@ ConnectionTimeout=80.0
 ```
 
 ### 2. Map-Specific Optimizations
-- **Ragdolls:** Already optimized in BangModPawn (client-only, 0.5s remove)
+- **Ragdolls:** Already optimized in XangModPawn (client-only, 0.5s remove)
 - **Projectiles:** Consider reducing arrow/throwable lifetime
 - **Particles:** Reduce particle count on blood/hit effects for server
 - **Audio:** Server doesn't need to calculate positional audio (already disabled)
@@ -103,8 +103,8 @@ stat net                    // Network stats (bandwidth, packet loss)
 
 **Target Metrics:**
 - **Server ms:** < 6.06ms (165Hz = 6.06ms budget per tick)
-- **Player NetUpdateFrequency:** 165Hz (BangModPawn, BangModPlayerController)
-- **NPC NetUpdateFrequency:** 1-30Hz (BangModNPC classes)
+- **Player NetUpdateFrequency:** 165Hz (XangModPawn, XangModPlayerController)
+- **NPC NetUpdateFrequency:** 1-30Hz (XangModNPC classes)
 - **Player ping:** < 70ms optimal, < 140ms acceptable
 
 ---
@@ -112,8 +112,8 @@ stat net                    // Network stats (bandwidth, packet loss)
 ## Testing Checklist
 
 **Before deploying optimizations:**
-1. ✅ Compile BangModNPC_New.uc and BangModNPC_New_NoMove.uc
-2. ✅ Update Dark Forest map Kismet to use BangMod NPC classes
+1. ✅ Compile XangModNPC_New.uc and XangModNPC_New_NoMove.uc
+2. ✅ Update Dark Forest map Kismet to use XangMod NPC classes
 3. ✅ Test final objective with 12 players + 18 NPCs
 4. ✅ Verify server ms stays under 8.33ms during combat
 5. ✅ Confirm NPCs still take damage and replicate properly
@@ -131,11 +131,11 @@ stat net                    // Network stats (bandwidth, packet loss)
 
 **If optimizations cause issues:**
 1. Revert Dark Forest map to vanilla NPC spawns
-2. Increase BangModNPC NetUpdateFrequency:
+2. Increase XangModNPC NetUpdateFrequency:
    - NoMove: 1.0 → 2.0Hz
    - Moving: 30.0 → 40.0Hz
 3. Reduce player count temporarily (12 → 10 players)
-4. Contact BangMod dev for troubleshooting
+4. Contact XangMod dev for troubleshooting
 
 ---
 
@@ -195,8 +195,8 @@ At 60% load:
 ## Changelog
 
 **v1.0 - Initial Optimization**
-- Created BangModNPC_New_NoMove (1Hz standing NPCs)
-- Created BangModNPC_New (30Hz moving NPCs)
+- Created XangModNPC_New_NoMove (1Hz standing NPCs)
+- Created XangModNPC_New (30Hz moving NPCs)
 - Documented Dark Forest final objective bottleneck
 - Provided map-level integration guide
 

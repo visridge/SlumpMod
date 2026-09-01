@@ -5,7 +5,7 @@
 *
 * Weapon attachment: Bastard Sword - Longsword behavior with scaled broadsword visuals
 */
-class BangModWeaponAttachment_BastardSword extends BangModWeaponAttachment_Katana;
+class XangModWeaponAttachment_BastardSword extends XangModWeaponAttachment_Katana;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -46,7 +46,7 @@ DefaultProperties
 	End Object
 
 	WeaponID=EWEP_Broadsword
-	WeaponClass=class'BangModWeapon_BastardSword'
+	WeaponClass=class'XangModWeapon_BastardSword'
 	WeaponSocket=wep2hpoint
 	WeaponStaticMeshScale=0.9
 	bUseAlternativeKick=true

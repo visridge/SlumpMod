@@ -6,7 +6,7 @@
 * The weapon class to contain information for the Double Axe.
 */
 
-class BangModWeapon_PoleAxe extends BangModMeleeWeapon;
+class XangModWeapon_PoleAxe extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -93,7 +93,7 @@ DefaultProperties
 {
 	bTwoHander=true
 	FlinchTime2H=1.10
-	AttachmentClass=class'BangModWeaponAttachment_PoleAxe'
+	AttachmentClass=class'XangModWeaponAttachment_PoleAxe'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_PoleAxe'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_PoleArm
@@ -101,7 +101,7 @@ DefaultProperties
 	bHaveShield=false
 	WeaponIdentifier="doubleaxe"
 
-	AlternativeMode=class'BangModWeapon_PoleAxeBack'
+	AlternativeMode=class'XangModWeapon_PoleAxeBack'
 
 	EncircleRadius=25.0f
 	EffectiveDistance=200.0f

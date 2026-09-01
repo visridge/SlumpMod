@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Broadsword.
 */
-class BangModWeapon_Broadsword extends BangModMeleeWeapon;
+class XangModWeapon_Broadsword extends XangModMeleeWeapon;
 
 
 simulated state ParryRelease
@@ -169,7 +169,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_BroadSword'
+	AttachmentClass=class'XangModWeaponAttachment_BroadSword'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Broadsword'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Broadsword

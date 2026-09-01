@@ -5,7 +5,7 @@
 *
 * Weapon: Brandistock.
 */
-class BangModWeapon_Brandistock extends  BangModMeleeWeapon;
+class XangModWeapon_Brandistock extends  XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -212,7 +212,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Brandistock'
+	AttachmentClass=class'XangModWeaponAttachment_Brandistock'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Brandistock'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Brandistock

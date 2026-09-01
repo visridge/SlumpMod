@@ -1,11 +1,11 @@
 /**
-* BangModFamilyInfo_Archer - Archer family info with the ninja-roll custom dodge.
+* XangModFamilyInfo_Archer - Archer family info with the ninja-roll custom dodge.
 *
-* Holds the custom dodge config (roll anims + tuning knobs) that BangModDodge reads.
-* Mirrors the roll config that used to live on BangModFamilyInfo_ManAtArms, which is
+* Holds the custom dodge config (roll anims + tuning knobs) that XangModDodge reads.
+* Mirrors the roll config that used to live on XangModFamilyInfo_ManAtArms, which is
 * now reverted to vanilla dodge.
 */
-class BangModFamilyInfo_Archer extends AOCFamilyInfo_Archer;
+class XangModFamilyInfo_Archer extends AOCFamilyInfo_Archer;
 
 var() bool               bUseCustomDodgeAnims;
 var() array<string>      DodgeAnimUp;            // 1H roll anims

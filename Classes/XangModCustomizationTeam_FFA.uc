@@ -3,7 +3,7 @@
  * 
  * Original Author: Brady Brenot
  */
-class BangModCustomizationTeam_FFA extends AOCCustomizationTeam_FFA;
+class XangModCustomizationTeam_FFA extends AOCCustomizationTeam_FFA;
 
 
 defaultproperties

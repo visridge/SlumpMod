@@ -1,5 +1,5 @@
-class BangModFFA extends AOCFFA;
+class XangModFFA extends AOCFFA;
 
-`include(BangMod/Include/BangModFFA.uci)
-`include(BangMod/Include/BangModGame.uci)
+`include(XangMod/Include/XangModFFA.uci)
+`include(XangMod/Include/XangModGame.uci)
 

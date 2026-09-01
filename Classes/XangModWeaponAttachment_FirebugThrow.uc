@@ -4,7 +4,7 @@
 * Weapon Attachment: Firebug (Throwing Mode).
 * Uses the torch skeletal mesh for the throwing pose.
 */
-class BangModWeaponAttachment_FirebugThrow extends AOCWeaponAttachment;
+class XangModWeaponAttachment_FirebugThrow extends AOCWeaponAttachment;
 
 DefaultProperties
 {
@@ -19,7 +19,7 @@ DefaultProperties
 	End Object
 
 	WeaponID=EWEP_Torch
-	WeaponClass=class'BangModWeapon_FirebugThrow'
+	WeaponClass=class'XangModWeapon_FirebugThrow'
 
 	WeaponSocket=wep1hpoint
 

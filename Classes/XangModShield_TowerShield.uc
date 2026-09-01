@@ -1,8 +1,8 @@
 /**
-* BangMod Tower Shield - Vanilla AOC behavior
+* XangMod Tower Shield - Vanilla AOC behavior
 */
 
-class BangModShield_TowerShield extends BangModBaseShield;
+class XangModShield_TowerShield extends XangModBaseShield;
 
 DefaultProperties
 {

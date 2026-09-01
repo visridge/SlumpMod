@@ -1,4 +1,4 @@
-class BangModTOHUD extends AOCTeamObjectiveHUD;
+class XangModTOHUD extends AOCTeamObjectiveHUD;
 
-`include(BangMod/Include/BangModTO.uci)
-`include(BangMod/Include/BangModHUD.uci)
+`include(XangMod/Include/XangModTO.uci)
+`include(XangMod/Include/XangModHUD.uci)

@@ -1,4 +1,4 @@
-class BangModTOPRI extends AOCPRI;
+class XangModTOPRI extends AOCPRI;
 
-`include(BangMod/Include/BangModTO.uci)
-`include(BangMod/Include/BangModPRI.uci)
+`include(XangMod/Include/XangModTO.uci)
+`include(XangMod/Include/XangModPRI.uci)

@@ -1,4 +1,4 @@
-class BangModAOCDuelHUD extends AOCDuelHUD;
+class XangModAOCDuelHUD extends AOCDuelHUD;
 
-`include(BangMod/Include/BangModAOCDuel.uci)
-`include(BangMod/Include/BangModHUD.uci)
+`include(XangMod/Include/XangModAOCDuel.uci)
+`include(XangMod/Include/XangModHUD.uci)

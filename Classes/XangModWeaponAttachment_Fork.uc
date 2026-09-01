@@ -5,11 +5,11 @@
 *
 * Weapon Attachment: Fork.
 */
-class BangModWeaponAttachment_Fork extends AOCWeaponAttachment_Fork;
+class XangModWeaponAttachment_Fork extends AOCWeaponAttachment_Fork;
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -23,7 +23,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Fork
-	WeaponClass=class'BangModWeapon_Fork'
+	WeaponClass=class'XangModWeapon_Fork'
 	WeaponSocket=wep2hpoint
 	bUseAlternativeKick=true
 

@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Longsword
 */
-class BangModWeapon_Greatsword extends BangModMeleeWeapon;
+class XangModWeapon_Greatsword extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -165,7 +165,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Greatsword'
+	AttachmentClass=class'XangModWeaponAttachment_Greatsword'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Greatsword'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Greatsword

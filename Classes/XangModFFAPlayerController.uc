@@ -1,8 +1,8 @@
-class BangModFFAPlayerController extends AOCFFAPlayerController
-    dependson(BangModFFA);
+class XangModFFAPlayerController extends AOCFFAPlayerController
+    dependson(XangModFFA);
 
-`include(BangMod/Include/BangModFFA.uci)
-`include(BangMod/Include/BangModPlayerController.uci)
+`include(XangMod/Include/XangModFFA.uci)
+`include(XangMod/Include/XangModPlayerController.uci)
 
 function ChangeToNewClass()
 {
@@ -14,8 +14,8 @@ function ChangeToNewClass()
 		FindFirstAvailableLoadoutForCurrentFamilyInfo();
 	}
 
-	class'BangModCustomization'.static.GenerateSelectedWeaponDropSkinIndex(CustomizationInfo, self, WeaponDrops);
-	bIsCustomizationInfoValid = class'BangModCustomization'.static.AreCustomizationChoicesValidFor(CustomizationInfo, EFAC_FFA, CurrentFamilyInfo.ClassReference, PlayerReplicationInfo, WeaponDrops);
+	class'XangModCustomization'.static.GenerateSelectedWeaponDropSkinIndex(CustomizationInfo, self, WeaponDrops);
+	bIsCustomizationInfoValid = class'XangModCustomization'.static.AreCustomizationChoicesValidFor(CustomizationInfo, EFAC_FFA, CurrentFamilyInfo.ClassReference, PlayerReplicationInfo, WeaponDrops);
 
 	if(bIsCustomizationInfoValid)
 	{

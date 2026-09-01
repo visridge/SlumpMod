@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Hatchet.
 */
-class BangModWeapon_Hatchet extends BangModMeleeWeapon;
+class XangModWeapon_Hatchet extends XangModMeleeWeapon;
 
 simulated state Release
 {
@@ -55,7 +55,7 @@ DefaultProperties
 	bUseSprintLeanAnims=true
 	FlinchTime1H=1.00
 
-	AttachmentClass=class'BangModWeaponAttachment_Hatchet'
+	AttachmentClass=class'XangModWeaponAttachment_Hatchet'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Hatchet'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Hatchet

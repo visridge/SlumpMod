@@ -9,10 +9,10 @@ Current inspected branch/head: `main` at `caf446ab6aa7183595a111ba6acbe7c50a1b01
 Primary file to edit:
 
 ```text
-Classes/BangModMeleeWeapon.uc
+Classes/XangModMeleeWeapon.uc
 ```
 
-This is for BangMod, a Chivalry mod. 
+This is for XangMod, a Chivalry mod. 
 
 ## Bug
 
@@ -68,7 +68,7 @@ simulated state ParryRelease
 		super.EndState(NextStateName);
 	}
 }
-in BangModMeleeWeapon.uc, but was removed later due to bug.
+in XangModMeleeWeapon.uc, but was removed later due to bug.
 
 That commit/code added a `ParryRelease` grace timer:
 
@@ -123,7 +123,7 @@ The fix must:
 
 ### 1. Add A New Flag
 
-In `Classes/BangModMeleeWeapon.uc`, near the existing parry timing vars:
+In `Classes/XangModMeleeWeapon.uc`, near the existing parry timing vars:
 
 Current area:
 
@@ -301,4 +301,4 @@ Test cases:
 
 Main risk: if `SuccessfulParry` can be called in `Recovery` for unrelated reasons, this could incorrectly skip recovery. The guard is intended to prevent that by only arming the repair when recovery began from `ParryRelease` while `CurrentFireMode == Attack_Parry` and the weapon is not a shield.
 
-If this still compiles but does not fix the symptom, the next likely problem is that the server never sent `ClientSuccessfulParry` for the edge case. In that case, inspect the pending-hit/parry rollback path in `Include/BangModPawn.uci`, especially `GetParryHoldSeconds()` and `ResolvePendingHitsAsParry()`.
+If this still compiles but does not fix the symptom, the next likely problem is that the server never sent `ClientSuccessfulParry` for the edge case. In that case, inspect the pending-hit/parry rollback path in `Include/XangModPawn.uci`, especially `GetParryHoldSeconds()` and `ResolvePendingHitsAsParry()`.

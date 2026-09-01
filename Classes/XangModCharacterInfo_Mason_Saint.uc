@@ -1,4 +1,4 @@
-class BangModCharacterInfo_Mason_Saint extends AOCCharacterInfo_Mason_Knight;
+class XangModCharacterInfo_Mason_Saint extends AOCCharacterInfo_Mason_Knight;
 defaultproperties
 {
 	MobileBattleCry=SoundCue'A_VO_Manual.Mason_Knight.Battlecry_Running_Mason_Knight'

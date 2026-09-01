@@ -1,5 +1,5 @@
-class BangModTUTPlayerController extends AOCPlayerController
-    dependson(BangModTUT);
+class XangModTUTPlayerController extends AOCPlayerController
+    dependson(XangModTUT);
 
-`include(BangMod/Include/BangModTUT.uci)
-`include(BangMod/Include/BangModPlayerController.uci)
+`include(XangMod/Include/XangModTUT.uci)
+`include(XangMod/Include/XangModPlayerController.uci)

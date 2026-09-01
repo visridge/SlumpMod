@@ -1,4 +1,4 @@
-class BangModCDWDuelHUD extends CDWDuelHUD;
+class XangModCDWDuelHUD extends CDWDuelHUD;
 
-`include(BangMod/Include/BangModCDWDuel.uci)
-`include(BangMod/Include/BangModHUD.uci)
+`include(XangMod/Include/XangModCDWDuel.uci)
+`include(XangMod/Include/XangModHUD.uci)

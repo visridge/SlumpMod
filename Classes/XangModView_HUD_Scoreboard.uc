@@ -1,4 +1,4 @@
-class BangModView_HUD_Scoreboard extends AOCView_HUD_Scoreboard;
+class XangModView_HUD_Scoreboard extends AOCView_HUD_Scoreboard;
 
 event bool WidgetInitialized(name WidgetName, name WidgetPath, GFxObject Widget)
 {

@@ -4,7 +4,7 @@
 * Original Author: Brady Brenot
 * 
 */
-class BangModCharacterInfo_BARB_Agatha_Knight extends AOCCharacterInfo_BARB_Agatha_Knight;
+class XangModCharacterInfo_BARB_Agatha_Knight extends AOCCharacterInfo_BARB_Agatha_Knight;
 
 defaultproperties
 {
@@ -14,14 +14,14 @@ defaultproperties
 
 	CharacterMeshPath="CH_Barb_AgathaKnight.models.SK_CH_3P_Barb_AgathaKnight"
 	DecapMeshPath="CH_Barb_AgathaKnight.models.SK_CH_3P_Barb_AgathaKnight_Gore"
-	OwnerMeshPath="BangmodCharacters.AgathaBarb1p"
+	OwnerMeshPath="XangmodCharacters.AgathaBarb1p"
 
 	HeadMaterialPath="CH_Barb_AgathaKnight.Materials.MI_CH_3P_Barb_AgathaKnight_Body01"
 	BodyMaterialPath="CH_Barb_AgathaKnight.Materials.MI_CH_3P_Barb_AgathaKnight_Head"
 
 	StandinMesh=SkeletalMesh'CH_AgathanKnight_PKG.models.SK_CH_3P_AgathaKnight'
 	StandinDecapMesh=SkeletalMesh'CH_AgathanKnight_PKG.models.SK_CH_3P_AgathaKnight_Gore'
-	StandinOwnerMesh=SkeletalMesh'BangmodCharacters.AgathaBarb1p'
+	StandinOwnerMesh=SkeletalMesh'XangmodCharacters.AgathaBarb1p'
 	StandinHeadMaterial=MaterialInterface'CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Body'
 	StandinBodyMaterial=MaterialInterface'CH_AgathanKnight_PKG.Materials.MI_CH_3P_AgathaKnight_Head'
 

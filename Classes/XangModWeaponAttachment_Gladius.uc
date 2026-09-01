@@ -5,7 +5,7 @@
 *
 * Weapon attachment: Gladius - Bastard Sword behavior with scaled shortsword visuals
 */
-class BangModWeaponAttachment_Gladius extends BangModWeaponAttachment_Messer;
+class XangModWeaponAttachment_Gladius extends XangModWeaponAttachment_Messer;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -46,7 +46,7 @@ DefaultProperties
 	End Object
 
 	WeaponID=EWEP_Dagesse
-	WeaponClass=class'BangModWeapon_Gladius'
+	WeaponClass=class'XangModWeapon_Gladius'
 	WeaponSocket=wep2hpoint
 	WeaponStaticMeshScale=1.6
 

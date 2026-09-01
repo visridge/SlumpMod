@@ -1,5 +1,5 @@
-class BangModLTS extends AOCLTS;
+class XangModLTS extends AOCLTS;
 
-`include(BangMod/Include/BangModLTS.uci)
-`include(BangMod/Include/BangModGame.uci)
+`include(XangMod/Include/XangModLTS.uci)
+`include(XangMod/Include/XangModGame.uci)
 

@@ -1,8 +1,8 @@
 /**
-* BangMod Buckler - Vanilla AOC behavior
+* XangMod Buckler - Vanilla AOC behavior
 */
 
-class BangModShield_Buckler extends BangModBaseShield;
+class XangModShield_Buckler extends XangModBaseShield;
 
 DefaultProperties
 {

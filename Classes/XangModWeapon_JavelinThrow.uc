@@ -6,7 +6,7 @@
 * Weapon: Javelin (Throwing Mode)
 */
 
-class BangModWeapon_JavelinThrow extends AOCWeapon_JavelinThrow;
+class XangModWeapon_JavelinThrow extends AOCWeapon_JavelinThrow;
 
 // Auto-throw: javelin cannot be held drawn, fires immediately
 simulated state Hold
@@ -43,7 +43,7 @@ DefaultProperties
 	WeaponProjectiles(0)=class'AOCProj_Javelin'
 	WeaponProjectiles(3)=class'AOCProj_Javelin'
 
-	AttachmentClass=class'BangModWeaponAttachment_JavelinThrow'
+	AttachmentClass=class'XangModWeaponAttachment_JavelinThrow'
 	// should never be part of inventory attachment
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Javelin'
 	PermanentAttachmentClass(0)=class'AOCInventoryAttachment_JavelinQuiver'
@@ -110,7 +110,7 @@ DefaultProperties
 	StrafeModify=0.75f
 	bCanDodge=false
 	bUseIdleForTopHalf=true
-	AlternativeMode=class'BangModWeapon_JavelinMelee'
+	AlternativeMode=class'XangModWeapon_JavelinMelee'
 	bAlternativeFireStopped=false
 	bHasFired=false
 	bIgnoreShieldReplacement=true

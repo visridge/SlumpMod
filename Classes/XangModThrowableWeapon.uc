@@ -7,7 +7,7 @@
 * Windup -> Release -> Reload/Next Weapon.
 */
 
-class BangModThrowableWeapon extends AOCThrowableWeapon;
+class XangModThrowableWeapon extends AOCThrowableWeapon;
 
 var bool bWantToFire;       // variable used in the wind-up phase to send user to release if he releases the mouse click
 

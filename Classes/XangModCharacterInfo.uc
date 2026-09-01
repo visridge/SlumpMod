@@ -5,7 +5,7 @@
  * 
  * The presentation side of characters. FamilyInfo is the gameplay side.
  */
-class BangModCharacterInfo extends AOCCharacterInfo
+class XangModCharacterInfo extends AOCCharacterInfo
 	abstract
 	dependson(AOCPawn);
 

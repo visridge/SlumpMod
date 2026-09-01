@@ -6,7 +6,7 @@
 * The weapon that is replicated to all clients: Double Axe
 */
 
-class BangModWeaponAttachment_DoubleAxe extends AOCWeaponAttachment_DoubleAxe;
+class XangModWeaponAttachment_DoubleAxe extends AOCWeaponAttachment_DoubleAxe;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -30,7 +30,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -46,7 +46,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_DoubleAxe
-	WeaponClass=class'BangModWeapon_DoubleAxe'
+	WeaponClass=class'XangModWeapon_DoubleAxe'
 
 	WeaponSocket=wep2haxepoint
 	bUseAlternativeKick=true

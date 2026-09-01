@@ -1,5 +1,5 @@
-class BangModTOPlayerController extends AOCTeamObjectivePC
-    dependson(BangModTO);
+class XangModTOPlayerController extends AOCTeamObjectivePC
+    dependson(XangModTO);
 
-`include(BangMod/Include/BangModTO.uci)
-`include(BangMod/Include/BangModPlayerController.uci)
+`include(XangMod/Include/XangModTO.uci)
+`include(XangMod/Include/XangModPlayerController.uci)

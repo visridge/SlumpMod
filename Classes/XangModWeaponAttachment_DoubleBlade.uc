@@ -10,7 +10,7 @@
 *   - All other attacks           → TraceStart  / TraceEnd
 * The weapon is held in the middle so the entire length is a striking surface.
 */
-class BangModWeaponAttachment_DoubleBlade extends AOCWeaponAttachment_QuarterStaff;
+class XangModWeaponAttachment_DoubleBlade extends AOCWeaponAttachment_QuarterStaff;
 
 /** Snapshot of bWindupStartAlternateSide for the current swing */
 var bool bWindupAltSide;
@@ -116,7 +116,7 @@ simulated state Release
 
 defaultproperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 	KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -130,7 +130,7 @@ defaultproperties
 	End Object
 
 	WeaponID=EWEP_QStaff
-	WeaponClass=class'BangModWeapon_DoubleBlade'
+	WeaponClass=class'XangModWeapon_DoubleBlade'
 
 	WeaponSocket=wepQstaffpoint
 	bUseAlternativeKick=true

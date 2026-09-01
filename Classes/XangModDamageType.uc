@@ -14,7 +14,7 @@
 * PierceBlunt
 * SwingBlunt
 */
-class BangModDamageType extends AOCDamageType;
+class XangModDamageType extends AOCDamageType;
 
 DefaultProperties
 {

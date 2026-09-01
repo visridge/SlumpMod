@@ -1,14 +1,14 @@
 /**
- * BangModDodge - Custom dodge base class with weapon-identifier remapping.
+ * XangModDodge - Custom dodge base class with weapon-identifier remapping.
  *
  * Overrides GetWeaponIdentifier() to substitute identifiers that lack dodge anims
  * (e.g. doubleaxe -> qstaff) with ones that have them, while keeping the original
  * WeaponIdentifier on the weapon class so the AnimTree selects the correct idle/stance.
  *
- * Roll behaviour lives in BangModRoll (extends this class); see that file for the
+ * Roll behaviour lives in XangModRoll (extends this class); see that file for the
  * ninja-roll dodge.
  */
-class BangModDodge extends AOCDodge;
+class XangModDodge extends AOCDodge;
 
 var bool bHasRemappedDodgeAttachment;
 var name OriginalWeaponSocket;

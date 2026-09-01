@@ -1,7 +1,7 @@
-class BangModFFAHUD extends AOCFFAHUD;
+class XangModFFAHUD extends AOCFFAHUD;
 
-`include(BangMod/Include/BangModFFA.uci)
-`include(BangMod/Include/BangModHUD.uci)
+`include(XangMod/Include/XangModFFA.uci)
+`include(XangMod/Include/XangModHUD.uci)
 
 
 

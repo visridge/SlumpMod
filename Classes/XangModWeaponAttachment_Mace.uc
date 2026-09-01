@@ -5,7 +5,7 @@
 * 
 * The weapon that is replicated to all clients: Mace
 */
-class BangModWeaponAttachment_Mace extends AOCWeaponAttachment_Mace;
+class XangModWeaponAttachment_Mace extends AOCWeaponAttachment_Mace;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -28,7 +28,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -42,7 +42,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Mace
-	WeaponClass=class'BangModWeapon_Mace'
+	WeaponClass=class'XangModWeapon_Mace'
 	WeaponSocket=wep1hpoint
 
 	WeaponStaticMeshScale=1

@@ -1,8 +1,8 @@
 /**
-* BangMod Heater Shield - Vanilla AOC behavior
+* XangMod Heater Shield - Vanilla AOC behavior
 */
 
-class BangModShield_Heater extends BangModBaseShield;
+class XangModShield_Heater extends XangModBaseShield;
 
 DefaultProperties
 {

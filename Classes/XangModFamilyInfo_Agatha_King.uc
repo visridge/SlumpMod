@@ -5,7 +5,7 @@
 *
 * King Class. For Assassination Objective.
 */
-class BangModFamilyInfo_Agatha_King extends AOCFamilyInfo_Agatha_King;
+class XangModFamilyInfo_Agatha_King extends AOCFamilyInfo_Agatha_King;
 
 DefaultProperties
 {

@@ -1,5 +1,5 @@
-class BangModCDWDuel extends CDWDuel;
+class XangModCDWDuel extends CDWDuel;
 
-`include(BangMod/Include/BangModCDWDuel.uci)
-`include(BangMod/Include/BangModGame.uci)
+`include(XangMod/Include/XangModCDWDuel.uci)
+`include(XangMod/Include/XangModGame.uci)
 

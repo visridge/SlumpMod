@@ -1,7 +1,7 @@
-class BangModCustomization extends AOCCustomization
+class XangModCustomization extends AOCCustomization
     config(Customization);
 
-// BangMod: Respect GroupHexID ownership for helmets. Group-locked helmets
+// XangMod: Respect GroupHexID ownership for helmets. Group-locked helmets
 // (Antlers, Crown, Cowboy, Oakland A's, Community Hat) are equippable only by
 // members of the matching Steam group. All other helmets remain unlocked for
 // everyone (DLC/microtxn/veteran/rank gating stays disabled).
@@ -35,13 +35,13 @@ static function bool IsHelmetOwnedBy(int HelmetID, int CharacterID, PlayerReplic
 	return true;
 }
 
-// Always treat all weapon skins as owned for BangMod
+// Always treat all weapon skins as owned for XangMod
 static function bool AreWeaponSkinsOwnedBy(int WeaponDrops[EWeaponType], PlayerReplicationInfo PRI)
 {
 	return true;
 }
 
-// Override microtransaction visibility locally for BangMod so the customization
+// Override microtransaction visibility locally for XangMod so the customization
 // UI shows microtxn-backed items until the client's localized microtxn list
 // has been received. This prevents helmets/items from disappearing while
 // the client is still fetching microtransaction metadata.
@@ -81,22 +81,22 @@ static function bool CheckMicroTxVisible(int MicroTxID, PlayerReplicationInfo In
 
 defaultproperties
 {
-    CustomizationContentClassString="BangMod.BangModCustomizationContent"
+    CustomizationContentClassString="XangMod.XangModCustomizationContent"
 }
 
-// Mod-local override: allow players on BangMod servers to select any helmet
+// Mod-local override: allow players on XangMod servers to select any helmet
 // or weapon skin regardless of microtransaction ownership. This mirrors the
 // desired SlumpMod behavior where players can pick any cosmetic without
 // microtransaction gating. We keep the remaining validation (characters,
 // emblems, tabards, colors) intact.
 static function bool AreCustomizationChoicesValidFor(SCustomizationChoice CustomizationInfo, int FamilyID, int ClassID, PlayerReplicationInfo PRI, int WeaponDrops[EWeaponType])
 {
-	// BangMod: Always accept customization to prevent "saving with locked items" warnings.
+	// XangMod: Always accept customization to prevent "saving with locked items" warnings.
 	// This mirrors SlumpMod behavior where cosmetic ownership is ignored.
 	return true;
 }
 
-// BangMod: Override ownership checks for all cosmetic types
+// XangMod: Override ownership checks for all cosmetic types
 static function bool IsTabardOwnedBy(int TabardID, int CharacterID, PlayerReplicationInfo PRI, optional int CheckClass)
 {
     return true;
@@ -109,7 +109,7 @@ static function bool IsEmblemOwnedBy(int EmblemID, int Faction, PlayerReplicatio
 
 static function bool IsCharacterOwnedBy(int CharacterID, int FactionID, int ClassID, PlayerReplicationInfo PRI)
 {
-	// Character IDs from BangModCustomizationContent:
+	// Character IDs from XangModCustomizationContent:
 	// 0 = Skeleton (placeholder), 1 = Skeleton, 12 = Peasant, 13 = Playable_Peasant, 14 = Playable_Skeleton
 
 	// Keep skeletons blocked for all classes
@@ -144,7 +144,7 @@ static function int FixupCharacterIndex(int SavedIndex, int Faction, int PlayerC
 	local int i, CorrectedIndex;
 	local array<class<AOCCharacterInfo> > CharList;
 
-	CharList = class'BangModCustomizationContent'.default.Characters;
+	CharList = class'XangModCustomizationContent'.default.Characters;
 
 	// In-range and still valid for this faction/class — nothing to fix.
 	if (SavedIndex >= 0 && SavedIndex < CharList.Length
@@ -174,10 +174,10 @@ static function int FixupCharacterIndex(int SavedIndex, int Faction, int PlayerC
 	if (SavedCharClass == none || CorrectedIndex == INDEX_NONE)
 	{
 		// Can't correlate saved index to any known class — fall back to default.
-		// Use the BangMod content resolver directly: AOCCustomization.GetDefaultCharacterID
+		// Use the XangMod content resolver directly: AOCCustomization.GetDefaultCharacterID
 		// would use the vanilla content list, which has no entry for ECLASS_SiegeEngineer
 		// (class slot 4) and would fall through to the peasant.
-		CorrectedIndex = class'BangModCustomizationContent'.static.GetDefaultCharacterIDFor(Faction, PlayerClass);
+		CorrectedIndex = class'XangModCustomizationContent'.static.GetDefaultCharacterIDFor(Faction, PlayerClass);
 	}
 
 	// Auto-heal the stale INI save so the fix persists on next session.
@@ -186,7 +186,7 @@ static function int FixupCharacterIndex(int SavedIndex, int Faction, int PlayerC
 	return CorrectedIndex;
 }
 
-// BangMod: Override LocalGetCustomizationChoices to use our unlocked logic and read from vanilla config
+// XangMod: Override LocalGetCustomizationChoices to use our unlocked logic and read from vanilla config
 static function SCustomizationChoice LocalGetCustomizationChoices(int Faction, int PlayerClass,
 	optional EWeaponType PrimaryWeaponType = EWEP_MAX,
 	optional EWeaponType SecondaryWeaponType = EWEP_MAX,
@@ -202,62 +202,62 @@ static function SCustomizationChoice LocalGetCustomizationChoices(int Faction, i
 
 	//Emblem colors - Read from AOCCustomization config
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedEmblemColor(Faction, PlayerClass, 0);
-	CustomizationInfo.EmblemColor1 = class'BangModCustomization'.static.IsEmblemColorValid(ColIndex, Faction) ? ColIndex : 0;
+	CustomizationInfo.EmblemColor1 = class'XangModCustomization'.static.IsEmblemColorValid(ColIndex, Faction) ? ColIndex : 0;
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedEmblemColor(Faction, PlayerClass, 1);
-	CustomizationInfo.EmblemColor2 = class'BangModCustomization'.static.IsEmblemColorValid(ColIndex, Faction) ? ColIndex : 0;
+	CustomizationInfo.EmblemColor2 = class'XangModCustomization'.static.IsEmblemColorValid(ColIndex, Faction) ? ColIndex : 0;
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedEmblemColor(Faction, PlayerClass, 2);
-	CustomizationInfo.EmblemColor3 = class'BangModCustomization'.static.IsEmblemColorValid(ColIndex, Faction) ? ColIndex : 0;
+	CustomizationInfo.EmblemColor3 = class'XangModCustomization'.static.IsEmblemColorValid(ColIndex, Faction) ? ColIndex : 0;
 
 	//Tabard colors
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedTabardColor(Faction, PlayerClass, 0);
-	CustomizationInfo.TabardColor1 = class'BangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 0) ? ColIndex : 0;
+	CustomizationInfo.TabardColor1 = class'XangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 0) ? ColIndex : 0;
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedTabardColor(Faction, PlayerClass, 1);
-	CustomizationInfo.TabardColor2 = class'BangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 1) ? ColIndex : 0;
+	CustomizationInfo.TabardColor2 = class'XangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 1) ? ColIndex : 0;
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedTabardColor(Faction, PlayerClass, 2);
-	CustomizationInfo.TabardColor3 = class'BangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 2) ? ColIndex : 0;
+	CustomizationInfo.TabardColor3 = class'XangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 2) ? ColIndex : 0;
 
 	//Shield colors
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedShieldColor(Faction, PlayerClass, 0);
-	CustomizationInfo.ShieldColor1 = class'BangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 0) ? ColIndex : 0;
+	CustomizationInfo.ShieldColor1 = class'XangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 0) ? ColIndex : 0;
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedShieldColor(Faction, PlayerClass, 1);
-	CustomizationInfo.ShieldColor2 = class'BangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 1) ? ColIndex : 0;
+	CustomizationInfo.ShieldColor2 = class'XangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 1) ? ColIndex : 0;
 	ColIndex = class'AOCCustomization'.static.LocalGetSelectedShieldColor(Faction, PlayerClass, 2);
-	CustomizationInfo.ShieldColor3 = class'BangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 2) ? ColIndex : 0;
+	CustomizationInfo.ShieldColor3 = class'XangModCustomization'.static.IsTabardColorValid(ColIndex, Faction, 2) ? ColIndex : 0;
 
 	CustomizationInfo.Shield = class'AOCCustomization'.static.LocalGetSelectedShieldPattern(Faction, PlayerClass);
 
 	//Character
 	CustomizationInfo.Character = class'AOCCustomization'.static.LocalGetSelectedCharacter(Faction, PlayerClass);
-	// BangMod: Fix-up stale character index saved from a previous mod version.
+	// XangMod: Fix-up stale character index saved from a previous mod version.
 	// The Characters array is append-only; if an old index now points to the
 	// wrong class, walk the array by class reference to find the correct slot.
 	CustomizationInfo.Character = FixupCharacterIndex(CustomizationInfo.Character, Faction, PlayerClass);
-	// BangMod: Allow all characters except skeleton/peasant restrictions.
+	// XangMod: Allow all characters except skeleton/peasant restrictions.
 	// Fall back to GetDefaultCharacterID (not 0) so the player gets their
 	// class-appropriate default skin instead of the skeleton placeholder.
-	// Use the BangMod content resolver directly: AOCCustomization.GetDefaultCharacterID
+	// Use the XangMod content resolver directly: AOCCustomization.GetDefaultCharacterID
 	// would use the vanilla content list, which has no entry for ECLASS_SiegeEngineer
 	// (class slot 4) and would fall through to the peasant.
 	if(!IsCharacterOwnedBy(CustomizationInfo.Character, Faction, PlayerClass, PRI))
-		CustomizationInfo.Character = class'BangModCustomizationContent'.static.GetDefaultCharacterIDFor(Faction, PlayerClass);
+		CustomizationInfo.Character = class'XangModCustomizationContent'.static.GetDefaultCharacterIDFor(Faction, PlayerClass);
 
 	//Helmet
 	TempID = class'AOCCustomization'.static.LocalGetSelectedHelmet(Faction, PlayerClass);
-    // BangMod: Use local IsHelmetOwnedBy (always true)
+    // XangMod: Use local IsHelmetOwnedBy (always true)
 	CustomizationInfo.Helmet = byte(IsHelmetOwnedBy(TempID, CustomizationInfo.Character, PRI, EAOCClass(PlayerClass)) ? TempID : 0);
 
 	//Tabard
 	TempID = class'AOCCustomization'.static.LocalGetSelectedTabard(Faction, PlayerClass);
-    // BangMod: Use local IsTabardOwnedBy (always true)
+    // XangMod: Use local IsTabardOwnedBy (always true)
 	CustomizationInfo.Tabard = byte(IsTabardOwnedBy(TempID, CustomizationInfo.Character, PRI, EAOCClass(PlayerClass)) ? TempID : 0);
 
 	//Emblem
 	TempID = class'AOCCustomization'.static.LocalGetSelectedEmblem(Faction, PlayerClass);
-    // BangMod: Use local IsEmblemOwnedBy (always true)
+    // XangMod: Use local IsEmblemOwnedBy (always true)
 	CustomizationInfo.Emblem = byte(IsEmblemOwnedBy(TempID, Faction, PRI, EAOCClass(PlayerClass)) ? TempID : 0);
 
 	//Weapon drops
-    // BangMod: Call local LocalGetSelectedWeaponDrops
+    // XangMod: Call local LocalGetSelectedWeaponDrops
 	if(LocalGetSelectedWeaponDrops(Faction, PlayerClass, WeaponsArray, AOCPRI(PRI)))
 	{
 		if(PrimaryWeaponType != EWEP_MAX)
@@ -282,13 +282,13 @@ static function SCustomizationChoice LocalGetCustomizationChoices(int Faction, i
 	return CustomizationInfo;
 }
 
-// BangMod: Override to skip ownership checks and read from vanilla config
+// XangMod: Override to skip ownership checks and read from vanilla config
 static function bool LocalGetSelectedWeaponDrops(int Faction, int PlayerClass, out int WeaponSkinArray[EWeaponType.EWEP_MAX], AOCPRI PRI)
 {
 	local int TeamIndex, PlayerClassIndex;
 	local int WeaponType;
 	
-    // BangMod: Use AOCCustomization config
+    // XangMod: Use AOCCustomization config
 	TeamIndex = class'AOCCustomization'.default.SelectedWeaponDrops.Teams.Find('TeamID', Faction);
 	if(TeamIndex == INDEX_NONE)
 	{
@@ -303,13 +303,13 @@ static function bool LocalGetSelectedWeaponDrops(int Faction, int PlayerClass, o
 	for(WeaponType = 0; WeaponType < EWEP_MAX; ++WeaponType)
 	{
 		WeaponSkinArray[WeaponType] = class'AOCCustomization'.default.SelectedWeaponDrops.Teams[TeamIndex].Classes[PlayerClassIndex].Weapons[WeaponType];
-        // BangMod: Ownership checks removed
+        // XangMod: Ownership checks removed
 	}
 
 	return true;
 }
 
-// BangMod: Override to write to AOCCustomization config
+// XangMod: Override to write to AOCCustomization config
 static function LocalSetCustomizationChoices(SCustomizationChoice CustomizationInfo, int Faction, int PlayerClass, int WeaponDrops[EWeaponType], byte FactionSupporterFavIcon)
 {
 	class'AOCCustomization'.static.LocalSetSelectedEmblem(Faction, PlayerClass, CustomizationInfo.Emblem);
@@ -334,7 +334,7 @@ static function LocalSetCustomizationChoices(SCustomizationChoice CustomizationI
 	class'AOCCustomization'.static.StaticSaveConfig();
 }
 
-// BangMod: Override to write to AOCCustomization config
+// XangMod: Override to write to AOCCustomization config
 static function LocalSetSelectWeaponSkinChoices(int Faction, int PlayerClass, int WeaponDrops[EWeaponType], optional bool SaveConfig)
 {
 	local int TeamIndex, PlayerClassIndex;
@@ -367,7 +367,7 @@ static function LocalSetSelectWeaponSkinChoices(int Faction, int PlayerClass, in
 		class'AOCCustomization'.static.StaticSaveConfig();
 }
 
-// BangMod: Localize the 5th class name for the customization screen. The vanilla
+// XangMod: Localize the 5th class name for the customization screen. The vanilla
 // GetClassName has no ECLASS_SiegeEngineer case, so it returns an empty string and
 // the class label renders blank.
 static function string GetClassName(EAOCClass ClassID)

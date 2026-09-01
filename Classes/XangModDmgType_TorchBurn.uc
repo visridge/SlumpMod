@@ -1,9 +1,9 @@
 /**
-* BangMod Torch (Firebug) Burn Damage Type
+* XangMod Torch (Firebug) Burn Damage Type
 * Lighter burn than vanilla torch throw - melee hit bonus, not a projectile.
 * 4 damage/tick * 3 ticks (one per second) = up to 12 total fire damage.
 */
-class BangModDmgType_TorchBurn extends AOCDmgType_Burn;
+class XangModDmgType_TorchBurn extends AOCDmgType_Burn;
 
 DefaultProperties
 {

@@ -1,7 +1,7 @@
 /**
  * Inventory attachment for the Kanabo.
  */
-class BangModWeaponInventory_Kanabo extends AOCInventoryAttachment;
+class XangModWeaponInventory_Kanabo extends AOCInventoryAttachment;
 
 DefaultProperties
 {

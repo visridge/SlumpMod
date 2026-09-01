@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the War Axe.
 */
-class BangModWeapon_WarAxe extends BangModMeleeWeapon;
+class XangModWeapon_WarAxe extends XangModMeleeWeapon;
 
 simulated state ParryRelease
 {
@@ -55,7 +55,7 @@ DefaultProperties
 	bUseDirHitAnims=true
 	FlinchTime1H=1.00
 
-	AttachmentClass=class'BangModWeaponAttachment_WarAxe'
+	AttachmentClass=class'XangModWeaponAttachment_WarAxe'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_WarAxe'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_WarAxe

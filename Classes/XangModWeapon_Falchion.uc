@@ -5,7 +5,7 @@
 *
 * The weapon class to contain information for the Falchion.
 */
-class BangModWeapon_Falchion extends BangModMeleeWeapon;
+class XangModWeapon_Falchion extends XangModMeleeWeapon;
 
 simulated state Release
 {
@@ -167,7 +167,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_Falchion'
+	AttachmentClass=class'XangModWeaponAttachment_Falchion'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Falchion'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Falchion

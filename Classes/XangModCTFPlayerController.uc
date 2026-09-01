@@ -1,5 +1,5 @@
-class BangModCTFPlayerController extends AOCCTFPlayerController
-    dependson(BangModCTF);
+class XangModCTFPlayerController extends AOCCTFPlayerController
+    dependson(XangModCTF);
 
-`include(BangMod/Include/BangModCTF.uci)
-`include(BangMod/Include/BangModPlayerController.uci)
+`include(XangMod/Include/XangModCTF.uci)
+`include(XangMod/Include/XangModPlayerController.uci)

@@ -3,10 +3,10 @@
 *
 * Original Author: Michael Bao
 *
-* BangMod Inventory Attachment: Mason Flag
+* XangMod Inventory Attachment: Mason Flag
 * Flag will never be inventory.
 */
-class BangModInventoryAttachment_MasonFlag extends AOCInventoryAttachment_MasonFlag;
+class XangModInventoryAttachment_MasonFlag extends AOCInventoryAttachment_MasonFlag;
 
 DefaultProperties
 {

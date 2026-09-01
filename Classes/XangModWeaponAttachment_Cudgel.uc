@@ -5,11 +5,11 @@
 * 
 * The weapon that is replicated to all clients: Cudgel
 */
-class BangModWeaponAttachment_Cudgel extends AOCWeaponAttachment_Cudgel;
+class XangModWeaponAttachment_Cudgel extends AOCWeaponAttachment_Cudgel;
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -23,7 +23,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Cudgel
-	WeaponClass=class'BangModWeapon_Cudgel'
+	WeaponClass=class'XangModWeapon_Cudgel'
 	WeaponSocket=wep1hpoint
 
 	AttackTypeInfo(0)=(fBaseDamage=40.0, fForce=10000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)

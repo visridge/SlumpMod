@@ -6,7 +6,7 @@
 * Weapon: Javelin (Throwing Mode)
 */
 
-class BangModWeapon_HeavyJavelinThrow extends AOCWeapon_HeavyJavelinThrow;
+class XangModWeapon_HeavyJavelinThrow extends AOCWeapon_HeavyJavelinThrow;
 
 // Auto-throw: heavy javelin cannot be held drawn, fires immediately
 simulated state Hold
@@ -40,7 +40,7 @@ DefaultProperties
 	HorizontalRotateSpeed = 60000
 	VerticalRotateSpeed = 50000
 
-	AttachmentClass=class'BangModWeaponAttachment_HeavyJavelinThrow'
+	AttachmentClass=class'XangModWeaponAttachment_HeavyJavelinThrow'
 	// should never be part of inventory attachment
 	InventoryAttachmentClass=class'AOCInventoryAttachment_HeavyJavelin'
 	AllowedShieldClass=class'AOCShield_Buckler'
@@ -104,7 +104,7 @@ DefaultProperties
 	StrafeModify=0.75f
 	bCanDodge=false
 	bUseIdleForTopHalf=true
-	AlternativeMode=class'BangModWeapon_HeavyJavelinMelee'
+	AlternativeMode=class'XangModWeapon_HeavyJavelinMelee'
 
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_HeavyJavelinThrow]

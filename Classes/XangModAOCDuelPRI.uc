@@ -1,4 +1,4 @@
-class BangModAOCDuelPRI extends AOCDuelPRI;
+class XangModAOCDuelPRI extends AOCDuelPRI;
 
-`include(BangMod/Include/BangModAOCDuel.uci)
-`include(BangMod/Include/BangModPRI.uci)
+`include(XangMod/Include/XangModAOCDuel.uci)
+`include(XangMod/Include/XangModPRI.uci)

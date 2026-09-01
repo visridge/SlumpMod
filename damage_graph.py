@@ -1,5 +1,5 @@
 """
-Damage Graph Generator for BangMod (Chivalry: Medieval Warfare)
+Damage Graph Generator for XangMod (Chivalry: Medieval Warfare)
 Calculates effective damage for each weapon vs each class at 3 hit locations.
 Formula: EffectiveDamage = fBaseDamage * sum(DamageType[i] * DamageResistances[i]) * LocationModifier
          Melee LocationModifiers: Head=1.25, Torso=1.0, Legs=0.8
@@ -64,7 +64,7 @@ def parse_weapon_files(base_dir):
     weapons = {}
     
     attach_dir = os.path.join(base_dir, "Classes")
-    pattern = re.compile(r'BangModWeaponAttachment_(\w+)\.uc')
+    pattern = re.compile(r'XangModWeaponAttachment_(\w+)\.uc')
     
     for fname in sorted(os.listdir(attach_dir)):
         m = pattern.match(fname)
@@ -138,7 +138,7 @@ def generate_html(weapons, output_path):
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>BangMod Damage — Head / Torso / Legs per Weapon</title>
+<title>XangMod Damage — Head / Torso / Legs per Weapon</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 * {{ box-sizing: border-box; }}
@@ -166,8 +166,8 @@ h1 {{ text-align: center; color: #58a6ff; font-size: 24px; margin: 0 0 6px; }}
 </head>
 <body>
 
-<h1>BangMod — Effective Damage by Hit Location</h1>
-<p class="subtitle">Damage = fBaseDamage &times; &Sigma;(DmgType[i] &times; Resist[i]) &times; LocationModifier — parsed from BangModWeaponAttachment_*.uc</p>
+<h1>XangMod — Effective Damage by Hit Location</h1>
+<p class="subtitle">Damage = fBaseDamage &times; &Sigma;(DmgType[i] &times; Resist[i]) &times; LocationModifier — parsed from XangModWeaponAttachment_*.uc</p>
 
 <div class="info">
 <b>Formula:</b> <code>Resistance = DmgType[Swing]&times;Resist[Swing] + DmgType[Pierce]&times;Resist[Pierce] + DmgType[Blunt]&times;Resist[Blunt]</code><br>
@@ -369,11 +369,11 @@ CL.forEach(cl => {{
 def main():
     # Auto-detect base directory: use script's own location
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    base_dir = script_dir  # Script lives in BangMod root
+    base_dir = script_dir  # Script lives in XangMod root
     
     # Fallback to Windows path if needed
     if not os.path.isdir(os.path.join(base_dir, "Classes")):
-        base_dir = r"c:\Program Files (x86)\Steam\steamapps\common\chivalrymedievalwarfare\Development\Src\BangMod"
+        base_dir = r"c:\Program Files (x86)\Steam\steamapps\common\chivalrymedievalwarfare\Development\Src\XangMod"
     
     weapons = parse_weapon_files(base_dir)
     print(f"Parsed {len(weapons)} weapons from {base_dir}")

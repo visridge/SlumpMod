@@ -1,4 +1,4 @@
-class BangModTUT extends AOCTUT;
+class XangModTUT extends AOCTUT;
 
-`include(BangMod/Include/BangModTUT.uci)
-`include(BangMod/Include/BangModGame.uci)
+`include(XangMod/Include/XangModTUT.uci)
+`include(XangMod/Include/XangModGame.uci)

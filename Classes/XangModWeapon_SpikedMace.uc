@@ -5,7 +5,7 @@
 *
 * Weapon: Spiked Mace - Bastard Sword gameplay with scaled Holy Water Sprinkler visuals
 */
-class BangModWeapon_SpikedMace extends BangModWeapon_Zweihander;
+class XangModWeapon_SpikedMace extends XangModWeapon_Zweihander;
 
 DefaultProperties
 {
@@ -98,7 +98,7 @@ DefaultProperties
 	ReleaseAnimations(8)=(AnimationName=3p_longsword_equipup,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.mace_draw',bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.01,bLastAnimation=false)
 	ReleaseAnimations(9)=(AnimationName=3p_longsword_equipdown,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.mace_sheath',bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.01,bLastAnimation=false)
 
-	AttachmentClass=class'BangModWeaponAttachment_SpikedMace'
+	AttachmentClass=class'XangModWeaponAttachment_SpikedMace'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_HolyWaterSprinkler'
 	CurrentWeaponType=EWEP_HolyWaterSprinkler
 	WeaponName="Spiked Mace"

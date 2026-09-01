@@ -1,5 +1,5 @@
-class BangModKOTHPlayerController extends AOCKOTHPlayerController
-    dependson(BangModKOTH);
+class XangModKOTHPlayerController extends AOCKOTHPlayerController
+    dependson(XangModKOTH);
 
-`include(BangMod/Include/BangModKOTH.uci)
-`include(BangMod/Include/BangModPlayerController.uci)
+`include(XangMod/Include/XangModKOTH.uci)
+`include(XangMod/Include/XangModPlayerController.uci)

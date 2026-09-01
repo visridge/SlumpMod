@@ -5,7 +5,7 @@
 *
 * Weapon: Bastard Sword - Standalone longsword baseline with scaled broadsword visuals
 */
-class BangModWeapon_BastardSword extends BangModMeleeWeapon;
+class XangModWeapon_BastardSword extends XangModMeleeWeapon;
 
 simulated state Release
 {
@@ -167,7 +167,7 @@ DefaultProperties
 	BloodSprayTemplates(2)=ParticleSystem'CHV_Particles_01.Player.P_OnWeaponBlood'
 
 
-	AttachmentClass=class'BangModWeaponAttachment_BastardSword'
+	AttachmentClass=class'XangModWeaponAttachment_BastardSword'
 	InventoryAttachmentClass=class'AOCInventoryAttachment_Broadsword'
 	AllowedShieldClass=none
 	CurrentWeaponType=EWEP_Broadsword

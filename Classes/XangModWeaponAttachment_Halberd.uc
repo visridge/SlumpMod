@@ -5,7 +5,7 @@
 *
 * Weapon Attachment: Halberd.
 */
-class BangModWeaponAttachment_Halberd extends AOCWeaponAttachment_Halberd;
+class XangModWeaponAttachment_Halberd extends AOCWeaponAttachment_Halberd;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -28,7 +28,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -42,7 +42,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Halberd
-	WeaponClass=class'BangModWeapon_Halberd'
+	WeaponClass=class'XangModWeapon_Halberd'
 	WeaponSocket=wepPolepoint
 
 	AttackTypeInfo(0)=(fBaseDamage=65.0, fForce=24000, cDamageType="AOC.AOCDmgType_SwingBlunt", iWorldHitLenience=6)

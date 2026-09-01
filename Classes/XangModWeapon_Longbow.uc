@@ -5,7 +5,7 @@
 *
 * Longbow.
 */
-class BangModWeapon_Longbow extends BangModRangeWeapon
+class XangModWeapon_Longbow extends XangModRangeWeapon
 	dependson(AOCPawn);
 
 /** Remember previos state for the recovery state */

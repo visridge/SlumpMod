@@ -5,7 +5,7 @@
 *
 * The weapon that is replicated to all clients: War Hammer.
 */
-class BangModWeaponAttachment_WarHammer extends AOCWeaponAttachment_WarHammer;
+class XangModWeaponAttachment_WarHammer extends AOCWeaponAttachment_WarHammer;
 
 simulated function UpdateLeftHandVisibility(bool bBehindView)
 {
@@ -32,7 +32,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);
+	`include(XangMod/Include/XangModWeaponAttachment.uci);
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -46,7 +46,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_WarHammer
-	WeaponClass=class'BangModWeapon_WarHammer'
+	WeaponClass=class'XangModWeapon_WarHammer'
 	WeaponSocket=wep1hpoint
 
 	WeaponStaticMeshScale=1

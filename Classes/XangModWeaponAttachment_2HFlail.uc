@@ -5,11 +5,11 @@
 *
 * 2-Handed Flail weapon attachment.
 *
-* Extends the BangMod heavy flail attachment so it inherits:
+* Extends the XangMod heavy flail attachment so it inherits:
 *   - bUseWeaponPhysics=true and a weapon AnimTree (Flale.FlaleAnimTree).
 *     The chain and flail head are PhysX-simulated and whip in response to
 *     camera/body movement, just like the vanilla flail.
-*   - The BangModWeaponAttachment netcode include (120 Hz priority).
+*   - The XangModWeaponAttachment netcode include (120 Hz priority).
 *   - Heavy-flail blunt damage values (70 / 75 / 35).
 *
 * Overrides the vanilla flail mesh/physics with the purpose-built 2H flail
@@ -28,7 +28,7 @@
 * GetHandleTracerPercent.  Because the head socket is on the simulated chain,
 * the damage tracer follows the wobbling head automatically.
 */
-class BangModWeaponAttachment_2HFlail extends BangModWeaponAttachment_HFlail;
+class XangModWeaponAttachment_2HFlail extends XangModWeaponAttachment_HFlail;
 
 /** Stab should thrust with the haft only, not the chain/head, so route the
  *  stab tracer from the grip (TraceStart) to the end of the handle
@@ -97,7 +97,7 @@ DefaultProperties
 		Scale=1.0
 	End Object
 
-	WeaponClass=class'BangModWeapon_2HFlail'
+	WeaponClass=class'XangModWeapon_2HFlail'
 	WeaponSocket=wep2haxepoint
 	WeaponStaticMeshScale=1.0
 

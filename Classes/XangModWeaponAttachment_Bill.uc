@@ -5,7 +5,7 @@
 *
 * Weapon Attachment: Billhook.
 */
-class BangModWeaponAttachment_Bill extends AOCWeaponAttachment_Bill;
+class XangModWeaponAttachment_Bill extends AOCWeaponAttachment_Bill;
 
 simulated function float GetHandleTracerPercent(int i)
 {
@@ -28,7 +28,7 @@ simulated function float GetHandleTracerPercent(int i)
 
 DefaultProperties
 {
-	`include(BangMod/Include/BangModWeaponAttachment.uci);	
+	`include(XangMod/Include/XangModWeaponAttachment.uci);	
 
 KickOffset=(X=50, Y=0, Z=-65)
 	KickSize=20.f
@@ -43,7 +43,7 @@ KickOffset=(X=50, Y=0, Z=-65)
 	End Object
 
 	WeaponID=EWEP_Bill
-	WeaponClass=class'BangModWeapon_Bill'
+	WeaponClass=class'XangModWeapon_Bill'
 	WeaponSocket=wepPolepoint
 
 	AttackTypeInfo(0)=(fBaseDamage=75.0, fForce=25200, cDamageType="AOC.AOCDmgType_SwingBlunt", iWorldHitLenience=6)
