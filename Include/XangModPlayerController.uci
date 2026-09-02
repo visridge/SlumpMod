@@ -1705,7 +1705,7 @@ function DrawTextOverHead(string DebugText)
 function bool IsSprintAngle(int fInputAngle) //checks if the player should be allowed to sprint or not
 {
 	//DrawTextOverHead(string(fInputAngle));
-	return ((fInputAngle < 25486) && (fInputAngle > 7282)); //24576, 8192, //27079 and 7892 work but i'm loosening them slightly so that controller players can sprint at 45 degrees more consistently
+	return ((fInputAngle < 27079) && (fInputAngle > 7892));
 }
 
 // Player movement.

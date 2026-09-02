@@ -16,8 +16,6 @@ DefaultProperties
 	NewPrimaryWeapons(7)=(CWeapon=class'XangModWeapon_Nodachi',CorrespondingDuelProp=EDUEL_ZweihanderUse)
 	NewPrimaryWeapons(8)=(CWeapon=class'XangModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 	NewPrimaryWeapons(9)=(CWeapon=class'XangModWeapon_Fork',CorrespondingDuelProp=EDUEL_ForkUse)
-	NewPrimaryWeapons(10)=(CWeapon=class'XangModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)
-	NewPrimaryWeapons(11)=(CWeapon=class'XangModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
 	
 	NewSecondaryWeapons.empty;
 

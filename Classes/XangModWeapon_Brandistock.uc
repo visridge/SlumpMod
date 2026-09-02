@@ -103,6 +103,7 @@ DefaultProperties
 	EffectiveDistance=300.0f
 	bTwoHander=true
 	FlinchTime2H=0.90
+	bCanDodge=false
 
 	ImpactSounds(ESWINGSOUND_Slash)={(
 		light=SoundCue'A_Impacts_Melee.Light_Chop_Small',

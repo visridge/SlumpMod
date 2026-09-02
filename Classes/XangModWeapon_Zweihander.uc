@@ -182,9 +182,9 @@ DefaultProperties
 	FeintTime=0.3
 	TertiaryFeintTime=0.5
 	fParryNegation=24
-	ParryDrain(0)=28
-	ParryDrain(1)=28
-	ParryDrain(2)=28
+	ParryDrain(0)=25
+	ParryDrain(1)=25
+	ParryDrain(2)=25
 	WeaponFontSymbol="?"
 	WeaponReach=100
 	WeaponLargePortrait="UI_WeaponImages_SWF.weapon_select_zweihander"

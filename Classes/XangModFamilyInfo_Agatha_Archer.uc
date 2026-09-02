@@ -17,11 +17,11 @@ DefaultProperties
 	NewPrimaryWeapons(3)=(CWeapon=class'XangModWeapon_ShortSpearMelee',CForceTertiary=(class'XangModWeapon_Buckler_Agatha'))
 	NewPrimaryWeapons(4)=(CWeapon=class'XangModWeapon_JavelinMelee',CForceTertiary=(class'XangModWeapon_Buckler_Agatha'))
 	NewPrimaryWeapons(5)=(CWeapon=class'XangModWeapon_HeavyJavelinMelee',CForceTertiary=(class'XangModWeapon_Buckler_Agatha'))
-	NewPrimaryWeapons(6)=(CWeapon=class'XangModWeapon_SpikedMace',CorrespondingDuelProp=EDUEL_DagesseUse)
-	NewPrimaryWeapons(7)=(CWeapon=class'XangModWeapon_BastardSword',CorrespondingDuelProp=EDUEL_LongswordUse)
-	NewPrimaryWeapons(8)=(CWeapon=class'XangModWeapon_Kanabo',CorrespondingDuelProp=EDUEL_GrandMaceUse)
-	NewPrimaryWeapons(9)=(CWeapon=class'XangModWeapon_Katana',CForceTertiary=(class'XangModWeapon_HuntingKnife'))
-	NewPrimaryWeapons(10)=(CWeapon=class'XangModWeapon_GrandHammer',CForceTertiary=(class'XangModWeapon_HuntingKnife'))
+	NewPrimaryWeapons(6)=(CWeapon=class'XangModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)
+	NewPrimaryWeapons(7)=(CWeapon=class'XangModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
+	NewPrimaryWeapons(8)=(CWeapon=class'XangModWeapon_AgathaFlag',CorrespondingDuelProp=EDUEL_SpearUse)
+	NewPrimaryWeapons(9)=(CWeapon=class'XangModWeapon_SpikedMace',CorrespondingDuelProp=EDUEL_DagesseUse)
+	NewPrimaryWeapons(10)=(CWeapon=class'XangModWeapon_BastardSword',CorrespondingDuelProp=EDUEL_LongswordUse)
 
 
 	// NewPrimaryWeapons(11)=(CWeapon=class'XangModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
@@ -29,15 +29,21 @@ DefaultProperties
 
 
 	NewSecondaryWeapons.empty;
-	NewSecondaryWeapons(0)=(CWeapon=class'XangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
+	NewSecondaryWeapons(0)=(CWeapon=class'XangModWeapon_Broadsword')
+	NewSecondaryWeapons(1)=(CWeapon=class'XangModWeapon_NorseSword')
+	NewSecondaryWeapons(2)=(CWeapon=class'XangModWeapon_Falchion',CorrespondingDuelProp=EDUEL_FalchionUse)
+	NewSecondaryWeapons(3)=(CWeapon=class'AOCWeapon_Cudgel',CorrespondingDuelProp=EDUEL_CudgelUse)
+	NewSecondaryWeapons(4)=(CWeapon=class'XangModWeapon_WarAxe',CorrespondingDuelProp=EDUEL_WarAxeUse)
+	NewSecondaryWeapons(5)=(CWeapon=class'XangModWeapon_Dane',CorrespondingDuelProp=EDUEL_DaneUse)
+	NewSecondaryWeapons(6)=(CWeapon=class'XangModWeapon_Mace',CorrespondingDuelProp=EDUEL_MaceUse)
+	NewSecondaryWeapons(7)=(CWeapon=class'XangModWeapon_MorningStar',CorrespondingDuelProp=EDUEL_MorningStarUse)
+	NewSecondaryWeapons(8)=(CWeapon=class'XangModWeapon_HolyWaterSprinkler',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
 
 	NewTertiaryWeapons.empty;
 	NewTertiaryWeapons(0)=(CWeapon=class'AOCWeapon_ProjBodkin',bEnabledDefault=false)
 	NewTertiaryWeapons(1)=(CWeapon=class'AOCWeapon_ProjBroadhead',bEnabledDefault=false)
 	NewTertiaryWeapons(2)=(CWeapon=class'XangModWeapon_HuntingKnife',CorrespondingDuelProp=EDUEL_HuntingKnifeUse)
 	NewTertiaryWeapons(3)=(CWeapon=class'XangModWeapon_Buckler_Agatha',bEnabledDefault=false)
-	NewTertiaryWeapons(4)=(CWeapon=class'XangModWeapon_ThrowingKnife')
-	NewTertiaryWeapons(5)=(CWeapon=class'XangModWeapon_SmokePot')
 
 
 	ProjectileLocationModifiers(EHIT_Head) = 2.5
@@ -49,7 +55,7 @@ DefaultProperties
 	CrossbowLocationModifiers(EHIT_Arm) = 2.25
 
 
-	DamageResistances(EDMG_Swing) = 0.80
+	DamageResistances(EDMG_Swing) = 0.85
 	DamageResistances(EDMG_Pierce) = 0.85
 	DamageResistances(EDMG_Blunt) = 0.65
 

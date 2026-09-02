@@ -217,7 +217,7 @@ DefaultProperties
 	CurrentShieldType=ESHIELD_None
 	bHaveShield=false
 	WeaponIdentifier="spear"
-
+	bCanDodge=false
 	CurrentGenWeaponType=EWT_Spear
 	bIgnoreAlternate=true
 

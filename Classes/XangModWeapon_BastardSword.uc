@@ -54,7 +54,7 @@ DefaultProperties
 
 
 	bTwoHander=true
-	bCanDodge=false
+	bCanDodge=true
 	FlinchTime2H=1.10
 	EncircleRadius=25.0f
 	EffectiveDistance=200.0f
