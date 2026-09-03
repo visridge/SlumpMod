@@ -94,7 +94,6 @@ function XangModAudit(string Action, string Detail)
 	SendPacket(Packet);
 }
 
-/** Name for a uid we may or may not still have a controller for. */
 /**
  * Bots have no Steam ID, so stamp {A=0, B=PlayerID} like vanilla does at AOCRCon.uc:352 --
  * except that block is inside a notdefined(FINAL_RELEASE) guard, so shipped builds lose it.
@@ -139,6 +138,7 @@ function GameEvent_PlayerConnect(PlayerReplicationInfo PRI)
 	super.GameEvent_PlayerConnect(PRI);
 }
 
+/** Name for a uid we may or may not still have a controller for. */
 function string DescribePlayer(QWord PlayerId)
 {
 	local AOCPlayerController PC;
@@ -165,6 +165,14 @@ function HandleMessage(AOCRConPacket Packet)
 	if (RConState == RCON_Connected && Packet.MessageType == MessageType.UNBAN_PLAYER)
 	{
 		HandleUnbanFixed(Packet);
+		return;
+	}
+
+	// Vanilla opcode 7 is intercepted for the same reason: AOCRCon routes SAY_ALL_BIG to
+	// the same HandleSayAll as SAY_ALL, so "big" was only ever a second chat line.
+	if (RConState == RCON_Connected && Packet.MessageType == MessageType.SAY_ALL_BIG)
+	{
+		HandleSayAllBig(Packet);
 		return;
 	}
 
@@ -553,6 +561,38 @@ function string DescribeController(Controller PC)
 		return PC.PlayerReplicationInfo.PlayerName;
 
 	return "<unknown player>";
+}
+
+/**
+ * 7: the big broadcast. AOCBaseHUD.Announce is an empty stub, so the objective header
+ * banner is the only vanilla path that puts arbitrary text on a player's screen.
+ * Chat still gets the line, because the banner clears itself after a few seconds.
+ */
+function HandleSayAllBig(AOCRConPacket Packet)
+{
+	local AOCPlayerController PC;
+	local AOCGame Game;
+	local string Message;
+	local int Shown;
+
+	Message = Packet.GetString();
+	if (Message == "")
+	{
+		XangModAudit("SAY_ALL_BIG_FAILED", "empty message");
+		return;
+	}
+
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+	{
+		PC.ClientShowLocalizedHeaderText(Message);
+		Shown++;
+	}
+
+	Game = AOCGame(WorldInfo.Game);
+	if (Game != none)
+		Game.BroadcastMessage(none, Message, EFAC_ALL, true);
+
+	XangModAudit("SAY_ALL_BIG", Message @ "->" @ string(Shown) @ "players");
 }
 
 /**

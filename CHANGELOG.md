@@ -1,3 +1,20 @@
+## Voice chat removed (2026-09-02)
+
+EU players reported voice not working at all, so the whole voice arc is out rather than
+left half-working. Removed from `XangModPlayerController.uci`: `ToggleSpeaking` (the
+enabler -- without it AOCPlayerController's empty stub applies again and the keybind does
+nothing), `GBA_ToggleSpeaking`, the `VoiceTrace` / `VoiceStatus` / `VoiceFix` execs, the
+5-second `XangModVoiceSweepTick` timer and local-talker claim, and the four `bXangModVoice*`
+vars. Removed from `XangModGame.uci`: the `PostLogin` override, `XangModSetupVoiceMuteList`
+and `XangModVoiceChannelOf`.
+
+Kept: the netspeed half of `XangModRepairPersistedConfig` (the proximity half went with the
+voice code). `VoiceDebug` became `NetDebug` with its voice lines stripped, because it also
+carried the saturation and auto-netspeed diagnostics, which are staying.
+
+Left alone: `ClientNotifyPlayerTalking` and `bEnableProximityChat`. That proximity filtering
+predates this work and is now inert with the enabler gone; say the word if it should go too.
+
 Changelog
 =========
 

@@ -314,6 +314,29 @@ ChivAdmin's own naming and the server.
 Unknown opcodes are logged and ignored, never fatal -- a newer client cannot drop the
 connection.
 
+### `SAY_ALL_BIG` (opcode 7) was never a big message
+
+`AOCRCon.uc:143` falls both broadcast opcodes through to one handler:
+
+    case MessageType.SAY_ALL:
+    case MessageType.SAY_ALL_BIG:
+        HandleSayAll(Packet);
+
+`HandleSayAll` only calls `BroadcastMessage`, so "say big" was a second chat line and
+nothing else. `AOCBaseHUD.Announce` looks like the intended path but its body is
+commented out (`AOCBaseHUD.uc:961`), so `PC.Announce()` does nothing at all.
+
+The only vanilla route that puts arbitrary text on screen is the objective header
+banner: `AOCPlayerController.ClientShowLocalizedHeaderText` ->
+`AOCBaseHUD.AddHeaderText`, which the stock game uses for CTF and Duel headers.
+`XangModRCon.HandleSayAllBig` intercepts opcode 7 the same way `UNBAN_PLAYER` is
+intercepted, calls that on every `AOCPlayerController`, and still broadcasts the chat
+line, because the banner clears itself after a few seconds and the chat line is the
+record. Audited as `SAY_ALL_BIG`.
+
+Clients need no mod for this -- the header banner is stock; only the server has to be
+running this build.
+
 ## Three vanilla traps, found the hard way
 
 These are worth reading before adding anything that moves players or silences them.

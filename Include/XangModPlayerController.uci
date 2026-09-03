@@ -83,10 +83,6 @@ var int   UnpauseCountdownTime;   // countdown start value (default 3)
 var PostProcessChain XangModDrunkChain;   // ChivPostProcess_drunk, from defaultproperties
 var bool bXangModDrunkChainAdded;         // true only when WE swapped the chain, so only we restore it
 
-var bool bXangModVoiceTrace;              // VoiceTrace: print remote talking notifications
-var globalconfig bool bXangModVoiceAutoRegister;  // sweep remote talkers into Steam's voice layer
-var bool bXangModVoiceSweepArmed;
-var bool bXangModLocalTalkerClaimed;
 
 
 simulated function SetAllParryBoxClassDefaults(bool bEnableXangMod, bool bEnableSkeletal)
@@ -201,14 +197,6 @@ simulated event PostBeginPlay()
 	bXangModFPSpectate = true;
 
 	XangModRepairPersistedConfig();
-
-	// Sweep remote talkers into Steam's voice layer. Client-only; the guard inside the
-	// sweep handles Player not being set yet at this point.
-	if (WorldInfo.NetMode != NM_DedicatedServer && !bXangModVoiceSweepArmed)
-	{
-		bXangModVoiceSweepArmed = true;
-		SetTimer(5.0f, true, 'XangModVoiceSweepTick');
-	}
 }
 
 /*
@@ -2952,74 +2940,9 @@ state Spectating
 }
 
 /* ************************************************************************
- * PROXIMITY VOICE CHAT IMPLEMENTATION
- * XangMod adds working proximity voice chat functionality
+ * CONFIG REPAIR, NETSPEED AND DIAGNOSTICS
  **************************************************************************/
 
-// Push-to-talk command (bound to G key by default)
-/**
- * Re-enable networked voice by restoring UTPlayerController's implementation.
- *
- * The engine's voice stack is intact -- verified in the shipped binary, which carries
- * FVoiceInterfaceSteamworks, UVoiceChannel, RegisterRemoteTalker, StartNetworkedVoice and
- * Steam's own ISteamUser voice API. There is no Speex because Steam owns the codec.
- *
- * Two lines of TB script disabled it: AOCGame.uc:1826 calls ClientStopNetworkedVoice() on
- * every join, and AOCPlayerController.uc:3700 is an empty ToggleSpeaking override where UT
- * does the real work. Keybinds and server settings survived, which is why it looks like an
- * engine-level removal from outside. Speech recognition is deliberately left out.
- *
- * VoiceInterface can legitimately be None -- type VoiceDebug rather than guessing.
- */
-exec function ToggleSpeaking(bool bNowOn)
-{
-	local LocalPlayer LP;
-	local OnlineVoiceInterface VI;
-
-	LP = LocalPlayer(Player);
-	if (LP == none)
-		return;
-
-	// PlayerController.VoiceInterface is only assigned in RegisterOnlineDelegates
-	// (PlayerController.uc:2347). Fall back to the subsystem's copy so a missed
-	// registration does not silently mean "no voice".
-	VI = VoiceInterface;
-	if (VI == none && OnlineSub != none)
-		VI = OnlineSub.VoiceInterface;
-
-	if (VI == none)
-	{
-		ClientDisplayConsoleMessage("Voice: no voice interface available (see VoiceDebug).");
-		return;
-	}
-
-	if (bNowOn)
-		VI.StartNetworkedVoice(LP.ControllerId);
-	else
-		VI.StopNetworkedVoice(LP.ControllerId);
-
-	// The talking indicator lives HERE, not in GBA_ToggleSpeaking.
-	//
-	// GBA_ToggleSpeaking is an input ALIAS, not our exec:
-	//     Bindings=(Name="GBA_ToggleSpeaking",
-	//               Command="ToggleSpeaking true | OnRelease ToggleSpeaking false")
-	// so the key expands straight to ToggleSpeaking(true/false) and the exec of that
-	// name is never reached. That is why pressing to talk showed no UI: the indicator
-	// was in a function the keybind does not call. It also means this is genuine
-	// hold-to-talk, not a toggle.
-	bIsTalking = bNowOn;
-
-	if (AOCBaseHUD(myHUD) != none
-		&& AOCBaseHUD(myHUD).HUD != none
-		&& AOCBaseHUD(myHUD).HUD.MainHUD != none)
-	{
-		AOCBaseHUD(myHUD).HUD.MainHUD.LocalPlayerStartTalking(bNowOn);
-	}
-}
-
-/** Reports every value that decides whether voice can work. Type VoiceDebug. */
-/** Print a line per talking notification -- the only client-side proof voice data moved. */
-/** Ground truth from the voice interface, bypassing the talking delegate. */
 /**
  * Undo zeroed values an older build persisted into UDKSettings.ini -- globalconfig, so the
  * ini beats DefaultProperties and the zeros stick for everyone who ever ran that build.
@@ -3033,13 +2956,6 @@ simulated function XangModRepairPersistedConfig()
 
 	// Literals, NOT default.X: a globalconfig class default is itself loaded from the ini,
 	// so default.X IS the stale zero. Verified live.
-	if (ProximityChatDistance <= 0.0)
-	{
-		if (!bEnableProximityChat)
-			bEnableProximityChat = true;
-		ProximityChatDistance = 2048.0;
-		bDirty = true;
-	}
 
 	if (iXangModMinNetSpeed == 0)
 	{
@@ -3057,138 +2973,10 @@ simulated function XangModRepairPersistedConfig()
 		SaveConfig();
 }
 
-exec function VoiceStatus()
+/** The numbers behind saturation and rubber-banding. Type NetDebug. */
+exec function NetDebug()
 {
-	local OnlineVoiceInterface VI;
-	local LocalPlayer LP;
-	local PlayerReplicationInfo PRI;
-	local int i, Others;
-
-	LP = LocalPlayer(Player);
-	VI = VoiceInterface;
-	if (VI == none && OnlineSub != none)
-		VI = OnlineSub.VoiceInterface;
-
-	ClientDisplayConsoleMessage("---- XangMod voice status ----");
-	if (VI == none || LP == none)
-	{
-		ClientDisplayConsoleMessage("No voice interface or no local player - nothing else can work.");
-		return;
-	}
-
-	// IsLocalPlayerTalking is flags & (index*2) in the binary -- index 0 on PC, so always
-	// False. The real capture signal is your own uid in VoiceTrace.
-	ClientDisplayConsoleMessage("Headset/mic present:" @ VI.IsHeadsetPresent(LP.ControllerId));
-	ClientDisplayConsoleMessage("IsLocalPlayerTalking:" @ VI.IsLocalPlayerTalking(LP.ControllerId)
-		@ "<-- ALWAYS False on PC (engine bug, index 0)");
-
-	// Claim OK: trace silence while speaking = Steam not capturing. Claim failed: the
-	// device was already claimed for user 0, so capture works and the trace is unavailable.
-	ClientDisplayConsoleMessage(bXangModLocalTalkerClaimed
-		? "Local talker claim: OK - self-lines in VoiceTrace are the capture test"
-		: "Local talker claim: FAILED (device already owned for user 0) - capture should work, but self-lines cannot appear; test with a listener");
-
-	if (WorldInfo.GRI == none)
-	{
-		ClientDisplayConsoleMessage("No GRI yet.");
-		return;
-	}
-
-	for (i = 0; i < WorldInfo.GRI.PRIArray.Length; i++)
-	{
-		PRI = WorldInfo.GRI.PRIArray[i];
-		if (PRI == none || PRI == PlayerReplicationInfo)
-			continue;
-
-		Others++;
-		ClientDisplayConsoleMessage("  " $ PRI.PlayerName $ ": talking=" $ VI.IsRemotePlayerTalking(PRI.UniqueId));
-	}
-
-	if (Others == 0)
-		ClientDisplayConsoleMessage("  (nobody else on the server)");
-	ClientDisplayConsoleMessage("------------------------------");
-}
-
-/**
- * Register every other player with Steam's voice layer and clear Steam-side mute -- the
- * second mute layer, which nothing in AOC/UTGame/XangMod ever touches. Talking delegates
- * only fire for registered talkers (verified in the binary: no auto-registration exists).
- * Idempotent, safe to run repeatedly.
- */
-exec function VoiceFix()
-{
-	XangModVoiceSweep();
-	ClientDisplayConsoleMessage("VoiceFix applied - run VoiceStatus, then have someone talk.");
-}
-
-function XangModVoiceSweep()
-{
-	local OnlineVoiceInterface VI;
-	local LocalPlayer LP;
-	local PlayerReplicationInfo PRI;
-	local int i;
-
-	LP = LocalPlayer(Player);
-	if (LP == none)
-		return;
-
-	VI = VoiceInterface;
-	if (VI == none && OnlineSub != none)
-		VI = OnlineSub.VoiceInterface;
-	if (VI == none || WorldInfo.GRI == none)
-		return;
-
-	// THE capture fix. The device owner is constructed -1, StartLocalVoiceProcessing has no
-	// claim-if-free branch, and only RegisterLocalTalker claims -- which nothing calls
-	// outside standalone. Release-then-claim is safe whether or not the frontend already
-	// claimed; success also arms the local talking delegate.
-	if (!bXangModLocalTalkerClaimed)
-	{
-		VI.UnregisterLocalTalker(LP.ControllerId);
-		if (VI.RegisterLocalTalker(LP.ControllerId))
-			bXangModLocalTalkerClaimed = true;
-	}
-
-	VI.UnmuteAll(LP.ControllerId);
-
-	for (i = 0; i < WorldInfo.GRI.PRIArray.Length; i++)
-	{
-		PRI = WorldInfo.GRI.PRIArray[i];
-		if (PRI == none || PRI == PlayerReplicationInfo)
-			continue;
-
-		VI.RegisterRemoteTalker(PRI.UniqueId);
-		VI.UnmuteRemoteTalker(LP.ControllerId, PRI.UniqueId, false);
-	}
-}
-
-/** Re-sweep periodically so players who join later are picked up too. */
-function XangModVoiceSweepTick()
-{
-	if (bXangModVoiceAutoRegister)
-		XangModVoiceSweep();
-}
-
-exec function VoiceTrace(optional bool bOn = true)
-{
-	bXangModVoiceTrace = bOn;
-	ClientDisplayConsoleMessage("VoiceTrace" @ (bOn ? "ON - talk and watch for lines" : "off"));
-}
-
-exec function VoiceDebug()
-{
-	local LocalPlayer LP;
-
-	LP = LocalPlayer(Player);
-
-	ClientDisplayConsoleMessage("---- XangMod voice state ----");
-	ClientDisplayConsoleMessage("OnlineSub:" @ OnlineSub);
-	ClientDisplayConsoleMessage("PC.VoiceInterface:" @ VoiceInterface);
-	if (OnlineSub != none)
-		ClientDisplayConsoleMessage("OnlineSub.VoiceInterface:" @ OnlineSub.VoiceInterface @ " <-- must be non-None");
-	ClientDisplayConsoleMessage("LocalPlayer:" @ LP @ "| ControllerId:" @ (LP != none ? string(LP.ControllerId) : "n/a"));
-	ClientDisplayConsoleMessage("bEnableProximityChat:" @ bEnableProximityChat @ "| bIsTalking:" @ bIsTalking);
-	ClientDisplayConsoleMessage("NetMode:" @ int(WorldInfo.NetMode) @ "| bRequiresPushToTalk:" @ (WorldInfo.Game != none ? string(WorldInfo.Game.bRequiresPushToTalk) : "server-only"));
+	ClientDisplayConsoleMessage("---- XangMod net state ----");
 
 	// The numbers that decide saturation. "Connection saturated!" is the stat net HUD
 	// reporting IsNetReady(0) == false, and that is judged against CurrentNetSpeed --
@@ -3209,21 +2997,13 @@ exec function VoiceDebug()
 }
 
 /**
- * Raise this client's own send budget at runtime. Usage: XangModNetSpeed 100000, then hold
- * push-to-talk and check stat net.
+ * Undo the login bandwidth cap that pins this client at the server's login ceiling.
  *
- * "Connection saturated!" is IsNetReady(0) judged against Player.CurrentNetSpeed, not any
- * ini value. AOCGame.uc:1810 caps it at login via ClientCapBandwidth, so the server's view
- * at that instant becomes a hard ceiling. An exec rather than automatic: it changes only
- * what this client pushes upstream, which should be a measured decision.
- */
-/**
- * Undo the login bandwidth cap that makes push-to-talk unusable.
- *
- * Measured: a live client sat at CurrentNetSpeed 10000 while its ini asked for 100000, and
- * push-to-talk pushed ~9951 B/s -- pinned at the ceiling, so stat net read "Connection
- * saturated!". ReplicateMove hardcodes 0.05s (20 Hz) on dedicated, so every deferred packet
- * is a 50 ms hole in the server's view of your position. That is the rubber-banding.
+ * Measured while voice was still in the mod: a live client sat at CurrentNetSpeed 10000
+ * while its ini asked for 100000, and the client pushed ~9951 B/s -- pinned at the
+ * ceiling, so stat net read "Connection saturated!". ReplicateMove hardcodes 0.05s
+ * (20 Hz) on dedicated, so every deferred packet is a 50 ms hole in the server's view of
+ * your position. That is the rubber-banding.
  *
  * The cap is AOCGame.uc:1810 -> ClientCapBandwidth -> SetNetSpeed at PostLogin, which is why
  * editing MaxInternetClientRate changed nothing.
@@ -3284,6 +3064,15 @@ reliable client function ClientCapBandwidth(int Cap)
 	XangModRestoreNetSpeed();
 }
 
+/**
+ * Raise this client's own send budget at runtime. Usage: XangModNetSpeed 100000, then
+ * check stat net under load.
+ *
+ * "Connection saturated!" is IsNetReady(0) judged against Player.CurrentNetSpeed, not any
+ * ini value. AOCGame.uc:1810 caps it at login via ClientCapBandwidth, so the server's view
+ * at that instant becomes a hard ceiling. An exec rather than automatic: it changes only
+ * what this client pushes upstream, which should be a measured decision.
+ */
 exec function XangModNetSpeed(int NewSpeed)
 {
 	if (Player == none)
@@ -3299,20 +3088,6 @@ exec function XangModNetSpeed(int NewSpeed)
 		@ "(ClientCap was" @ ClientCap $ ")");
 	SetNetSpeed(NewSpeed);
 	ClientDisplayConsoleMessage("Now:" @ Player.CurrentNetSpeed);
-}
-
-exec function GBA_ToggleSpeaking()
-{
-	// Fallback only. On a stock config the input alias above means this never runs;
-	// it is here for anyone whose bindings lack the alias, and it toggles rather than
-	// holds because a bare exec has no release event to hang StopNetworkedVoice on.
-	if (!bEnableProximityChat)
-	{
-		ClientDisplayConsoleMessage("Proximity voice chat is disabled. Enable in config.");
-		return;
-	}
-
-	ToggleSpeaking(!bIsTalking);
 }
 
 // NOTE: Server-side proximity notification disabled due to voice codec being missing from engine
@@ -3395,25 +3170,18 @@ reliable client function ClientReceiveProximityTalker(PlayerReplicationInfo Talk
 	}
 }
 
-// Override ClientNotifyPlayerTalking to handle proximity filtering
 /**
- * Steamworks talking delegate (registered at AOCPlayerController.uc:1067) -- a call here
- * means voice data arrived. Rewritten from a per-notification DynamicActors sweep that
- * likely caused the push-to-talk rubber-banding, and whose Pawn(PRI.Owner) cast could
- * never succeed (Owner is a Controller).
+ * Steamworks talking delegate (registered at AOCPlayerController.uc:1067), kept for the
+ * nearby-talker HUD list. Inert since the voice enabler was removed: nothing in the mod
+ * starts networked voice any more, so this only fires if the engine ever reports a remote
+ * talker on its own. Rewritten from a per-notification DynamicActors sweep whose
+ * Pawn(PRI.Owner) cast could never succeed (Owner is a Controller).
  */
 function ClientNotifyPlayerTalking(UniqueNetId TalkingPlayer, bool bIsTalking)
 {
 	local PlayerReplicationInfo PRI;
 	local Controller OwnerC;
 	local int i;
-
-	// This only fires when the Steamworks voice interface reports a REMOTE talker, so
-	// seeing a line here is proof that voice data is reaching this machine. Traced before
-	// the gates below, which can drop the notification for reasons unrelated to transport.
-	if (bXangModVoiceTrace)
-		ClientDisplayConsoleMessage("VoiceTrace: remote talker" @ TalkingPlayer.Uid.A $ ":" $ TalkingPlayer.Uid.B
-			@ "talking=" $ bIsTalking);
 
 	if (!bEnableProximityChat || WorldInfo.GRI == none || Pawn == none)
 		return;
@@ -3615,13 +3383,15 @@ DefaultProperties
 	XangModDrunkChain=PostProcessChain'CHV_PPC_Pack.PostProcessChain.ChivPostProcess_drunk'
 	bShowDeathMessages = true
 	
-	// Proximity voice chat defaults
+	// Proximity chat defaults (the voice enabler is gone; these still drive the
+	// nearby-talker HUD list in ClientNotifyPlayerTalking)
 	ProximityChatDistance=2048.0  // About 39 meters (typical medieval battle communication range)
-	bXangModVoiceAutoRegister=true
-	iXangModMinNetSpeed=15000
-	iXangModMinNetSpeedFallback=15000
 	bEnableProximityChat=true
 	bIsTalking=false
+
+	// Client send-budget floor
+	iXangModMinNetSpeed=15000
+	iXangModMinNetSpeedFallback=15000
 
 	// Parry box toggle default (disabled = use vanilla AOC values until an admin enables XangMod parry)
 	bXangModParryBox=false
