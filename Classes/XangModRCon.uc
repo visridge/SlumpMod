@@ -75,6 +75,102 @@ var config array<string> XangModBlockedConsoleCommands;
 var bool bXangModPauseForced;
 var bool bXangModPauseableWas;
 
+/** Set on a session actor; none on the listener. Distinguishes the two at runtime. */
+var XangModRCon ParentLink;
+
+/** Live sessions. Listener only. */
+var array<XangModRCon> Sessions;
+
+/** Shared state lives on the listener, so two admins cannot each keep their own copy. */
+function XangModRCon XangModShared()
+{
+	return (ParentLink != none) ? ParentLink : self;
+}
+
+/**
+ * The listener is the one XangModRCon that is not a session. Found by sweep rather than
+ * read off GameInfo.RemoteConsole, which cannot be trusted -- see XangModRConSession.
+ */
+function XangModRCon XangModFindListener()
+{
+	local XangModRCon RCon;
+
+	foreach WorldInfo.AllActors(class'XangModRCon', RCon)
+	{
+		if (XangModRConSession(RCon) == none)
+			return RCon;
+	}
+
+	return none;
+}
+
+/**
+ * AOCRCon leaves AcceptClass unset, so the listening link takes the one connection itself
+ * and every later client is dropped at auth. Setting it makes TcpLink spawn a session per
+ * connection, each with its own RConState -- many clients, still one port.
+ */
+event PostBeginPlay()
+{
+	super.PostBeginPlay();
+	AcceptClass = class'XangModRConSession';
+	LogAlwaysInternal("[XangModRCon] listener up, AcceptClass=" $ string(AcceptClass));
+}
+
+function XangModRegisterSession(XangModRCon Session)
+{
+	Sessions[Sessions.Length] = Session;
+	LogAlwaysInternal("[XangModRCon] session opened (" $ Sessions.Length $ " live)");
+}
+
+function XangModUnregisterSession(XangModRCon Session)
+{
+	local int i;
+
+	i = Sessions.Find(Session);
+	if (i == INDEX_NONE)
+		return;
+
+	Sessions.Remove(i, 1);
+	LogAlwaysInternal("[XangModRCon] session closed (" $ Sessions.Length $ " live)");
+}
+
+/**
+ * On a session this is that client's socket, so opcode handlers reply only to the client
+ * that asked. On the listener it fans out -- that is the path every vanilla GameEvent_*
+ * push already takes, so none of them need overriding.
+ *
+ * AOCRCon.SendPacket DRAINS the packet (Packet.Buffer.Remove after each SendBinary), so
+ * the buffer has to be refilled per recipient or only the first session sees anything.
+ */
+function SendPacket(AOCRConPacket Packet)
+{
+	local int i;
+	local array<byte> Payload;
+
+	if (ParentLink != none)
+	{
+		super.SendPacket(Packet);
+		return;
+	}
+
+	Payload = Packet.Buffer;
+
+	for (i = Sessions.Length - 1; i >= 0; i--)
+	{
+		if (Sessions[i] == none)
+		{
+			Sessions.Remove(i, 1);
+			continue;
+		}
+
+		if (Sessions[i].RConState != RCON_Connected)
+			continue;
+
+		Packet.Buffer = Payload;
+		Sessions[i].SendPacket(Packet);
+	}
+}
+
 
 /**
  * One place for "an admin did something". Logs it and puts it on the wire.
@@ -91,7 +187,9 @@ function XangModAudit(string Action, string Detail)
 	Packet.SetMessageType(RCONX_ADMIN_AUDIT);
 	Packet.AddString(Action);
 	Packet.AddString(Detail);
-	SendPacket(Packet);
+
+	// Route via the listener so every connected admin sees it, not just the issuer.
+	XangModShared().SendPacket(Packet);
 }
 
 /**
@@ -216,6 +314,20 @@ function HandleMessage(AOCRConPacket Packet)
 	}
 
 	super.HandleMessage(Packet);
+}
+
+/**
+ * Vanilla pushes MAP_CHANGED from AOCGame.ProcessServerTravel, before the new level is up,
+ * so GetCurrentMap() resolves against the map being left -- and returns "" outright when
+ * MapCycleIndex is INDEX_NONE and MapList[-1] yields an empty string. Drop the empty one;
+ * XangModGame re-announces once the new map is actually current.
+ */
+function GameEvent_MapChanged(string mapName, int mapIndex)
+{
+	if (mapName == "")
+		return;
+
+	super.GameEvent_MapChanged(mapName, mapIndex);
 }
 
 /* ============================ ChivAdmin parity ============================== */
@@ -1355,17 +1467,17 @@ function HandleSetPause(AOCRConPacket Packet)
 
 		Chosen.bFire = 0;
 
-		if (!bXangModPauseForced)
+		if (!XangModShared().bXangModPauseForced)
 		{
-			bXangModPauseableWas = Game.bPauseable;
-			bXangModPauseForced = true;
+			XangModShared().bXangModPauseableWas = Game.bPauseable;
+			XangModShared().bXangModPauseForced = true;
 		}
 		Game.bPauseable = true;
 
 		if (!Game.SetPause(Chosen))
 		{
-			Game.bPauseable = bXangModPauseableWas;
-			bXangModPauseForced = false;
+			Game.bPauseable = XangModShared().bXangModPauseableWas;
+			XangModShared().bXangModPauseForced = false;
 			XangModAudit("SET_PAUSE_FAILED", "the game refused the pause");
 			return;
 		}
@@ -1378,10 +1490,10 @@ function HandleSetPause(AOCRConPacket Packet)
 		Game.ClearPause();
 		Chosen.PauseRumbleForAllPlayers(false);
 
-		if (bXangModPauseForced)
+		if (XangModShared().bXangModPauseForced)
 		{
-			Game.bPauseable = bXangModPauseableWas;
-			bXangModPauseForced = false;
+			Game.bPauseable = XangModShared().bXangModPauseableWas;
+			XangModShared().bXangModPauseForced = false;
 		}
 	}
 

@@ -490,8 +490,13 @@ function InitRemoteConsole(string Options)
 		return;
 
 	// Reuse the console carried over from before the map change, if there is one.
+	// Sessions are AOCRCon subclasses too, so skip them -- adopting one as RemoteConsole
+	// would point the whole server's event stream at a single client's socket.
 	foreach WorldInfo.AllActors(class'AOCRCon', RCon)
 	{
+		if (XangModRConSession(RCon) != none)
+			continue;
+
 		RemoteConsole = RCon;
 		break;
 	}
@@ -501,6 +506,40 @@ function InitRemoteConsole(string Options)
 		RemoteConsole = Spawn(class'XangModRCon');
 		LogAlwaysInternal("[XangModRCon] remote console started (extended opcodes 23-37 available)");
 	}
+
+	// The travel-time push reported the map being left, so announce the real one now that
+	// it is current. Sessions survive travel, so this reaches everyone already connected.
+	RemoteConsole.GameEvent_MapChanged(GetCurrentMap(), MapCycleIndex);
+}
+
+/**
+ * Carry the RCON sessions across a seamless map change, not just the listener. Without
+ * this the session actors are destroyed with the old world and every connected client
+ * drops on each map change.
+ *
+ * Only does anything if the travel is actually seamless -- a full ServerTravel tears down
+ * the world regardless, and clients must reconnect.
+ */
+function GetSeamlessTravelActorList(bool bToEntry, out array<Actor> ActorList)
+{
+	local XangModRCon Listener;
+	local int i;
+
+	super.GetSeamlessTravelActorList(bToEntry, ActorList);
+
+	Listener = XangModRCon(RemoteConsole);
+	if (Listener == none)
+		return;
+
+	ActorList[ActorList.Length] = Listener;
+
+	for (i = 0; i < Listener.Sessions.Length; i++)
+	{
+		if (Listener.Sessions[i] != none)
+			ActorList[ActorList.Length] = Listener.Sessions[i];
+	}
+
+	LogAlwaysInternal("[XangModRCon] carrying" @ Listener.Sessions.Length @ "session(s) through travel");
 }
 
 DefaultProperties
