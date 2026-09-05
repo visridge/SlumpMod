@@ -504,7 +504,7 @@ function InitRemoteConsole(string Options)
 	if (RemoteConsole == none)
 	{
 		RemoteConsole = Spawn(class'XangModRCon');
-		LogAlwaysInternal("[XangModRCon] remote console started (extended opcodes 23-37 available)");
+		LogAlwaysInternal("[XangModRCon] remote console started (extended opcodes 23-64 available)");
 	}
 
 	// The travel-time push reported the map being left, so announce the real one now that

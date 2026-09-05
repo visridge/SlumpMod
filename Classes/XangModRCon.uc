@@ -54,6 +54,9 @@ const RCONX_PLAYER_POS           = 58;  // out: see SendPlayerPositions
 const RCONX_PLAYER_POS_END       = 59;  // out: int count
 const RCONX_TELEPORT             = 60;  // in : QWord who, QWord toWhom
 const RCONX_SLAP                 = 61;  // in : QWord uid, int power
+const RCONX_MUTE_LIST_REQUEST    = 62;  // in : (no body)
+const RCONX_MUTE_INFO            = 63;  // out: one per muted player, QWord uid, string name, int team
+const RCONX_MUTE_LIST_END        = 64;  // out: int count
 
 const SLOT_PRIMARY   = 0;
 const SLOT_SECONDARY = 1;
@@ -80,6 +83,94 @@ var XangModRCon ParentLink;
 
 /** Live sessions. Listener only. */
 var array<XangModRCon> Sessions;
+
+/**
+ * Persistent text mutes, mirroring AOCAccessControl.BanInfo/Bans. globalconfig so the
+ * session subclass shares the listener's section ([XangMod.XangModRCon] in UDKGame.ini) rather than
+ * keeping its own copy, and so a mute survives a restart the way a ban does.
+ */
+struct MuteInfo
+{
+	var UniqueNetId NetID;
+	var string PlayerName;
+	var string NetIDAsString;
+};
+
+var globalconfig array<MuteInfo> Mutes;
+
+/** Index into the shared mute list, or INDEX_NONE. */
+function int XangModFindMute(UniqueNetId NetID)
+{
+	local int i;
+
+	for (i = 0; i < XangModShared().Mutes.Length; i++)
+	{
+		if (XangModShared().Mutes[i].NetID == NetID)
+			return i;
+	}
+
+	return INDEX_NONE;
+}
+
+/**
+ * Add or drop a persistent mute and write it straight to the ini.
+ *
+ * SaveConfig is deliberate: AOCAccessControl.UnbanByUID drops the entry from the array and
+ * never saves, so the ban is back on the next restart. Not repeating that here.
+ */
+function XangModRememberMute(UniqueNetId NetID, string PlayerName, bool bMute)
+{
+	local XangModRCon Listener;
+	local MuteInfo MI;
+	local int i;
+
+	Listener = XangModShared();
+	i = XangModFindMute(NetID);
+
+	if (bMute)
+	{
+		if (i != INDEX_NONE)
+			return;
+
+		MI.NetID         = NetID;
+		MI.PlayerName    = PlayerName;
+		MI.NetIDAsString = class'OnlineSubsystem'.static.UniqueNetIdToString(NetID);
+		Listener.Mutes[Listener.Mutes.Length] = MI;
+	}
+	else
+	{
+		if (i == INDEX_NONE)
+			return;
+
+		Listener.Mutes.Remove(i, 1);
+	}
+
+	Listener.SaveConfig();
+}
+
+/**
+ * Re-apply a stored mute as the player joins.
+ *
+ * AOCGame.PostLogin pushes GameEvent_PlayerConnect at the listener, so gating on
+ * ParentLink keeps this off the per-session replay SendCurrentGameInfo does for every
+ * already-connected player.
+ */
+function XangModReapplyMute(PlayerReplicationInfo PRI)
+{
+	local AOCPRI APRI;
+
+	APRI = AOCPRI(PRI);
+
+	if (ParentLink != none || APRI == none || APRI.bIsAdminMuted)
+		return;
+
+	if (XangModFindMute(PRI.UniqueId) == INDEX_NONE)
+		return;
+
+	APRI.bIsAdminMuted = true;
+	APRI.bForceNetUpdate = true;
+	XangModAudit("MUTE_REAPPLIED", APRI.PlayerName);
+}
 
 /** Shared state lives on the listener, so two admins cannot each keep their own copy. */
 function XangModRCon XangModShared()
@@ -233,6 +324,7 @@ function Controller GetControllerFromGUID(QWord UniqueId)
 function GameEvent_PlayerConnect(PlayerReplicationInfo PRI)
 {
 	EnsureUniqueId(PRI);
+	XangModReapplyMute(PRI);
 	super.GameEvent_PlayerConnect(PRI);
 }
 
@@ -290,6 +382,7 @@ function HandleMessage(AOCRConPacket Packet)
 			case RCONX_SERVER_INFO_REQUEST:   SendServerInfo();                 return;
 			case RCONX_BAN_LIST_REQUEST:      HandleBanListRequest();           return;
 			case RCONX_MUTE_PLAYER:           HandleMutePlayer(Packet);         return;
+			case RCONX_MUTE_LIST_REQUEST:     HandleMuteListRequest();          return;
 			case RCONX_SET_PAUSE:             HandleSetPause(Packet);           return;
 			case RCONX_END_MATCH:             HandleEndMatch(Packet);           return;
 			case RCONX_SET_AUTOBALANCE:       HandleSetAutoBalance(Packet);     return;
@@ -925,6 +1018,49 @@ function HandleBanListRequest()
 }
 
 /**
+ * 62: list the players currently muted.
+ *
+ * Mute is AOCPRI.bIsAdminMuted, per-connection state -- there is no persistent mute list
+ * the way AOCAccessControl keeps one for bans. So this reports connected players only,
+ * and a mute is forgotten when the player disconnects or the server restarts.
+ */
+function HandleMuteListRequest()
+{
+	local AOCPlayerController PC;
+	local AOCPRI APRI, Online;
+	local AOCRConPacket Packet;
+	local int i, Count;
+
+	for (i = 0; i < XangModShared().Mutes.Length; i++)
+	{
+		Online = none;
+		foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+		{
+			APRI = AOCPRI(PC.PlayerReplicationInfo);
+			if (APRI != none && APRI.UniqueId == XangModShared().Mutes[i].NetID)
+			{
+				Online = APRI;
+				break;
+			}
+		}
+
+		Packet = new class'AOCRConPacket';
+		Packet.SetMessageType(RCONX_MUTE_INFO);
+		Packet.AddQWord(XangModShared().Mutes[i].NetID.Uid);
+		Packet.AddString((Online != none) ? Online.PlayerName : XangModShared().Mutes[i].PlayerName);
+		Packet.AddInt((Online != none && Online.Team != none) ? Online.Team.TeamIndex : -1);
+		Packet.AddInt((Online != none) ? 1 : 0);
+		SendPacket(Packet);
+		Count++;
+	}
+
+	Packet = new class'AOCRConPacket';
+	Packet.SetMessageType(RCONX_MUTE_LIST_END);
+	Packet.AddInt(Count);
+	SendPacket(Packet);
+}
+
+/**
  * 42: admin text mute.
  *
  * Sets AOCPRI.bIsAdminMuted directly rather than calling ServerAdminMutePlayer, which
@@ -937,13 +1073,32 @@ function HandleMutePlayer(AOCRConPacket Packet)
 	local bool bMute;
 	local AOCPlayerController PC;
 	local AOCPRI APRI;
+	local string StoredName;
+	local int i;
 
 	PlayerId = Packet.GetGUID();
 	bMute    = (Packet.GetInt() != 0);
 
 	PC = GetPlayerControllerFromGUID(PlayerId);
 	if (PC == none)
+	{
+		// Offline: no flag to set, but the stored entry still has to be clearable or a
+		// mute outlives every chance to lift it.
+		for (i = 0; i < XangModShared().Mutes.Length; i++)
+		{
+			if (XangModShared().Mutes[i].NetID.Uid != PlayerId)
+				continue;
+
+			StoredName = XangModShared().Mutes[i].PlayerName;
+			if (!bMute)
+			{
+				XangModRememberMute(XangModShared().Mutes[i].NetID, StoredName, false);
+				XangModAudit("UNMUTE_PLAYER", StoredName @ "(offline)");
+			}
+			return;
+		}
 		return;
+	}
 
 	APRI = AOCPRI(PC.PlayerReplicationInfo);
 	if (APRI == none)
@@ -956,6 +1111,7 @@ function HandleMutePlayer(AOCRConPacket Packet)
 	// XangModGame.BroadcastMessage drops the message server-side instead.
 	APRI.bIsAdminMuted = bMute;
 	APRI.bForceNetUpdate = true;
+	XangModRememberMute(APRI.UniqueId, APRI.PlayerName, bMute);
 	XangModAudit(bMute ? "MUTE_PLAYER" : "UNMUTE_PLAYER", APRI.PlayerName);
 }
 
@@ -1590,7 +1746,7 @@ function HandleRestartMatch()
 
 DefaultProperties
 {
-	XangModBlockedConsoleCommands(0)="quit"
-	XangModBlockedConsoleCommands(1)="exit"
-	XangModBlockedConsoleCommands(2)="debug"
+	// XangModBlockedConsoleCommands is deliberately NOT seeded here: it is a config array, and
+	// the compiler refuses the import ("property is config"), which left the block list
+	// empty at runtime. The defaults live in DefaultXangMod.ini instead.
 }

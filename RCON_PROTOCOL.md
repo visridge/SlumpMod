@@ -101,6 +101,35 @@ typing `!adminreadyall` in chat. `ready=0` has no vanilla equivalent and clears
 `bAdminForcedTournamentReady` as well, which is what makes a re-match work -- otherwise the
 gate stays latched open from the previous round.
 
+### 62-64 -- muted player list
+
+  * **62 MUTE_LIST_REQUEST** `(no body)`
+  * **63 MUTE_INFO** `QWord uid, string name, int team, int online` -- one per stored mute
+  * **64 MUTE_LIST_END** `int count`
+
+Same request/burst/end shape as 29-31 and 39-41, and it closes the same gap 39-41 closed
+for bans: opcode 42 could mute and unmute but nothing could *see* who was muted, so an
+admin joining mid-match had no way to find out.
+
+The list is the **stored** one, not a scan of connected players, so mutes on people who
+have left are visible too. `online` is 1 when that uid is currently connected, in which
+case `name` and `team` are live; for an offline entry `name` is whatever they were called
+when muted and `team` is -1.
+
+**Mutes persist.** `Mutes` is a `globalconfig array<MuteInfo>` on `XangModRCon`, holding
+`UniqueNetId` + name exactly as `AOCAccessControl.Bans` does, saved to
+`[XangMod.XangModRCon]` in `UDKGame.ini` on every change. Opcode 42 writes the entry and
+`GameEvent_PlayerConnect` re-applies `bIsAdminMuted` as the player rejoins, so a mute is
+no longer cleared by reconnecting or by a server restart.
+
+Two consequences worth knowing. `SaveConfig()` runs on every mute change -- deliberate,
+because `AOCAccessControl.UnbanByUID` drops the entry from its array and never saves,
+which is why an unbanned player comes back banned after a restart. And 42 accepts a uid
+that is not connected: with no PlayerController there is no flag to clear, but the stored
+entry is still removed, otherwise a mute applied to someone who then left could never be
+lifted. Bots are included if muted; their uid follows the usual `{A=0, B=PlayerID}`
+stamping, and being per-match they will never match a stored entry.
+
 ### 60-61 -- teleport and slap
 
   * **60 TELEPORT** `QWord mover, QWord destination`
