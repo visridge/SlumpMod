@@ -163,7 +163,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_HolyWaterSprinkler]
 	 */
-	iFeintStaminaCost=18
+	iFeintStaminaCost=15
 	FeintTime=0.35
 	TertiaryFeintTime=0.45
 	fParryNegation=20

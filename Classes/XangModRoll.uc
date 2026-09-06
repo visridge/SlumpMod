@@ -5,9 +5,11 @@
  * selection, velocity kick and visual mesh offset. Extends XangModDodge so the
  * weapon-identifier remap plumbing is shared with the vanilla dodge.
  *
- * The roll only activates when the pawn's family is a XangModFamilyInfo_Archer with
- * bUseCustomDodgeAnims=true; otherwise this class passes straight through to the
- * standard dodge.
+ * The roll activates when the pawn's family is a XangModFamilyInfo_Archer with
+ * bUseCustomDodgeAnims=true, OR when the pawn's equipped primary is one of the
+ * ninja (Assassin-skin) weapons (see XangModPawn.XangModIsNinjaPrimary), in which
+ * case the shared Archer roll config is used. Otherwise this class passes straight
+ * through to the standard dodge.
  */
 class XangModRoll extends XangModDodge;
 
@@ -17,10 +19,26 @@ var bool bCachedRollFI;
 /** Lazy-cache the Archer family info (holds the roll config + tuning knobs). */
 simulated function CacheRollFI()
 {
-	if (!bCachedRollFI && OwnerPawn != none && OwnerPawn.PawnFamily != none)
+	if (!bCachedRollFI && OwnerPawn != none)
 	{
-		CachedRollFI = XangModFamilyInfo_Archer(OwnerPawn.PawnFamily);
-		bCachedRollFI = true;
+		if (OwnerPawn.PawnFamily != none)
+			CachedRollFI = XangModFamilyInfo_Archer(OwnerPawn.PawnFamily);
+
+		// Family-based results (Archer/Assassin) are stable for the pawn's lifetime,
+		// so cache them. Weapon-keyed results can change if the player swaps weapons,
+		// so those are re-evaluated on every call below.
+		if (CachedRollFI != none)
+			bCachedRollFI = true;
+	}
+
+	// Weapon-keyed fallback: a non-Archer pawn (MAA) that picked a ninja primary
+	// still rolls, using the shared Archer roll config (the same values the
+	// Assassin family inherits). Keeps the roll in sync with the ninja mesh swap.
+	if (CachedRollFI == none
+		&& XangModPawn(OwnerPawn) != none
+		&& XangModPawn(OwnerPawn).XangModIsNinjaPrimary())
+	{
+		CachedRollFI = class'XangModFamilyInfo_Archer'.default;
 	}
 }
 

@@ -15,9 +15,8 @@ DefaultProperties
 	NewPrimaryWeapons(6)=(CWeapon=class'XangModWeapon_Longsword',CForceTertiary=(class'XangModWeapon_HuntingKnife', class'XangModWeapon_Kite_Agatha', class'XangModWeapon_TowerShield_Agatha'))
 	NewPrimaryWeapons(7)=(CWeapon=class'XangModWeapon_SwordOfWar',CForceTertiary=(class'XangModWeapon_HuntingKnife', class'XangModWeapon_Kite_Agatha', class'XangModWeapon_TowerShield_Agatha'))
 	NewPrimaryWeapons(8)=(CWeapon=class'XangModWeapon_Messer',CForceTertiary=(class'XangModWeapon_HuntingKnife', class'XangModWeapon_Kite_Agatha', class'XangModWeapon_TowerShield_Agatha'))
-	NewPrimaryWeapons(9)=(CWeapon=class'XangModWeapon_Katana',CForceTertiary=(class'XangModWeapon_HuntingKnife', class'XangModWeapon_Kite_Agatha', class'XangModWeapon_TowerShield_Agatha'))
-	NewPrimaryWeapons(10)=(CWeapon=class'XangModWeapon_HFlail',CForceTertiary=(class'XangModWeapon_Kite_Agatha', class'XangModWeapon_TowerShield_Agatha'))
-	NewPrimaryWeapons(11)=(CWeapon=class'XangModWeapon_2HFlail',CForceTertiary=(class'XangModWeapon_HuntingKnife', class'XangModWeapon_Kite_Agatha', class'XangModWeapon_TowerShield_Agatha'))
+	NewPrimaryWeapons(9)=(CWeapon=class'XangModWeapon_HFlail',CForceTertiary=(class'XangModWeapon_Kite_Agatha', class'XangModWeapon_TowerShield_Agatha'))
+	NewPrimaryWeapons(10)=(CWeapon=class'XangModWeapon_2HFlail',CForceTertiary=(class'XangModWeapon_HuntingKnife', class'XangModWeapon_Kite_Agatha', class'XangModWeapon_TowerShield_Agatha'))
 	
 
 

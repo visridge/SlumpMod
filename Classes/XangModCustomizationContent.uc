@@ -28,6 +28,21 @@ static function int GetDefaultCharacterIDFor(int Team, int PawnClass)
     };
 }
 
+// XangMod: Weapon-keyed mesh overrides that keep the pawn's real class (and thus
+// its anim sets/helmet list) but swap in an alternative CharacterInfo that is NOT
+// selectable in the UI. The Assassin override goes through GetDefaultCharacterIDFor
+// (ECLASS_SiegeEngineer); this covers the Footmen-package mesh for the Archer.
+static function int GetDefaultCharacterIDForOverride(int Team, int PawnClass)
+{
+    if (PawnClass == ECLASS_Archer)
+        return Team == EFAC_Agatha
+            ? default.Characters.Find(class'XangModCharacterInfo_Agatha_Footman_Archer')
+            : default.Characters.Find(class'XangModCharacterInfo_Mason_Footman_Archer');
+
+    // Fall back to the normal resolver for anything else.
+    return GetDefaultCharacterIDFor(Team, PawnClass);
+}
+
 
 defaultproperties
 {
@@ -70,6 +85,8 @@ defaultproperties
 	Characters.Add(class'XangModCharacterInfo_Agatha_Turtle')
 	Characters.Add(class'XangModCharacterInfo_Agatha_Assassin')
 	Characters.Add(class'XangModCharacterInfo_Mason_Assassin')
+	Characters.Add(class'XangModCharacterInfo_Agatha_Footman_Archer')
+	Characters.Add(class'XangModCharacterInfo_Mason_Footman_Archer')
 
     Teams.Empty()
     Teams.Add(class'XangModCustomizationTeam_Agatha') //0

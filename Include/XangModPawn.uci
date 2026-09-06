@@ -2633,7 +2633,9 @@ simulated function SetCharacterAppearance(AssetStore_AOCPawn_Character AssetStor
 		&& AssetStore.OwnerMesh != none
 		&& AssetStore.BodyMaterial != none
 		&& (AssetStore.CharacterInfo == class'XangModCharacterInfo_Agatha_Assassin'
-			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Assassin'))
+			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Assassin'
+			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Agatha_Footman_Archer'
+			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Footman_Archer'))
 	{
 		for (i = 0; i < AssetStore.OwnerMesh.Materials.Length; ++i)
 		{
@@ -2682,10 +2684,10 @@ simulated function ResetBlends(optional float BlendOutTime = 0.3f, optional bool
 /* ************************************************************************
  * WEAPON-KEYED NINJA (ASSASSIN) SKIN
  *
- * Picking one of the archer's "ninja" primary weapons (SpikedMace, BastardSword,
- * Kanabo, Katana, GrandHammer -- indexes 6..10 in
- * XangModFamilyInfo_*_Archer) makes the pawn spawn with the Assassin (ninja)
- * mesh instead of the archer mesh, with no new UI slot and no Flash asset.
+ * Picking one of the "ninja" primary weapons (SpikedMace, BastardSword, Kanabo,
+ * Katana, GrandHammer -- currently on the Man-At-Arms) makes the pawn spawn with
+ * the Assassin (ninja) mesh instead of its own class mesh, with no new UI slot
+ * and no Flash asset. XangModRoll keys the roll dodge off the same weapons.
  *
  * The Assassin presentation already exists and is fully registered:
  *   - XangModCharacterInfo_Agatha_Assassin / _Mason_Assassin (SlumpCharacters.NinjaMesh*)
@@ -2698,17 +2700,26 @@ simulated function ResetBlends(optional float BlendOutTime = 0.3f, optional bool
  * remap runs on the server and on every client.
  **************************************************************************/
 
-/** True when the equipped primary is one of the archer's ninja weapons (indexes 6..10). */
+/** True when the equipped primary is one of the ninja (Assassin-skin) weapons. */
 simulated function bool XangModIsNinjaPrimary()
 {
-	return PawnInfo.myPrimary == class'XangModWeapon_SpikedMace'
+	return PawnInfo.myPrimary == class'XangModWeapon_Rapier'
 		|| PawnInfo.myPrimary == class'XangModWeapon_BastardSword'
 		|| PawnInfo.myPrimary == class'XangModWeapon_Kanabo'
 		|| PawnInfo.myPrimary == class'XangModWeapon_Katana'
 		|| PawnInfo.myPrimary == class'XangModWeapon_GrandHammer';
 }
 
-/** Rewrite the character ID to the Assassin before the character mesh is loaded. */
+/** True when the equipped primary is one of the footman-mesh (Footmen package) weapons. */
+simulated function bool XangModIsFootmanPrimary()
+{
+	return PawnInfo.myPrimary == class'XangModWeapon_Spear'
+		|| PawnInfo.myPrimary == class'XangModWeapon_Brandistock'
+		|| PawnInfo.myPrimary == class'XangModWeapon_GrandLance'
+		|| PawnInfo.myPrimary == class'XangModWeapon_MasonFlag';
+}
+
+/** Rewrite the character ID to the Assassin or Footman before the character mesh is loaded. */
 simulated function LoadCharacterAssets()
 {
 	local EAOCFaction TeamID;
@@ -2719,8 +2730,21 @@ simulated function LoadCharacterAssets()
 		PawnInfo.myCustomization.Character =
 			CustomizationClass.static.GetDefaultCharacterID(TeamID, ECLASS_SiegeEngineer);
 
-		// The archer's saved helmet index resolves against the Assassin's helmet
-		// list, which points at a different (wrong) helmet. NoHat keeps it clean.
+		// The Assassin inherits the Man-At-Arms helmet list, so a MAA's saved helmet
+		// index resolves to the correct helmet. Any other class's saved helmet index
+		// would point at the wrong helmet, so strip it to NoHat.
+		if (PawnFamily.ClassReference != ECLASS_ManAtArms)
+			PawnInfo.myCustomization.Helmet = 0;
+	}
+	else if (PawnFamily != none && XangModIsFootmanPrimary())
+	{
+		TeamID = GetCustomizationFactionFromActualFaction(PawnFamily.FamilyFaction);
+		PawnInfo.myCustomization.Character =
+			class'XangModCustomizationContent'.static.GetDefaultCharacterIDForOverride(TeamID, ECLASS_Archer);
+
+		// The Footmen head mesh is modelled bare; a saved Archer helmet would sit on
+		// top of it (and resolve against the Archer helmet list, picking an unrelated
+		// hat). Strip it to NoHat like the Assassin path does for non-MAA classes.
 		PawnInfo.myCustomization.Helmet = 0;
 	}
 

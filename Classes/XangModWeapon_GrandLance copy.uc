@@ -7,6 +7,60 @@
 */
 class XangModWeapon_GrandLance extends XangModMeleeWeapon;
 
+/** Normalized point (0-1) in the release where playback speed changes */
+/**var float fReleaseDilatePoint;
+/** Rate multiplier applied after fReleaseDilatePoint (0.5 = 2x slower, 2.0 = 2x faster) */
+var float fReleaseDilateScale;
+*/
+
+/** Per-firemode turncap overrides (LMB=0, OH=1, Stab=2).  If zero, falls back to AttackHorizRotateSpeed. */
+var float SlashHorizRotateSpeed;
+var float OverheadHorizRotateSpeed;
+var float StabHorizRotateSpeed;
+var float SlashVertRotateSpeed;
+var float OverheadVertRotateSpeed;
+var float StabVertRotateSpeed;
+
+/** Returns the per-firemode horizontal turncap if one is set, otherwise the shared cap. */
+simulated function float GetHorizontalRotateSpeed()
+{
+	if (AOCOwner == none)
+		CacheWeaponReferences();
+
+	if (!AOCOwner.StateVariables.bIsAttacking)
+		return HorizontalRotateSpeed;
+
+	if (CurrentFireMode == Attack_Sprint)
+		return SprintAttackHorizRotateSpeed;
+
+	switch (CurrentFireMode)
+	{
+		case Attack_Slash:    return SlashHorizRotateSpeed    > 0 ? SlashHorizRotateSpeed    : AttackHorizRotateSpeed;
+		case Attack_Overhead: return OverheadHorizRotateSpeed > 0 ? OverheadHorizRotateSpeed : AttackHorizRotateSpeed;
+		case Attack_Stab:     return StabHorizRotateSpeed     > 0 ? StabHorizRotateSpeed     : AttackHorizRotateSpeed;
+		default:              return AttackHorizRotateSpeed;
+	}
+}
+
+/** Returns the per-firemode vertical turncap if one is set, otherwise the shared cap. */
+simulated function float GetVerticalRotateSpeed()
+{
+	if (AOCOwner == none)
+		CacheWeaponReferences();
+
+	if (AOCOwner.StateVariables.bIsAttacking && CurrentFireMode == Attack_Sprint)
+		return SprintAttackVerticalRotateSpeed * Exp( -1 * NumHorizontalReversals * 0.693147 );
+
+	// vertical reversal degredation: use the per-firemode base if set
+	switch (CurrentFireMode)
+	{
+		case Attack_Slash:    return (SlashVertRotateSpeed    > 0 ? SlashVertRotateSpeed    : VerticalRotateSpeed) * Exp( -1 * NumVerticalReversals * 0.693147 );
+		case Attack_Overhead: return (OverheadVertRotateSpeed > 0 ? OverheadVertRotateSpeed : VerticalRotateSpeed) * Exp( -1 * NumVerticalReversals * 0.693147 );
+		case Attack_Stab:     return (StabVertRotateSpeed     > 0 ? StabVertRotateSpeed     : VerticalRotateSpeed) * Exp( -1 * NumVerticalReversals * 0.693147 );
+		default:              return VerticalRotateSpeed * Exp( -1 * NumVerticalReversals * 0.693147 );
+	}
+}
+
 simulated state ParryRelease
 {
 	simulated function BeginFire(byte FireModeNum)
@@ -115,7 +169,59 @@ simulated state Release
 			}
 		}
 	}
+
+		/**else
+			super.PlayStateAnimation(); // default handle for playing animation is fine if we are not doing a combo
+
+		// Schedule mid-animation rate dilation if configured for this weapon — stab only
+		if (CurrentFireMode == Attack_Stab
+			&& fReleaseDilatePoint > 0.0 && fReleaseDilatePoint < 1.0
+			&& fReleaseDilateScale > 0.0 && fReleaseDilateScale != 1.0)
+		{
+			SetTimer(TimeLeftInRelease * fReleaseDilatePoint, false, 'ApplyReleaseDilation');
+		}
+	}
+*/
+	/** Change playback speed of the currently-playing release animation at the configured
+	 *  dilation point. Reschedules the pawn's OnAttackAnimEnd timer to stay in sync. */
+	/**simulated function ApplyReleaseDilation()
+	{
+		local AOCPawn P;
+		local float Remaining, NewRemaining;
+
+		P = AOCOwner;
+		if (P == none || P.RMMAnimNode == none) return;
+
+		// Time remaining at the current uniform rate
+		Remaining = TimeLeftInRelease * (1.0 - fReleaseDilatePoint);
+		// Time remaining after applying the rate multiplier
+		NewRemaining = Remaining / fReleaseDilateScale;
+
+		// Scale the active animation-nodes' playback rates
+		P.RMMAnimNode.GetCustomAnimNodeSeq().Rate *= fReleaseDilateScale;
+		if (P.FullBodyAnimSlot != none)
+			P.FullBodyAnimSlot.GetCustomAnimNodeSeq().Rate *= fReleaseDilateScale;
+
+		// Reschedule the state-end timer on the pawn
+		P.ClearTimer('OnAttackAnimEnd');
+		P.SetTimer(NewRemaining, false, 'OnAttackAnimEnd');
+	}
+
+	simulated event EndState(Name NextStateName)
+	{
+		// Release the sprint-forward lock and restore jump/crouch on the pawn.
+		if (AOCOwner != none)
+		{
+			XangModPawn(AOCOwner).bForceSprintForward = false;
+			AOCOwner.StateVariables.bCanJump = true;
+			AOCOwner.StateVariables.bCanCrouch = true;
+		}
+
+		ClearTimer('ApplyReleaseDilation');
+		super.EndState(NextStateName);
+	}
 }
+*/
 
 DefaultProperties
 {
@@ -130,6 +236,9 @@ DefaultProperties
 	bUseNewDodgeSystem=true
 	bUseDirParryHitAnims=true
 	
+	/**fReleaseDilatePoint=0.5
+	fReleaseDilateScale=0.05
+	*/
 
 	ImpactSounds(ESWINGSOUND_Slash)={(
 		light=SoundCue'A_Impacts_Melee.Light_Blunt_small',
@@ -252,10 +361,11 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Halberd]
 	 */
-
+	StabHorizRotateSpeed=40000.0
+	StabVertRotateSpeed=40000.0
 	Bcancombo=false
 	iFeintStaminaCost=15
-	FeintTime=0.325
+	FeintTime=0.3
 	TertiaryFeintTime=0.5
 	fParryNegation=24
 	ParryDrain(0)=28
@@ -274,9 +384,9 @@ DefaultProperties
 	DirParryHitAnimations(1)=(AnimationName=3p_halberd_parryhitR,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.3,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=true,bUseAltNode=true)
 	DirParryHitAnimations(2)=(AnimationName=3p_halberd_parryhitH,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.3,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=true,bUseAltNode=true)
 	DirParryHitAnimations(3)=(AnimationName=3p_halberd_parryhitS,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.3,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=true,bUseAltNode=true)
-	WindupAnimations(0)=(AnimationName=3p_halberd_slash01downtoup,ComboAnimation=3p_halberd_slash011downtoup,AlternateAnimation=3p_halberd_slash011altdowntoup,AssociatedSoundCue=,bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.65,fBlendInTime=0.10,fBlendOutTime=0.00,bLastAnimation=false)
-	WindupAnimations(1)=(AnimationName=3p_halberd_slash02downtoup,ComboAnimation=3p_halberd_slash021downtoup,AlternateAnimation=3p_halberd_slash021altdowntoup,AssociatedSoundCue=,bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.65,fBlendInTime=0.10,fBlendOutTime=0.00,bLastAnimation=false)
-	WindupAnimations(2)=(AnimationName=3p_halberd_stabdowntoup,ComboAnimation=,AssociatedSoundCue=,bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.875,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
+	WindupAnimations(0)=(AnimationName=3p_halberd_slash01downtoup,ComboAnimation=3p_halberd_slash011downtoup,AlternateAnimation=3p_halberd_slash011altdowntoup,AssociatedSoundCue=,bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.7,fBlendInTime=0.10,fBlendOutTime=0.00,bLastAnimation=false)
+	WindupAnimations(1)=(AnimationName=3p_halberd_slash02downtoup,ComboAnimation=3p_halberd_slash021downtoup,AlternateAnimation=3p_halberd_slash021altdowntoup,AssociatedSoundCue=,bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.725,fBlendInTime=0.10,fBlendOutTime=0.00,bLastAnimation=false)
+	WindupAnimations(2)=(AnimationName=3p_halberd_stabdowntoup,ComboAnimation=,AssociatedSoundCue=,bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.85,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	WindupAnimations(3)=(AnimationName=3p_halberd_sattackdowntoup_new,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Footsteps.Paladin_Dirt_Jump',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.65,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false,bUseAltBoneBranch=true,bUseRMM=true)
 	WindupAnimations(4)=(AnimationName=3p_halberd_parryib,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_Parry',bFullBody=False,bCombo=False,bLoop=False,bForce=false,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	WindupAnimations(5)=(AnimationName=3p_halberd_shovestart,ComboAnimation=,AssociatedSoundCue=,bFullBody=True,bCombo=False,bLoop=False,UniqueShieldSound=none,fModifiedMovement=0.0,fAnimationLength=0.35,fBlendInTime=0.05,fBlendOutTime=0.05,bLastAnimation=false,bUseAltNode=true,bUseAltBoneBranch=true)
@@ -284,9 +394,9 @@ DefaultProperties
 	WindupAnimations(7)=(AnimationName=,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	WindupAnimations(8)=(AnimationName=,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	WindupAnimations(9)=(AnimationName=,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
-	ReleaseAnimations(0)=(AnimationName=3p_halberd_slash01release,ComboAnimation=3p_halberd_slash011release,AlternateAnimation=3p_halberd_slash011release,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_attack_01',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.45,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
-	ReleaseAnimations(1)=(AnimationName=3p_halberd_slash02release,ComboAnimation=3p_halberd_slash021release,AlternateAnimation=3p_halberd_slash021release,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_Attack_02',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.45,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
-	ReleaseAnimations(2)=(AnimationName=3p_halberd_stabrelease,ComboAnimation=3p_halberd_stabrelease,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_Attack_03',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.40,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
+	ReleaseAnimations(0)=(AnimationName=3p_halberd_slash01release,ComboAnimation=3p_halberd_slash011release,AlternateAnimation=3p_halberd_slash011release,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_attack_01',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
+	ReleaseAnimations(1)=(AnimationName=3p_halberd_slash02release,ComboAnimation=3p_halberd_slash021release,AlternateAnimation=3p_halberd_slash021release,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_Attack_02',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
+	ReleaseAnimations(2)=(AnimationName=3p_halberd_stabrelease,ComboAnimation=3p_halberd_stabrelease,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_Attack_03',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=1.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	ReleaseAnimations(3)=(AnimationName=3p_halberd_sattackrelease_new,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_sprint_attack',bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false,bUseAltBoneBranch=true)
 	ReleaseAnimations(4)=(AnimationName=3p_halberd_parryup,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.halberd_Parry',bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	ReleaseAnimations(5)=(AnimationName=3p_halberd_shoverelease_new,ComboAnimation=,AssociatedSoundCue=,bFullBody=True,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=0.0,fAnimationLength=0.3,fBlendInTime=0.05,fBlendOutTime=0.05,bLastAnimation=false,bUseAltNode=true,bUseAltBoneBranch=true,bUseRMM=true)
@@ -294,9 +404,9 @@ DefaultProperties
 	ReleaseAnimations(7)=(AnimationName=,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.0,fBlendInTime=0.00,fBlendOutTime=0.00,bLastAnimation=false)
 	ReleaseAnimations(8)=(AnimationName=3p_halberd_equipup,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.doubleaxe_draw',bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.6,fBlendInTime=0.00,fBlendOutTime=0.01,bLastAnimation=false)
 	ReleaseAnimations(9)=(AnimationName=3p_halberd_equipdown,ComboAnimation=,AssociatedSoundCue=SoundCue'A_Combat_Locomotion.doubleaxe_sheath',bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.01,bLastAnimation=false)
-	RecoveryAnimations(0)=(AnimationName=3p_halberd_slash01recover,ComboAnimation=3p_halberd_slash011recover,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.65,fBlendInTime=0.10,fBlendOutTime=0.1,bLastAnimation=true)
-	RecoveryAnimations(1)=(AnimationName=3p_halberd_slash02recover,ComboAnimation=3p_halberd_slash021recover,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.65,fBlendInTime=0.1,fBlendOutTime=0.1,bLastAnimation=true)
-	RecoveryAnimations(2)=(AnimationName=3p_halberd_stabrecover,ComboAnimation=3p_halberd_stabrecover,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.65,fBlendInTime=0.10,fBlendOutTime=0.1,bLastAnimation=true)
+	RecoveryAnimations(0)=(AnimationName=3p_halberd_slash01recover,ComboAnimation=3p_halberd_slash011recover,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.8,fBlendInTime=0.10,fBlendOutTime=0.1,bLastAnimation=true)
+	RecoveryAnimations(1)=(AnimationName=3p_halberd_slash02recover,ComboAnimation=3p_halberd_slash021recover,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.8,fBlendInTime=0.1,fBlendOutTime=0.1,bLastAnimation=true)
+	RecoveryAnimations(2)=(AnimationName=3p_halberd_stabrecover,ComboAnimation=3p_halberd_stabrecover,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.7,fBlendInTime=0.10,fBlendOutTime=0.1,bLastAnimation=true)
 	RecoveryAnimations(3)=(AnimationName=3p_halberd_sattackrecover,ComboAnimation=,AssociatedSoundCue=,bFullBody=true,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1,fAnimationLength=0.4,fBlendInTime=010,fBlendOutTime=0.1,bLastAnimation=true,bUseAltBoneBranch=true)
 	RecoveryAnimations(4)=(AnimationName=3p_halberd_parryrecover,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.5,fBlendInTime=0.00,fBlendOutTime=0.0,bLastAnimation=true)
 	RecoveryAnimations(5)=(AnimationName=3p_halberd_shoverecover,ComboAnimation=,AssociatedSoundCue=,bFullBody=false,bCombo=false,bLoop=false,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.4,fBlendInTime=0.10,fBlendOutTime=0.1,bLastAnimation=true,bUseAltNode=true,bUseAltBoneBranch=true)

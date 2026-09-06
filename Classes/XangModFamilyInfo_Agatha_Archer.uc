@@ -19,13 +19,10 @@ DefaultProperties
 	NewPrimaryWeapons(5)=(CWeapon=class'XangModWeapon_HeavyJavelinMelee',CForceTertiary=(class'XangModWeapon_Buckler_Agatha'))
 	NewPrimaryWeapons(6)=(CWeapon=class'XangModWeapon_Spear',CorrespondingDuelProp=EDUEL_SpearUse)
 	NewPrimaryWeapons(7)=(CWeapon=class'XangModWeapon_Brandistock',CorrespondingDuelProp=EDUEL_BrandistockUse)
-	NewPrimaryWeapons(8)=(CWeapon=class'XangModWeapon_AgathaFlag',CorrespondingDuelProp=EDUEL_SpearUse)
-	NewPrimaryWeapons(9)=(CWeapon=class'XangModWeapon_SpikedMace',CorrespondingDuelProp=EDUEL_DagesseUse)
-	NewPrimaryWeapons(10)=(CWeapon=class'XangModWeapon_BastardSword',CorrespondingDuelProp=EDUEL_LongswordUse)
+	NewPrimaryWeapons(8)=(CWeapon=class'XangModWeapon_GrandLance',CorrespondingDuelProp=EDUEL_SpearUse)
 
 
-	// NewPrimaryWeapons(11)=(CWeapon=class'XangModWeapon_DoubleBlade',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
-	// NewPrimaryWeapons(11)=(CWeapon=class'XangModWeapon_GrandLance')
+	
 
 
 	NewSecondaryWeapons.empty;
