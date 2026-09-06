@@ -102,6 +102,10 @@ simulated function WeaponAttachmentChanged()
 	if (CurrentWeaponAttachment == none)
 		return;
 
+	// Re-apply weapon-keyed stat overrides (footman family) after every equip so
+	// the movement/stat fields track weapon swaps mid-life.
+	ApplyXangModFootmanStats();
+
 	// Force PoleAxeBack to use its own mesh on ALL clients.
 	// WeaponEquipping::BeginState runs only on authority/local clients;
 	// remote clients get the attachment via replication and need this hook
@@ -1585,7 +1589,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	// Apply resistances
 	Resistance = 0;
 	for(i = 0; i < ArrayCount(Info.DamageType.default.DamageType); i++)
-		Resistance += Info.DamageType.default.DamageType[i] * Info.HitActor.PawnFamily.DamageResistances[i];
+		Resistance += Info.DamageType.default.DamageType[i] * XangModGetDamageResistance(Info.HitActor, i);
 	ActualDamage *= Resistance;
 
 	// If this was a team hit, reduce by team damage amount
@@ -2184,6 +2188,10 @@ simulated function AOCSetCharacterClassFromInfo(AOCFamilyInfo Info)
 	{
 		OuterCylinderComp.SetCylinderSize(class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius, 65.0);
 	}
+
+	// Weapon-keyed stat override: the footman family re-applies movement/stat fields
+	// on top of the real Archer family when a footman primary is equipped.
+	ApplyXangModFootmanStats();
 }
 
 //netupdate
@@ -2732,6 +2740,69 @@ simulated function bool XangModIsFootmanPrimary()
 		|| PawnInfo.myPrimary == class'XangModWeapon_Brandistock'
 		|| PawnInfo.myPrimary == class'XangModWeapon_GrandLance'
 		|| PawnInfo.myPrimary == class'XangModWeapon_MasonFlag';
+}
+
+/** Footman stat-family class for this pawn, or none when no footman weapon is equipped.
+ *  These families are never registered in AOCGRI.FamilyInfos; they only hold stats. */
+simulated function class<XangModFamilyInfo_Archer> XangModGetFootmanStatFamilyClass()
+{
+	if (!XangModIsFootmanPrimary())
+		return none;
+
+	if (PawnFamily != none && PawnFamily.FamilyFaction == EFAC_MASON)
+		return class'XangModFamilyInfo_Mason_FootmanArcher';
+
+	return class'XangModFamilyInfo_Agatha_FootmanArcher';
+}
+
+/** Re-apply movement/stat fields from the footman family when a footman weapon is equipped,
+ *  or restore the real Archer family values when no footman weapon is equipped. Called on
+ *  class set and on every weapon swap so the stats always match the equipped weapon. */
+simulated function ApplyXangModFootmanStats()
+{
+	local class<XangModFamilyInfo_Archer> FootFI;
+	local AOCFamilyInfo FI;
+
+	FootFI = XangModGetFootmanStatFamilyClass();
+	FI = (FootFI != none) ? AOCFamilyInfo(FootFI.default) : PawnFamily;
+
+	if (FI == none)
+		return;
+
+	AirControl = FI.AirControl;
+	GroundSpeed = FI.GroundSpeed;
+	BaseSpeed = GroundSpeed;
+	WaterSpeed = FI.WaterSpeed;
+	AirSpeed = FI.AirSpeed;
+	AccelRate = FI.AccelRate;
+	BaseAccel = FI.AccelRate;
+	JumpZ = FI.JumpZ;
+	SprintAccel = FI.SprintAccelRate;
+	SprintModifier = FI.SprintModifier;
+	SprintTime = FI.SprintTime;
+	DodgeSpeed = FI.DodgeSpeed;
+	DodgeSpeedZ = FI.DodgeSpeedZ;
+	MaxSprintSpeedTime = FI.MaxSprintSpeedTime;
+	FORWARD_MODIFY = FI.FORWARD_MODIFY;
+	STRAFE_MODIFY = FI.STRAFE_MODIFY;
+	BACK_MODIFY = FI.BACK_MODIFY;
+	CROUCH_MODIFY = FI.CROUCH_MODIFY;
+	iDodgeCost = FI.iDodgeCost;
+	iKickCost = FI.iKickCost;
+}
+
+/** Damage resistance for the given defender, honouring the footman stat override. */
+function float XangModGetDamageResistance(AOCPawn Defender, int DamageIndex)
+{
+	local class<XangModFamilyInfo_Archer> FootFI;
+
+	if (XangModPawn(Defender) != none)
+		FootFI = XangModPawn(Defender).XangModGetFootmanStatFamilyClass();
+
+	if (FootFI != none)
+		return FootFI.default.DamageResistances[DamageIndex];
+
+	return Defender.PawnFamily.DamageResistances[DamageIndex];
 }
 
 /** Rewrite the character ID to the Assassin or Footman before the character mesh is loaded. */
