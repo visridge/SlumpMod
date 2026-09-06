@@ -30,24 +30,63 @@ simulated state ParryRelease
 
 simulated state Release
 {
-	simulated event BeginState(Name PreviousStateName)
+	simulated function BeginFire(byte FireModeNum)
 	{
-		super.BeginState(PreviousStateName);
-
-		// Enable forced sprint+forward on the pawn for stab releases.
-		if (CurrentFireMode == Attack_Stab && AOCOwner != none)
-		{
-			XangModPawn(AOCOwner).bForceSprintForward = true;
-
-			// Lock jump and crouch during the charge so the forced sprint isn't cancelled.
-			AOCOwner.StateVariables.bCanJump = false;
-			AOCOwner.StateVariables.bCanCrouch = false;
-			AOCOwner.StopJump();
-
-			// Immediately strip any crouch debuff carried from windup.
-			AOCOwner.RemoveDebuff(EDEBF_CROUCH);
+		super.BeginFire(FireModeNum);
+		if (FireModeNum == Attack_Parry && bParryHitCounter) {
+			AttackQueue = Attack_Null;
+			ClearTimer('OnStateAnimationEnd');
+			AOCOwner.ConsumeStamina(iFeintStaminaCost);
+			ActivateParry();
+			if (WorldInfo.NetMode != NM_Standalone && (Worldinfo.NetMode != NM_ListenServer || !AOCOwner.IsLocallyControlled())) {
+				ServerActivateParry();
+			}
 		}
 	}
+
+	/** Play Release animation */
+	simulated function PlayStateAnimation()
+	{
+		local AnimationInfo Info;
+		//`log("RELEASE PLAY STATE ANIMATION");
+		if (bIsInCombo)
+		{
+			// add to number of combos performed
+			iComboCount++;
+			AOCOwner.OnComboIncreased();
+
+			if (CurrentFireMode != Attack_Sprint && !AOCOwner.bIsCrouching && AOCOwner.Physics != PHYS_Falling)
+			{
+				if (VSize(AOCOwner.Velocity) > 2.0f && !Info.bUseRMM)
+					AOCOwner.Lunge(,,true);
+				else if (VSize(AOCOwner.Velocity) <= 2.f && !Info.bUseRMM)
+					Info.bFullBody = false;
+			}
+
+			// pass this information down to the weapon attachment
+			AOCWepAttachment.ComboCount = iComboCount;
+			AOCWepAttachment.HitComboCount = ComboHitCount;
+			// pass in proper animation, let pawn determine which node to use on the AnimTree
+			if (bJustPlayedCombo || ePreviousAttack == Attack_Stab)
+			{
+				// odd sequential attacks should be the normal attack animation
+				AOCOwner.ReplicateCompressedAnimation(ReleaseAnimations[CurrentFireMode], EWST_Release, CurrentFireMode);
+				bJustPlayedCombo = false;
+			}
+			else
+			{
+				// even sequential attacks should be the combo attack animation
+				Info = ReleaseAnimations[CurrentFireMode];
+				//`log(bEquipShield@"GOING TO PLAY"@Info.AnimationName);
+				Info.bCombo = true;
+				AOCOwner.ReplicateCompressedAnimation(Info, EWST_Release, CurrentFireMode);
+				bJustPlayedCombo = true;
+			}
+		}
+		else
+			super.PlayStateAnimation(); // default handle for playing animation is fine if we are not doing a combo
+	}
+}
 
 	simulated function BeginFire(byte FireModeNum)
 	{
@@ -71,52 +110,7 @@ simulated state Release
 		ClientSetHit(true);
 		super.ActivateHitAnim(Direction, bSameTeam);
 	}
-
-	/** Play Release animation */
-	simulated function PlayStateAnimation()
-	{
-		local AnimationInfo Info;
-		//`log("RELEASE PLAY STATE ANIMATION");
-		if (bIsInCombo)
-		{
-			// add to number of combos performed
-			iComboCount++;
-			AOCOwner.OnComboIncreased();
-
-			if (CurrentFireMode != Attack_Sprint && !AOCOwner.bIsCrouching && AOCOwner.Physics != PHYS_Falling)
-			{
-				if (VSize(AOCOwner.Velocity) > 2.0f && !Info.bUseRMM)
-					AOCOwner.Lunge(,,true);
-				else if (VSize(AOCOwner.Velocity) <= 2.f && !Info.bUseRMM)
-					Info.bFullBody = false;
-			}
-
-
-			// pass this information down to the weapon attachment
-			AOCWepAttachment.ComboCount = iComboCount;
-			AOCWepAttachment.HitComboCount = ComboHitCount;
-			// pass in proper animation, let pawn determine which node to use on the AnimTree
-			if (bJustPlayedCombo || ePreviousAttack == Attack_Stab)
-			{
-				// odd sequential attacks should be the normal attack animation
-				AOCOwner.ReplicateCompressedAnimation(ReleaseAnimations[CurrentFireMode], EWST_Release, CurrentFireMode);
-				bJustPlayedCombo = false;
-				TimeLeftInRelease = GetRealAnimLength(ReleaseAnimations[CurrentFireMode]);
-			}
-			else
-			{
-				// even sequential attacks should be the combo attack animation
-				Info = ReleaseAnimations[CurrentFireMode];
-				//`log(bEquipShield@"GOING TO PLAY"@Info.AnimationName);
-				Info.bCombo = true;
-				AOCOwner.ReplicateCompressedAnimation(Info, EWST_Release, CurrentFireMode);
-				bJustPlayedCombo = true;
-				TimeLeftInRelease = GetRealAnimLength(Info);
-			}
-		}
-	}
-}
-
+	
 DefaultProperties
 {
 	Begin Object class=AnimNodeSequence Name=MeshSequenceA

@@ -35,4 +35,41 @@ KickOffset=(X=50, Y=0, Z=-65)
 	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=22500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
 	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
 
+Skins(0)={(
+		SkeletalMeshPath="Rapier.WEP_Rapier",
+		StaticMeshPath="Rapier.Mesh_Rapier",
+		MaterialPath="",
+		StaticMeshScale=1.0,
+		ImagePath="UI_CustWeaponImages_SWF.skin_short_spear_png"
+		)};
+Skins(1)={(
+		SkeletalMeshPath="Rapier.WEP_Rapier",
+		StaticMeshPath="Rapier.Mesh_Rapier",
+		MaterialPath="",
+		StaticMeshScale=1.0,
+		ImagePath="UI_CustWeaponImages_SWF.skin_short_spear_png"
+		)};
+Skins(2)={(
+		SkeletalMeshPath="Rapier.WEP_Rapier",
+		StaticMeshPath="Rapier.Mesh_Rapier",
+		MaterialPath="",
+		StaticMeshScale=1.0,
+		ImagePath="UI_CustWeaponImages_SWF.skin_short_spear_png"
+		)};
+Skins(3)={(
+		SkeletalMeshPath="Rapier.WEP_Rapier",
+		StaticMeshPath="Rapier.Mesh_Rapier",
+		MaterialPath="",
+		StaticMeshScale=1.0,
+		ImagePath="UI_CustWeaponImages_SWF.skin_short_spear_png"
+		)};
+Skins(4)={(
+		SkeletalMeshPath="Rapier.WEP_Rapier",
+		StaticMeshPath="Rapier.Mesh_Rapier",
+		MaterialPath="",
+		StaticMeshScale=1.0,
+		ImagePath="UI_CustWeaponImages_SWF.skin_short_spear_png"
+		)};
+
+				
 }

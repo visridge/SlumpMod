@@ -19,16 +19,21 @@ defaultproperties
 	DecapMeshPath="Footmen.FootmenMason3p"
 	OwnerMeshPath="Footmen.FootmenMason1p"
 
-	HeadMaterialPath="Footmen.FootmenHeadMat"
-	BodyMaterialPath="Footmen.FootmenMasonMatInst"
+	HeadMaterialPath="Footmen.Materials.FootmenHeadMat"
+	BodyMaterialPath="Footmen.Materials.FootmenMasonMatInst"
 
 	StandinMesh=SkeletalMesh'Footmen.FootmenMason3p'
 	StandinDecapMesh=SkeletalMesh'Footmen.FootmenMason3p'
 	StandinOwnerMesh=SkeletalMesh'Footmen.FootmenMason1p'
-	StandinHeadMaterial=MaterialInterface'Footmen.FootmenHeadMat'
-	StandinBodyMaterial=MaterialInterface'Footmen.FootmenMasonMatInst'
+	StandinHeadMaterial=MaterialInterface'Footmen.Materials.FootmenHeadMat'
+	StandinBodyMaterial=MaterialInterface'Footmen.Materials.FootmenMasonMatInst'
 
 	GearData=(GearNameID=MasonFootmanArcher)
+
+	// Index 0 is NoHat so the pawn's forced Helmet=0 (footman branch) renders no
+	// helmet. The inherited Archer helmet list has a real hat at index 0.
+	Helmets.Empty
+	Helmets.Add((SkeletalMeshPath="", StaticMeshPath="", GearData=(GearNameID=NoHat)))
 
 	AllowedTeams.Empty()
 	AllowedClasses.Empty()

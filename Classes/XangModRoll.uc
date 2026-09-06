@@ -13,7 +13,7 @@
  */
 class XangModRoll extends XangModDodge;
 
-var XangModFamilyInfo_Archer CachedRollFI;
+var class<XangModFamilyInfo_Archer> CachedRollFI;
 var bool bCachedRollFI;
 
 /** Lazy-cache the Archer family info (holds the roll config + tuning knobs). */
@@ -22,7 +22,7 @@ simulated function CacheRollFI()
 	if (!bCachedRollFI && OwnerPawn != none)
 	{
 		if (OwnerPawn.PawnFamily != none)
-			CachedRollFI = XangModFamilyInfo_Archer(OwnerPawn.PawnFamily);
+			CachedRollFI = class<XangModFamilyInfo_Archer>(OwnerPawn.PawnFamily.Class);
 
 		// Family-based results (Archer/Assassin) are stable for the pawn's lifetime,
 		// so cache them. Weapon-keyed results can change if the player swaps weapons,
@@ -38,7 +38,7 @@ simulated function CacheRollFI()
 		&& XangModPawn(OwnerPawn) != none
 		&& XangModPawn(OwnerPawn).XangModIsNinjaPrimary())
 	{
-		CachedRollFI = class'XangModFamilyInfo_Archer'.default;
+		CachedRollFI = class'XangModFamilyInfo_Archer';
 	}
 }
 

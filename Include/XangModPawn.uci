@@ -2620,26 +2620,41 @@ simulated function SetCharacterAppearance(AssetStore_AOCPawn_Character AssetStor
 
 	super.SetCharacterAppearance(AssetStore);
 
-	// Assassin first-person arms tint: AOCPawn.SetCharacterAppearance only applies
+	// First-person arms tint: AOCPawn.SetCharacterAppearance only applies
 	// HeadMaterialPath/BodyMaterialPath to the THIRD-person mesh. The owner (1P) mesh
-	// keeps whatever material is baked into it, and the DW Ninja arms mesh ships with
-	// a neutral grey baked material, so the arms render grey instead of team colours.
-	// Re-tint every owner-mesh slot with the faction body material (NinjaBodyAgathaMat /
-	// NinjaBodyMasonMat) for the two Assassin characters. Scoped so no other class is
-	// affected. Also keyed on the CharacterInfo and BodyMaterial actually being loaded.
+	// keeps whatever material is baked into it. The DW Ninja arms mesh ships with a
+	// single neutral-grey material slot, and the Footmen 1P arms ship untextured, so
+	// both render wrong without a re-tint. We re-tint the owner-mesh slots with the
+	// loaded faction materials (NinjaBody*/Footmen*). Scoped so no other class is
+	// affected. Keyed on the CharacterInfo and the materials actually being loaded.
 	if (AssetStore != none
 		&& AssetStore.CharacterInfo != none
 		&& OwnerMesh != none
 		&& AssetStore.OwnerMesh != none
-		&& AssetStore.BodyMaterial != none
-		&& (AssetStore.CharacterInfo == class'XangModCharacterInfo_Agatha_Assassin'
-			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Assassin'
-			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Agatha_Footman_Archer'
-			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Footman_Archer'))
+		&& AssetStore.BodyMaterial != none)
 	{
-		for (i = 0; i < AssetStore.OwnerMesh.Materials.Length; ++i)
+		if (AssetStore.CharacterInfo == class'XangModCharacterInfo_Agatha_Assassin'
+			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Assassin')
 		{
-			OwnerMesh.SetMaterial(i, AssetStore.BodyMaterial);
+			// Ninja arms ship as a single neutral-grey slot; tint everything body.
+			for (i = 0; i < AssetStore.OwnerMesh.Materials.Length; ++i)
+			{
+				OwnerMesh.SetMaterial(i, AssetStore.BodyMaterial);
+			}
+		}
+		else if (AssetStore.CharacterInfo == class'XangModCharacterInfo_Agatha_Footman_Archer'
+			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Footman_Archer')
+		{
+			// Footmen 1P mesh: slot 0 is the hands (head/skin material), remaining
+			// slots are the body. Mirror the 3P convention (head on slot 0, body on
+			// the rest) instead of painting the whole mesh with the body material.
+			if (AssetStore.HeadMaterial != none && AssetStore.OwnerMesh.Materials.Length > 0)
+				OwnerMesh.SetMaterial(0, AssetStore.HeadMaterial);
+
+			for (i = 1; i < AssetStore.OwnerMesh.Materials.Length; ++i)
+			{
+				OwnerMesh.SetMaterial(i, AssetStore.BodyMaterial);
+			}
 		}
 	}
 }
