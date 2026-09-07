@@ -195,7 +195,7 @@ Begin Object class=AnimNodeSequence Name=MeshSequenceA
 	WeaponReach=100
 	HorizontalRotateSpeed=55000.0
 	VerticalRotateSpeed=55000.0
-	AttackHorizRotateSpeed=60000.0
+	AttackHorizRotateSpeed=59000.0
 	SprintAttackHorizRotateSpeed=20000.0
 	SprintAttackVerticalRotateSpeed=20000.0
 	WindupAnimations(0)=(AnimationName=3p_longsword_slash01downtoup,ComboAnimation=3p_longsword_slash011downtoup,AlternateAnimation=3p_longsword_slash011altdowntoup,AssociatedSoundCue=,bFullBody=False,bCombo=False,bLoop=False,bForce=false,UniqueShieldSound=none,fModifiedMovement=1.0,fAnimationLength=0.55,fBlendInTime=0.10,fBlendOutTime=0.00,bLastAnimation=false,fShieldAnimLength=0.0)

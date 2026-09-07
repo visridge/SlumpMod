@@ -73,7 +73,7 @@ DefaultProperties
 	FORWARD_MODIFY=1.0
 	CROUCH_MODIFY=0.65
 	MaxSprintSpeedTime=3.5
-	bCanDodge=true
+	bCanDodge=false
 	iKickCost=25
 	iDodgeCost=40
 	fComboAggressionBonus=1.0

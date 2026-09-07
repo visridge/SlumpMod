@@ -34,12 +34,12 @@ DefaultProperties
 
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'CHV_DeadliestPorts.Meshes.WEP_Kanabo'
-		Scale=0.95
+		Scale=1.0
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
 		SkeletalMesh=SkeletalMesh'CHV_DeadliestPorts.Meshes.WEP_Kanabo'
-		Scale=0.95
+		Scale=1.0
 	End Object
 
 	WeaponID=EWEP_GrandMace
@@ -48,10 +48,10 @@ DefaultProperties
 
 	bUseAlternativeKick=true
 
-	WeaponStaticMeshScale=0.95
+	WeaponStaticMeshScale=1.0
 
 	AttackTypeInfo(0)=(fBaseDamage=75.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
-	AttackTypeInfo(1)=(fBaseDamage=90.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=75.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
     AttackTypeInfo(2)=(fBaseDamage=45.0, fForce=18000, cDamageType="AOC.AOCDmgType_PierceBlunt", iWorldHitLenience=6)
 	AttackTypeInfo(3)=(fBaseDamage=0.0, fForce=22500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
 	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=32500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
@@ -61,35 +61,35 @@ DefaultProperties
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_Kanabo",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_Kanabo",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_Kanabo_INST",
-		StaticMeshScale=0.95,
+		StaticMeshScale=1.0,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(1)={(
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_Kanabo",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_Kanabo",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_Kanabo_INST",
-		StaticMeshScale=0.95,
+		StaticMeshScale=1.0,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(2)={(
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_Kanabo",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_Kanabo",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_Kanabo_INST",
-		StaticMeshScale=0.95,
+		StaticMeshScale=1.0,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(3)={(
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_Kanabo",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_Kanabo",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_Kanabo_INST",
-		StaticMeshScale=0.95,
+		StaticMeshScale=1.0,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 	Skins(4)={(
 		SkeletalMeshPath="CHV_DeadliestPorts.Meshes.WEP_Kanabo",
 		StaticMeshPath="CHV_DeadliestPorts.Meshes.SM_Kanabo",
 		MaterialPath="CHV_DeadliestPorts.Materials.M_Kanabo_INST",
-		StaticMeshScale=0.95,
+		StaticMeshScale=1.0,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
 }

@@ -41,5 +41,5 @@ DefaultProperties
 
 	// The roll only fires while a dodge-capable (melee) weapon is out; bows keep
 	// bCanDodge=false at the weapon level.
-	bCanDodge=true
+	bCanDodge=false
 }

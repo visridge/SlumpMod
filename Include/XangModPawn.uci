@@ -2761,34 +2761,54 @@ simulated function class<XangModFamilyInfo_Archer> XangModGetFootmanStatFamilyCl
 simulated function ApplyXangModFootmanStats()
 {
 	local class<XangModFamilyInfo_Archer> FootFI;
-	local AOCFamilyInfo FI;
 
 	FootFI = XangModGetFootmanStatFamilyClass();
-	FI = (FootFI != none) ? AOCFamilyInfo(FootFI.default) : PawnFamily;
-
-	if (FI == none)
-		return;
-
-	AirControl = FI.AirControl;
-	GroundSpeed = FI.GroundSpeed;
-	BaseSpeed = GroundSpeed;
-	WaterSpeed = FI.WaterSpeed;
-	AirSpeed = FI.AirSpeed;
-	AccelRate = FI.AccelRate;
-	BaseAccel = FI.AccelRate;
-	JumpZ = FI.JumpZ;
-	SprintAccel = FI.SprintAccelRate;
-	SprintModifier = FI.SprintModifier;
-	SprintTime = FI.SprintTime;
-	DodgeSpeed = FI.DodgeSpeed;
-	DodgeSpeedZ = FI.DodgeSpeedZ;
-	MaxSprintSpeedTime = FI.MaxSprintSpeedTime;
-	FORWARD_MODIFY = FI.FORWARD_MODIFY;
-	STRAFE_MODIFY = FI.STRAFE_MODIFY;
-	BACK_MODIFY = FI.BACK_MODIFY;
-	CROUCH_MODIFY = FI.CROUCH_MODIFY;
-	iDodgeCost = FI.iDodgeCost;
-	iKickCost = FI.iKickCost;
+	if (FootFI != none)
+	{
+		AirControl = FootFI.default.AirControl;
+		GroundSpeed = FootFI.default.GroundSpeed;
+		BaseSpeed = GroundSpeed;
+		WaterSpeed = FootFI.default.WaterSpeed;
+		AirSpeed = FootFI.default.AirSpeed;
+		AccelRate = FootFI.default.AccelRate;
+		BaseAccel = FootFI.default.AccelRate;
+		JumpZ = FootFI.default.JumpZ;
+		SprintAccel = FootFI.default.SprintAccelRate;
+		SprintModifier = FootFI.default.SprintModifier;
+		SprintTime = FootFI.default.SprintTime;
+		DodgeSpeed = FootFI.default.DodgeSpeed;
+		DodgeSpeedZ = FootFI.default.DodgeSpeedZ;
+		// MaxSprintSpeedTime = FootFI.default.MaxSprintSpeedTime;
+		FORWARD_MODIFY = FootFI.default.FORWARD_MODIFY;
+		STRAFE_MODIFY = FootFI.default.STRAFE_MODIFY;
+		BACK_MODIFY = FootFI.default.BACK_MODIFY;
+		CROUCH_MODIFY = FootFI.default.CROUCH_MODIFY;
+		// iDodgeCost = FootFI.default.iDodgeCost;
+		// iKickCost = FootFI.default.iKickCost;
+	}
+	else if (PawnFamily != none)
+	{
+		AirControl = PawnFamily.AirControl;
+		GroundSpeed = PawnFamily.GroundSpeed;
+		BaseSpeed = GroundSpeed;
+		WaterSpeed = PawnFamily.WaterSpeed;
+		AirSpeed = PawnFamily.AirSpeed;
+		AccelRate = PawnFamily.AccelRate;
+		BaseAccel = PawnFamily.AccelRate;
+		JumpZ = PawnFamily.JumpZ;
+		SprintAccel = PawnFamily.SprintAccelRate;
+		SprintModifier = PawnFamily.SprintModifier;
+		SprintTime = PawnFamily.SprintTime;
+		DodgeSpeed = PawnFamily.DodgeSpeed;
+		DodgeSpeedZ = PawnFamily.DodgeSpeedZ;
+		// MaxSprintSpeedTime = PawnFamily.MaxSprintSpeedTime;
+		FORWARD_MODIFY = PawnFamily.FORWARD_MODIFY;
+		STRAFE_MODIFY = PawnFamily.STRAFE_MODIFY;
+		BACK_MODIFY = PawnFamily.BACK_MODIFY;
+		CROUCH_MODIFY = PawnFamily.CROUCH_MODIFY;
+		// iDodgeCost = PawnFamily.iDodgeCost;
+		// iKickCost = PawnFamily.iKickCost;
+	}
 }
 
 /** Damage resistance for the given defender, honouring the footman stat override. */
@@ -2847,13 +2867,13 @@ DefaultProperties
 
 	// Parry rollback: hold an incoming swing up to this long (capped at defender one-way ping)
 	// so an in-flight parry can suppress it before any feedback plays. 0 hold at 0 ping.
-	fParryRollbackMaxHoldSeconds=0.059
+	fParryRollbackMaxHoldSeconds=0.051
 	fParryRollbackMinHoldSeconds=0.013
 
 	// Client-timestamp hit-trade priority (see helpers/arbitration in this include).
 	// Larger fTradeWindowSeconds keeps MORE trades; smaller cancels more staggered ones.
 	fTradeWindowSeconds=0.025     // hits within 25ms (~3 frames at 120Hz) still trade
-	fParryTradeGraceSeconds=0.059  // a parry counts unless it went active >51ms after the swing landed (~6 frames at 120Hz)
+	fParryTradeGraceSeconds=0.051  // a parry counts unless it went active >50ms after the swing landed (~6 frames at 120Hz)
 	fMaxPlausibleLatency=0.500     // clamp for reconstructed client timestamps / one-way ping
 	fRecentHitTTL=0.200            // how long a taken hit stays eligible to cancel a trade swing
 	fClockOffsetAlpha=0.10         // EMA weight for per-message clock-offset samples
