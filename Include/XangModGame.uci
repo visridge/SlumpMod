@@ -23,6 +23,8 @@ var string StatsMatchId;
 var bool bStatsRequestInFlight;
 var HttpRequestInterface StatsRequest;
 
+`include(XangMod/Include/XangModCompForestSpawnControl.uci)
+
 
 static event class<GameInfo> SetGameType(string MapName, string Options, string Portal)
 {
@@ -547,6 +549,10 @@ DefaultProperties
     // Five minutes. Long enough that a real match night never trips it, short enough that a
     // stuck server recovers on its own instead of needing a restart. 0 disables.
     fXangModTournamentHoldLimit=300.0
+    bEnableCompForestAlternatingSpawns=false
+    iXangModCompForestLastStage=-1
+    iXangModCompForestLastAgathaGroup=-1
+    iXangModCompForestLastMasonGroup=-1
 
     PlayerControllerClass=class'`{GAMEMODE}PlayerController'
     DefaultPawnClass=class'`{GAMEMODE}Pawn'

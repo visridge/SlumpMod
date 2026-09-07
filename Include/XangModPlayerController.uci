@@ -1255,6 +1255,39 @@ reliable server function S_AdminCEAutoskip() {
 		S_AdminBroadcastMessage("CE Autoskip DISABLED", false);
 }
 
+exec function AdminCompForestAlternatingSpawns(optional bool bEnable = true)
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminCompForestAlternatingSpawns(bEnable);
+}
+
+reliable server function S_AdminCompForestAlternatingSpawns(bool bEnable)
+{
+	local XangModTO TOGame;
+
+	if (!IsAdmin())
+		return;
+
+	TOGame = XangModTO(WorldInfo.Game);
+	if (TOGame == none || !TOGame.XangModIsCompForestTO()) {
+		ClientDisplayConsoleMessage("CompForest alternating spawns only work on AOCTO-CompForest_p.");
+		return;
+	}
+
+	TOGame.bEnableCompForestAlternatingSpawns = bEnable;
+	TOGame.iXangModCompForestLastStage = -1;
+	TOGame.iXangModCompForestLastAgathaGroup = -1;
+	TOGame.iXangModCompForestLastMasonGroup = -1;
+
+	if (bEnable)
+		S_AdminBroadcastMessage("CompForest alternating spawns ENABLED", false);
+	else
+		S_AdminBroadcastMessage("CompForest alternating spawns DISABLED", false);
+}
+
 // Option A: Reset ALL physics volumes to default friction (nuclear)
 exec function AdminResetAllTraction()
 {
