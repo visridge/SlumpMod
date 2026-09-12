@@ -4,6 +4,10 @@ class XangModTO extends AOCTeamObjective;
 var bool bCEAutoskipEnabled;
 var bool bCEAutoskipFired;
 
+// CompForest: automatically fires "ce skip" to advance past objective 1 when the in-game
+// timer hits the 1-minute-remaining mark and objective 1 hasn't been completed yet.
+var bool bCECompForestAutoskipFired;
+
 `include(XangMod/Include/XangModTO.uci)
 `include(XangMod/Include/XangModGame.uci)
 `include(XangMod/Include/XangModTOGamemode.uci)

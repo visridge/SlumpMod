@@ -25,6 +25,12 @@ function TriggerConsoleEvent(name EventName)
     }
 }
 
+// True when running on CompForest (AOCTO-CompForest_p).
+function bool IsCompForest()
+{
+    return InStr(WorldInfo.GetMapName(), "AOCTO-CompForest_p", false, true) != INDEX_NONE;
+}
+
 // Override Timer to only force net updates when scoreboard values actually change
 State AOCRoundInProgress
 {
@@ -36,9 +42,26 @@ State AOCRoundInProgress
         
         super.Timer();
 
-        // CE Autoskip: fire "ce skip" when timer drops to 5s
-        if (bCEAutoskipEnabled)
+        // CE Autoskip
+        if (IsCompForest())
         {
+            // CompForest: automatically skip objective 1 when the in-game timer reaches the
+            // 1-minute-remaining mark and objective 1 still hasn't been completed. Keyed off
+            // TimeLeft (not WorldInfo.TimeSeconds) so admin pause doesn't skew the trigger.
+            if (CurrentObjectiveStage == 0 && TimeLeft <= 60 && TimeLeft > 0 && !bCECompForestAutoskipFired)
+            {
+                TriggerConsoleEvent('skip');
+                bCECompForestAutoskipFired = true;
+            }
+            else if (CurrentObjectiveStage != 0 || TimeLeft > 60)
+            {
+                // Objective advanced or timer went back up; re-arm for the next stage 0 pass.
+                bCECompForestAutoskipFired = false;
+            }
+        }
+        else if (bCEAutoskipEnabled)
+        {
+            // Generic admin-toggled autoskip: fire "ce skip" when timer drops to 10s
             if (TimeLeft <= 10 && TimeLeft > 0 && !bCEAutoskipFired)
             {
                 TriggerConsoleEvent('skip');
