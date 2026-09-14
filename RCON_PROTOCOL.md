@@ -249,6 +249,10 @@ ChivAdmin ignores opcodes it does not know, so these cannot break it.
 | 45 | SET_AUTOBALANCE | in | int enabled |
 | 46 | SET_GAME_SPEED | in | int speedPercent (100 = normal, clamped 10-400) |
 | 47 | RESTART_MATCH | in | (empty) |
+| 65 | ROUND_START | out | string map, int roundNumber, int agathaScore, int masonScore, int goalScore |
+| 66 | ROUND_END | out | int winningTeam, string map, int roundNumber, int agathaScore, int masonScore, int matchEnding |
+| 67 | ROUND_PLAYER_STAT | out | qword uid, int team, string name, int kills, deaths, assists, score, enemyDamage, teamDamage, damageTaken, parries, feints, meleeHits, projectileHits, blocks, dodges |
+| 68 | ROUND_STAT_END | out | int count |
 
 **46 exists rather than routing through 28** because `AOCGame.SetGameSpeed` notifies
 every client via `NotifySpeedChanged` and republishes `AOCGRI.Speed`, which a bare
@@ -279,6 +283,53 @@ match with no winner rather than failing silently.
 
 29 replies with a burst of 30s then a 31. Kills come from `AOCPRI.NumKills`, not
 `PlayerReplicationInfo.Kills` -- AOCPRI's own comment says `Kills` is not replicated.
+
+## Round events (65-68)
+
+Server-push only -- there is no request opcode; the game mode emits them as rounds begin
+and end. Scope: **LTS, TD, TO** only (see the gate below). They exist to give a consumer
+the warmup/round/map boundaries vanilla never exposes: vanilla opcode 21 `ROUND_END` only
+fires from `AOCGame.EndGame`, which for LTS is once per *match*, and there is no start
+event at all.
+
+**Warmup never emits.** The game starts in `Auto State AOCPreRound` and only enters a real
+round when `StartRound()` runs. The start event is emitted from a `StartRound` override, so
+the pre-round countdown can never produce one.
+
+  * **65 ROUND_START** `string map, int roundNumber, int agathaScore, int masonScore, int goalScore`
+    Pushed immediately after the round actually begins (post `super.StartRound`).
+    `roundNumber` is 1-based per map. Scores are the scores at round start; `goalScore` is
+    `GoalScore` for LTS, -1 for TD/TO (no per-map goal in the same sense).
+  * **66 ROUND_END** `int winningTeam, string map, int roundNumber, int agathaScore, int masonScore, int matchEnding`
+    `winningTeam` is a raw `EAOCFaction` int: 0 = Agatha, 1 = Mason, -1 = draw/none.
+    `matchEnding` is 1 when this round also ends the match (LTS reaching the goal, or any
+    TD/TO end), 0 otherwise -- that is what lets the client tell a round from a map boundary.
+    For LTS a per-round end (elimination/time) is emitted once per round with `matchEnding=0`;
+    the round that reaches `GoalScore` emits with `matchEnding=1`.
+  * **67 ROUND_PLAYER_STAT** `qword uid, int team, string name, int kills, deaths, assists,
+    score, enemyDamage, teamDamage, damageTaken, parries, feints, meleeHits, projectileHits,
+    blocks, dodges` -- one per connected, non-bot player, sent as a burst immediately after a
+    66. Stats are **match-cumulative**, not per-round: a consumer diffs two consecutive
+    bursts. Bots carry the same synthetic `{A=0, B=PlayerID}` uid as everywhere else.
+  * **68 ROUND_STAT_END** `int count` -- closes the 67 burst.
+
+**Mode gate.** `XangModGame.XangModRoundReportingEnabled()` emits only for
+`AOCLTS` (per-round), `AOCTD`, and `AOCTeamObjective` **excluding `AOCTUT`** (tutorial
+subclasses the objective game, but is not a real round). FFA, CTF, KOTH, Duel, CDWDuel,
+TUT and Survival emit nothing. KOTH deliberately left alone.
+
+**Winning-team source differs by mode.** For LTS the round winner is read from
+`AOCLTS.RoundWinner`; `AOCGame.WinningTeam` is only written inside `EndGame`, so it would be
+stale for a normal per-round LTS end. For TD/TO every end routes through `EndGame`, so
+`WinningTeam` is current.
+
+**Double-emit guards.** `AOCLTS.AOCEndRound` calls itself to resolve a draw; a re-entrancy
+flag keeps that from producing two 66s. `EndGame` sets a flag so `AOCEndRound` (which TD/TO
+also reach) doesn't emit a second, `matchEnding=0` event on top of the `matchEnding=1` one,
+and a third flag stops a second `EndGame` call (time-limit vs admin-forced) re-emitting.
+
+The round-event helpers in `XangModRCon` are `SendRoundStart` / `SendRoundEnd` /
+`SendRoundPlayerStat` / `SendRoundStatEnd`.
 
 ## CONSOLE_COMMAND is the important one
 

@@ -57,6 +57,10 @@ const RCONX_SLAP                 = 61;  // in : QWord uid, int power
 const RCONX_MUTE_LIST_REQUEST    = 62;  // in : (no body)
 const RCONX_MUTE_INFO            = 63;  // out: one per muted player, QWord uid, string name, int team
 const RCONX_MUTE_LIST_END        = 64;  // out: int count
+const RCONX_ROUND_START          = 65;  // out: string map, int roundNumber, int agathaScore, int masonScore, int goalScore
+const RCONX_ROUND_END            = 66;  // out: int winningTeam, string map, int roundNumber, int agathaScore, int masonScore, int matchEnding
+const RCONX_ROUND_PLAYER_STAT    = 67;  // out: one per player, see SendRoundPlayerStat
+const RCONX_ROUND_STAT_END       = 68;  // out: int count
 
 const SLOT_PRIMARY   = 0;
 const SLOT_SECONDARY = 1;
@@ -930,6 +934,89 @@ function SendServerInfo()
 	Packet.AddInt((WorldInfo.Game != none) ? WorldInfo.Game.MaxPlayers : 0);
 	Packet.AddInt((WorldInfo.GRI != none && WorldInfo.GRI.bMatchHasBegun) ? 1 : 0);
 	Packet.AddInt((WorldInfo.Game != none) ? WorldInfo.Game.NumSpectators : 0);
+	SendPacket(Packet);
+}
+
+/**
+ * 65: a real round has started (never warmup -- these are pushed from
+ * XangModGame.StartRound, which the game only calls out of the pre-round).
+ * Called from the game mode, so no state change to audit here.
+ */
+function SendRoundStart(string MapName, int RoundNumber, int AgathaScore, int MasonScore, int GoalScore)
+{
+	local AOCRConPacket Packet;
+
+	Packet = new class'AOCRConPacket';
+	Packet.SetMessageType(RCONX_ROUND_START);
+	Packet.AddString(MapName);
+	Packet.AddInt(RoundNumber);
+	Packet.AddInt(AgathaScore);
+	Packet.AddInt(MasonScore);
+	Packet.AddInt(GoalScore);
+	SendPacket(Packet);
+}
+
+/**
+ * 66: a real round has ended, with the team that won it. winningTeam is a raw
+ * EAOCFaction int (0 = Agatha, 1 = Mason), -1 for a draw/none. matchEnding is 1
+ * when this round also ends the match (LTS reaching GoalScore, or TD/TO where one
+ * round IS the match), so the client can tell round from map boundaries.
+ */
+function SendRoundEnd(int WinningTeam, string MapName, int RoundNumber, int AgathaScore, int MasonScore, int MatchEnding)
+{
+	local AOCRConPacket Packet;
+
+	Packet = new class'AOCRConPacket';
+	Packet.SetMessageType(RCONX_ROUND_END);
+	Packet.AddInt(WinningTeam);
+	Packet.AddString(MapName);
+	Packet.AddInt(RoundNumber);
+	Packet.AddInt(AgathaScore);
+	Packet.AddInt(MasonScore);
+	Packet.AddInt(MatchEnding);
+	SendPacket(Packet);
+}
+
+/**
+ * 67: one player's cumulative match stats, sent as part of the ROUND_END burst.
+ * uid is the same synthetic {A=0,B=PlayerID} stamp bots get, so a consumer can
+ * correlate against PLAYER_CONNECT / PLAYER_INFO.
+ */
+function SendRoundPlayerStat(QWord Uid, int Team, string PlayerName, int Kills, int Deaths,
+	int Assists, int Score, int EnemyDamage, int TeamDamage, int DamageTaken, int Parries,
+	int Feints, int MeleeHits, int ProjectileHits, int Blocks, int Dodges)
+{
+	local AOCRConPacket Packet;
+
+	Packet = new class'AOCRConPacket';
+	Packet.SetMessageType(RCONX_ROUND_PLAYER_STAT);
+	Packet.AddQWord(Uid);
+	Packet.AddInt(Team);
+	Packet.AddString(PlayerName);
+	Packet.AddInt(Kills);
+	Packet.AddInt(Deaths);
+	Packet.AddInt(Assists);
+	Packet.AddInt(Score);
+	Packet.AddInt(EnemyDamage);
+	Packet.AddInt(TeamDamage);
+	Packet.AddInt(DamageTaken);
+	Packet.AddInt(Parries);
+	Packet.AddInt(Feints);
+	Packet.AddInt(MeleeHits);
+	Packet.AddInt(ProjectileHits);
+	Packet.AddInt(Blocks);
+	Packet.AddInt(Dodges);
+	SendPacket(Packet);
+}
+
+/** 68: closes a 67 burst. Count is the number of player-stat packets sent. */
+function SendRoundStatEnd(int Count)
+{
+	local AOCRConPacket Packet;
+
+	Packet = new class'AOCRConPacket';
+	Packet.SetMessageType(RCONX_ROUND_STAT_END);
+	Packet.AddInt(Count);
 	SendPacket(Packet);
 }
 
