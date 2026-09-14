@@ -323,11 +323,18 @@ function StartMatch()
  */
 function bool XangModRoundReportingEnabled()
 {
-    if (AOCLTS(self) != none)
+    local AOCGame G;
+
+    // Every gametype includes this file and they are all siblings under AOCGame, so a direct
+    // AOCLTS(self) is an impossible downcast -- a hard compile error in every mode but LTS.
+    // Going through an AOCGame local makes it a legal downcast, resolved at runtime.
+    G = self;
+
+    if (AOCLTS(G) != none)
         return true;
-    if (AOCTD(self) != none)
+    if (AOCTD(G) != none)
         return true;
-    if (AOCTeamObjective(self) != none && AOCTUT(self) == none)
+    if (AOCTeamObjective(G) != none && AOCTUT(G) == none)
         return true;
     return false;
 }
@@ -360,9 +367,11 @@ function string XangModRoundMapName()
  */
 function int XangModRoundWinnerTeamIndex()
 {
+    local AOCGame G;
     local AOCLTS LTS;
 
-    LTS = AOCLTS(self);
+    G = self;
+    LTS = AOCLTS(G);
     if (LTS != none)
     {
         if (LTS.RoundWinner != none)
@@ -376,9 +385,11 @@ function int XangModRoundWinnerTeamIndex()
 /** Current team scores and goal, source depends on mode (LTS vs the Teams[] mirror). */
 function XangModRoundScores(out int AgathaScore, out int MasonScore, out int Goal)
 {
+    local AOCGame G;
     local AOCLTS LTS;
 
-    LTS = AOCLTS(self);
+    G = self;
+    LTS = AOCLTS(G);
     if (LTS != none)
     {
         if (LTS.RoundScores.Length > 0)

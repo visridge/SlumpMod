@@ -11,7 +11,15 @@ var int iXangModCompForestLastMasonGroup;
 
 function bool XangModIsCompForestTO()
 {
-    return XangModTO(self) != none
+    local AOCGame G;
+
+    // Included from XangModGame.uci, so this compiles into every gametype, and they are all
+    // siblings under AOCGame -- XangModTO(self) is an impossible downcast everywhere but TO.
+    // Via an AOCGame local it is legal, and CurrentObjectiveStage is declared on
+    // AOCTeamObjective anyway, so nothing is lost by widening the target.
+    G = self;
+
+    return AOCTeamObjective(G) != none
         && WorldInfo != none
         && WorldInfo.GetMapName() ~= "AOCTO-CompForest_p";
 }
@@ -110,7 +118,8 @@ function int XangModGetCompForestLastGroup(EAOCFaction Team)
 
 function PlayerStart XangModChooseCompForestPlayerStart(Controller Player, optional byte InTeam)
 {
-    local XangModTO TOGame;
+    local AOCGame G;
+    local AOCTeamObjective TOGame;
     local EAOCFaction Team;
     local PlayerStart PickedStart;
     local int ObjectiveNumber;
@@ -118,7 +127,8 @@ function PlayerStart XangModChooseCompForestPlayerStart(Controller Player, optio
     local int NextGroup;
     local int FallbackGroup;
 
-    TOGame = XangModTO(self);
+    G = self;
+    TOGame = AOCTeamObjective(G);
     if (!bEnableCompForestAlternatingSpawns || TOGame == none || !XangModIsCompForestTO())
         return none;
 

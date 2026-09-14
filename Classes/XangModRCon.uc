@@ -102,6 +102,11 @@ struct MuteInfo
 
 var globalconfig array<MuteInfo> Mutes;
 
+/** Bind retry pacing. A port held by a dying process should not spin the Tick every frame. */
+var float XangModNextBindTime;
+var int XangModBindFailures;
+const BIND_RETRY_INTERVAL = 5.0;
+
 /** Index into the shared mute list, or INDEX_NONE. */
 function int XangModFindMute(UniqueNetId NetID)
 {
@@ -174,6 +179,61 @@ function XangModReapplyMute(PlayerReplicationInfo PRI)
 	APRI.bIsAdminMuted = true;
 	APRI.bForceNetUpdate = true;
 	XangModAudit("MUTE_REAPPLIED", APRI.PlayerName);
+}
+
+/**
+ * Bind and listen with the result actually checked.
+ *
+ * Vanilla AOCRCon does "BindPort(RConPort); if (Listen())" and throws the return away.
+ * BindPort returns the port it got, or 0 on failure, so a taken port means Listen() comes up
+ * on an OS-assigned one instead: the server logs nothing, reports itself listening, and
+ * refuses every client on the configured port. Retries are spaced so a port held by a dying
+ * process is recovered without spinning the Tick.
+ */
+function Tick(float fDeltaTime)
+{
+	local int Bound;
+
+	// A session must never bind. PostBeginPlay and Closed keep it out of RCON_Initialized,
+	// but do not lean on that -- from here vanilla's Tick would grab the listener's own port.
+	if (XangModRConSession(self) != none && RConState == RCON_Initialized)
+		RConState = RCON_Closing;
+
+	if (RConState != RCON_Initialized)
+	{
+		super.Tick(fDeltaTime);
+		return;
+	}
+
+	if (WorldInfo.TimeSeconds < XangModNextBindTime)
+		return;
+
+	Bound = BindPort(RConPort);
+	if (Bound == 0)
+	{
+		XangModNextBindTime = WorldInfo.TimeSeconds + BIND_RETRY_INTERVAL;
+		XangModBindFailures++;
+		// First failure, then once a minute. Enough to find in a log, not enough to fill one.
+		if (XangModBindFailures == 1 || (XangModBindFailures % 12) == 0)
+			LogAlwaysInternal("[XangModRCon] cannot bind port" @ RConPort
+				@ "- something else holds it. RCON is NOT accepting connections. Attempt"
+				@ XangModBindFailures);
+		return;
+	}
+
+	if (Bound != RConPort)
+		LogAlwaysInternal("[XangModRCon] WARNING: asked for port" @ RConPort @ "but bound" @ Bound
+			@ "- clients using the configured port will be refused.");
+
+	if (Listen())
+	{
+		RConState = RCON_Listening;
+		LogAlwaysInternal("[XangModRCon] listening on port" @ Bound);
+		return;
+	}
+
+	XangModNextBindTime = WorldInfo.TimeSeconds + BIND_RETRY_INTERVAL;
+	LogAlwaysInternal("[XangModRCon] bound port" @ Bound @ "but Listen() failed. RCON is NOT accepting connections.");
 }
 
 /** Shared state lives on the listener, so two admins cannot each keep their own copy. */
@@ -815,7 +875,7 @@ function HandleUnbanFixed(AOCRConPacket Packet)
 	local UniqueNetId NetID;
 	local AOCAccessControl AC;
 	local string Removed;
-	local int i;
+	local int i, PolicyIndex;
 
 	NetID.Uid = Packet.GetGUID();
 
@@ -837,6 +897,36 @@ function HandleUnbanFixed(AOCRConPacket Packet)
 		{
 			Removed = AC.Bans[i].PlayerName @ "(" $ AC.Bans[i].NetIDAsString $ ")";
 			break;
+		}
+	}
+
+	// Not in Bans, but it may still be in the stock uid list that Super.IsIDBanned
+	// enforces. UnbanByUID only touches Bans, so without this an entry the ban list now
+	// shows as "(uid ban list)" could be unbanned forever and never actually lift.
+	if (Removed == "")
+	{
+		for (i = 0; i < AC.BannedIDs.Length; i++)
+		{
+			if (!(AC.BannedIDs[i] == NetID))
+				continue;
+
+			Removed = "(uid ban list) (" $ class'OnlineSubsystem'.static.UniqueNetIdToString(NetID) $ ")";
+
+			// KickBanPlayer wrote a DENY line alongside this uid, so lifting the ban has to
+			// take both or the ini fills with orphans. Resolved before the removal, since the
+			// pairing test compares the two array lengths.
+			PolicyIndex = XangModPoliciesPairBans(AC) ? XangModNthDenyPolicy(AC, i) : INDEX_NONE;
+
+			AC.BannedIDs.Remove(i, 1);
+			if (PolicyIndex != INDEX_NONE)
+			{
+				Removed @= "and its policy line" @ AC.IPPolicies[PolicyIndex];
+				AC.IPPolicies.Remove(PolicyIndex, 1);
+			}
+
+			AC.SaveConfig();
+			XangModAudit("UNBAN", Removed);
+			return;
 		}
 	}
 
@@ -1068,22 +1158,117 @@ function SendConsoleResult(string Command, string Result)
 	SendPacket(Packet);
 }
 
+/* --- ban-list helpers: Chivalry keeps its bans in three places, see below --- */
+
+/**
+ * "DENY,<addr>" or "DENY;<addr>" -- the address may be empty. ACCEPT lines and anything
+ * without a separator are not DENY policies.
+ */
+function bool XangModIsDenyPolicy(string Policy)
+{
+	local int Sep;
+
+	Sep = InStr(Policy, ",");
+	if (Sep == INDEX_NONE)
+		Sep = InStr(Policy, ";");
+
+	return Sep != INDEX_NONE && Left(Policy, Sep) ~= "DENY";
+}
+
+/** The address half of a policy line, "" when the line carries none. */
+function string XangModPolicyAddress(string Policy)
+{
+	local int Sep;
+
+	Sep = InStr(Policy, ",");
+	if (Sep == INDEX_NONE)
+		Sep = InStr(Policy, ";");
+
+	return (Sep == INDEX_NONE) ? "" : Mid(Policy, Sep + 1);
+}
+
+/**
+ * True when every banned uid has exactly one DENY line, i.e. the two arrays are in lockstep
+ * and the Nth DENY line can be trusted to belong to the Nth banned uid.
+ *
+ * AOCAccessControl.KickBanPlayer appends "DENY," $ IP and then BannedIDs.AddItem in the same
+ * call, so Chivalry writes them as a pair, in that order, every time. The address is empty in
+ * practice because that function does Left(IP, InStr(IP, ":")) and a Steam socket address
+ * carries no ":port" -- InStr returns -1 and Left(IP, -1) is "". Counting rather than assuming
+ * keeps a hand-edited ini (an admin's own DENY line, say) from having the wrong entry removed.
+ */
+function bool XangModPoliciesPairBans(AOCAccessControl AC)
+{
+	local int i, Denies;
+
+	for (i = 0; i < AC.IPPolicies.Length; i++)
+	{
+		if (XangModIsDenyPolicy(AC.IPPolicies[i]))
+			Denies++;
+	}
+
+	return AC.BannedIDs.Length > 0 && Denies == AC.BannedIDs.Length;
+}
+
+/** Index into IPPolicies of the Nth DENY line, or INDEX_NONE. */
+function int XangModNthDenyPolicy(AOCAccessControl AC, int Ordinal)
+{
+	local int i, Seen;
+
+	for (i = 0; i < AC.IPPolicies.Length; i++)
+	{
+		if (!XangModIsDenyPolicy(AC.IPPolicies[i]))
+			continue;
+
+		if (Seen == Ordinal)
+			return i;
+
+		Seen++;
+	}
+
+	return INDEX_NONE;
+}
+
 /**
  * 39 -> a burst of 40s then a 41. Vanilla can unban but never shows the list, so you had
- * to know the uid. AOCAccessControl.Bans carries name, reason and duration.
+ * to know the uid.
+ *
+ * Three stores, all of them live, all of them reported here:
+ *   AOCAccessControl.Bans        name, reason, duration. Written by AddBan/KickBanGlobal --
+ *                                the RCON ban, votekick, the ping kick.
+ *   Engine.AccessControl.BannedIDs   bare uids, written by the console "admin kickban" and by
+ *                                AOCAccessControl.KickBanPlayer. Enforced, because
+ *                                AOCAccessControl.IsIDBanned ends with Super.IsIDBanned.
+ *   Engine.AccessControl.IPPolicies  DENY lines, enforced through Super.CheckIPPolicy.
+ *
+ * KickBanPlayer writes a DENY line and a BannedIDs entry together, so in practice the last
+ * two pair up one-for-one and are reported as a single row.
  */
 function HandleBanListRequest()
 {
 	local AOCAccessControl AC;
 	local AOCRConPacket Packet;
-	local int i;
+	local QWord ZeroId;
+	local UniqueNetId LegacyId;
+	local string Policy;
+	local bool bAlreadyListed, bPaired;
+	local int i, j, PolicyIndex, Count, LegacyUids, LegacyIPs;
 
 	if (WorldInfo.Game == none)
 		return;
 
 	AC = AOCAccessControl(WorldInfo.Game.AccessControl);
 	if (AC == none)
+	{
+		// Terminate the burst anyway. Returning without a BAN_LIST_END leaves the client
+		// waiting forever, which on screen is indistinguishable from an empty ban list.
+		XangModAudit("BAN_LIST_FAILED", "AccessControl is not an AOCAccessControl");
+		Packet = new class'AOCRConPacket';
+		Packet.SetMessageType(RCONX_BAN_LIST_END);
+		Packet.AddInt(0);
+		SendPacket(Packet);
 		return;
+	}
 
 	for (i = 0; i < AC.Bans.Length; i++)
 	{
@@ -1096,11 +1281,102 @@ function HandleBanListRequest()
 		Packet.AddString(AC.Bans[i].NetIDAsString);
 		Packet.AddString(AC.Bans[i].IPPolicy);
 		SendPacket(Packet);
+		Count++;
 	}
+
+	// There is a SECOND live ban store. AOCAccessControl.IsIDBanned ends with
+	// "return bBanned || Super.IsIDBanned(NetID)", so Engine.AccessControl.BannedIDs is
+	// still enforced -- it just carries no name, reason or duration. AddBan/KickBanGlobal
+	// (the RCON ban, votekick, ping kick) write to Bans; the console "admin kickban" and
+	// AOCAccessControl.KickBanPlayer write to BannedIDs instead. Reporting only Bans meant
+	// a server could be enforcing bans this list never showed.
+	bPaired = XangModPoliciesPairBans(AC);
+
+	for (i = 0; i < AC.BannedIDs.Length; i++)
+	{
+		bAlreadyListed = false;
+		for (j = 0; j < AC.Bans.Length; j++)
+		{
+			if (AC.Bans[j].NetID == AC.BannedIDs[i])
+			{
+				bAlreadyListed = true;
+				break;
+			}
+		}
+
+		if (bAlreadyListed)
+			continue;
+
+		// Show the paired DENY line in the IP column, but only when it names an address --
+		// Chivalry writes a bare "DENY," for every Steam-socket ban and that is not worth a
+		// column of noise.
+		PolicyIndex = bPaired ? XangModNthDenyPolicy(AC, i) : INDEX_NONE;
+		Policy = "";
+		if (PolicyIndex != INDEX_NONE && XangModPolicyAddress(AC.IPPolicies[PolicyIndex]) != "")
+			Policy = AC.IPPolicies[PolicyIndex];
+
+		LegacyId = AC.BannedIDs[i];
+		Packet = new class'AOCRConPacket';
+		Packet.SetMessageType(RCONX_BAN_INFO);
+		Packet.AddQWord(LegacyId.Uid);
+		Packet.AddString("(uid ban list)");
+		Packet.AddString("Banned by console kickban -- no name or reason recorded");
+		Packet.AddInt(0);
+		Packet.AddString(class'OnlineSubsystem'.static.UniqueNetIdToString(LegacyId));
+		Packet.AddString(Policy);
+		SendPacket(Packet);
+		Count++;
+		LegacyUids++;
+	}
+
+	// And a third store: DENY lines that belong to nobody. Super.CheckIPPolicy walks
+	// IPPolicies, so these are live bans too. Skipped entirely when the arrays pair up,
+	// since then every DENY line was already reported on its uid's row above.
+	for (i = 0; !bPaired && i < AC.IPPolicies.Length; i++)
+	{
+		Policy = AC.IPPolicies[i];
+
+		// An empty mask matches no address in Engine.AccessControl.CheckIPPolicy, so a bare
+		// "DENY," is inert -- listing it as a ban would be a lie.
+		if (!XangModIsDenyPolicy(Policy) || XangModPolicyAddress(Policy) == "")
+			continue;
+
+		bAlreadyListed = false;
+		for (j = 0; j < AC.Bans.Length; j++)
+		{
+			if (AC.Bans[j].IPPolicy ~= Policy)
+			{
+				bAlreadyListed = true;
+				break;
+			}
+		}
+
+		if (bAlreadyListed)
+			continue;
+
+		Packet = new class'AOCRConPacket';
+		Packet.SetMessageType(RCONX_BAN_INFO);
+		Packet.AddQWord(ZeroId);
+		Packet.AddString("(ip ban)");
+		Packet.AddString("IP policy -- remove from IPPolicies in the server ini to lift");
+		Packet.AddInt(0);
+		Packet.AddString("");
+		Packet.AddString(Policy);
+		SendPacket(Packet);
+		Count++;
+		LegacyIPs++;
+	}
+
+	// One audit line per refresh, naming what each store holds. When the list looks empty
+	// this is what says whether the server has nothing or the bans are somewhere we do not
+	// read -- worth far more than guessing from a blank grid.
+	XangModAudit("BAN_LIST", "Bans=" $ AC.Bans.Length $ " BannedIDs=" $ AC.BannedIDs.Length
+		$ " (" $ LegacyUids $ " extra) IPPolicies=" $ AC.IPPolicies.Length
+		$ " (" $ LegacyIPs $ " loose DENY) paired=" $ (bPaired ? "yes" : "no") $ " sent=" $ Count);
 
 	Packet = new class'AOCRConPacket';
 	Packet.SetMessageType(RCONX_BAN_LIST_END);
-	Packet.AddInt(AC.Bans.Length);
+	Packet.AddInt(Count);
 	SendPacket(Packet);
 }
 
@@ -1116,7 +1392,7 @@ function HandleMuteListRequest()
 	local AOCPlayerController PC;
 	local AOCPRI APRI, Online;
 	local AOCRConPacket Packet;
-	local int i, Count;
+	local int i, Count, Live;
 
 	for (i = 0; i < XangModShared().Mutes.Length; i++)
 	{
@@ -1137,9 +1413,39 @@ function HandleMuteListRequest()
 		Packet.AddString((Online != none) ? Online.PlayerName : XangModShared().Mutes[i].PlayerName);
 		Packet.AddInt((Online != none && Online.Team != none) ? Online.Team.TeamIndex : -1);
 		Packet.AddInt((Online != none) ? 1 : 0);
+		Packet.AddInt(1);
 		SendPacket(Packet);
 		Count++;
 	}
+
+	// The ban list's problem again, in the other store. AOCPlayerController.ServerAdminMutePlayer
+	// -- the escape-menu admin mute -- writes AOCPRI.bIsAdminMuted straight and never reaches the
+	// stored list, so an in-game mute was live and invisible here. Reported with stored=0: real,
+	// but gone the moment that player disconnects.
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+	{
+		APRI = AOCPRI(PC.PlayerReplicationInfo);
+		if (APRI == none || !APRI.bIsAdminMuted)
+			continue;
+
+		if (XangModFindMute(APRI.UniqueId) != INDEX_NONE)
+			continue;
+
+		Packet = new class'AOCRConPacket';
+		Packet.SetMessageType(RCONX_MUTE_INFO);
+		Packet.AddQWord(APRI.UniqueId.Uid);
+		Packet.AddString(APRI.PlayerName);
+		Packet.AddInt((APRI.Team != none) ? APRI.Team.TeamIndex : -1);
+		Packet.AddInt(1);
+		Packet.AddInt(0);
+		SendPacket(Packet);
+		Count++;
+		Live++;
+	}
+
+	// Same reasoning as the ban list: say out loud what each store holds, so an empty grid can
+	// be told apart from a request that never came back.
+	XangModAudit("MUTE_LIST", "stored=" $ XangModShared().Mutes.Length $ " live-only=" $ Live $ " sent=" $ Count);
 
 	Packet = new class'AOCRConPacket';
 	Packet.SetMessageType(RCONX_MUTE_LIST_END);
@@ -1772,14 +2078,27 @@ function HandleEndMatch(AOCRConPacket Packet)
 	if (WinningTeam >= 0)
 		WinnerPRI = Game.GetHighestScoreFromTeam(WinningTeam);
 
-	// EndGame's Reason is a match-end CONDITION string ("TimeLimit", "Triggered"), not
-	// anything a player ever sees -- which is why the reason never reached chat. Announce it
-	// separately first, while there is still a round to announce it into.
+	// No team named, or nobody left on it. Fall back to whoever the game itself would crown --
+	// the same call AOCGame.ManuallyEndGame makes. AOCFFA and AOCDuel read Winner.PlayerName
+	// without a null check, so handing them none costs the end screen its name.
+	if (WinnerPRI == none)
+		WinnerPRI = Game.GetHighestScoreFromTeam(Game.GetWinningTeam());
+
+	// EndGame's Reason is a match-end CONDITION string, not anything a player ever sees --
+	// which is why the reason never reached chat. Announce it separately first, while there is
+	// still a round to announce it into.
 	if (Reason != "")
 		Game.BroadcastMessage(none, "Match ended by admin:" @ Reason, EFAC_ALL, true, true, "#D1A04A");
 
 	XangModAudit("END_MATCH", "team" @ WinningTeam @ "|" @ Reason);
-	Game.EndGame(WinnerPRI, "Triggered");
+
+	// "TimeLimit" is not decoration, it is the only value that works in every mode.
+	// AOCFFA.EndGame runs its body only for Reason ~= "TimeLimit" (Medieval Warfare also
+	// accepts "Admin action"; Deadliest Warrior's copy does not), and AOCDuel.EndGame gates its
+	// main branch on "TimeLimit" alone. Anything else is a SILENT no-op in free-for-all -- the
+	// packet is handled, the audit fires, and the match simply never ends. Every base AOCGame
+	// mode passes Reason straight to EndLogging and ignores it, so nothing is lost by it.
+	Game.EndGame(WinnerPRI, "TimeLimit");
 }
 
 /** 45: toggle auto team balance. */

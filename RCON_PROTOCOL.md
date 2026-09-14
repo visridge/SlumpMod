@@ -104,7 +104,11 @@ gate stays latched open from the previous round.
 ### 62-64 -- muted player list
 
   * **62 MUTE_LIST_REQUEST** `(no body)`
-  * **63 MUTE_INFO** `QWord uid, string name, int team, int online` -- one per stored mute
+  * **63 MUTE_INFO** `QWord uid, string name, int team, int online, int stored` -- one per mute.
+    `stored=0` marks a live mute the mod never recorded: `AOCPlayerController.ServerAdminMutePlayer`
+    (`AdminMutePlayer` in Deadliest Warrior) writes `AOCPRI.bIsAdminMuted` straight, so it is real but
+    lasts only until that player disconnects. The trailing field is new in 1.4; a client that stops
+    after `online` reads everything as stored, which is what older servers meant.
   * **64 MUTE_LIST_END** `int count`
 
 Same request/burst/end shape as 29-31 and 39-41, and it closes the same gap 39-41 closed
@@ -241,11 +245,13 @@ ChivAdmin ignores opcodes it does not know, so these cannot break it.
 | 38 | CONSOLE_RESULT | out | string command, string result |
 | 39 | BAN_LIST_REQUEST | in | (empty) |
 | 40 | BAN_INFO | out | qword uid, string name, string reason, int durationSeconds, string netIdString, string ipPolicy |
-| 41 | BAN_LIST_END | out | int count |
+| | | | Three stores are reported, not one, because all three are enforced. `AOCAccessControl.Bans` holds the rich entries the RCON ban, votekick and ping kick write. `Engine.AccessControl.BannedIDs` holds bare uids written by the console `admin kickban` and by `AOCAccessControl.KickBanPlayer`; `AOCAccessControl.IsIDBanned` ends with `bBanned || Super.IsIDBanned(NetID)`, so those are live bans -- sent as `(uid ban list)`, duration 0, because the game records nothing else. `Engine.AccessControl.IPPolicies` DENY lines are live too via `Super.CheckIPPolicy`; sent with uid 0 and name `(ip ban)`. `KickBanPlayer` appends the DENY line and the `BannedIDs` entry together, so when the two arrays pair one-for-one the Nth policy is reported on the Nth uid's row and opcode 20 removes both. A bare `DENY,` (Steam sockets carry no `:port`, so `Left(IP, InStr(IP, ":"))` yields "") is inert and never listed. Entries already covered by `Bans` are not repeated. |
+| 41 | BAN_LIST_END | out | int count (every BAN_INFO sent, across all three stores) |
 | 42 | MUTE_PLAYER | in | qword uid, int mute |
 | 43 | SET_PAUSE | in | int paused |
 | | | | Goes to `AOCGame.SetPause`/`ClearPause`, not `PlayerController.SetPause` (XangMod's override there is admin-gated). `bPauseable` is forced on around the call: AOCGame inherits `bPauseable=False` from `UTGame.uc:3396`, and `bAdminCanPause=false` in UDKGame.ini, so `AllowPausing` refused every pause until this. In-game `unpause` only clears a pause the same controller set, so it cannot undo this -- unpause over RCON. |
 | 44 | END_MATCH | in | int winningTeam, string reason |
+| | | | `winningTeam` does not decide the winner. `AOCGame.EndGame` opens with `WinningTeam = GetWinningTeam()` and takes the result off the live scores; the parameter only picks whose top scorer is spotlighted (`GetHighestScoreFromTeam`). Use opcode 34 first to hand a team the match. `reason` is broadcast to chat here -- `EndGame`'s own Reason is a condition string players never see, and it is passed as **`"TimeLimit"`**: `AOCFFA.EndGame` runs its body only for `"TimeLimit"` (Medieval Warfare also accepts `"Admin action"`, Deadliest Warrior's copy does not) and `AOCDuel.EndGame` gates on `"TimeLimit"` alone, so any other string is a silent no-op in free-for-all. Ends 25s later via `ActualEndGame`. |
 | 45 | SET_AUTOBALANCE | in | int enabled |
 | 46 | SET_GAME_SPEED | in | int speedPercent (100 = normal, clamped 10-400) |
 | 47 | RESTART_MATCH | in | (empty) |
