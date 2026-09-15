@@ -1,0 +1,368 @@
+// XangMod - Movement.uci
+// Included via XangModPawn.uci. Vars live in Pawn/Vars.uci; DefaultProperties in Pawn/Camera.uci (last).
+function StartSprintRecovery() {
+	// Old code, but I will keep it here
+	/*if(IsTimerActive('EndSprintRecovery'))
+	{
+		ClearTimer('EndSprintRecovery');
+	}
+	bForceNoSprint = true;
+	SetTimer(0.5f, false, 'EndSprintRecovery');*/
+}
+
+// XANGMOD: Override SprintState to block sprint-off during Grand Lance charge.
+// Prevents the player from resetting the sprint speed ramp by tapping the sprint key.
+exec function SprintState(optional bool bSprint = false, optional bool bForceToggleSprint)
+{
+	if (bForceSprintForward && !bSprint)
+		return;
+
+	super.SprintState(bSprint, bForceToggleSprint);
+}
+
+
+// XANGMOD: Override ToggleSprint to prevent sprint-off from any source during charge.
+function ToggleSprint(bool bSprint, optional bool bForce)
+{
+	if (bForceSprintForward && !bSprint)
+		return;
+
+	super.ToggleSprint(bSprint, bForce);
+}
+
+
+// XANGMOD: Override PerformCrouch to block client-side crouch during Grand Lance charge.
+// PerformCrouch intentionally skips the bCanCrouch check (see AOCPawn comment), so without
+// this override a held crouch key would set bIsCrouching = true locally each frame even
+// though the server correctly rejects it via bCanCrouch. Blocking it here keeps the client
+// and server in sync without relying solely on the Tick's bIsCrouching = false correction.
+simulated function PerformCrouch(bool bCrouch)
+{
+	if (bForceSprintForward && bCrouch)
+		return;
+
+	super.PerformCrouch(bCrouch);
+}
+
+
+// XANGMOD: Override ModifyVelocity to steer the Grand Lance stab charge in the full 3D
+// direction the player is looking — pitch included. Gravity is intentionally suppressed each
+// frame by overwriting Velocity (Z included) with the look-direction vector, producing the
+// "witch's broom" effect: look up to fly up, look down to dive.
+function ModifyVelocity(float DeltaTime, vector OldVelocity)
+{
+	local vector Forward;
+	local float SpeedBefore;
+
+	if (bForceSprintForward)
+	{
+		if (bIsCrouching)
+			ServerPerformCrouch(false);
+		RemoveDebuff(EDEBF_CROUCH);
+
+		// Full 3D camera look direction — pitch is kept so vertical steering works.
+		Forward = Normal(vector(GetViewRotation()));
+
+		// Align Acceleration with look direction so the native sprint ramp sees forward input.
+		Acceleration = Forward * VSize(Acceleration);
+
+		// Capture 3D speed BEFORE super so the broom doesn't lose vertical momentum.
+		SpeedBefore = VSize(Acceleration) > 0 ? VSize(Velocity) : GroundSpeed;
+
+		// Let super run (gravity, friction, sprint ramp, etc.).
+		super.ModifyVelocity(DeltaTime, OldVelocity);
+
+		// Override full Velocity to the look direction at the captured speed.
+		// Intentionally zeroes gravity (Z included) — the broom flies where you aim.
+		Velocity = Forward * FMax(SpeedBefore, VSize(Velocity));
+
+		// Keep sprint alive.
+		bClientWantsToSprint = true;
+	}
+	else
+	{
+		super.ModifyVelocity(DeltaTime, OldVelocity);
+	}
+}
+
+
+	/*
+	bUsingBastardSword = Weapon != none
+		&& Weapon.Class == class'XangModWeapon_BastardSword';
+
+	if (bUsingBastardSword)
+	{
+		if (StateVariables.bIsSprinting && !bWasBastardSwordSprinting)
+		{
+			BastardSwordSprintStartTime = WorldInfo.TimeSeconds;
+		}
+
+		bWasBastardSwordSprinting = StateVariables.bIsSprinting;
+	}
+	else
+	{
+		bWasBastardSwordSprinting = false;
+		BastardSwordSprintStartTime = WorldInfo.TimeSeconds;
+	}
+
+	bCanUseBastardSwordSprintAttack = bUsingBastardSword
+		&& StateVariables.bIsSprinting
+		&& WorldInfo.TimeSeconds - BastardSwordSprintStartTime > 4.f
+		&& WorldInfo.TimeSeconds - fLastAttackTime > 2.f
+		&& Weapon.Class != TertiaryWeapon
+		&& Weapon.Class != class'AOCWeapon_Torch';
+
+	if (bUsingBastardSword)
+	{
+		bIsSprintMaxSpeed = bCanUseBastardSwordSprintAttack;
+	}
+	*/
+	
+
+
+function int CalcDodgeCost() {
+	// Check if player is holding a Hatchet - use custom dodge cost
+	if (XangModWeapon_Hatchet(Weapon) != none) {
+		return 22;
+	}
+	
+	// Default behavior for other weapons - no extra cost for parry dodge
+	return PawnFamily.iDodgeCost;
+}
+
+/** Override DoJump to reduce stamina cost from 7 to 4 */
+simulated function bool CanAirJump()
+{
+	/*
+	return Weapon != none
+		&& Weapon.Class == class'XangModWeapon_Kanabo'
+		&& StateVariables.bCanJump
+		&& bJumpCapable
+		&& !bIsCrouching
+		&& Physics == PHYS_Falling
+		&& !bKanaboExtraJumpUsed
+		&& !(StateVariables.bIsAttacking && AOCWeapon(Weapon) != none && AOCWeapon(Weapon).CurrentFireMode == Attack_Shove)
+		&& PawnState != ESTATE_FROZEN
+		&& PawnState != ESTATE_SIEGEWEAPON
+		&& PawnState != ESTATE_DODGE
+		&& HasEnoughStamina(10);
+	*/
+
+	return false;
+}
+
+function bool DoJump( bool bUpdating )
+{
+	local Vector VelocityXY;
+	local bool bCanNormalJump;
+	local bool bCanKanaboSecondJump;
+
+	bCanNormalJump = StateVariables.bCanJump
+		&& bJumpCapable
+		&& !bIsCrouching
+		&& (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider)
+		&& !(StateVariables.bIsAttacking && AOCWeapon(Weapon).CurrentFireMode == Attack_Shove)
+		&& (PawnState == ESTATE_IDLE || PawnState == ESTATE_RUN || PawnState == ESTATE_SPRINT);
+	bCanKanaboSecondJump = CanAirJump();
+
+	if (bCanNormalJump)
+	{
+		bKanaboExtraJumpUsed = false;
+
+		super.DoJump(bUpdating);
+
+
+		//Cap velocity X/Y
+		VelocityXY.X = Velocity.X;
+		VelocityXY.Y = Velocity.Y;
+		VelocityXY = Normal(VelocityXY) * Min(VSize(VelocityXY), GroundSpeed);
+		Velocity.X = VelocityXY.X;
+		Velocity.Y = VelocityXY.Y;
+
+		// update state
+		StateVariables.bIsManualJumpDodge = true;
+		StateVariables.bCanCrouch = false;
+
+		return true;
+	}
+
+	if (bCanKanaboSecondJump)
+	{
+		if (Role == Role_Authority)
+			ConsumeStamina(10);
+
+		Velocity.Z = PawnFamily.JumpZ;
+		bKanaboExtraJumpUsed = true;
+		StateVariables.bIsManualJumpDodge = true;
+		StateVariables.bCanCrouch = false;
+
+		return true;
+	}
+
+	return false;
+}
+
+// This gets called whenever the server initiates a dodge
+reliable server function ServerStartDodge(byte direction, byte WeaponId) {
+	// Set last dodge time
+	if (AOCPlayerController(Controller) != none)
+		AOCPlayerController(Controller).LastDodgeTime = WorldInfo.TimeSeconds;
+
+	// Fill out information about dodge
+	DodgeInfo.Direction = Direction;
+	DodgeInfo.WeaponId = WeaponId;
+
+	// Lock the player out from attacking until the dodge ends
+	StateVariables.bCanAttack = false;
+
+	// Start the dodge
+	DodgeSM.StartDodgeSM(direction, WeaponId);
+
+	// Consume extra stamina
+	ConsumeStamina(CalcDodgeCost() - PawnFamily.iDodgeCost);
+}
+
+function bool StartDodge(int direction)
+{
+	local byte WeaponId;
+
+	OnActionInitiated(EACT_Dodge);
+
+	if ( bIsCrouching || (Physics != PHYS_Walking && Physics != PHYS_Falling) || PawnState == ESTATE_FROZEN || PawnState == ESTATE_SIEGEWEAPON || PawnState == ESTATE_DODGE )
+		return false;
+	
+	// Custom: Block backward dodge while airborne (direction 3 = DCLICK_Back)
+	// Check if Z velocity is NOT approximately zero (player is jumping/falling, not on ground)
+	if (!(Velocity.Z ~= 0.0) && direction == 2)
+		return false;
+	
+	if( StateVariables.bCanDodge && !StateVariables.bDodgeDebuffActive && PawnFamily.bCanDodge && AOCWeapon(Weapon).bCanDodge)
+	{
+		if (!HasEnoughStamina(CalcDodgeCost()))
+		{
+			PlayLowStaminaGrunt();
+			OnActionFailed(EACT_Dodge);
+			return false;
+		}
+
+		if (Weapon.Class == PrimaryWeapon)
+		{
+			WeaponId = 0;
+		}
+		else if (Weapon.Class == SecondaryWeapon)
+		{
+			WeaponId = 1;
+		}
+		else if (Weapon.Class == TertiaryWeapon)
+		{
+			WeaponId = 2;
+		}
+		else
+		{
+			WeaponId = 3;
+		}
+
+		// MT CCheng 8/7/2014: Whether it's a dedicated or listen server, if we call StartDodgeSM()
+		// here, it will be called twice, since it's also called in ServerStartDodge().
+		if (!(WorldInfo.NetMode == NM_DedicatedServer || WorldInfo.NetMode == NM_ListenServer))
+		{
+			DodgeSM.StartDodgeSM(direction, WeaponId);
+
+			// Consume extra stamina
+			ConsumeStamina(CalcDodgeCost() - PawnFamily.iDodgeCost);
+		}
+
+		if (WorldInfo.NetMode != NM_Standalone)
+		{
+			ServerStartDodge(direction, WeaponId);
+		}
+
+		OnActionSucceeded(EACT_Dodge);
+		return true;
+	}
+	return false;
+}
+
+// Override lunge to use camera yaw only, so looking up/down does not affect
+// horizontal lunge direction or strength.
+function bool Lunge(optional bool bManualFlag = false, optional bool bReverseDirection = false, optional bool bCombo = false)
+{
+	local vector X, Y, Z;
+	local rotator ViewRot;
+
+	if (Physics == PHYS_Falling || PawnState == ESTATE_PUSH || PawnState == ESTATE_BATTERING || PawnState == ESTATE_DODGE)
+		return false;
+
+	ViewRot = GetViewRotation();
+	ViewRot.Pitch = 0;
+	ViewRot.Roll = 0;
+	GetAxes(ViewRot, X, Y, Z);
+
+	X.Z = 0.0f;
+	Y.Z = 0.0f;
+	X = Normal(X);
+	Y = Normal(Y);
+
+	if (bReverseDirection)
+		X *= -1;
+
+	return PerformLunge(X, Y, bManualFlag, bCombo);
+}
+
+// This gets called when the dodge queue ends
+simulated function EndDodgeQueue() {
+	if (DodgeSM.AttackQueue != Attack_Parry) {
+		// Wait 0.3s and call 'FinishDodgeFlinch'
+		if (DodgeSM.DodgeDir == 0)
+			SetTimer(0.15f, false, 'FinishDodgeFlinch');
+		else
+			SetTimer(0.2f, false, 'FinishDodgeFlinch');
+	} else {
+		// Execute parry now
+		FinishDodgeFlinch();
+	}
+}
+
+simulated function FinishDodgeFlinch() {
+	// Allow the player to attack again
+	StateVariables.bCanAttack = true;
+
+	// Start a queued attack
+	DodgeSM.StartQueuedAttack();
+}
+
+simulated function RestoreDodgeWeaponAttachment()
+{
+	if (XangModDodge(DodgeSM) != none)
+	{
+		XangModDodge(DodgeSM).RestoreOriginalWeaponAttachment();
+	}
+}
+
+/** Override to use XangModRoll (ninja-roll for Archer) with the shared weapon-identifier remap. */
+simulated function VerifyDodgeSMInitialize()
+{
+	if (DodgeSM == none)
+	{
+		DodgeSM = new(Outer) class'XangModRoll';
+		DodgeSM.OwnerPawn = self;
+	}
+}
+
+
+
+
+// Reduce momentum loss when colliding with other pawns
+event Bump( Actor Other, PrimitiveComponent OtherComp, Vector HitNormal )
+{
+	super.Bump(Other, OtherComp, HitNormal);
+
+	// Preserve 50% of velocity when bumping into other pawns during normal movement
+	// (Vanilla zeros velocity completely, causing excessive momentum loss)
+	if (AOCPawn(Other) != none && !StateVariables.bIsSprintAttack && !bForceVelocity)
+	{
+		Velocity = Velocity * 1.0f;
+		Acceleration = Acceleration * 1.0f;
+	}
+}
+

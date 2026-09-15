@@ -7,42 +7,8 @@
 */
 class XangModWeapon_PoleHammer extends  XangModMeleeWeapon;
 
-simulated state ParryRelease
-{
-	simulated function BeginFire(byte FireModeNum)
-	{
-		super.BeginFire(FireModeNum);
-
-		if (AOCOwner.IsLocallyControlled())
-		{
-			if (bSuccessfulParry && bParryHitCounter && FireModeNum == Attack_Parry) {
-				ClearTimer('PlayRiposteAnimation');
-				ClearTimer('OnStateAnimationEnd');
-				AOCOwner.ConsumeStamina(iFeintStaminaCost);
-				ActivateParry();
-				if (WorldInfo.NetMode != NM_Standalone && (Worldinfo.NetMode != NM_ListenServer || !AOCOwner.IsLocallyControlled())) {
-					ServerActivateParry();
-				}
-			}
-		}
-	}
-}
-
 simulated state Release
 {
-	simulated function BeginFire(byte FireModeNum)
-	{
-		super.BeginFire(FireModeNum);
-		if (FireModeNum == Attack_Parry && bParryHitCounter) {
-			AttackQueue = Attack_Null;
-			ClearTimer('OnStateAnimationEnd');
-			AOCOwner.ConsumeStamina(iFeintStaminaCost);
-			ActivateParry();
-			if (WorldInfo.NetMode != NM_Standalone && (Worldinfo.NetMode != NM_ListenServer || !AOCOwner.IsLocallyControlled())) {
-				ServerActivateParry();
-			}
-		}
-	}
 
 	/** Play Release animation */
 	simulated function PlayStateAnimation()
@@ -62,7 +28,6 @@ simulated state Release
 				else if (VSize(AOCOwner.Velocity) <= 2.f && !Info.bUseRMM)
 					Info.bFullBody = false;
 			}
-
 
 			// pass this information down to the weapon attachment
 			AOCWepAttachment.ComboCount = iComboCount;

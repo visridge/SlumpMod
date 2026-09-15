@@ -1,0 +1,152 @@
+// XangMod - RoundReporting.uci
+// Included via XangModGame.uci. Vars live in Game/Vars.uci; DefaultProperties in Game/Server.uci (last).
+/**
+ * True when this game mode should report round boundaries over RCON (opcodes 65-68).
+ * LTS (many scored rounds per map) and TD/TO (one round == the map) are covered.
+ * Everything else -- FFA, CTF, KOTH, Duel, CDWDuel, TUT, Survival -- is deliberately
+ * excluded: their round semantics don't map cleanly to a start/end boundary. AOCTUT is a
+ * AOCTeamObjective subclass, so it must be singled out or the tutorial would report too.
+ */
+function bool XangModRoundReportingEnabled()
+{
+    local AOCGame G;
+
+    // Every gametype includes this file and they are all siblings under AOCGame, so a direct
+    // AOCLTS(self) is an impossible downcast -- a hard compile error in every mode but LTS.
+    // Going through an AOCGame local makes it a legal downcast, resolved at runtime.
+    G = self;
+
+    if (AOCLTS(G) != none)
+        return true;
+    if (AOCTD(G) != none)
+        return true;
+    if (AOCTeamObjective(G) != none && AOCTUT(G) == none)
+        return true;
+    return false;
+}
+
+/** Map an EAOCFaction to the int the client expects: 0 Agatha, 1 Mason, -1 none/draw. */
+function int XangModRoundTeamIndex(EAOCFaction Faction)
+{
+    if (Faction == EFAC_AGATHA)
+        return 0;
+    if (Faction == EFAC_MASON)
+        return 1;
+    return -1;
+}
+
+/** Map name for round events, with a fallback so it is never empty. */
+function string XangModRoundMapName()
+{
+    local string M;
+
+    M = GetCurrentMap();
+    if (M == "")
+        M = WorldInfo.GetMapName();
+    return M;
+}
+
+/**
+ * The team that won the round just ended. For LTS this is AOCLTS.RoundWinner (the
+ * AOCGame.WinningTeam member is only written by EndGame, so it is stale for a normal
+ * per-round LTS end). TD/TO always route through EndGame, so WinningTeam is current there.
+ */
+function int XangModRoundWinnerTeamIndex()
+{
+    local AOCGame G;
+    local AOCLTS LTS;
+
+    G = self;
+    LTS = AOCLTS(G);
+    if (LTS != none)
+    {
+        if (LTS.RoundWinner != none)
+            return LTS.RoundWinner.TeamIndex;
+        return -1;
+    }
+
+    return XangModRoundTeamIndex(WinningTeam);
+}
+
+/** Current team scores and goal, source depends on mode (LTS vs the Teams[] mirror). */
+function XangModRoundScores(out int AgathaScore, out int MasonScore, out int Goal)
+{
+    local AOCGame G;
+    local AOCLTS LTS;
+
+    G = self;
+    LTS = AOCLTS(G);
+    if (LTS != none)
+    {
+        if (LTS.RoundScores.Length > 0)
+            AgathaScore = LTS.RoundScores[0];
+        if (LTS.RoundScores.Length > 1)
+            MasonScore = LTS.RoundScores[1];
+        Goal = LTS.GoalScore;
+        return;
+    }
+
+    if (Teams.Length > 0 && Teams[EFAC_AGATHA] != none)
+        AgathaScore = Teams[EFAC_AGATHA].Score;
+    if (Teams.Length > 1 && Teams[EFAC_MASON] != none)
+        MasonScore = Teams[EFAC_MASON].Score;
+    Goal = GoalScore;
+}
+
+/** 66 + a burst of 67s then 68. Called from StartRound/AOCEndRound/EndGame. */
+function XangModSendRoundEnd(int WinningTeam, int MatchEnding)
+{
+    local XangModRCon RCon;
+    local int AgathaScore, MasonScore, Goal;
+
+    RCon = XangModRCon(RemoteConsole);
+    if (RCon == none)
+        return;
+
+    XangModRoundScores(AgathaScore, MasonScore, Goal);
+    RCon.SendRoundEnd(WinningTeam, XangModRoundMapName(), XangModRoundNumber, AgathaScore, MasonScore, MatchEnding);
+    XangModSendRoundStats(RCon);
+}
+
+/** Walk every connected, non-bot player and push one 67 each, then a 68. */
+function XangModSendRoundStats(XangModRCon RCon)
+{
+    local int i, Count;
+    local `{GAMEMODE}PRI ModPRI;
+
+    if (RCon == none || WorldInfo == none || WorldInfo.GRI == none)
+    {
+        if (RCon != none)
+            RCon.SendRoundStatEnd(0);
+        return;
+    }
+
+    for (i = 0; i < WorldInfo.GRI.PRIArray.Length; ++i)
+    {
+        ModPRI = `{GAMEMODE}PRI(WorldInfo.GRI.PRIArray[i]);
+        if (ModPRI == none || ModPRI.bBot)
+            continue;
+
+        RCon.SendRoundPlayerStat(
+            ModPRI.UniqueId.Uid,
+            (ModPRI.Team != none) ? ModPRI.Team.TeamIndex : -1,
+            ModPRI.PlayerName,
+            ModPRI.NumKills,
+            ModPRI.Deaths,
+            ModPRI.NumAssists,
+            int(ModPRI.Score),
+            ModPRI.EnemyDamageDealt,
+            ModPRI.TeamDamageDealt,
+            ModPRI.AllDamageTaken,
+            ModPRI.Parries,
+            ModPRI.Feints,
+            ModPRI.MeleeHits,
+            ModPRI.ProjectileHits,
+            ModPRI.Blocks,
+            ModPRI.Dodges);
+        Count++;
+    }
+
+    RCon.SendRoundStatEnd(Count);
+}
+

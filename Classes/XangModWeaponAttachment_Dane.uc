@@ -7,6 +7,9 @@
 */
 class XangModWeaponAttachment_Dane extends AOCWeaponAttachment_Dane;
 
+// Parry-box + netcode overrides. MUST be at class level - see the file header.
+`include(XangMod/Include/XangModWeaponAttachmentCode.uci)
+
 DefaultProperties
 {
 	`include(XangMod/Include/XangModWeaponAttachment.uci);

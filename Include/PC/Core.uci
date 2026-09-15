@@ -1,0 +1,585 @@
+// XangMod - Core.uci
+// Included via XangModPlayerController.uci. Vars live in PC/Vars.uci; DefaultProperties in PC/Effects.uci (last).
+// Ensure XangMod uses its customization class everywhere
+simulated event PostBeginPlay()
+{
+	super.PostBeginPlay();
+	if (CustomizationClass != class'XangModCustomization')
+	{
+		CustomizationClass = class'XangModCustomization';
+	}
+
+	// XANGMOD: follow players in first person by default; Space toggles back to
+	// the vanilla orbit follow. Set here rather than in state Spectating.BeginState
+	// so the choice sticks for the whole session instead of resetting every time
+	// the player re-enters spectate.
+	bXangModFPSpectate = true;
+
+	XangModRepairPersistedConfig();
+}
+
+/*
+simulated function bool CanBastardSwordSprintAttack(AOCPawn AOCP)
+{
+	if (AOCP == none || AOCP.Weapon == none)
+	{
+		return false;
+	}
+
+	return AOCP.Weapon.Class == class'XangModWeapon_BastardSword'
+		&& AOCP.bIsSprintMaxSpeed;
+}
+*/
+
+// Allow sprint attack for the bastard sword without enabling it for the rest of Man at Arms.
+exec function StartFire(optional byte FireModeNum)
+{
+	local AOCPawn AOCP;
+	local bool bCanUseSprintAttack;
+
+	AOCP = AOCPawn(Pawn);
+
+	if (WorldInfo.Pauser == PlayerReplicationInfo)
+	{
+		SetPause(false);
+		return;
+	}
+
+	if (AOCP != none)
+	{
+		bCanUseSprintAttack = AOCP.StateVariables.bIsSprinting
+			&& !AOCP.StateVariables.bIsManualJumpDodge
+			&& FireModeNum == Attack_Sprint
+			&& !AOCP.StateVariables.bIsAttacking
+			&& AOCP.StateVariables.bCanSprintAttack
+			&& !ScriptBlockedInputs[EINBLOCK_AttackSprint]
+			// && ((AOCP.bIsSprintMaxSpeed && AOCP.PawnFamily.bCanSprintAttack) || CanBastardSwordSprintAttack(AOCP));
+			&& AOCP.bIsSprintMaxSpeed
+			&& AOCP.PawnFamily.bCanSprintAttack;
+
+		if (bCanUseSprintAttack)
+		{
+			if (!AOCP.HasEnoughStamina(20))
+			{
+				return;
+			}
+		}
+		else
+		{
+			if (FireModeNum == Attack_Sprint)
+			{
+				return;
+			}
+		}
+
+		if (FireModeNum == Attack_Parry && ScriptBlockedInputs[EINBLOCK_Block]
+		  || FireModeNum == Attack_Slash && ScriptBlockedInputs[EINBLOCK_AttackSlash]
+		  || FireModeNum == Attack_Stab && ScriptBlockedInputs[EINBLOCK_AttackStab]
+		  || FireModeNum == Attack_Overhead && ScriptBlockedInputs[EINBLOCK_AttackOverhead]
+		  || FireModeNum == Attack_Shove && ScriptBlockedInputs[EINBLOCK_AttackShove])
+		{
+			return;
+		}
+
+		if (AOCP.StateVariables.bCanParry && FireModeNum == Attack_Parry)
+		{
+			LastAttack = Attack_Parry;
+			LastFireTime = WorldInfo.TimeSeconds;
+			AOCP.StartFire(Attack_Parry);
+			return;
+		}
+
+		if (FireModeNum == Attack_Shove && !AOCP.HasEnoughStamina(AOCP.PawnFamily.iKickcost))
+		{
+			AOCP.PlayLowStaminaGrunt();
+			return;
+		}
+
+		if (AOCP.DodgeSM.bQueueDodgeAttack)
+		{
+			LastAttack = EAttack(FireModeNum);
+			LastFireTime = WorldInfo.TimeSeconds;
+			AOCP.DodgeSM.QueueAttack(FireModeNum);
+			return;
+		}
+
+		if (!bCinematicMode && AOCP.StateVariables.bCanAttack)
+		{
+			LastAttack = EAttack(FireModeNum);
+			LastFireTime = WorldInfo.TimeSeconds;
+			AOCP.StartFire(FireModeNum);
+		}
+
+		return;
+	}
+
+	super.StartFire(FireModeNum);
+}
+
+// Override ProcessViewRotation to remove turn cap during parry counters
+function ProcessViewRotation( float DeltaTime, out Rotator out_ViewRotation, Rotator DeltaRot )
+{
+	local float MaxTurnSpeed;
+	local float MaxVertTurnSpeed;
+	local bool bInAttackFlow;
+	local bool bSavedAttacking;
+	local float AttackH, AttackV;
+
+	if( PreventTurning )
+        return;
+	if( PlayerCamera != None )
+	{
+		PlayerCamera.ProcessViewRotation( DeltaTime, out_ViewRotation, DeltaRot );
+	}
+	
+	if(ScriptBlockedInputs[EINBLOCK_Rotate])
+	{
+		DeltaRot.Yaw = 0;
+		DeltaRot.Pitch = 0;
+		DeltaRot.Roll = 0;	
+	}
+	else if ( AOCPawn(Pawn) != None )
+	{	
+		// XANGMOD turncap desync fix. StateVariables is a *replicated* struct, so on a dedicated
+		// server the server's snapshot of bIsAttacking periodically clobbers the owning client's
+		// locally-predicted value. During rapid combos that bool can read false for a frame or two
+		// between chained attacks; on those frames the gate below skipped the yaw clamp entirely
+		// and an uncapped mouse delta was applied and then sent to (and trusted by) the server ->
+		// the "turncap comes unbound / spin" desync. The weapon's simulated state
+		// (Windup/Release/Transition) is driven by the client's own animation timers and does NOT
+		// suffer that clobber, so use it as a stable fallback to keep the cap bound for the whole
+		// combo. Melee only (ranged draw/reload has its own handling below).
+		bInAttackFlow = Pawn.Weapon != none && AOCMeleeWeapon(Pawn.Weapon) != none
+			&& (AOCWeapon(Pawn.Weapon).IsInState('Windup')
+				|| AOCWeapon(Pawn.Weapon).IsInState('Release')
+				|| AOCWeapon(Pawn.Weapon).IsInState('Transition'));
+
+		if ( (AOCPawn(Pawn).StateVariables.bIsAttacking || bInAttackFlow) && LimitTurnSpeed  && Pawn.Weapon != none && AOCWeapon(Pawn.Weapon) != none)
+		{
+			MaxTurnSpeed = AOCWeapon(Pawn.Weapon).GetHorizontalRotateSpeed();
+			MaxVertTurnSpeed = AOCWeapon(Pawn.Weapon).GetVerticalRotateSpeed();
+
+			// If the replicated bool flickered false mid-combo, GetHorizontalRotateSpeed() returns
+			// the *free-look* speed (its !bIsAttacking branch).  Call GetHorizontalRotateSpeed /
+			// GetVerticalRotateSpeed again with a temporary bIsAttacking=true so per-firemode
+			// overrides in subclasses are still respected during the flicker.  The FMax() against
+			// the raw vars keeps a safe floor in case the override returns 0.
+			if (bInAttackFlow && !AOCPawn(Pawn).StateVariables.bIsAttacking)
+			{
+				bSavedAttacking = AOCPawn(Pawn).StateVariables.bIsAttacking;
+				AOCPawn(Pawn).StateVariables.bIsAttacking = true;
+				AttackH = AOCWeapon(Pawn.Weapon).GetHorizontalRotateSpeed();
+				AttackV = AOCWeapon(Pawn.Weapon).GetVerticalRotateSpeed();
+				AOCPawn(Pawn).StateVariables.bIsAttacking = bSavedAttacking;
+
+				if (AOCWeapon(Pawn.Weapon).CurrentFireMode == Attack_Sprint)
+				{
+					MaxTurnSpeed    = FMax(AttackH, AOCWeapon(Pawn.Weapon).SprintAttackHorizRotateSpeed);
+					MaxVertTurnSpeed = FMax(AttackV, AOCWeapon(Pawn.Weapon).SprintAttackVerticalRotateSpeed);
+				}
+				else
+				{
+					MaxTurnSpeed    = FMax(AttackH, AOCWeapon(Pawn.Weapon).AttackHorizRotateSpeed);
+					MaxVertTurnSpeed = FMax(AttackV, AOCWeapon(Pawn.Weapon).VerticalRotateSpeed);
+				}
+			}
+			
+			// XANGMOD: Loosen turn cap during parry animation - use Holy Water Sprinkler esque speeds
+			if (AOCPawn(Pawn).StateVariables.bIsParrying)
+			{
+				MaxTurnSpeed = 75000.0;
+				MaxVertTurnSpeed = 75000.0;
+			}
+			else
+			{
+				if ( AOCPawn(Pawn).StateVariables.bIsSprinting )
+					MaxTurnSpeed = FMin(MaxTurnSpeed, MaxSprintTurnSpeed);
+				
+				if ( AOCPawn(Pawn).Weapon.IsInState('Reload') && AOCWeapon_Crossbow(AOCPawn(Pawn).Weapon) != none || AOCWeapon_PaviseShield(AOCPawn(Pawn).Weapon) != none)
+				{
+					MaxTurnSpeed = 0.0f;
+					MaxVertTurnSpeed = 0.0f;
+				}
+			}
+			
+			if( AOCWeapon(Pawn.Weapon).IsInState( 'Windup' ) || AOCWeapon(Pawn.Weapon).IsInState( 'Release' ) || AOCWeapon(Pawn.Weapon).IsInState( 'Transition' ) || ( AOCPawn(Pawn).Weapon.IsInState('Reload') && AOCWeapon_Crossbow(AOCPawn(Pawn).Weapon) != none )
+				|| (AOCPawn(Pawn).StateVariables.bIsAttacking && AOCPawn(Pawn).Weapon.CurrentFireMode == Attack_Sprint)
+				|| AOCMeleeWeapon(Pawn.Weapon).bParryHitCounter)
+			{
+				if ( DeltaRot.Pitch >= 0 )
+					DeltaRot.Pitch = FMin( DeltaRot.Pitch, MaxVertTurnSpeed * DeltaTime );
+				else
+					DeltaRot.Pitch = FMax( DeltaRot.Pitch, -MaxVertTurnSpeed * DeltaTime );
+			}
+
+			if ( DeltaRot.Yaw >= 0 )
+				DeltaRot.Yaw = FMin( DeltaRot.Yaw, MaxTurnSpeed * DeltaTime);
+			else
+				DeltaRot.Yaw = FMax( DeltaRot.Yaw, -MaxTurnSpeed * DeltaTime);
+
+			out_ViewRotation	+= DeltaRot;
+			out_ViewRotation	 = LimitViewRotation(out_ViewRotation, -14000, 16383 );
+		}
+		else if(AOCWeapon_PaviseShield(AOCPawn(Pawn).Weapon) != none || AOCPawn(Pawn).PawnState == ESTATE_Execution)
+		{
+			if(AOCWeapon_PaviseShield(AOCPawn(Pawn).Weapon) != none)
+			{
+				out_ViewRotation.Pitch = 0;
+			}
+			
+			DeltaRot.Yaw = 0;
+			DeltaRot.Pitch = 0;
+			DeltaRot.Roll = 0;
+		}
+		else
+		{
+			AOCPawn(Pawn).ProcessViewRotation( DeltaTime, out_ViewRotation, DeltaRot );
+		}
+		LastDeltaRot = DeltaRot;
+	}
+	else
+	{
+		out_ViewRotation += DeltaRot;
+	}
+}
+
+// Override to prevent players from enabling ragdolls via console commands
+exec function SetRagdollLimit(int NewLimit)
+{
+	// Always force to 0 regardless of what player requests
+	MaxRagdolls = 0;
+	default.MaxRagdolls = 0;
+	
+	// Clean up any existing ragdolls
+	if (RagdolledPawns.Length > 0)
+	{
+		RemoveRagdolls(RagdolledPawns.Length);
+	}
+}
+
+// Override to prevent ragdolls from being added in the first place
+function AddRagdolledPawn(AOCPawn RagdolledPawn)
+{
+	// Immediately remove the ragdoll - don't add it to the list
+	if (RagdolledPawn != none)
+	{
+		RagdolledPawn.LifeSpan = 0.1f;
+	}
+}
+
+// Override Possess to enforce ragdoll limit and show optimization tip on first spawn
+event Possess(Pawn inPawn, bool bVehicleTransition)
+{
+	super.Possess(inPawn, bVehicleTransition);
+
+	// XANGMOD: Re-seed the client-clock offset carried from this player's previous pawn so the
+	// hit-trade timestamp system starts warm instead of cold (pure ping reconstruction) for the
+	// first hit or two after respawn. Offset is captured in PawnDied below. Server-only.
+	if (Role == ROLE_Authority && bPersistedClockOffsetInit && XangModPawn(inPawn) != none)
+		XangModPawn(inPawn).SeedClockOffset(fPersistedClientClockOffset);
+	
+	// Force ragdolls disabled on every spawn (catches players with read-only configs)
+	ConsoleCommand("SetRagdollLimit 0");
+
+	// Parry box settings live on the server class default and are read on the client when
+	// pawns/attachments size the local debug box. Sync them on every possess so respawns and
+	// late joins don't keep stale client-side defaults.
+	// if (Role == ROLE_Authority)
+	// {
+	// 	ClientSyncParryBoxSettings(class'XangModAOCDuelPlayerController'.default.bXangModParryBox,
+	// 		class'XangModAOCDuelPlayerController'.default.bSkeletalParry);
+	// 	ClientSyncCollisionRadius(class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius);
+	// }
+	
+	// Show optimization tip once when player first spawns
+	if (!bShownOptimizationTip && Role == ROLE_Authority)
+	{
+		bShownOptimizationTip = true;
+		SetTimer(2.0f, false, 'ShowOptimizationTip');
+	}
+}
+
+// XANGMOD: Capture the dying pawn's accumulated client-clock offset so the next pawn can start
+// warm (re-seeded in Possess). Runs before super so the pawn is still valid. Server-only.
+function PawnDied(Pawn P)
+{
+	if (Role == ROLE_Authority && XangModPawn(P) != none && XangModPawn(P).bClientClockOffsetInit)
+	{
+		fPersistedClientClockOffset = XangModPawn(P).fClientClockOffset;
+		bPersistedClockOffsetInit = true;
+	}
+
+	super.PawnDied(P);
+}
+
+// Send optimization tip as a server message that appears in chat
+function ShowOptimizationTip()
+{
+	ReceiveChatMessage("=== Welcome to SlumpMod ===", EFAC_ALL, false, true, "#00FF00");
+	ReceiveChatMessage("Join our discord at https://discord.gg/G4Zsm62z5J", EFAC_ALL, false, true, "#FFAA00");
+	ReceiveChatMessage("disableScreenShake True - in console", EFAC_ALL, false, true, "#ffffff");
+}
+
+simulated event tick(float DeltaTime)
+{
+	local rotator DeltaRot, ViewRotation, NewRotation;
+	super.tick(DeltaTime);
+
+	// Runs in every state, so it covers both playing and spectating.
+	XangModEnforceLifeBars();
+
+	// Belt and braces on the ClientCapBandwidth override. That hook catches the cap the
+	// server applies at PostLogin, but it is a single ordering-dependent call -- if it
+	// ever fires before Player is valid, or something else lowers the rate later, the
+	// client is left throttled with no second chance. Cheap to just re-check: the
+	// function early-outs on a comparison, and this only runs twice a second.
+	if (WorldInfo.TimeSeconds >= fXangModNextNetSpeedCheck)
+	{
+		fXangModNextNetSpeedCheck = WorldInfo.TimeSeconds + 0.5f;
+		XangModRestoreNetSpeed();
+	}
+	
+	if (bShowGroundSpeed)
+	{
+		DrawDebugTextToHud(string(AOCPawn(Pawn).SprintTime) @string(AOCPawn(Pawn).StateVariables.bCanSprint), 40.0, 7.0);
+		
+		DrawDebugTextToHud(string(VSize(Pawn.Velocity * vect(1, 1, 0))), 40.0, 15.0);
+		
+		DrawDebugTextToHud("parry: " @string(AOCPawn(Pawn).StateVariables.bIsParrying), 40.0, 25.0);
+	}
+	
+	if (Role == ROLE_SimulatedProxy)
+	{
+		// Calculate Delta to be applied on ViewRotation
+		DeltaRot.Yaw	= 100;
+		DeltaRot.Pitch	= 100;
+		//DrawTextOverHead(string(DeltaRot));
+		ProcessViewRotation( DeltaTime, ViewRotation, DeltaRot );
+		SetRotation(ViewRotation);
+
+		ViewShake( deltaTime );
+
+		NewRotation = ViewRotation;
+		NewRotation.Roll = Rotation.Roll;
+
+		if ( Pawn != None )
+			Pawn.FaceRotation(NewRotation, deltatime);
+	}
+	
+}
+
+
+
+
+// Override ReplicateMove to set fixed 120Hz client movement updates (improves netcode smoothness)
+function ReplicateMove(float DeltaTime, vector NewAccel, eDoubleClickDir DoubleClickMove, rotator DeltaRot)
+{
+	local SavedMove NewMove, OldMove, AlmostLastMove, LastMove;
+	local byte ClientRoll;
+	local float NetMoveDelta;
+	local int OldServerTimeStamp;
+	local vector OldAccel;
+
+	// do nothing if we are no longer connected
+	if (Player == None)
+	{
+		return;
+	}
+
+	MaxResponseTime = Default.MaxResponseTime * WorldInfo.TimeDilation;
+	DeltaTime = ((Pawn != None) ? Pawn.CustomTimeDilation : CustomTimeDilation) * FMin(DeltaTime, MaxResponseTime);
+
+	// find the most recent move (LastMove), and the oldest (unacknowledged) important move (OldMove)
+	// a SavedMove is interesting if it differs significantly from the last acknowledged move
+	if ( SavedMoves != None )
+	{
+		LastMove = SavedMoves;
+		AlmostLastMove = LastMove;
+		OldMove = None;
+		while ( LastMove.NextMove != None )
+		{
+			// find first important unacknowledged move
+			if ( (OldMove == None) && (Pawn != None) && LastMove.IsImportantMove(LastAckedAccel) )
+			{
+				OldMove = LastMove;
+			}
+			AlmostLastMove = LastMove;
+			LastMove = LastMove.NextMove;
+		}
+	}
+
+	// Get a SavedMove object to store the movement in.
+	NewMove = GetFreeMove();
+	if ( NewMove == None )
+	{
+		return;
+	}
+	NewMove.SetMoveFor(self, DeltaTime, NewAccel, DoubleClickMove);
+
+	// Simulate the movement locally.
+	bDoubleJump = false;
+	ProcessMove(NewMove.Delta, NewMove.Acceleration, NewMove.DoubleClickMove, DeltaRot);
+
+	// see if the two moves could be combined
+	if ( (PendingMove != None) && PendingMove.CanCombineWith(NewMove, Pawn, MaxResponseTime) )
+	{
+		// to combine move, first revert pawn position to PendingMove start position, before playing combined move on client
+		Pawn.SetLocation(PendingMove.GetStartLocation());
+		Pawn.Velocity = PendingMove.StartVelocity;
+		if( PendingMove.StartBase != Pawn.Base )
+		{
+			Pawn.SetBase(PendingMove.StartBase);
+		}
+		Pawn.Floor = PendingMove.StartFloor;
+		NewMove.Delta += PendingMove.Delta;
+		NewMove.SetInitialPosition(Pawn);
+
+		// remove pending move from move list
+		if ( LastMove == PendingMove )
+		{
+			if ( SavedMoves == PendingMove )
+			{
+				SavedMoves.NextMove = FreeMoves;
+				FreeMoves = SavedMoves;
+				SavedMoves = None;
+			}
+			else
+			{
+				PendingMove.NextMove = FreeMoves;
+				FreeMoves = PendingMove;
+				if ( AlmostLastMove != None )
+				{
+					AlmostLastMove.NextMove = None;
+					LastMove = AlmostLastMove;
+				}
+			}
+			FreeMoves.Clear();
+		}
+		PendingMove = None;
+	}
+
+	if( Pawn != None )
+	{
+		Pawn.AutonomousPhysics(NewMove.Delta);
+	}
+	else
+	{
+		AutonomousPhysics(DeltaTime);
+	}
+	NewMove.PostUpdate(self);
+
+	if( SavedMoves == None )
+	{
+		SavedMoves = NewMove;
+	}
+	else
+	{
+		LastMove.NextMove = NewMove;
+	}
+
+	if ( PendingMove == None )
+	{
+		// XangMod: Fixed 120Hz update rate for improved netcode
+		// Original code had dynamic rates: 90Hz (<=10 players) or 45Hz+ (>10 players) on listen servers, 20Hz on dedicated
+		// Setting to 0.00833 (~120Hz) matches the server's max tickrate for optimal smoothness
+		NetMoveDelta = 0.00833;
+
+		if( (WorldInfo.TimeSeconds - ClientUpdateTime) * WorldInfo.TimeDilation < NetMoveDelta )
+		{
+			PendingMove = NewMove;
+			return;
+		}
+	}
+
+	ClientUpdateTime = WorldInfo.TimeSeconds;
+
+	// check if need to redundantly send previous move
+	if ( OldMove != None )
+	{
+		// old move is important to replicate redundantly
+		OldServerTimeStamp = OldMove.TimeStamp;
+		OldAccel = OldMove.Acceleration;
+	}
+
+	// Send to the server
+	ClientRoll = (Rotation.Roll >> 8) & 255;
+
+	CallServerMove( NewMove,
+			((Pawn == None) ? Location : Pawn.Location),
+			ClientRoll,
+			((Rotation.Yaw & 65535) << 16) + (Rotation.Pitch & 65535),
+			OldMove );
+
+	PendingMove = None;
+}
+
+exec function FOV(float F) {
+	if((F >= 60.0 && F <= 165.0) || PlayerReplicationInfo.bOnlySpectator) {
+		DefaultFOV = F;
+		DesiredFOV = DefaultFOV;
+		FOVAngle   = DefaultFOV;
+
+		// Persist BEFORE the PlayerCamera branch.
+		//
+		// Everything that later RESTORES the field of view -- AOCPlayerController's
+		// FixFOV() and ResetFOV(), and AOCPawn on spawn (AOCPawn.uc:9080) -- reads
+		// MyFOV. The previous version returned early whenever a PlayerCamera existed
+		// and so never stored it, which is how a custom FOV snaps back to the
+		// configured value (typically 120) the moment any of those run.
+		if (IsLocalPlayerController()) {
+			MyFOV = F;
+			default.MyFOV = F;
+			StaticSaveConfig();
+		}
+
+		if (PlayerCamera != None) {
+			PlayerCamera.SetFOV( F );
+		}
+	}
+}
+
+reliable client function OverrideVoteText(optional string Primary, optional string Secondary)
+{
+	AOCBaseHUD(myHUD).HUD.MainHUD.VotePrimaryTitle.SetText(Primary);
+	AOCBaseHUD(myHUD).HUD.MainHUD.VoteSecondaryTitle.SetText(Secondary);
+}
+
+
+// Override to refresh live pawn customization when changed mid-game
+// NOTE: Disabled live refresh to prevent visual bugs when selecting different class in menu
+// Customization changes will apply on next spawn or server rejoin
+reliable server function ServerUpdateCustomizationInfo(SCustomizationChoice NewCustomization)
+{
+	super.ServerUpdateCustomizationInfo(NewCustomization);
+	
+	// Don't refresh live pawn - causes visual bugs if player selects different class in menu
+	// The customization is saved and will apply on next spawn/rejoin
+	
+	/* DISABLED - causes skin mismatch when browsing classes in menu
+	if (Pawn != none && AOCPawn(Pawn) != none)
+	{
+		AOCPawn(Pawn).PawnInfo.myCustomization = NewCustomization;
+		AOCPawn(Pawn).LoadAssets();
+	}
+	*/
+}
+
+/* ************************************************************************
+ * FIRST-PERSON SPECTATOR -- post-spawn camera correction
+ *
+ * PlayerController.ClientRestart (:4728) calls SetViewTarget(Pawn) while still inside
+ * state Spectating, and only then EnterStartState(). Two consequences:
+ *
+ * 1. AOCPawn.BecomeViewTarget takes its spectator branch and never calls super, so
+ *    UTPawn's possession setup (arm attach, mesh visibility, eye height) is skipped
+ *    for our own pawn.
+ * 2. GetPlayerViewPoint reads PlayerCamera and ignores Pawn/ViewTarget whenever one
+ *    exists. AOC only destroys it in state Spectating.GetPlayerViewPoint, so leaving
+ *    spectate with one alive strands the view on a fixed map spot while the pawn plays
+ *    underneath. ResetCameraMode cannot help -- SetCameraMode is a no-op when
+ *    PlayerCamera is None.
+ *
+ * So the camera is re-asserted one tick after ClientRestart, once the state
+ * transition has actually completed.
+ **************************************************************************/
+

@@ -1,0 +1,271 @@
+// XangMod - Netcode.uci
+// Included via XangModPawn.uci. Vars live in Pawn/Vars.uci; DefaultProperties in Pawn/Camera.uci (last).
+// One-way latency in seconds. ExactPing is round-trip (seconds), so halve it. Capped so a
+// spoofed/garbage ping can't push reconstructed action times arbitrarily far into the past.
+function float GetOneWayPingSeconds()
+{
+	if (PlayerReplicationInfo != none)
+		return FMin(PlayerReplicationInfo.ExactPing * 0.5, fMaxPlausibleLatency);
+
+	return 0.0;
+}
+
+// Smooth the client->server clock offset from each stamped RPC. A stamp made ~one-way-ping ago
+// in the client's clock should map to (now - oneWay) on the server timeline; the difference is
+// the offset. EMA-smoothed so per-message queue jitter doesn't swing the estimate around.
+function UpdateClockOffset(float fClientStamp)
+{
+	local float fSample;
+
+	if (fClientStamp <= 0.0)
+		return;
+
+	fSample = (WorldInfo.TimeSeconds - GetOneWayPingSeconds()) - fClientStamp;
+
+	if (!bClientClockOffsetInit)
+	{
+		fClientClockOffset = fSample;
+		bClientClockOffsetInit = true;
+	}
+	else
+	{
+		fClientClockOffset = fClientClockOffset * (1.0 - fClockOffsetAlpha) + fSample * fClockOffsetAlpha;
+	}
+}
+
+// XANGMOD: Seed this pawn's client-clock offset from the controller's persisted value (carried
+// from the player's previous pawn before it died). Lets the hit-trade timestamp system start
+// warm on respawn instead of cold-starting into pure ping reconstruction. Called from
+// XangModPlayerController.Possess. Server-only.
+function SeedClockOffset(float fOffset)
+{
+	fClientClockOffset = fOffset;
+	bClientClockOffsetInit = true;
+}
+
+// Map a client timestamp onto the server timeline. Falls back to pure ping reconstruction when
+// no usable stamp/offset exists (bots, missing stamp). Clamped to a physically plausible window
+// so a forged early/late stamp can't claim priority it didn't earn.
+function float ReconstructActionTime(float fClientStamp)
+{
+	local float fResult, fNow;
+
+	fNow = WorldInfo.TimeSeconds;
+
+	if (fClientStamp <= 0.0 || !bClientClockOffsetInit)
+		return fNow - GetOneWayPingSeconds();
+
+	fResult = fClientStamp + fClientClockOffset;
+
+	if (fResult > fNow)
+		fResult = fNow;                              // can't have happened in the server's future
+	else if (fResult < fNow - fMaxPlausibleLatency)
+		fResult = fNow - fMaxPlausibleLatency;       // can't be older than max plausible latency
+
+	return fResult;
+}
+
+// Drop taken-hit records older than the TTL so the trade window only sees recent hits.
+function PruneRecentIncomingHits()
+{
+	local int i;
+	local float fCutoff;
+
+	fCutoff = WorldInfo.TimeSeconds - fRecentHitTTL;
+
+	for (i = RecentIncomingHits.Length - 1; i >= 0; i--)
+	{
+		if (RecentIncomingHits[i].fActionServerTime < fCutoff)
+			RecentIncomingHits.Remove(i, 1);
+	}
+}
+
+// Remember a hit we just took (on the victim pawn) so a counter-swing still in flight can be
+// recognised as a staggered trade and dropped.
+function RecordIncomingHit(XangModPawn FromPawn, float fActionServerTime)
+{
+	local RecentIncomingHit NewEntry;
+
+	if (FromPawn == none || fActionServerTime <= 0.0)
+		return;
+
+	PruneRecentIncomingHits();
+
+	NewEntry.Attacker = FromPawn;
+	NewEntry.fActionServerTime = fActionServerTime;
+	RecentIncomingHits.AddItem(NewEntry);
+}
+
+// True when THIS pawn's current swing is a riposte (parry hit-counter attack). Ripostes are
+// exempt from hit-trade cancellation so a deliberate parry counter always lands, even when it
+// would otherwise line up as a staggered trade.
+function bool IsRiposteAttack()
+{
+	return XangModMeleeWeapon(Weapon) != none && XangModMeleeWeapon(Weapon).bParryHitCounter;
+}
+
+// True when OUR swing should be dropped: this opponent hit us (or has a swing held on us that
+// will hit) clearly earlier than our swing landed — beyond the trade window. Checking held
+// swings too means the rollback hold can never let a staggered hit slip through as a trade.
+function bool ShouldCancelTradeSwing(XangModPawn Opponent, float fSwingActionTime)
+{
+	local int i;
+
+	if (Opponent == none || fSwingActionTime <= 0.0)
+		return false;
+
+	PruneRecentIncomingHits();
+
+	for (i = 0; i < RecentIncomingHits.Length; i++)
+	{
+		if (RecentIncomingHits[i].Attacker == Opponent
+			&& RecentIncomingHits[i].fActionServerTime > 0.0
+			&& fSwingActionTime - RecentIncomingHits[i].fActionServerTime > fTradeWindowSeconds)
+			return true;
+	}
+
+	for (i = 0; i < PendingHits.Length; i++)
+	{
+		if (PendingHits[i].Attacker == Opponent
+			&& PendingHits[i].fActionServerTime > 0.0
+			&& fSwingActionTime - PendingHits[i].fActionServerTime > fTradeWindowSeconds)
+			return true;
+	}
+
+	return false;
+}
+
+// Best estimate (server timeline) of when this pawn's parry went active: the fresh client stamp
+// if one just arrived, otherwise ping reconstruction from now.
+function float GetParryActionServerTime()
+{
+	if (bClientClockOffsetInit
+		&& fLastParryActionServerTime > 0.0
+		&& WorldInfo.TimeSeconds - fLastParryStampServerTime < 0.25)
+		return fLastParryActionServerTime;
+
+	return WorldInfo.TimeSeconds - GetOneWayPingSeconds();
+}
+
+// Client reports the moment (its own clock) its swing connected. Sent on the pawn channel just
+// before AttackOtherPawn (reliable -> ordered), so AttackOtherPawn reads a fresh stamp.
+reliable server function ServerStampHitTime(float fClientHitTime)
+{
+	UpdateClockOffset(fClientHitTime);
+	fPendingHitClientTime = fClientHitTime;
+}
+
+// Client reports the moment (its own clock) its parry went active, mapped + stored for the
+// hit-vs-parry decision in ResolvePendingHitsAsParry.
+reliable server function ServerStampParryTime(float fClientParryTime)
+{
+	UpdateClockOffset(fClientParryTime);
+	fLastParryActionServerTime = ReconstructActionTime(fClientParryTime);
+	fLastParryStampServerTime = WorldInfo.TimeSeconds;
+}
+
+// XANGMOD: How long to hold an incoming swing on THIS (defender) pawn so an in-flight parry
+// can still reach the server and suppress it. Equals the defender's one-way latency, capped.
+// Returns 0 on LAN/bots (no network crossing to compensate) -> swings resolve instantly.
+function float GetParryHoldSeconds()
+{
+	local float fPingSec;
+	local float fHold;
+
+	if (PlayerReplicationInfo != none)
+		fPingSec = float(PlayerReplicationInfo.Ping) * 0.004; // UE3 stores ping as ms/4
+
+	fHold = FMin(fPingSec, fParryRollbackMaxHoldSeconds);
+
+	if (fHold < fParryRollbackMinHoldSeconds)
+		return 0.0;
+
+	return fHold;
+}
+
+// XANGMOD: Commit held swings whose hold window elapsed without a parry. Runs on the defender
+// (self) from Tick. Each commits exactly once through the normal hit path.
+function ProcessPendingHits()
+{
+	local int i;
+	local PendingHit Entry;
+	local float fNow;
+
+	if (PendingHits.Length == 0)
+		return;
+
+	fNow = WorldInfo.TimeSeconds;
+
+	for (i = 0; i < PendingHits.Length; i++)
+	{
+		if (fNow >= PendingHits[i].fCommitTime)
+		{
+			Entry = PendingHits[i];
+			PendingHits.Remove(i, 1);
+			i--;
+
+			if (Entry.Attacker != none && Entry.Attacker.Weapon != none)
+				Entry.Attacker.ProcessResolvedAttack(Entry.Info, Entry.DamageString, false, Entry.bBoxParrySuccess, Entry.bHitShield, Entry.LastHit, Entry.bQuickKick, false, Entry.fActionServerTime);
+		}
+	}
+}
+
+// XANGMOD: Delayed Firebug ignition — lets the blunt impact sound finish before the fire
+// scream plays, so both audio cues are audible instead of the scream drowning out the impact.
+function DelayedFirebugIgnite()
+{
+	if (StoredFirebugHitActor != none && StoredFirebugHitActor.IsAliveAndWell()
+		&& !StoredFirebugHitActor.bIsBurning)
+	{
+		StoredFirebugHitActor.SetPawnOnFire(none, Controller, self, class'XangModDmgType_TorchBurn');
+	}
+	StoredFirebugHitActor = none;
+}
+
+// XANGMOD: A parry landed while swings were still held on us — resolve every one as a parry
+// BEFORE any hit feedback plays (decide-once). DetectSuccessfulParry still rejects illegal
+// parries (e.g. back hits), which then fall through to a normal hit. Runs on the defender (self)
+// from XangModMeleeWeapon.Parry.BeginState, after super sets bIsParrying/bIsActiveShielding.
+// fParryActionServerTime is when the parry went active (server timeline); a held swing is only
+// resolved as a parry if the parry wasn't clearly later than the swing (timestamp gate). Swings
+// that the parry was too late for stay held and commit as normal hits when their hold expires.
+function ResolvePendingHitsAsParry(optional float fParryActionServerTime = 0.0)
+{
+	local int i;
+	local PendingHit Entry;
+
+	if (PendingHits.Length == 0)
+		return;
+
+	for (i = 0; i < PendingHits.Length; i++)
+	{
+		Entry = PendingHits[i];
+
+		// Timestamp gate: a genuine block is up before/around the hit; a panic parry fired well
+		// after the hit landed (more than the grace) does not save the held swing.
+		if (fParryActionServerTime > 0.0
+			&& Entry.fActionServerTime > 0.0
+			&& fParryActionServerTime - Entry.fActionServerTime > fParryTradeGraceSeconds)
+		{
+			continue;
+		}
+
+		if (Entry.Attacker != none && Entry.Attacker.Weapon != none)
+			Entry.Attacker.ProcessResolvedAttack(Entry.Info, Entry.DamageString, false, Entry.bBoxParrySuccess, Entry.bHitShield, Entry.LastHit, Entry.bQuickKick, true, Entry.fActionServerTime);
+
+		PendingHits.Remove(i, 1);
+		i--;
+	}
+}
+
+
+
+// Netcode optimization: Maximum performance for all pawns
+// 120Hz update frequency for all distances
+event float GetNetPriority(Actor Viewer, vector ViewLocation, float ViewDist)
+{
+	// Always use maximum priority and frequency for all pawns
+	NetUpdateFrequency = 120.0;
+	return 5000.0;
+}
+

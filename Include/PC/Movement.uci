@@ -1,0 +1,284 @@
+// XangMod - Movement.uci
+// Included via XangModPlayerController.uci. Vars live in PC/Vars.uci; DefaultProperties in PC/Effects.uci (last).
+exec function Reload() {
+	if(!ScriptBlockedInputs[EINBLOCK_Reload] && XangModWeapon_Crossbow(Pawn.Weapon) != none)
+		XangModWeapon_Crossbow(Pawn.Weapon).ActivateReload();
+}
+
+exec function PerformAim() {
+	if (class<XangModWeapon_Crossbow>(Pawn.Weapon.Class) != none)
+		StartFire(1);
+}
+
+reliable server function ServerPerformFeint()
+{
+	local float TimeSinceLastFeint;
+	
+	// Block feint if already in Active/Feint state
+	if (Pawn.Weapon.IsInState('Active') || Pawn.Weapon.IsInState('Feint'))
+		return;
+	
+	// Custom: Prevent feint spam during Release/Transition/early riposte to fix visual desync bug
+	// Block feint during Release state (attack active frames)
+	if (Pawn.Weapon.IsInState('Release'))
+		return;
+		
+	// Prevent feint spamming with 200ms cooldown between attempts
+	TimeSinceLastFeint = WorldInfo.TimeSeconds - fLastFeintTime;
+	if (TimeSinceLastFeint < 0.2)
+		return;
+		
+	fLastFeintTime = WorldInfo.TimeSeconds;
+
+	AOCPawn(Pawn).OnActionInitiated(EACT_Feint);
+	AOCWeapon(Pawn.Weapon).DoFeintAttack();
+
+	`{GAMEMODE}PRI(PlayerReplicationInfo).Feints += 1;
+}
+
+function bool IsSprintAngle(int fInputAngle) //checks if the player should be allowed to sprint or not
+{
+	//DrawTextOverHead(string(fInputAngle));
+	return ((fInputAngle < 27079) && (fInputAngle > 7892));
+}
+
+// Player movement.
+// Player Standing, walking, running, falling.
+state PlayerWalking
+{
+	//This doesn't do anything besides add an extra function call to the stack and should probably be deleted.
+	//Calling the ProcessMove function without this would automatically call the function in the parent class.
+	//If someone else sees this and agrees, delete it.  If I'm missing something, then /slap Eric
+	//In the mean time, I commented it out.
+	
+	function ProcessMove(float DeltaTime, vector NewAccel, eDoubleClickDir DoubleClickMove, rotator DeltaRot)
+	{
+		super.ProcessMove(DeltaTime, NewAccel, DoubleClickMove, DeltaRot);
+	}
+	/*
+	function ProcessMove(float DeltaTime, vector NewAccel, eDoubleClickDir DoubleClickMove, rotator DeltaRot)
+	{
+		if( Pawn == None )
+		{
+			return;
+		}
+
+		if (Role == ROLE_Authority)
+		{
+			// Update ViewPitch for remote clients
+			Pawn.SetRemoteViewPitch( Rotation.Pitch );
+		}
+
+		Pawn.Acceleration = NewAccel;
+
+		CheckJumpOrDuck();
+	}
+	*/
+
+	function PlayerMove( float DeltaTime )
+	{
+		local vector			X,Y,Z, NewAccel;
+		local eDoubleClickDir	DoubleClickMove;
+		local rotator			OldRotation;
+		local bool				bSaveJump;
+		local bool              bLastMoveForward;
+
+		if( Pawn == None )
+		{
+			GotoState('Dead');
+		}
+		else
+		{
+			GetAxes(Pawn.Rotation,X,Y,Z);
+
+			InputDirection.X = PlayerInput.aStrafe;
+			InputDirection.Y = PlayerInput.aForward;
+			InputDirection.Z = 0.f;
+			
+			bLastMoveForward = bMoveForward;
+
+			// XANGMOD: Grand Lance stab charge — lock movement input to pure forward.
+			// aForward / aStrafe and the sprint-cancel check all read these axes below, so
+			// clamping here prevents S from triggering DisableSprint, removes backward/strafe
+			// acceleration from NewAccel, and stops A/D from deflecting the charge.
+			if (XangModPawn(Pawn) != none && XangModPawn(Pawn).bForceSprintForward)
+			{
+				PlayerInput.aForward = 1.0;
+				PlayerInput.aStrafe  = 0.0;
+			}
+
+			bMoveBackward = PlayerInput.aForward < 0.0f;
+			bMoveForward = (PlayerInput.aForward > 0.0f);
+			
+			bMoving = PlayerInput.aForward != 0.0f || PlayerInput.aStrafe != 0.0f;
+			
+			if (!IsSprintAngle(rotator(InputDirection).Yaw) && bMoveForward)
+			{
+				if (InputDirection.X > 0.0)
+			{
+			InputDirection.X = 0.71;
+			InputDirection.Y = 0.71;
+			}
+			else
+			{
+			InputDirection.X = -0.71;
+			InputDirection.Y = 0.71;
+			}
+			}
+			
+			
+			
+			
+			
+			if (Role != ROLE_Authority || WorldInfo.NetMode == NM_Standalone || (Worldinfo.NetMode == NM_ListenServer && IsLocalPlayerController()))
+			{
+				if ((bLastMoveForward && !bMoveForward) || (bLastMoveForward && !IsSprintAngle(rotator(InputDirection).Yaw)))
+				{
+					AOCPawn(Pawn).DisableSprint(true);
+				}
+			}
+			
+			// Update acceleration.
+			NewAccel = Vect(0,0,0);
+			if(!ScriptBlockedInputs[EINBLOCK_MoveBackward] && bMoveBackward
+				|| !ScriptBlockedInputs[EINBLOCK_MoveForward] && bMoveForward )
+			{
+				NewAccel += PlayerInput.aForward*X;
+			}
+			
+			if(!ScriptBlockedInputs[EINBLOCK_MoveLeft] && PlayerInput.aStrafe < 0.0f
+				|| !ScriptBlockedInputs[EINBLOCK_MoveRight] && PlayerInput.aStrafe > 0.0f )
+			{
+				if (AOCPawn(Pawn).StateVariables.bIsSprinting)
+					NewAccel += PlayerInput.aStrafe*Y * 0.5f;
+				else
+					NewAccel += PlayerInput.aStrafe*Y;
+			}
+			
+			NewAccel.Z	= 0;
+			NewAccel = Pawn.AccelRate * Normal(NewAccel);
+			NewAccel = NewAccel;
+			// NewAccel is max when we're walking, limit it slightly when we're in the air whatever
+			if (Pawn.Physics != PHYS_Walking)
+				NewAccel *= 0.25f;
+				
+			if(ScriptBlockedInputs[EINBLOCK_Dodge])
+			{	
+				DoubleClickMove = DCLICK_None;
+			}
+			else
+			{
+				DoubleClickMove = PlayerInput.CheckForDoubleClickMove( DeltaTime/WorldInfo.TimeDilation );
+			}
+
+			// Update rotation.
+			OldRotation = Rotation;
+			//DrawTextOverHead(string(OldRotation));
+			InterpYaw = Rotation.Yaw;
+			InterpPitch = Rotation.Pitch;
+			if (AOCPawn(Pawn).PawnState != ESTATE_PUSH && !bForceIgnoreRotation)
+				UpdateRotation( DeltaTime * AOCPawn(Pawn).ModAnimRate ); //update rotation !!!!!!!!!!!!!!! importantttttttttttttttttttttttttttttttttttttttttttttttttttttt!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			bDoubleJump = false;
+			bPressedJump = bPressedJump && !ScriptBlockedInputs[EINBLOCK_Jump];
+			if( bPressedJump && Pawn.CannotJumpNow() && (XangModPawn(Pawn) == none || !XangModPawn(Pawn).CanAirJump()) )
+			{
+				bSaveJump = true;
+				bPressedJump = false;
+			}
+			else
+			{
+				bSaveJump = false;
+			}
+			if( Role < ROLE_Authority ) // then save this move and replicate it
+			{
+				ReplicateMove(DeltaTime, NewAccel, DoubleClickMove, OldRotation - Rotation);
+			}
+			else
+			{
+				ProcessMove(DeltaTime, NewAccel, DoubleClickMove, OldRotation - Rotation);
+			}
+			bPressedJump = bSaveJump;		
+		}
+	}
+}
+
+//
+//debugging interpolation
+//
+function UpdateRotation( float DeltaTime )
+{
+	local Rotator	DeltaRot, newRotation, ViewRotation;
+	local Rotator DesiredRot;
+
+	ViewRotation = Rotation;
+	if (Pawn!=none)
+	{
+		Pawn.SetDesiredRotation(ViewRotation);
+	}
+	
+	if(LookAtTarget != none)
+	{
+		if(AOCPawn(LookAtTarget) == none)
+		{
+			DesiredRot = (ViewRotation - AOCPawn(Pawn).GetViewRotation()) + Rotator(LookAtTarget.Location - AOCPawn(Pawn).GetPawnViewLocation());
+		}
+		else
+		{
+			//Look at Pawn's heads
+			DesiredRot = (ViewRotation - AOCPawn(Pawn).GetViewRotation()) + Rotator(AOCPawn(LookAtTarget).GetPawnViewLocation() - AOCPawn(Pawn).GetPawnViewLocation());
+		}
+		ViewRotation = RInterpTo(ViewRotation, DesiredRot, DeltaTime, fLookAtRate); //what does this do? ~~~~~~~~~~~~~~~~~~~~ //
+		if(RDiff(ViewRotation, DesiredRot) ~= 0)
+		{
+			LookAtTarget = none;
+
+			OnTurnTowardTargetComplete(self);
+		}
+	}
+	
+	// Calculate Delta to be applied on ViewRotation
+	DeltaRot.Yaw	= PlayerInput.aTurn;
+	DeltaRot.Pitch	= PlayerInput.aLookUp;
+	//DrawTextOverHead(string(DeltaRot));
+	ProcessViewRotation( DeltaTime, ViewRotation, DeltaRot );
+	SetRotation(ViewRotation);
+
+	ViewShake( deltaTime );
+
+	NewRotation = ViewRotation;
+	NewRotation.Roll = Rotation.Roll;
+
+	if ( Pawn != None )
+		Pawn.FaceRotation(NewRotation, deltatime);
+}
+/* 
+function UpdateRotation( float DeltaTime ) //temp
+{
+	local Rotator	DeltaRot, newRotation, ViewRotation;
+	local Rotator DesiredRot;
+
+	ViewRotation = Rotation;
+	if (Pawn!=none)
+	{
+		Pawn.SetDesiredRotation(ViewRotation);
+	}
+	
+	DeltaRot.Yaw	= InterpYaw;
+	DeltaRot.Pitch	= InterpPitch;
+	ProcessViewRotation( DeltaTime, ViewRotation, DeltaRot );
+	
+	SetRotation(ViewRotation);
+	
+	
+	
+	SetFocalPoint(vector(ViewRotation) * 1000.f + Pawn.Location, false); //this is so hacky i hate it but pitch doesn't work otherwise.......
+	
+	
+	NewRotation = ViewRotation;
+	NewRotation.Roll = Rotation.Roll; //bisplayer
+	
+	if ( Pawn != None )
+		Pawn.FaceRotation(NewRotation, DeltaTime); //this rotates pawn yaw, pitch isn't changed because it's the pawn
+}
+ */
+

@@ -1,0 +1,98 @@
+// XangMod - ParryConfig.uci
+// Included via XangModPlayerController.uci. Vars live in PC/Vars.uci; DefaultProperties in PC/Effects.uci (last).
+simulated function SetAllParryBoxClassDefaults(bool bEnableXangMod, bool bEnableSkeletal)
+{
+	class'XangModAOCDuelPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModAOCDuelPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModCDWDuelPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModCDWDuelPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModCTFPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModCTFPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModFFAPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModFFAPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModKOTHPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModKOTHPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModLTSPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModLTSPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModTDPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModTDPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModTOPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModTOPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+	class'XangModTUTPlayerController'.default.bXangModParryBox = bEnableXangMod;
+	class'XangModTUTPlayerController'.default.bSkeletalParry = bEnableSkeletal;
+}
+
+simulated function ApplyParryBoxSettingsToCurrentPawn()
+{
+	local AOCPawn CurrentPawn;
+	local vector ParryBoxTranslation;
+
+	CurrentPawn = AOCPawn(Pawn);
+	if (CurrentPawn == none || CurrentPawn.ParryComponent == none || CurrentPawn.PawnFamily == none)
+	{
+		return;
+	}
+
+	if (!class'XangModAOCDuelPlayerController'.default.bXangModParryBox)
+	{
+		CurrentPawn.ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
+		CurrentPawn.ParryComponent.SetTranslation(vect(30, 0, -30));
+		return;
+	}
+
+	if (class'XangModAOCDuelPlayerController'.default.bSkeletalParry)
+	{
+		CurrentPawn.ParryComponent.SetScale3D(vect(0.18, 0.17, 0.35));
+		CurrentPawn.ParryComponent.SetTranslation(vect(10, 5, -28));
+		return;
+	}
+
+	ParryBoxTranslation = CurrentPawn.PawnFamily.ParryBoxTranslation;
+	if (AOCWeaponAttachment(CurrentPawn.CurrentWeaponAttachment) != none)
+	{
+		ParryBoxTranslation += AOCWeaponAttachment(CurrentPawn.CurrentWeaponAttachment).ParryBoxTranslation;
+	}
+
+	CurrentPawn.ParryComponent.SetScale3D(CurrentPawn.PawnFamily.ParryBoxScale);
+	CurrentPawn.ParryComponent.SetTranslation(ParryBoxTranslation);
+}
+
+reliable client function ClientSyncParryBoxSettings(bool bEnableXangMod, bool bEnableSkeletal)
+{
+	bXangModParryBox = bEnableXangMod;
+	bSkeletalParry = bEnableSkeletal;
+	SetAllParryBoxClassDefaults(bEnableXangMod, bEnableSkeletal);
+	ApplyParryBoxSettingsToCurrentPawn();
+}
+
+simulated function SetAllCollisionRadiusClassDefaults(float Radius)
+{
+	class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModCDWDuelPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModCTFPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModFFAPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModKOTHPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModLTSPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModTDPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModTOPlayerController'.default.fXangModCollisionRadius = Radius;
+	class'XangModTUTPlayerController'.default.fXangModCollisionRadius = Radius;
+}
+
+simulated function ApplyCollisionRadiusToCurrentPawn()
+{
+	local XangModAOCDuelPawn BMP;
+
+	BMP = XangModAOCDuelPawn(Pawn);
+	if (BMP == none || BMP.OuterCylinderComp == none)
+		return;
+
+	BMP.OuterCylinderComp.SetCylinderSize(class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius, 65.0);
+}
+
+reliable client function ClientSyncCollisionRadius(float Radius)
+{
+	fXangModCollisionRadius = Radius;
+	SetAllCollisionRadiusClassDefaults(Radius);
+	ApplyCollisionRadiusToCurrentPawn();
+}
+

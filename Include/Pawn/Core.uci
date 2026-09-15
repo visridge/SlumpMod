@@ -1,0 +1,49 @@
+// XangMod - Core.uci
+// Included via XangModPawn.uci. Vars live in Pawn/Vars.uci; DefaultProperties in Pawn/Camera.uci (last).
+// Override Tick to ensure panting starts at 20 stamina or below
+simulated event Tick(float DeltaTime)
+{
+	// local bool bCanUseBastardSwordSprintAttack;
+	// local bool bUsingBastardSword;
+
+	// Call parent first to do all normal tick logic
+	super.Tick(DeltaTime);
+
+	// XANGMOD: commit any held swings whose latency window elapsed without a parry.
+	if (Role == ROLE_Authority)
+		ProcessPendingHits();
+
+	if (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider)
+	{
+		bKanaboExtraJumpUsed = false;
+	}
+
+	// XANGMOD: Grand Lance — force sprint+forward during stab release.
+	if (bForceSprintForward)
+	{
+		bIsCrouching = false;
+		bClientWantsToSprint = true;
+
+		// Lock W input so the native acceleration system sees constant forward.
+		if (AOCPlayerController(Controller) != none && AOCPlayerController(Controller).PlayerInput != none)
+			AOCPlayerController(Controller).PlayerInput.aForward = 1.0;
+	}
+
+	// Override the PlayLowStaminaLoop call with fixed threshold
+	// Original used MaxStamina * 0.2f which is correct, but we hardcode to 15 for consistency
+	// This ensures all classes pant at the same absolute stamina level (15 or below)
+	PlayLowStaminaLoop(Stamina <= 15.0f && Health > 0.0f);
+}
+
+
+//simple debug function
+function DrawTextOverHead(string DebugText)
+{
+	local color tcolor;
+	tcolor.G = 0;
+	FlushDebugStrings();
+	DrawDebugString(Vect(0, 0, 85.0), DebugText, self, tcolor); //off for now
+}
+
+
+

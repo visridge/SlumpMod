@@ -1,55 +1,6 @@
-// XangMod Weapon Attachment Netcode Optimization
-// Maximum performance: 120Hz for all weapon attachments
-
-// Netcode optimization: High priority replication for all weapon attachments
-event float GetNetPriority(Actor Viewer, vector ViewLocation, float ViewDist)
-{
-	// Always use maximum priority and frequency for weapon attachments
-	NetUpdateFrequency = 120.0;
-	return 5000.0;
-}
-
-// Override AttachTo so we can apply parry box overrides AFTER the base sets translation.
-// AOCWeaponAttachment.AttachTo sets ParryComponent translation at the very end, which
-// overwrites anything done in AOCSetCharacterClassFromInfo on the pawn. This hook fires last.
-simulated function AttachTo(UTPawn OwnerPawn)
-{
-	super.AttachTo(OwnerPawn);
-	if (AOCOwner == none)
-		return;
-	if (!class'XangModAOCDuelPlayerController'.default.bXangModParryBox)
-	{
-		// Revert to vanilla AOC parry box
-		AOCOwner.ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
-		AOCOwner.ParryComponent.SetTranslation(vect(30, 0, -30));
-	}
-	else if (class'XangModAOCDuelPlayerController'.default.bSkeletalParry)
-	{
-		// Skeletal parry: hitbox wraps the full player model instead of a directional shield
-		AOCOwner.ParryComponent.SetScale3D(vect(0.18, 0.17, 0.35));
-		AOCOwner.ParryComponent.SetTranslation(vect(10, 5, -28));
-	}
-}
-
-// // Secondary filter: strip the parry-box component flag if the attacker is behind the defender.
-// // This prevents the pawn from being added to ParryPawns via the ETracerType_ParryImmediately path.
-// // NOTE: The primary butt-parry fix is in DetectSuccessfulParry (XangModPawn.uci), which covers
-// // both parry-box hits AND body hits on a parrying pawn. This filter only handles the box-hit path.
-// simulated function HandleHitPawn(AOCPawn HitPawn, Vector HitLocation, Vector HitNormal, TraceHitInfo HitInfoTrace, Vector HitForce, optional ETracerType TracerType)
-// {
-// 	local vector AttackerDir;
-
-// 	if (HitPawn != none && HitInfoTrace.HitComponent == HitPawn.ParryComponent)
-// 	{
-// 		AttackerDir = Normal(AOCOwner.Location - HitPawn.Location);
-// 		if ((AttackerDir dot vector(HitPawn.Rotation)) < 0.0)
-// 		{
-// 			HitInfoTrace.HitComponent = HitPawn.Mesh;
-// 		}
-// 	}
-
-// 	super.HandleHitPawn(HitPawn, HitLocation, HitNormal, HitInfoTrace, HitForce, TracerType);
-// }
+// XangMod - XangModWeaponAttachment.uci
+// DEFAULTS ONLY. Include INSIDE the DefaultProperties block.
+// Functions for the same classes live in XangModWeaponAttachmentCode.uci, included at class level.
 
 // Default properties
 NetUpdateFrequency=120

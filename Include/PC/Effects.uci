@@ -1,0 +1,204 @@
+// XangMod - Effects.uci
+// Included via XangModPlayerController.uci. Vars live in PC/Vars.uci; DefaultProperties in PC/Effects.uci (last).
+// Override camera shake functions to respect bDisableScreenShake setting
+function PlayDazedCam()
+{
+	if (!bDisableScreenShake)
+	{
+		super.PlayDazedCam();
+	}
+}
+
+function PlayFlinchCam()
+{
+	if (!bDisableScreenShake)
+	{
+		super.PlayFlinchCam();
+	}
+}
+
+function PlayCustomCamAnim(CameraAnim Anim, optional float DesiredLength = 0.f)
+{
+	if (!bDisableScreenShake)
+	{
+		super.PlayCustomCamAnim(Anim, DesiredLength);
+	}
+}
+
+function PC_ReceiveHit(Actor DamageDealer, vector HitLoc, float Damage, class<DamageType> DamageType)
+{
+	if (!bDisableScreenShake)
+	{
+		super.PC_ReceiveHit(DamageDealer, HitLoc, Damage, DamageType);
+	}
+	else
+	{
+		// Still play the directional hit effect even when screen shake is disabled
+		if(Controller(DamageDealer) != none)
+		{
+			DamageDealer = Controller(DamageDealer).Pawn;
+		}
+		ClientPlayTakeDirHitEffect(DamageDealer, HitLoc, Damage, DamageType);
+	}
+}
+
+// Console command to toggle screen shake
+exec function DisableScreenShake(bool bDisable)
+{
+	bDisableScreenShake = bDisable;
+	SaveConfig();
+	
+	if (bDisable)
+		ClientDisplayConsoleMessage("Screen shake disabled");
+	else
+		ClientDisplayConsoleMessage("Screen shake enabled");
+}
+
+/** True when the active chain can already render the drunk effect. */
+simulated function bool XangModHasDrunkEffects()
+{
+	local LocalPlayer LP;
+
+	LP = LocalPlayer(Player);
+	if (LP == none || LP.PlayerPostProcess == none)
+		return false;
+
+	// Both are needed: ToggleDrunkPostEffects dereferences BlackoutEffect and its material
+	// instance with no none-check, so a chain with only one of the two is worse than neither.
+	return LP.PlayerPostProcess.FindPostProcessEffect('drunkeffect') != none
+		&& LP.PlayerPostProcess.FindPostProcessEffect('blackout') != none;
+}
+
+/** Makes the drunk effect available on this map, if it is not already. */
+simulated function bool XangModEnsureDrunkChain()
+{
+	local LocalPlayer LP;
+
+	if (XangModHasDrunkEffects())
+		return true;                          // map already brought a chain with it
+
+	LP = LocalPlayer(Player);
+	if (LP == none || myHUD == none || XangModDrunkChain == none)
+		return false;
+
+	// Replace, do not append -- see the note above. bInClone deep-copies the effects so the
+	// shared asset is never mutated by one player's session.
+	LP.RemoveAllPostProcessingChains();
+	if (!LP.InsertPostProcessingChain(XangModDrunkChain, INDEX_NONE, true))
+	{
+		// Put the map back the way it was rather than leaving the player with no chain.
+		XangModRestoreWorldChain();
+		return false;
+	}
+
+	// Re-cache AOCBaseHUD's DrunkEffect / BlackoutEffect pointers against the new chain.
+	myHUD.NotifyBindPostProcessEffects();
+
+	bXangModDrunkChainAdded = XangModHasDrunkEffects();
+	if (!bXangModDrunkChainAdded)
+		XangModRestoreWorldChain();
+
+	return bXangModDrunkChainAdded;
+}
+
+/** Puts the map's own post-process chain back. Mirrors GameInfo.uc:1585-1592. */
+simulated function XangModRestoreWorldChain()
+{
+	local LocalPlayer LP;
+	local PostProcessChain WorldChain;
+
+	LP = LocalPlayer(Player);
+	if (LP == none)
+		return;
+
+	// Static on Engine (Engine.uc:1042). Reached through class'Engine'.static rather than
+	// LP.Outer so this does not depend on LocalPlayer's within-class.
+	WorldChain = class'Engine'.static.GetWorldPostProcessChain();
+	if (WorldChain == none)
+		WorldChain = class'Engine'.static.GetDefaultPostProcessChain();
+
+	LP.RemoveAllPostProcessingChains();
+	if (WorldChain != none)
+		LP.InsertPostProcessingChain(WorldChain, INDEX_NONE, true);
+
+	if (myHUD != none)
+		myHUD.NotifyBindPostProcessEffects();
+}
+
+/**
+ * Undoes XangModEnsureDrunkChain. Guarded on the flag so that a map which supplied its own
+ * drunk chain keeps it -- on those maps we never swapped anything and must not "restore".
+ */
+simulated function XangModDropDrunkChain()
+{
+	if (!bXangModDrunkChainAdded)
+		return;
+
+	bXangModDrunkChainAdded = false;
+	XangModRestoreWorldChain();
+}
+
+/**
+ * Adds the chain first when the map has no drunk effect of its own, so inebriate works
+ * everywhere rather than only where the map happened to supply one.
+ *
+ * The sound mode is deliberately not touched here: AOCBaseHUD drives EnableDrunkSoundMode
+ * from its own fade (UpdateDrunkEffect on the way in, ToggleDrunkPostEffects on the way
+ * out), and that runs on this same client.
+ */
+reliable client function ClientInebriate(bool bEnable)
+{
+	if (AOCBaseHUD(myHUD) == none)
+		return;
+
+	if (bEnable)
+	{
+		if (!XangModEnsureDrunkChain())
+		{
+			ClientDisplayConsoleMessage("Inebriate: no drunk post-process chain available on this map.");
+			return;
+		}
+		super.ClientInebriate(true);
+		return;
+	}
+
+	super.ClientInebriate(false);
+	XangModDropDrunkChain();
+}
+
+
+DefaultProperties
+{
+	NetUpdateFrequency=120
+	// Netcode optimization: Client-side interpolation interval to match 120Hz tickrate
+	MaxClientUpdateInterval=0.00833  // 1/120 = 0.00833 seconds between client updates
+	suicideDelay = 1.0f
+	UnpauseCountdownTime = 3
+	CustomizationClass=class'XangModCustomization'
+	// Sibling of the default chain (ChivPostProcess_noToneMap) in the same base-game
+	// package, so referencing it costs no new content on any map.
+	XangModDrunkChain=PostProcessChain'CHV_PPC_Pack.PostProcessChain.ChivPostProcess_drunk'
+	bShowDeathMessages = true
+	
+	// Proximity chat defaults (the voice enabler is gone; these still drive the
+	// nearby-talker HUD list in ClientNotifyPlayerTalking)
+	ProximityChatDistance=2048.0  // About 39 meters (typical medieval battle communication range)
+	bEnableProximityChat=true
+	bIsTalking=false
+
+	// Client send-budget floor
+	iXangModMinNetSpeed=15000
+	iXangModMinNetSpeedFallback=15000
+
+	// Parry box toggle default (disabled = use vanilla AOC values until an admin enables XangMod parry)
+	bXangModParryBox=false
+	// Skeletal parry default (disabled = use directional/shield-style parry box)
+	bSkeletalParry=false
+	// Butt-parry prevention default (disabled = attacks from behind are parryable, vanilla behaviour)
+	bDisableButtParries=false
+
+	// Collision bubble radius default (39.0 = vanilla AOC OuterCylinder radius)
+	fXangModCollisionRadius=39.0
+
+}
+

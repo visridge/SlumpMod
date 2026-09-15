@@ -1,0 +1,89 @@
+// XangMod - Vars.uci
+// Included via XangModPlayerController.uci. Vars live in PC/Vars.uci; DefaultProperties in PC/Effects.uci (last).
+var XangModCustomizationContent CustomizationBaseDummy;
+var float InterpYaw;
+var float InterpPitch;
+
+var bool bShowDeathMessages;
+var bool bPCShowHitTime;
+var bool bShowHitTime;
+
+var bool bShowGroundSpeed;
+
+var float fLastFeintTime;  // Track when last feint was attempted to prevent spam
+
+var bool bShownOptimizationTip;  // Track if we've shown the optimization tip to this player
+
+// Camera shake configuration
+var globalconfig bool bDisableScreenShake;  // Disable all camera shake effects (flinch, dazed, hits)
+
+// Proximity Voice Chat
+var globalconfig float ProximityChatDistance;  // Distance in UU where players can hear each other
+var globalconfig bool bEnableProximityChat;     // Master toggle for proximity chat
+var bool bIsTalking;  // Is local player currently talking
+var array<AOCPRI> NearbyTalkers;  // List of PRIs currently talking within range
+
+// Parry box toggle
+var globalconfig bool bXangModParryBox;  // When true, use XangMod parry box values; when false, revert to vanilla AOC defaults
+var globalconfig bool bSkeletalParry;    // When true, parry hitbox wraps the full player model (skeletal parry) instead of directional shield-style
+var globalconfig bool bDisableButtParries;  // When true, attacks from behind the defender cannot be parried
+
+// Collision bubble radius (OuterCylinder)
+var globalconfig float fXangModCollisionRadius;  // Radius of the player collision bubble; vanilla AOC default is 39.0
+
+// XANGMOD: Persisted client-clock offset (server-only) for the hit-trade timestamp system.
+// The offset is accumulated on the pawn (XangModPawn.fClientClockOffset); we stash it here when
+// the pawn dies and re-seed the next pawn on Possess, so the system isn't cold (falling back to
+// pure ping reconstruction) for the first hit or two after every respawn.
+var float fPersistedClientClockOffset;
+var bool  bPersistedClockOffsetInit;
+
+// XANGMOD: First-person spectator (see the FIRST-PERSON SPECTATOR block further down).
+var bool    bXangModFPSpectate;      // desired perspective while following a player (true = first person)
+var AOCPawn XangModFPObservedPawn;   // pawn we currently have first-person-observer state applied to
+var AOCPawn XangModHUDPawn;          // pawn the spectator health/stamina HUD is currently showing
+var AOCPawn XangModPerspectivePawn;  // pawn we have already established a camera perspective for
+var float   fXangModNextFPRetry;     // WorldInfo.TimeSeconds gate for re-poking a pawn to rebuild its 1P mesh
+var AOCPawn XangModFPBlockLoggedPawn; // pawn whose first-person refusal we have already logged
+
+// XANGMOD: health/stamina bar enforcement (see XangModEnforceLifeBars)
+var AOCPawn XangModLifeBarPawn;          // pawn the bars are currently showing
+var float   fXangModNextLifeBarAssert;   // throttle for re-asserting bar visibility
+var int     iXangModLastHealthShown;
+var float   fXangModLastStaminaShown;
+
+// XANGMOD: spectator field-of-view lock (see XangModEnforceSpectateFOV)
+var float   fXangModFOVCaught;       // last wrong FOV value we corrected while spectating
+var name    nXangModFOVCaughtWhere;  // which hook caught it -- reported by FPSpectateDebug
+
+// XANGMOD: minimum client send rate (see XangModRestoreNetSpeed).
+//   0 (or absent from the ini) = use the built-in default of 15000
+//   negative                   = opt out entirely
+// Deliberately NOT relying on globalconfig to deliver the default: measured on a
+// live client this read back 0 even with iXangModMinNetSpeed=15000 in
+// defaultproperties, the key absent from every ini, and no competing
+// defaultproperties block in the including class. So 0 is treated as unset.
+var globalconfig int iXangModMinNetSpeed;
+var int iXangModMinNetSpeedFallback;  // plain var: config cannot zero this one
+var float fXangModNextNetSpeedCheck;  // throttle for the tick-side assert
+var name  nXangModNetSpeedBlock;      // why the last automatic attempt did nothing
+var int   iXangModNetSpeedTries;      // how many times it has tried
+
+// XANGMOD: spectator team lock (see XangModMayView)
+var int     iXangModViewBlocks;      // times we refused an out-of-team view target
+var name    nXangModViewBlockWhere;  // which hook refused it, for FPSpectateDebug
+
+// XANGMOD: admin-only pause control (ported from NateMod). Pausing is restricted
+// to admins; unpausing is also admin-only and runs a short 3-2-1-GO countdown so
+// players get a heads-up before the action resumes.
+var bool  bIsPaused;              // true while an admin has the game paused
+var int   UnpauseCountdownTime;   // countdown start value (default 3)
+
+// XANGMOD: inebriate on any map (see the block above ClientInebriate for the why).
+// Declared up here because UnrealScript requires every var before the first function
+// in the class body -- and this .uci is pasted straight into one.
+var PostProcessChain XangModDrunkChain;   // ChivPostProcess_drunk, from defaultproperties
+var bool bXangModDrunkChainAdded;         // true only when WE swapped the chain, so only we restore it
+
+
+

@@ -758,6 +758,20 @@ simulated state ParryRelease
 				ClearParryBuffer();
 			}
 		}
+
+		// XANGMOD: counter-parry out of a riposte. Hoisted from 50 weapon classes.
+		if (AOCOwner.IsLocallyControlled())
+		{
+			if (bSuccessfulParry && bParryHitCounter && FireModeNum == Attack_Parry) {
+				ClearTimer('PlayRiposteAnimation');
+				ClearTimer('OnStateAnimationEnd');
+				AOCOwner.ConsumeStamina(iFeintStaminaCost);
+				ActivateParry();
+				if (WorldInfo.NetMode != NM_Standalone && (Worldinfo.NetMode != NM_ListenServer || !AOCOwner.IsLocallyControlled())) {
+					ServerActivateParry();
+				}
+			}
+		}
 	}
 	
 	/** For shields: auto-drop after the parry window expires */
@@ -855,6 +869,21 @@ simulated state ParryRelease
  */
 simulated state Release
 {
+	// XANGMOD: counter-parry out of Release. Hoisted from 43 weapon classes.
+	simulated function BeginFire(byte FireModeNum)
+	{
+		super.BeginFire(FireModeNum);
+		if (FireModeNum == Attack_Parry && bParryHitCounter) {
+			AttackQueue = Attack_Null;
+			ClearTimer('OnStateAnimationEnd');
+			AOCOwner.ConsumeStamina(iFeintStaminaCost);
+			ActivateParry();
+			if (WorldInfo.NetMode != NM_Standalone && (Worldinfo.NetMode != NM_ListenServer || !AOCOwner.IsLocallyControlled())) {
+				ServerActivateParry();
+			}
+		}
+	}
+
 	/** Override HandleCombo to add server-side stamina validation */
 	simulated function HandleCombo(EAttack ComboAttack)
 	{
