@@ -17,12 +17,6 @@ var bool bShownOptimizationTip;  // Track if we've shown the optimization tip to
 // Camera shake configuration
 var globalconfig bool bDisableScreenShake;  // Disable all camera shake effects (flinch, dazed, hits)
 
-// Proximity Voice Chat
-var globalconfig float ProximityChatDistance;  // Distance in UU where players can hear each other
-var globalconfig bool bEnableProximityChat;     // Master toggle for proximity chat
-var bool bIsTalking;  // Is local player currently talking
-var array<AOCPRI> NearbyTalkers;  // List of PRIs currently talking within range
-
 // Parry box toggle
 var globalconfig bool bXangModParryBox;  // When true, use XangMod parry box values; when false, revert to vanilla AOC defaults
 var globalconfig bool bSkeletalParry;    // When true, parry hitbox wraps the full player model (skeletal parry) instead of directional shield-style

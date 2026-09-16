@@ -20,9 +20,8 @@ something, search it.
 | 6 | [First-person spectate](#6-first-person-spectate) |
 | 7 | [RCON protocol](#7-rcon-protocol) |
 | 8 | [Admin commands and configuration](#8-admin-commands-and-configuration) |
-| 9 | [Server performance](#9-server-performance) |
-| 10 | [Testing](#10-testing) |
-| 11 | [Changelog](#11-changelog) |
+| 9 | [Testing](#9-testing) |
+| 10 | [Changelog](#10-changelog) |
 
 ---
 
@@ -205,7 +204,6 @@ facade that nests its feature files; **the 45 mode classes were not touched**.
 | `PC/Debug.uci` | parry-box visualisation, death messages, hit timing, server tick polling |
 | `PC/Spectate.uci` | first-person spectate and `state Spectating` (§6) |
 | `PC/Network.uci` | netspeed repair, `NetDebug`, bandwidth cap |
-| `PC/ProximityChat.uci` | VOIP talker proximity |
 | `PC/Effects.uci` | camera shake, hit feedback, drunk post-process chain, **`DefaultProperties`** (last) |
 
 | File | What is in it |
@@ -308,7 +306,7 @@ _Messer`). Still without it:
 | `Classes/XangModCharacterInfo_*.uc` | per-class character data (`DefaultProperties` only) |
 | `Classes/XangModFamilyInfo_*.uc` | per-class family/stat data |
 | `Classes/XangModAOCCombatBot.uc` | smarter melee bots for `addbots` |
-| `Classes/XangModNPC_New*.uc` | reduced-replication NPC variants (§9) |
+| `Classes/XangModNPC_New*.uc` | reduced-replication NPC variants |
 | `Localization/INT/XangMod.INT` | localized strings |
 
 ---
@@ -1928,8 +1926,6 @@ persist per-client in the user's config:
 | Variable | Meaning |
 |---|---|
 | `bDisableScreenShake` | Disable all camera shake effects |
-| `ProximityChatDistance` | Distance in Unreal Units within which players hear each other |
-| `bEnableProximityChat` | Master toggle for proximity chat |
 | `bXangModParryBox` | XangMod parry box values vs vanilla AOC defaults |
 | `bSkeletalParry` | Full-model parry hitbox vs directional |
 | `bDisableButtParries` | Block parries of attacks from behind |
@@ -1967,8 +1963,6 @@ SDKPrefixes=(Prefix="CDWDUEL",GameType="XangMod.XangModCDWDuel")
 Other sections:
 
 - `[Engine.GameInfo] DefaultGame=XangMod.XangModTD`
-- `[AOC.AOCPlayerController]` — `ProximityChatDistance=2048.0` (about 39 m; 1 m ≈ 52.5 UU)
-  and `bEnableProximityChat=true`
 - `bRestartMapAfterEndGame` per gametype — true for TD, LTS and TO; false for FFA, Duel,
   KOTH and CTF
 - `[Engine.Engine]` / `[Engine.GameEngine]` — `bSmoothFrameRate=False`,
@@ -1995,450 +1989,12 @@ removed on 2026-09-14 and superseded by the RCON round events in §7.
 
 ---
 
-## 9. Server performance
-
-XangMod targets a 165Hz dedicated server. At 165Hz the tick budget is 6.06ms, and the mod's netcode work is built around keeping player replication inside that budget while everything else gets out of the way.
-
-**The known bottleneck.** On Dark Forest's final objective the server tick time spikes from roughly 7ms to roughly 10-12ms. The cause is 18 standing NPCs (`AOCNPC_New_NoMove`) replicating at vanilla 3Hz to 12 players: 18 x 3 x 12 = 648 NPC updates per second. This cannot be fixed from the server side alone; the NPC spawn classes live in the map's Kismet, so a real fix needs map access (see 9.3).
-
-Two source documents were merged into this section. Where they disagree on a number, both figures are given and the disagreement is called out.
-
-### 9.1 Implemented
-
-Everything in this subsection is in the shipped build and working.
-
-#### 165Hz player network updates
-
-**Location:** `Include/PC/Vars.uci` (player controller defaults)
-
-```unrealscript
-NetMoveDelta = 0.00606;  // ~165Hz vs vanilla 20Hz
-```
-
-Impact: smooth competitive netcode, low-latency player movement.
-
-#### 165Hz component replication
-
-`NetUpdateFrequency=165` is set on all three player-side actors:
-
-- `XangModPlayerController` — defaults in `Include/PC/Vars.uci`
-- `XangModPawn` — defaults in `Include/Pawn/Netcode.uci`
-- `XangModWeaponAttachment` — class defaults
-
-Impact: synchronized updates across all player components.
-
-#### High-priority player replication
-
-**Location:** `Include/Pawn/Netcode.uci`, `GetNetPriority()`
-
-```unrealscript
-event float GetNetPriority(Actor Viewer, vector ViewLocation, float ViewDist)
-{
-    if (Viewer == Controller) return 10000.0;  // Own pawn max priority
-    return 5000.0;  // Other players 5000x priority vs vanilla
-}
-```
-
-Impact: players replicate ahead of NPCs, environment and projectiles.
-
-#### Efficient tick override
-
-**Location:** `Include/Pawn/Core.uci`, `Tick()`
-
-```unrealscript
-simulated event Tick(float DeltaTime)
-{
-    super.Tick(DeltaTime);  // Call parent first
-    PlayLowStaminaLoop(Stamina <= 2.0f && Health > 0.0f);  // Fix MAA panting
-}
-```
-
-Impact: minimal per-frame overhead, and it fixes the Man-at-Arms stamina/panting bug.
-
-#### Client-only ragdolls
-
-**Location:** `XangModPawn` (pawn-side ragdoll handling, under `Include/Pawn/`). Neither source names the specific function.
-
-Ragdolls are removed after 0.5s on the client and are not simulated server-side. Impact: the server does not process ragdoll physics — described in the sources as a major CPU saving.
-
-#### NPC NetUpdateFrequency reduction
-
-The two replacement NPC classes exist and are compiled:
-
-**`XangModNPC_New_NoMove.uc`** — standing NPCs (final-objective targets)
-
-```unrealscript
-NetUpdateFrequency = 1.0  // Down from vanilla 3.0Hz (66% reduction)
-```
-
-- Impact: 648 updates/sec becomes 216 updates/sec, i.e. 432 fewer updates per second.
-- Rationale: standing NPCs only need an update when hit, which `bForceNetUpdate` handles.
-
-**`XangModNPC_New.uc`** — moving NPCs (patrols, combat AI)
-
-```unrealscript
-NetUpdateFrequency = 30.0  // Down from vanilla 50.0Hz (40% reduction)
-```
-
-- Impact: 40% less network overhead per moving NPC.
-- Rationale: 30Hz is still smooth for AI; 165Hz is reserved for player pawns.
-
-Important caveat: the classes are implemented, but nothing uses them until a map's Kismet spawns them instead of the vanilla classes. See 9.3.
-
-> Source disagreement: SERVER_OPTIMIZATION_GUIDE.md lists these two classes under "Implemented Optimizations" and its changelog records them as created. SERVER_OPTIMIZATIONS.md instead lists "Implement XangModNPC_New_NoMove (1Hz)" and "Implement XangModNPC_New (30Hz)" under future considerations, as things to do if map access is gained. The classes themselves ship; only their deployment into a map is outstanding.
-
-**Why 1Hz for standing NPCs:** they do not move (`PHYS_None`); they only replicate when hit (`bForceNetUpdate` in `TakeDamage`); 1Hz is enough to keep them alive for relevancy checks; damage replication is instant because `bForceNetUpdate` bypasses the normal update cadence.
-
-**Why 30Hz for moving NPCs:** a balance of smoothness and cost. The human eye perceives smooth motion at around 24fps, so 30Hz network updates are smooth enough for AI, leaving 165Hz for player pawns.
-
-**Network math**
-
-```
-Vanilla final objective (18 NPCs):
-18 NPCs x 3Hz x 12 players = 648 updates/sec
-
-Optimized final objective (18 NPCs):
-18 NPCs x 1Hz x 12 players = 216 updates/sec
-
-Savings: 432 updates/sec (66% reduction)
-```
-
-**Server tick budget**
-
-```
-165Hz tickrate = 6.06ms per tick
-
-At 60% load:
-- Player updates: ~5ms (12 players x 165Hz)
-- NPC updates:    ~1ms (18 NPCs x 1Hz)
-- Game logic:     ~2ms (objectives, spawns, etc)
-= ~8ms total
-```
-
-Note that the source presents this ~8ms figure as "within budget" while also stating the 165Hz budget is 6.06ms. The two statements are inconsistent; ~8ms is over a 6.06ms budget.
-
-### 9.2 Proposed, not implemented
-
-None of the following is in the build. These are proposals carried over from the source documents; the code blocks below are sketches from those documents, not shipped code. Treat every figure here as an estimate made before implementation.
-
-#### Proposal 1: reduce admin tick polling
-
-Admin tick-time polling currently runs every 1 second.
-
-**Location:** `Include/PC/Core.uci` — the `SetTimer` call that schedules `UpdateServerTickTime`.
-
-Current:
-
-```unrealscript
-SetTimer(1.0f, true, 'UpdateServerTickTime');
-```
-
-Proposed:
-
-```unrealscript
-SetTimer(2.0f, true, 'UpdateServerTickTime');  // 2 seconds instead of 1
-```
-
-Claimed benefit: 50% reduction in admin polling overhead; 12 players at 1Hz becomes 12 players at 0.5Hz, saving 6 updates/sec. Still responsive enough for monitoring.
-
-#### Proposal 2: server config tweaks
-
-**File:** `UDKGame\Config\PCServer-UDKEngine.ini`
-
-```ini
-[Engine.GameEngine]
-; 165Hz dedicated server tickrate (already set)
-NetServerMaxTickRate=165
-MaxClientRate=25000
-MaxInternetClientRate=25000
-
-; NEW: Reduce physics substeps (default is 4, we only need 2 for melee combat)
-MaxPhysicsSubsteps=2
-
-; NEW: Disable physics async (can cause overhead on older CPUs)
-bUsePhysicsAsync=FALSE
-
-; NEW: Reduce spectator bandwidth (they don't need 165Hz)
-MaxSpectatorRate=8000
-
-[IpDrv.TcpNetDriver]
-NetServerMaxTickRate=165
-InitialConnectTimeout=200.0
-ConnectionTimeout=80.0
-
-; NEW: Reduce saved move history (default 96, we only need 48 at 165Hz)
-NumRecentlyDisconnectedTrackingTime=10.0
-```
-
-Claimed benefits:
-
-- `MaxPhysicsSubsteps=2` — physics runs at 60Hz instead of 120Hz, which the source considers fine for melee combat.
-- `MaxSpectatorRate=8000` — spectators get 20Hz updates instead of 120Hz.
-- Reduced saved-move history — less memory allocation per player.
-
-Caution: the saved-move comment claims a change from 96 to 48, but the key actually written underneath it is `NumRecentlyDisconnectedTrackingTime=10.0`, which is not a saved-move history setting. The comment and the key do not match; verify before applying.
-
-Note that the `NetServerMaxTickRate=165`, `MaxClientRate`, `MaxInternetClientRate`, timeout and `[IpDrv.TcpNetDriver]` lines appear in both sources and are described as already set. Only the lines marked NEW are proposals.
-
-#### Proposal 3: disable unused timers for dead players
-
-Dead players still run regeneration and points timers unnecessarily.
-
-The source proposes a new top-level include, `XangMod/Include/XangModPawnDeath.uci`, added to `XangModPawn.uc`. Under the current split layout this would instead go into `Include/Pawn/Core.uci` as a `Died()` override; `Include/XangModPawn.uci` is now only a facade that includes the feature files.
-
-```unrealscript
-// Override Died() to clear unnecessary timers for dead pawns
-function Died(Controller Killer, class<DamageType> damageType, vector HitLocation)
-{
-    // Clear stamina/health regen timers (dead pawn doesn't need them)
-    ClearTimer('RegenStamina');
-    ClearTimer('RegenHealth');
-    ClearTimer('RegenSprintTime');
-    ClearTimer('TickPointsTimers');
-
-    // Call parent implementation
-    super.Died(Killer, damageType, HitLocation);
-}
-```
-
-Claimed benefit: eliminates 4 timers x 12 players, up to 48 timer ticks/sec when players are dead. More impactful in deathmatch/FFA where deaths are frequent.
-
-#### Proposal 4: optimize the countdown timer
-
-The countdown timer currently ticks once per second per player.
-
-**Location:** `Include/PC/Core.uci` — the `SetTimer` call that schedules `CountdownTick`.
-
-Current:
-
-```unrealscript
-SetTimer(1.0f, true, 'CountdownTick');
-```
-
-Proposed: make the countdown server-authoritative rather than per-client. Add a broadcaster to `Include/Game/Match.uci`:
-
-```unrealscript
-// Server-side countdown broadcaster (runs once, not per player)
-function BroadcastCountdownTick()
-{
-    local XangModPlayerController PC;
-    foreach WorldInfo.AllControllers(class'XangModPlayerController', PC)
-    {
-        PC.CountdownTick();
-    }
-}
-```
-
-And in `Include/PC/Core.uci`, remove the per-client `SetTimer(1.0f, true, 'CountdownTick')` so the countdown is driven solely by `XangModGame.BroadcastCountdownTick()`.
-
-Claimed benefit: 1 timer on the server instead of 12 (one per player), a 91.7% reduction in countdown timer overhead.
-
-#### Proposal 5: batch HUD updates
-
-HUD updates currently happen independently per player. The proposal is to suppress updates for insignificant changes, cutting RPC spam. Variables would go in `Include/PC/Vars.uci` and the function in `Include/PC/Core.uci`.
-
-```unrealscript
-// Batch HUD updates (only send if value actually changed)
-var float LastReplicatedHealth;
-var float LastReplicatedStamina;
-
-function UpdateHUDStats()
-{
-    if (Pawn == none) return;
-
-    // Only replicate health if it changed by more than 1 point
-    if (Abs(Pawn.Health - LastReplicatedHealth) > 1.0)
-    {
-        LastReplicatedHealth = Pawn.Health;
-        // HUD update code here
-    }
-
-    // Only replicate stamina if it changed by more than 5 points
-    if (Abs(AOCPawn(Pawn).Stamina - LastReplicatedStamina) > 5.0)
-    {
-        LastReplicatedStamina = AOCPawn(Pawn).Stamina;
-        // HUD update code here
-    }
-}
-```
-
-Claimed benefit: roughly 30-40% reduction in HUD-related network traffic.
-
-#### Projected gains (estimates for unimplemented work)
-
-| Proposal | CPU savings | Network savings |
-|---|---|---|
-| Admin polling to 2s | ~1% | ~0.5% |
-| Physics substeps to 2 | ~5-8% | N/A |
-| Dead pawn timers cleared | ~2-3% | N/A |
-| Server-side countdown | ~1% | ~0.5% |
-| Batched HUD updates | ~1-2% | ~5-10% |
-| **Total** | **~10-15%** | **~6-11%** |
-
-Real-world estimates, if all of the above were implemented:
-
-- Dark Forest final objective: ~10-12ms now, ~9-10.5ms after — roughly 1-1.5ms saved, which is not enough to fix the NPC spike.
-- Other objectives (no NPC spam): ~6-7ms now, ~5.5-6ms after — roughly 0.5-1ms saved, more headroom.
-
-#### Suggested implementation order
-
-The source ranks the proposals as follows.
-
-High priority:
-
-1. Physics substeps config (`PCServer-UDKEngine.ini`)
-2. Spectator bandwidth reduction (`PCServer-UDKEngine.ini`)
-3. Clear timers on pawn death (`Include/Pawn/Core.uci`)
-
-Medium priority:
-
-4. Admin polling to 2s (`Include/PC/Core.uci`)
-5. Server-side countdown (`Include/Game/Match.uci` plus `Include/PC/Core.uci`)
-
-Low priority (micro-optimization):
-
-6. Batched HUD updates — minor gains for noticeably more code complexity.
-
-#### Longer-term ideas, also unimplemented
-
-Listed as low priority in the guide:
-
-- Actor relevancy distance tuning (cull distant actors sooner)
-- Projectile pooling (reuse arrow actors instead of spawn/destroy)
-- Animation tick reduction (fewer anim ticks on non-visible pawns)
-- Enabling physics async — risky, needs extensive testing
-
-Also floated but not worked out: reducing arrow/throwable lifetime, and reducing particle counts on blood and hit effects for the server. Positional audio calculation on the server is noted as already disabled.
-
-#### Explicitly not recommended
-
-- Reducing player `NetUpdateFrequency` below 165Hz — defeats the competitive purpose.
-- Disabling ragdolls entirely — already optimized to client-only.
-- Raising server tickrate above 165Hz — diminishing returns, more CPU.
-- Dynamic tickrate that drops on NPC-heavy objectives — breaks competitive feel.
-- Forking the vanilla Dark Forest map into a custom "XangMod_DarkForest" — requires every client to download a custom map and risks fragmenting the community.
-
-### 9.3 Map-level recommendations
-
-Everything in this subsection requires map access — the ability to open the `.udk` source in the UDK Editor, edit Kismet, and recompile and redistribute the map. None of it can be done from the server or the mod alone. In practice this means getting source access from the map's creator.
-
-#### Option A: use XangMod NPC classes in Kismet
-
-**Location:** Dark Forest map Kismet sequences, final objective.
-
-1. Open the Dark Forest map in the UDK Editor.
-2. Find the final-objective NPC spawn sequences.
-3. Change the spawn class from `AOCNPC_New_NoMove` to `XangModNPC_New_NoMove`.
-4. Recompile the map and test.
-
-The same substitution applies to moving NPCs: replace `AOCNPC_New` spawns with `XangModNPC_New`.
-
-Expected result: server ms drops from ~10-12ms to ~7-8ms on the final objective. Both sources agree on this figure.
-
-#### Option B: reduce NPC count
-
-If the spawn classes cannot be changed:
-
-- Reduce 18 NPCs to 12 (a 33% reduction) and adjust the objective requirement accordingly.
-- Impact: 648 updates/sec becomes 432 updates/sec.
-
-#### Objective design guidance for map makers
-
-- Limit standing NPCs to 12 per objective (under 300 updates/sec).
-- Stagger NPC spawns across waves instead of spawning all at once.
-- Use `bAlwaysRelevant=false` for NPCs far from players.
-- Consider proximity-based activation — spawn NPCs when players approach.
-
-#### The hard truth about what cannot be fixed server-side
-
-The NPC bottleneck requires map access to fix properly. The server-side proposals in 9.2 add up to an estimated ~10-15% CPU reduction, which is roughly 1-1.5ms on the final objective — real, but not enough to bring a 10-12ms tick back under budget. There is no server-only configuration that removes 648 NPC updates per second.
-
-What can be fixed without map access: server config, timer cleanup on dead pawns, and network traffic reduction. What cannot: the NPC replication bottleneck itself, and therefore the final-objective tick spike.
-
-That leaves two genuine paths forward.
-
-**Work around it, server-side.** Reduce the player count on Dark Forest from 12 to 10, which cuts 648 NPC updates to 540 (16.7%) and moves the tick from ~10-12ms to ~9-10ms — marginal. Or limit NPC-heavy maps in the rotation: pull Dark Forest temporarily and favour PvP-heavy maps with few or no NPCs. A third workaround, dropping the tickrate on NPC-heavy objectives, is explicitly not recommended because it breaks the competitive feel.
-
-**Contact the map maker.** Get access to the Dark Forest `.udk` source, change the final-objective Kismet to use `XangModNPC_New_NoMove` or reduce 18 NPCs to 12, then recompile and redistribute. This is the proper fix.
-
-A further alternative, if map access never materializes, is running separate server configurations for NPC-heavy versus PvP-only maps — for example a Dark Forest server capped at 10 players and a lower tickrate, and a duel/arena server at 12 players.
-
-> Source disagreement: the separate-config proposal names 90Hz for the Dark Forest server and 120Hz for the duel/arena server, and the dynamic-tickrate idea describes "120Hz normally, 90Hz on final objective". Both conflict with the 165Hz figure used throughout the rest of both documents, and the closing line of SERVER_OPTIMIZATIONS.md refers to "your 120Hz optimizations" despite the document being titled for 165Hz. The 120Hz references appear to be leftovers from an earlier tickrate target.
-
-#### Rollback plan
-
-If map-level changes cause problems:
-
-1. Revert the Dark Forest map to vanilla NPC spawns.
-2. Raise the XangMod NPC update rates: NoMove from 1.0 to 2.0Hz, moving from 30.0 to 40.0Hz.
-3. Reduce the player count temporarily, 12 to 10.
-4. Contact the XangMod developer for troubleshooting.
-
-### 9.4 Monitoring and testing
-
-#### Performance monitoring commands
-
-Admin only:
-
-```
-StartPollingServerTickTime  // Shows real-time server ms in scoreboard
-GetServerTickTime           // One-time server ms check
-stat fps                    // Client FPS (should be 120+ with vsync off)
-stat net                    // Network stats (bandwidth, packet loss)
-```
-
-The polling and tick-time plumbing behind these lives in `Include/PC/Core.uci`; the admin command entry points are in `Include/PC/AdminCommands.uci`. The remote console setup (`InitRemoteConsole`) and game defaults are in `Include/Game/Server.uci`.
-
-#### Target metrics
-
-- Server ms: under 6.06ms (165Hz means a 6.06ms budget per tick).
-- Player `NetUpdateFrequency`: 165Hz (`XangModPawn`, `XangModPlayerController`).
-- NPC `NetUpdateFrequency`: 1-30Hz (XangMod NPC classes).
-- Player ping: under 70ms optimal, under 140ms acceptable.
-
-> Source disagreement on the acceptance threshold. SERVER_OPTIMIZATION_GUIDE.md sets the target at under 6.06ms (the 165Hz budget) in its metrics and success indicators, but its own test step 4 asks only that server ms stay under 8.33ms during combat. SERVER_OPTIMIZATIONS.md uses 8.33ms throughout its success criteria — under 8.33ms on objectives 1-3, and ~9-10ms on objective 4 accepted as a marginal improvement. 8.33ms is the 120Hz budget, 6.06ms the 165Hz one. Decide which target applies before testing; the two documents do not agree.
-
-#### Testing checklist
-
-Server-side changes:
-
-1. Compile XangMod and check for errors.
-2. Test with 12 players on Dark Forest.
-3. Monitor server ms on all objectives, especially the final one.
-4. Verify the trade window still functions (165Hz maintained).
-5. Check client smoothness — no jitter or lag.
-6. Confirm admin tick monitoring still works, if the polling interval was changed to 2s.
-
-Map-side NPC changes:
-
-1. Compile `XangModNPC_New.uc` and `XangModNPC_New_NoMove.uc`.
-2. Update the Dark Forest map Kismet to use the XangMod NPC classes.
-3. Test the final objective with 12 players and 18 NPCs.
-4. Verify server ms against the agreed threshold during combat (see the disagreement above).
-5. Confirm NPCs still take damage and replicate properly.
-6. Check client-side smoothness — there should be no visible change.
-
-#### Success criteria
-
-- Server ms within the agreed budget on objectives without NPCs.
-- On the NPC-heavy final objective, expect only a marginal improvement from server-side work alone.
-- No visible jitter or lag on NPC deaths.
-- The trade window still functions correctly, confirming 165Hz player updates are maintained.
-- Combat feels identical to before — low latency maintained.
-- No new bugs or issues introduced.
-
-#### Recommended sequence
-
-1. Implement the high-priority proposals from 9.2.
-2. Measure the improvement on non-NPC objectives.
-3. Contact the Dark Forest map creator for source access.
-4. In the meantime, consider reducing the player count on Dark Forest or rotating it out.
 
 ---
 
-## 10. Testing
+## 9. Testing
 
-### 10.1 Host testing hides real bugs
+### 9.1 Host testing hides real bugs
 
 Running "Create Game" as a listen server is fine for UI work, weapon damage values and
 basic functionality. It is **not** sufficient for anything else, because as the host you are
@@ -2449,14 +2005,14 @@ and first-person spectate all behave differently.
 **Verify as a client connected to a dedicated server.** This is not optional for combat or
 netcode changes; it is where the bugs are.
 
-### 10.2 Test with real latency
+### 9.2 Test with real latency
 
 Netcode issues only appear with real network delay. Several systems in §5 exist purely to
 compensate for latency and do nothing at 0 ping — the parry rollback hold is literally
 sized from the defender's one-way ping, so at 0 ping it is 0 and the code path is never
 exercised.
 
-### 10.3 Before believing any result
+### 9.3 Before believing any result
 
 1. Compile clean.
 2. Confirm the change is in the package — `grep -a -c "<new function name>"` against
@@ -2465,7 +2021,7 @@ exercised.
    silently fails.
 4. Then test, as a client, on a dedicated server.
 
-### 10.4 What to check after touching combat
+### 9.4 What to check after touching combat
 
 - Counter-parry out of Release **and** out of a riposte, on at least one weapon from each
   shape group — a plain weapon, a polearm with its own `PlayStateAnimation`, and a shield.
@@ -2474,11 +2030,11 @@ exercised.
 - Trades: near-simultaneous swings should still trade; clearly staggered ones should not.
 - Riposte with incoming damage, to confirm flinch immunity during the grace period.
 
-### 10.5 What to check after touching spectate
+### 9.5 What to check after touching spectate
 
 See §6.5 for the full spectate test plan.
 
-### 10.6 Warning-count regression check
+### 9.6 Warning-count regression check
 
 A clean build currently produces a large number of warnings, most inherited from vanilla
 AOC patterns (variable shadowing, config/localized import failures, `DefaultProperties`
@@ -2497,10 +2053,40 @@ data issues in weapon and character classes). The useful signal is the *fingerpr
 
 ---
 
-## 11. Changelog
+## 10. Changelog
 
 Chronological history, newest first. Carried over verbatim apart from heading levels
 and two include paths that the September 2026 split renamed.
+
+### Proximity chat removed; 165Hz performance notes dropped (2026-09-15)
+
+Finishes the job started on 2026-09-02. That change pulled the voice *enabler* but
+deliberately left `ClientNotifyPlayerTalking` and `bEnableProximityChat` in place; both are
+now gone too, along with the rest of the proximity path.
+
+Removed:
+
+- `Include/PC/ProximityChat.uci` — `ServerNotifyTalkingState`,
+  `NotifyNearbyPlayersOfTalker`, `ClientReceiveProximityTalker`, `ClientNotifyPlayerTalking`
+  and `ProcessVOIPQueue`. The file is now a tombstone and is no longer included by
+  `XangModPlayerController.uci`; **delete it.**
+- `Include/PC/Vars.uci` — `ProximityChatDistance`, `bEnableProximityChat`, `bIsTalking`,
+  `NearbyTalkers`.
+- `Include/PC/Effects.uci` — the matching `DefaultProperties` entries.
+- `DefaultXangMod.ini` — the whole `[AOC.AOCPlayerController]` proximity block.
+
+One consequence: with the mod's `ClientNotifyPlayerTalking` override gone, vanilla AOC's
+implementation applies again. The mod's version had been rewritten from a per-notification
+`DynamicActors` sweep for performance, so vanilla's is the more expensive one — but it only
+runs if the engine reports a remote talker, which cannot happen with no voice codec.
+
+Also removed: the "165Hz server optimization" section of this document. The tickrate work
+was never finished, so the figures, thresholds and proposals in it described an intention
+rather than the build. The two source documents behind it disagreed with each other on the
+acceptance threshold (6.06 ms vs 8.33 ms), on whether the XangMod NPC classes counted as
+implemented, and on whether the target was 120Hz or 165Hz. `XangModNPC_New` and
+`XangModNPC_New_NoMove` still exist in `Classes/`; the `GetServerTickTime` and
+`StartPollingServerTickTime` console commands still work and are listed in §8.6.
 
 ### Voice chat removed (2026-09-02)
 

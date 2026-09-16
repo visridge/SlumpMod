@@ -179,12 +179,6 @@ DefaultProperties
 	// package, so referencing it costs no new content on any map.
 	XangModDrunkChain=PostProcessChain'CHV_PPC_Pack.PostProcessChain.ChivPostProcess_drunk'
 	bShowDeathMessages = true
-	
-	// Proximity chat defaults (the voice enabler is gone; these still drive the
-	// nearby-talker HUD list in ClientNotifyPlayerTalking)
-	ProximityChatDistance=2048.0  // About 39 meters (typical medieval battle communication range)
-	bEnableProximityChat=true
-	bIsTalking=false
 
 	// Client send-budget floor
 	iXangModMinNetSpeed=15000

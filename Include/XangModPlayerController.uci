@@ -11,5 +11,4 @@
 `include(XangMod/Include/PC/Debug.uci)
 `include(XangMod/Include/PC/Spectate.uci)
 `include(XangMod/Include/PC/Network.uci)
-`include(XangMod/Include/PC/ProximityChat.uci)
 `include(XangMod/Include/PC/Effects.uci)
