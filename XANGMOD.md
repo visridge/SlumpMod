@@ -46,17 +46,6 @@ One casualty survives the rename: the content package `BangmodCharacters` does n
 under either name, which is why the first-person camera freezes for Knight and Vanguard
 when it tries to load a 1P mesh from it. See §6 — it is not a spectate bug.
 
-### 1.2 Repositories
-
-Two unlinked copies of the source exist:
-
-- **`F:\SteamLibrary\steamapps\common\chivalrymedievalwarfare\Development\Src\XangMod`** —
-  the working tree. This is what the SDK compiles. All work goes here.
-- **`C:\Users\Bindon\Documents\GitHub\SlumpMod`** — a separate git copy, pushed manually.
-
-They are separate copies, not a junction. Do not sync them automatically or report drift
-between them.
-
 ---
 
 ## 2. Build and deploy
