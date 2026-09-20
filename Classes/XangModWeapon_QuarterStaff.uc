@@ -7,44 +7,6 @@
 */
 class XangModWeapon_QuarterStaff extends XangModMeleeWeapon;
 
-simulated state Release
-{
-	simulated function BeginFire(byte FireModeNum)
-	{
-		super.BeginFire(FireModeNum);
-		if (FireModeNum == Attack_Parry && bParryHitCounter) {
-			AttackQueue = Attack_Null;
-			ClearTimer('OnStateAnimationEnd');
-			AOCOwner.ConsumeStamina(iFeintStaminaCost);
-			ActivateParry();
-			if (WorldInfo.NetMode != NM_Standalone && (Worldinfo.NetMode != NM_ListenServer || !AOCOwner.IsLocallyControlled())) {
-				ServerActivateParry();
-			}
-		}
-	}
-}
-
-simulated state ParryRelease
-{
-	simulated function BeginFire(byte FireModeNum)
-	{
-		super.BeginFire(FireModeNum);
-
-		if (AOCOwner.IsLocallyControlled())
-		{
-			if (bSuccessfulParry && bParryHitCounter && FireModeNum == Attack_Parry) {
-				ClearTimer('PlayRiposteAnimation');
-				ClearTimer('OnStateAnimationEnd');
-				AOCOwner.ConsumeStamina(iFeintStaminaCost);
-				ActivateParry();
-				if (WorldInfo.NetMode != NM_Standalone && (Worldinfo.NetMode != NM_ListenServer || !AOCOwner.IsLocallyControlled())) {
-					ServerActivateParry();
-				}
-			}
-		}
-	}
-}
-
 simulated function float GetStaminaLossForMiss()
 {
 	// For missed swings, QuarterStaff should drain as much as one-hander

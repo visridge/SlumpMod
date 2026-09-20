@@ -1,0 +1,151 @@
+// XangMod - Server.uci
+// Included via XangModGame.uci. Vars live in Game/Vars.uci; DefaultProperties in Game/Server.uci (last).
+reliable server function S_BroadcastServerMessage(string Message)
+{
+    local AOCPlayerController PC;
+    foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+    {
+        PC.ReceiveChatMessage(Message, EFAC_ALL, false, false, , false);
+    }
+}
+
+/**
+ * Enforce admin mute server-side instead of trusting the client.
+ *
+ * Vanilla only checks bIsAdminMuted in AOCPlayerController.ReceiveChatMessage, and skips it
+ * for Steam friends of the sender and for the sender's own copy -- so a muted player still
+ * sees their chat go through, which looks exactly like mute being broken. Dropping it here
+ * means it never reaches the wire.
+ */
+function BroadcastMessage(PlayerController Sender, string Message, EAOCFaction DesignatedTeam, optional bool bSystemMessage = false, optional bool bUseCustomColor = false, optional string Col)
+{
+    local AOCPRI SenderPRI;
+    local AOCPlayerController SenderPC;
+
+    SenderPC = AOCPlayerController(Sender);
+
+    if (!bSystemMessage && SenderPC != none)
+    {
+        SenderPRI = AOCPRI(SenderPC.PlayerReplicationInfo);
+        if (SenderPRI != none && SenderPRI.bIsAdminMuted)
+        {
+            // Tell the sender only, so mute is not silently confusing to them.
+            SenderPC.ReceiveChatMessage("You are muted by an admin.", EFAC_ALL, false, true, "#FF5555");
+            return;
+        }
+    }
+
+    super.BroadcastMessage(Sender, Message, DesignatedTeam, bSystemMessage, bUseCustomColor, Col);
+}
+
+/**
+ * Spawn XangMod's remote console instead of the vanilla one. AOCGame.InitRemoteConsole
+ * hardcodes Spawn(class'AOCRCon'), so this is the only hook needed -- XangModRCon extends
+ * AOCRCon, so vanilla opcodes, auth and the GameEvent_* calls keep working untouched.
+ * The AllActors sweep and dedicated-server check are vanilla's, kept verbatim.
+ */
+function InitRemoteConsole(string Options)
+{
+	local AOCRCon RCon;
+
+	if (WorldInfo.NetMode != NM_DedicatedServer)
+		return;
+
+	// Reuse the console carried over from before the map change, if there is one.
+	// Sessions are AOCRCon subclasses too, so skip them -- adopting one as RemoteConsole
+	// would point the whole server's event stream at a single client's socket.
+	foreach WorldInfo.AllActors(class'AOCRCon', RCon)
+	{
+		if (XangModRConSession(RCon) != none)
+			continue;
+
+		RemoteConsole = RCon;
+		break;
+	}
+
+	if (RemoteConsole == none)
+	{
+		RemoteConsole = Spawn(class'XangModRCon');
+		LogAlwaysInternal("[XangModRCon] remote console started (extended opcodes 23-64 available)");
+	}
+
+	// The travel-time push reported the map being left, so announce the real one now that
+	// it is current. Sessions survive travel, so this reaches everyone already connected.
+	RemoteConsole.GameEvent_MapChanged(GetCurrentMap(), MapCycleIndex);
+}
+
+/**
+ * Carry the RCON sessions across a seamless map change, not just the listener. Without
+ * this the session actors are destroyed with the old world and every connected client
+ * drops on each map change.
+ *
+ * Only does anything if the travel is actually seamless -- a full ServerTravel tears down
+ * the world regardless, and clients must reconnect.
+ */
+function GetSeamlessTravelActorList(bool bToEntry, out array<Actor> ActorList)
+{
+	local XangModRCon Listener;
+	local int i;
+
+	super.GetSeamlessTravelActorList(bToEntry, ActorList);
+
+	Listener = XangModRCon(RemoteConsole);
+	if (Listener == none)
+		return;
+
+	ActorList[ActorList.Length] = Listener;
+
+	for (i = 0; i < Listener.Sessions.Length; i++)
+	{
+		if (Listener.Sessions[i] != none)
+			ActorList[ActorList.Length] = Listener.Sessions[i];
+	}
+
+	LogAlwaysInternal("[XangModRCon] carrying" @ Listener.Sessions.Length @ "session(s) through travel");
+}
+
+DefaultProperties
+{
+    // Five minutes. Long enough that a real match night never trips it, short enough that a
+    // stuck server recovers on its own instead of needing a restart. 0 disables.
+    fXangModTournamentHoldLimit=300.0
+    bEnableCompForestAlternatingSpawns=false
+    iXangModCompForestLastStage=-1
+    iXangModCompForestLastAgathaGroup=-1
+    iXangModCompForestLastMasonGroup=-1
+
+    PlayerControllerClass=class'`{GAMEMODE}PlayerController'
+    DefaultPawnClass=class'`{GAMEMODE}Pawn'
+    HUDType=class'`{GAMEMODE}HUD'
+    PlayerReplicationInfoClass=class'`{GAMEMODE}PRI'
+
+    // "addbots" bot AI: smarter melee bots (skill floor + better threat awareness).
+    // See XangMod/Classes/XangModAOCCombatBot.uc. Shared by every XangMod game mode.
+    DefaultAIControllerClass=class'XangModAOCCombatBot'
+
+    //This is the name that shows in the server browser for this mod:
+    ModDisplayString="SlumpMod 2.5.0"
+
+    Families.Empty;
+    Families(ECLASS_Archer)=class'XangModFamilyInfo_Agatha_Archer'
+    Families(ECLASS_ManAtArms)=class'XangModFamilyInfo_Agatha_ManAtArms'
+    Families(ECLASS_Vanguard)=class'XangModFamilyInfo_Agatha_Vanguard'
+    Families(ECLASS_Knight)=class'XangModFamilyInfo_Agatha_Knight'
+    Families(ECLASS_SiegeEngineer)=class'XangModFamilyInfo_Agatha_Assassin'
+    Families(5)=class'XangModFamilyInfo_Mason_Archer'
+    Families(6)=class'XangModFamilyInfo_Mason_ManAtArms'
+    Families(7)=class'XangModFamilyInfo_Mason_Vanguard'
+    Families(8)=class'XangModFamilyInfo_Mason_Knight'
+    Families(9)=class'XangModFamilyInfo_Mason_Assassin'
+
+    MinimumRespawnTime = 10.0f
+    MaximumRespawnTime = 10.0f
+    bDisableTeamDamagePenalty = true
+
+    //bEnableStatsReporting = false
+    //StatsEndpoint = "http://127.0.0.1:3000/api/SlumpStats"
+    //StatsServerId = "local-chivalry"
+    //StatsReportInterval = 30.0
+
+}
+

@@ -35,6 +35,16 @@ event Closed()
 		ParentLink.XangModUnregisterSession(self);
 
 	super.Closed();
+
+	// AOCRCon.Closed drops back to RCON_Initialized whenever LinkState went with it, and Tick
+	// binds and listens in that state. For a session that is poison: the actor outlives the
+	// socket, so a disconnected client leaves behind a second listener -- on a stray port if
+	// RConPort is still held, or ON RConPort after a map change, where it answers connections
+	// with no game state and every auth fails. Worse, a failed Listen() calls CloseConnection()
+	// which re-enters Closed(), so it retries every frame forever.
+	// Nothing here is reusable. Park the state and let the actor go.
+	RConState = RCON_Closing;
+	LifeSpan = 0.5;
 }
 
 event Destroyed()

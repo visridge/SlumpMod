@@ -7,6 +7,9 @@
 */
 class XangModWeaponAttachment_QuarterStaff extends AOCWeaponAttachment_QuarterStaff;
 
+// Parry-box + netcode overrides. MUST be at class level - see the file header.
+`include(XangMod/Include/XangModWeaponAttachmentCode.uci)
+
 defaultproperties
 {
 	`include(XangMod/Include/XangModWeaponAttachment.uci);

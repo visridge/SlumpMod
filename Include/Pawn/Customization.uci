@@ -1,0 +1,446 @@
+// XangMod - Customization.uci
+// Included via XangModPawn.uci. Vars live in Pawn/Vars.uci; DefaultProperties in Pawn/Camera.uci (last).
+/** Apply shield color picker values to the helmet material's PatternColor params */
+simulated function ApplyShieldColorsToHelmet()
+{
+	local MaterialInstanceConstant HelmetMIC;
+	local LinearColor LinCol;
+	local EAOCFaction TeamID;
+
+	if (WorldInfo.NetMode == NM_DedicatedServer)
+		return;
+
+	if (HelmetMeshComp == none || HelmetMeshComp.GetMaterial(0) == none)
+		return;
+
+	HelmetMIC = HelmetMeshComp.CreateAndSetMaterialInstanceConstant(0);
+	if (HelmetMIC == none)
+		return;
+
+	TeamID = GetCustomizationFactionFromActualFaction(PawnFamily.FamilyFaction);
+
+	LinCol = CustomizationClass.static.ConvertTabardColorIndexToLinearColor(PawnInfo.myCustomization.ShieldColor1, TeamID, 0);
+	HelmetMIC.SetVectorParameterValue('PatternColor1', LinCol);
+
+	LinCol = CustomizationClass.static.ConvertTabardColorIndexToLinearColor(PawnInfo.myCustomization.ShieldColor2, TeamID, 1);
+	HelmetMIC.SetVectorParameterValue('PatternColor2', LinCol);
+
+	LinCol = CustomizationClass.static.ConvertTabardColorIndexToLinearColor(PawnInfo.myCustomization.ShieldColor3, TeamID, 2);
+	HelmetMIC.SetVectorParameterValue('PatternColor3', LinCol);
+}
+
+/** Override SetupHelmet to apply shield colors to painted helmet materials on spawn/asset load */
+simulated function SetupHelmet(int HelmetID, int CharacterID)
+{
+	super.SetupHelmet(HelmetID, CharacterID);
+	ApplyShieldColorsToHelmet();
+}
+
+/** Override to also refresh helmet colors whenever shield colors are updated (e.g. customization preview) */
+simulated function DisplayCustomizationInfoOnShield()
+{
+	super.DisplayCustomizationInfoOnShield();
+	ApplyShieldColorsToHelmet();
+}
+
+simulated function WeaponAttachmentChanged()
+{
+	super.WeaponAttachmentChanged();
+
+	if (CurrentWeaponAttachment == none)
+		return;
+
+	// Re-apply weapon-keyed stat overrides (footman family) after every equip so
+	// the movement/stat fields track weapon swaps mid-life.
+	ApplyXangModFootmanStats();
+
+	// Force PoleAxeBack to use its own mesh on ALL clients.
+	// WeaponEquipping::BeginState runs only on authority/local clients;
+	// remote clients get the attachment via replication and need this hook
+	// to apply the correct skeletal mesh.
+	if (CurrentWeaponAttachment.Class == class'XangModWeaponAttachment_PoleAxeBack')
+	{
+		CurrentWeaponAttachment.Mesh.SetSkeletalMesh(
+			SkeletalMesh'SlumpWep_PaxeBack.SlumpWep_PaxeBack');
+		if (CurrentWeaponAttachment.OverlayMesh != none)
+			CurrentWeaponAttachment.OverlayMesh.SetSkeletalMesh(
+				SkeletalMesh'SlumpWep_PaxeBack.SlumpWep_PaxeBack');
+	}
+
+	// XANGMOD: Fix heater shield orientation for javelin — javelin animations
+	// hold the arm differently, causing the heater to face skyward like a saucer.
+	// Rotate it 90° around Y (yaw) so the shield face points outward instead of upward.
+	// if (Weapon != none && StateVariables.bShieldEquipped
+	// 	&& (XangModWeapon_JavelinMelee(Weapon) != none || XangModWeapon_HeavyJavelinMelee(Weapon) != none))
+	// {
+	// 	ShieldMesh.SetRotation(rot(16384, 0, 0));  // 90° yaw — rotates shield face outward
+	// 	if (OverlayShieldMesh != none)
+	// 		OverlayShieldMesh.SetRotation(rot(16384, 0, 0));
+	// }
+}
+
+// Override to reset parry box to AOC defaults when XangMod parry box is disabled
+simulated function AOCSetCharacterClassFromInfo(AOCFamilyInfo Info)
+{
+	super.AOCSetCharacterClassFromInfo(Info);
+
+	// NOTE: Do NOT guard on Controller != none here. This function fires during pawn setup,
+	// before the controller is associated, so that check would always fail and the reset
+	// would never run on the server.
+	if (!class'XangModAOCDuelPlayerController'.default.bXangModParryBox)
+	{
+		// Revert to vanilla AOC parry box dimensions
+		ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
+		ParryComponent.SetTranslation(vect(30, 0, -30));
+	}
+	else if (class'XangModAOCDuelPlayerController'.default.bSkeletalParry)
+	{
+		// Skeletal parry: full-body coverage
+		ParryComponent.SetScale3D(vect(0.18, 0.17, 0.35));
+		ParryComponent.SetTranslation(vect(10, 5, -28));
+	}
+	// else: XangMod parry enabled, non-skeletal — super already applied FamilyInfo values
+
+	// Apply admin-controlled collision bubble radius (OuterCylinder)
+	if (OuterCylinderComp != none)
+	{
+		OuterCylinderComp.SetCylinderSize(class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius, 65.0);
+	}
+
+	// Weapon-keyed stat override: the footman family re-applies movement/stat fields
+	// on top of the real Archer family when a footman primary is equipped.
+	ApplyXangModFootmanStats();
+}
+
+//netupdate
+// function PossessedBy(Controller C, bool bVehicleTransition)
+// {
+// 	Super.PossessedBy(C, bVehicleTransition);
+	
+// 	// Spectators don't need 120Hz - save bandwidth with 60Hz (still smooth, ~50% reduction)
+// 	if (PlayerReplicationInfo != none && PlayerReplicationInfo.bOnlySpectator)
+// 		NetUpdateFrequency = 60.0;
+// 	else
+// 		NetUpdateFrequency = 120.0;
+// }
+
+/** Object name from a "Package.Object" or "Package.Group.Object" path. */
+simulated function string XangModObjectName(string Path)
+{
+	local int i;
+
+	// bSearchFromRight = true, so "Pkg.Group.Object" yields "Object".
+	i = InStr(Path, ".", true);
+
+	if (i == INDEX_NONE)
+		return Path;
+
+	return Mid(Path, i + 1);
+}
+
+/**
+ * Stock Chivalry 1P mesh for a class whose configured OwnerMeshPath did not load.
+ * Each mapping is the OwnerMeshPath that the matching vanilla AOCCharacterInfo_*
+ * class ships with, so these are the arms Chivalry itself uses for that character.
+ *
+ * Matched on the OBJECT NAME only, deliberately ignoring the package. The custom
+ * character package has been renamed once already (SlumpCharacters -> XangmodCharacters)
+ * and the classes are currently split across both spellings, so keying on the full
+ * path would silently stop matching the moment either name moves again.
+ */
+simulated function SkeletalMesh XangModStock1PMesh(class<AOCCharacterInfo> Info)
+{
+	local string Want, Path;
+
+	if (Info == none)
+		return none;
+
+	Want = XangModObjectName(Info.default.OwnerMeshPath);
+
+	// Knights
+	if (Want ~= "AgathaKnight1p")
+		Path = "CH_AgathanKnight_PKG.models.SK_CH_1P_AgathaKnight";
+	else if (Want ~= "AgathaKnightDLC1p")
+		Path = "CH_AgathaKnight_DLC1.models.SK_Char_knight_FP";
+	else if (Want ~= "MasonKnight1p")
+		Path = "CH_MasonKnight.models.SK_CH_1P_MasonKnight";
+	else if (Want ~= "MasonKnightDLC1p")
+		Path = "CH_MasonKnight_DLC1.models.SK_Char_knight_FP";
+
+	// Vanguards
+	else if (Want ~= "AgathaVanguard1p")
+		Path = "CH_A_Vanguard_PKG.PlayerviewTEMP_agatha";
+	else if (Want ~= "AgathaVanguardDLC1p")
+		Path = "CH_AgathaVanguard_DLC1.models.SK_CH_1P_AgathaVanguard01";
+	else if (Want ~= "MasonVanguard1p")
+		Path = "CH_A_Vanguard_PKG.PlayerviewTEMP";
+	else if (Want ~= "MasonVanguardDLC1p")
+		Path = "CH_MasonVanguard_DLC1.models.SK_CH_1P_MasonVanguard_DLC1";
+
+	// Barbarian variants
+	else if (Want ~= "AgathaBarbArcher1p")
+		Path = "CH_Barb_AgathaArcher.models.SK_CH_1P_Barb_AgathaArcher";
+	else if (Want ~= "AgathaBarb1p")
+		Path = "CH_Barb_AgathaKnight.models.SK_CH_1P_Barb_AgathaKnight";
+	else if (Want ~= "AgathaBarbVanguard1p")
+		Path = "CH_Barb_AgathaVanguard.models.SK_CH_1P_Barb_AgathaVanguard";
+	else if (Want ~= "MArcherBarb1p")
+		Path = "CH_Barb_MasonArcher.models.SK_CH_1P_Barb_MasonArcher";
+	else if (Want ~= "MasonBarb1p")
+		Path = "CH_Barb_MasonKnight.models.SK_CH_1P_Barb_MasonKnight";
+	else if (Want ~= "MasonBarbVanguard1p")
+		Path = "CH_Barb_MasonVanguard.models.SK_CH_1P_Barb_MasonVanguard";
+
+	if (Path == "")
+		return none;
+
+	// MayFail = true: if a stock package is somehow absent too, stay silent and let
+	// the camera fallback handle it rather than spamming.
+	return SkeletalMesh(DynamicLoadObject(Path, class'SkeletalMesh', true));
+}
+
+simulated function SetCharacterAppearance(AssetStore_AOCPawn_Character AssetStore)
+{
+	local SkeletalMesh Stock;
+	local int i;
+
+	// Substitute only when the store is genuinely missing the mesh it was asked for.
+	// Comparing the paths as well as testing for none matters because AssetStore.Clear()
+	// resets LoadedObjects/PendingObjects but never nulls OwnerMesh -- a store reused
+	// for a different character could otherwise keep the previous class's arms.
+	if (AssetStore != none
+		&& AssetStore.CharacterInfo != none
+		&& AssetStore.OwnerMesh == none
+		&& AssetStore.OwnerMeshPath ~= AssetStore.CharacterInfo.default.OwnerMeshPath)
+	{
+		Stock = XangModStock1PMesh(AssetStore.CharacterInfo);
+
+		if (Stock != none)
+		{
+			AssetStore.OwnerMesh = Stock;
+
+			if (!bXangModWarnedStock1PMesh)
+			{
+				bXangModWarnedStock1PMesh = true;
+				LogAlwaysInternal(self@"XangMod: 1P mesh"@AssetStore.CharacterInfo.default.OwnerMeshPath@"did not load; substituting stock"@Stock);
+			}
+		}
+	}
+
+	super.SetCharacterAppearance(AssetStore);
+
+	// First-person arms tint: AOCPawn.SetCharacterAppearance only applies
+	// HeadMaterialPath/BodyMaterialPath to the THIRD-person mesh. The owner (1P) mesh
+	// keeps whatever material is baked into it. The DW Ninja arms mesh ships with a
+	// single neutral-grey material slot, and the Footmen 1P arms ship untextured, so
+	// both render wrong without a re-tint. We re-tint the owner-mesh slots with the
+	// loaded faction materials (NinjaBody*/Footmen*). Scoped so no other class is
+	// affected. Keyed on the CharacterInfo and the materials actually being loaded.
+	if (AssetStore != none
+		&& AssetStore.CharacterInfo != none
+		&& OwnerMesh != none
+		&& AssetStore.OwnerMesh != none
+		&& AssetStore.BodyMaterial != none)
+	{
+		if (AssetStore.CharacterInfo == class'XangModCharacterInfo_Agatha_Assassin'
+			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Assassin')
+		{
+			// Ninja arms ship as a single neutral-grey slot; tint everything body.
+			for (i = 0; i < AssetStore.OwnerMesh.Materials.Length; ++i)
+			{
+				OwnerMesh.SetMaterial(i, AssetStore.BodyMaterial);
+			}
+		}
+		else if (AssetStore.CharacterInfo == class'XangModCharacterInfo_Agatha_Footman_Archer'
+			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Footman_Archer')
+		{
+			// Footmen 1P mesh: slot 0 is the hands (head/skin material), remaining
+			// slots are the body. Mirror the 3P convention (head on slot 0, body on
+			// the rest) instead of painting the whole mesh with the body material.
+			if (AssetStore.HeadMaterial != none && AssetStore.OwnerMesh.Materials.Length > 0)
+				OwnerMesh.SetMaterial(0, AssetStore.HeadMaterial);
+
+			for (i = 1; i < AssetStore.OwnerMesh.Materials.Length; ++i)
+			{
+				OwnerMesh.SetMaterial(i, AssetStore.BodyMaterial);
+			}
+		}
+	}
+}
+
+
+/* ************************************************************************
+ * FEINT / BLEND RESET WHILE FIRST-PERSON OBSERVED
+ *
+ * AOCPawn.ResetBlends() opens with:
+ *
+ *   if (bReplicated && WorldInfo.NetMode != NM_DedicatedServer
+ *       && ((IsLocallyControlled() && !bIsBot) || bIsBeingFPObserved))
+ *       return;
+ *
+ * The bIsBeingFPObserved half assumes a first-person-observed pawn is OUR pawn, so
+ * the local reset (bReplicated = false) has already run and the replicated one is
+ * redundant. That holds for your own pawn. It is false for a remote pawn you are
+ * spectating: nothing on this client ever ran the local reset.
+ *
+ * A feint goes ManualReset() -> replicate SResetBlends -> remote clients receive it
+ * in ReplicatedEvent and call ResetBlends(ResetTime) with bReplicated defaulted TRUE
+ * (AOCPawn.uc:1634). For the pawn we are first-person observing that call returns
+ * immediately, the blends are never cleared, and the weapon stays stuck in its
+ * feinted pose on the spectator's screen.
+ *
+ * Run it as a local reset rather than skipping it.
+ **************************************************************************/
+simulated function ResetBlends(optional float BlendOutTime = 0.3f, optional bool bReplicated = true)
+{
+	if (bReplicated && bIsBeingFPObserved && !IsLocallyControlled())
+	{
+		// bReplicated = false clears vanilla's early-out and performs the real reset,
+		// which also calls AOCWeaponAttachment.ResetAnimation() -- the bit that puts
+		// the weapon back to idle.
+		super.ResetBlends(BlendOutTime, false);
+		return;
+	}
+
+	super.ResetBlends(BlendOutTime, bReplicated);
+}
+
+/* ************************************************************************
+ * WEAPON-KEYED NINJA (ASSASSIN) SKIN
+ *
+ * Picking one of the "ninja" primary weapons (SpikedMace, BastardSword, Kanabo,
+ * Katana, GrandHammer -- currently on the Man-At-Arms) makes the pawn spawn with
+ * the Assassin (ninja) mesh instead of its own class mesh, with no new UI slot
+ * and no Flash asset. XangModRoll keys the roll dodge off the same weapons.
+ *
+ * The Assassin presentation already exists and is fully registered:
+ *   - XangModCharacterInfo_Agatha_Assassin / _Mason_Assassin (SlumpCharacters.NinjaMesh*)
+ *   - XangModCustomizationContent.GetDefaultCharacterIDFor maps ECLASS_SiegeEngineer
+ *     -> the faction Assassin CharacterInfo.
+ *
+ * AOCPawn.LoadCharacterAssets() resolves the mesh from
+ * PawnInfo.myCustomization.Character; we simply rewrite that ID before the
+ * superclass runs. LoadCharacterAssets is per-pawn and simulated, so the same
+ * remap runs on the server and on every client.
+ **************************************************************************/
+
+/** True when the equipped primary is one of the ninja (Assassin-skin) weapons. */
+simulated function bool XangModIsNinjaPrimary()
+{
+	return PawnInfo.myPrimary == class'XangModWeapon_Rapier'
+		|| PawnInfo.myPrimary == class'XangModWeapon_BastardSword'
+		|| PawnInfo.myPrimary == class'XangModWeapon_Kanabo'
+		|| PawnInfo.myPrimary == class'XangModWeapon_Katana'
+		|| PawnInfo.myPrimary == class'XangModWeapon_GrandHammer';
+}
+
+/** True when the equipped primary is one of the footman-mesh (Footmen package) weapons. */
+simulated function bool XangModIsFootmanPrimary()
+{
+	return PawnInfo.myPrimary == class'XangModWeapon_Spear'
+		|| PawnInfo.myPrimary == class'XangModWeapon_Brandistock'
+		|| PawnInfo.myPrimary == class'XangModWeapon_GrandLance'
+		|| PawnInfo.myPrimary == class'XangModWeapon_MasonFlag';
+}
+
+/** Footman stat-family class for this pawn, or none when no footman weapon is equipped.
+ *  These families are never registered in AOCGRI.FamilyInfos; they only hold stats. */
+simulated function class<XangModFamilyInfo_Archer> XangModGetFootmanStatFamilyClass()
+{
+	if (!XangModIsFootmanPrimary())
+		return none;
+
+	if (PawnFamily != none && PawnFamily.FamilyFaction == EFAC_MASON)
+		return class'XangModFamilyInfo_Mason_FootmanArcher';
+
+	return class'XangModFamilyInfo_Agatha_FootmanArcher';
+}
+
+/** Re-apply movement/stat fields from the footman family when a footman weapon is equipped,
+ *  or restore the real Archer family values when no footman weapon is equipped. Called on
+ *  class set and on every weapon swap so the stats always match the equipped weapon. */
+simulated function ApplyXangModFootmanStats()
+{
+	local class<XangModFamilyInfo_Archer> FootFI;
+
+	FootFI = XangModGetFootmanStatFamilyClass();
+	if (FootFI != none)
+	{
+		AirControl = FootFI.default.AirControl;
+		GroundSpeed = FootFI.default.GroundSpeed;
+		BaseSpeed = GroundSpeed;
+		WaterSpeed = FootFI.default.WaterSpeed;
+		AirSpeed = FootFI.default.AirSpeed;
+		AccelRate = FootFI.default.AccelRate;
+		BaseAccel = FootFI.default.AccelRate;
+		JumpZ = FootFI.default.JumpZ;
+		SprintAccel = FootFI.default.SprintAccelRate;
+		SprintModifier = FootFI.default.SprintModifier;
+		SprintTime = FootFI.default.SprintTime;
+		DodgeSpeed = FootFI.default.DodgeSpeed;
+		DodgeSpeedZ = FootFI.default.DodgeSpeedZ;
+		// MaxSprintSpeedTime = FootFI.default.MaxSprintSpeedTime;
+		FORWARD_MODIFY = FootFI.default.FORWARD_MODIFY;
+		STRAFE_MODIFY = FootFI.default.STRAFE_MODIFY;
+		BACK_MODIFY = FootFI.default.BACK_MODIFY;
+		CROUCH_MODIFY = FootFI.default.CROUCH_MODIFY;
+		// iDodgeCost = FootFI.default.iDodgeCost;
+		// iKickCost = FootFI.default.iKickCost;
+	}
+	else if (PawnFamily != none)
+	{
+		AirControl = PawnFamily.AirControl;
+		GroundSpeed = PawnFamily.GroundSpeed;
+		BaseSpeed = GroundSpeed;
+		WaterSpeed = PawnFamily.WaterSpeed;
+		AirSpeed = PawnFamily.AirSpeed;
+		AccelRate = PawnFamily.AccelRate;
+		BaseAccel = PawnFamily.AccelRate;
+		JumpZ = PawnFamily.JumpZ;
+		SprintAccel = PawnFamily.SprintAccelRate;
+		SprintModifier = PawnFamily.SprintModifier;
+		SprintTime = PawnFamily.SprintTime;
+		DodgeSpeed = PawnFamily.DodgeSpeed;
+		DodgeSpeedZ = PawnFamily.DodgeSpeedZ;
+		// MaxSprintSpeedTime = PawnFamily.MaxSprintSpeedTime;
+		FORWARD_MODIFY = PawnFamily.FORWARD_MODIFY;
+		STRAFE_MODIFY = PawnFamily.STRAFE_MODIFY;
+		BACK_MODIFY = PawnFamily.BACK_MODIFY;
+		CROUCH_MODIFY = PawnFamily.CROUCH_MODIFY;
+		// iDodgeCost = PawnFamily.iDodgeCost;
+		// iKickCost = PawnFamily.iKickCost;
+	}
+}
+
+/** Rewrite the character ID to the Assassin or Footman before the character mesh is loaded. */
+simulated function LoadCharacterAssets()
+{
+	local EAOCFaction TeamID;
+
+	if (PawnFamily != none && XangModIsNinjaPrimary())
+	{
+		TeamID = GetCustomizationFactionFromActualFaction(PawnFamily.FamilyFaction);
+		PawnInfo.myCustomization.Character =
+			CustomizationClass.static.GetDefaultCharacterID(TeamID, ECLASS_SiegeEngineer);
+
+		// The Assassin inherits the Man-At-Arms helmet list, so a MAA's saved helmet
+		// index resolves to the correct helmet. Any other class's saved helmet index
+		// would point at the wrong helmet, so strip it to NoHat.
+		if (PawnFamily.ClassReference != ECLASS_ManAtArms)
+			PawnInfo.myCustomization.Helmet = 0;
+	}
+	else if (PawnFamily != none && XangModIsFootmanPrimary())
+	{
+		TeamID = GetCustomizationFactionFromActualFaction(PawnFamily.FamilyFaction);
+		PawnInfo.myCustomization.Character =
+			class'XangModCustomizationContent'.static.GetDefaultCharacterIDForOverride(TeamID, ECLASS_Archer);
+
+		// The Footmen head mesh is modelled bare; a saved Archer helmet would sit on
+		// top of it (and resolve against the Archer helmet list, picking an unrelated
+		// hat). Strip it to NoHat like the Assassin path does for non-MAA classes.
+		PawnInfo.myCustomization.Helmet = 0;
+	}
+
+	super.LoadCharacterAssets();
+}
+

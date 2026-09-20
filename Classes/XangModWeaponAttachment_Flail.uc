@@ -9,6 +9,9 @@ class XangModWeaponAttachment_Flail extends AOCWeaponAttachment_Flail;
 
 var Vector PreviousBucklerLoc;
 
+// Parry-box + netcode overrides. MUST be at class level, after any vars - see the file header.
+`include(XangMod/Include/XangModWeaponAttachmentCode.uci)
+
 simulated state Release
 {
 	/** Perform Kick Tracers */
