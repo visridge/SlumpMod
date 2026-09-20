@@ -1,0 +1,149 @@
+// XangMod - Network.uci
+// Included via XangModPlayerController.uci. Vars live in PC/Vars.uci; DefaultProperties in PC/Effects.uci (last).
+/**
+ * Undo zeroed values an older build persisted into UDKSettings.ini -- globalconfig, so the
+ * ini beats DefaultProperties and the zeros stick for everyone who ever ran that build.
+ * Zero is not a legal value for either number (the netspeed opt-out is negative), so
+ * treating it as "never set" is safe; the bool is only restored alongside a zero distance,
+ * which is the stale-write signature.
+ */
+simulated function XangModRepairPersistedConfig()
+{
+	local bool bDirty;
+
+	// Literals, NOT default.X: a globalconfig class default is itself loaded from the ini,
+	// so default.X IS the stale zero. Verified live.
+
+	if (iXangModMinNetSpeed == 0)
+	{
+		iXangModMinNetSpeed = 15000;
+		bDirty = true;
+	}
+
+	if (iXangModMinNetSpeedFallback == 0)
+	{
+		iXangModMinNetSpeedFallback = 15000;
+		bDirty = true;
+	}
+
+	if (bDirty)
+		SaveConfig();
+}
+
+/** The numbers behind saturation and rubber-banding. Type NetDebug. */
+exec function NetDebug()
+{
+	ClientDisplayConsoleMessage("---- XangMod net state ----");
+
+	// The numbers that decide saturation. "Connection saturated!" is the stat net HUD
+	// reporting IsNetReady(0) == false, and that is judged against CurrentNetSpeed --
+	// NOT against whatever the ini says. Raising MaxInternetClientRate and
+	// ConfiguredInternetSpeed only matters if it actually lands here, and nothing so far
+	// has confirmed that it does. Read it rather than assume it.
+	if (Player != none)
+		ClientDisplayConsoleMessage("CurrentNetSpeed:" @ Player.CurrentNetSpeed @ "  <-- the value saturation is judged against");
+	ClientDisplayConsoleMessage("ClientCap:" @ ClientCap @ " (non-zero = the server capped us via ClientCapBandwidth)");
+
+	// Client move send rate. AOCPlayerController.ReplicateMove hardcodes 0.05s on a
+	// dedicated server -- 20 Hz. Every deferred packet therefore costs a 50 ms hole in
+	// what the server knows about your position, which is why a little saturation feels
+	// like a lot of rubber-banding.
+	ClientDisplayConsoleMessage("Move send interval: 0.05s (20 Hz) on dedicated -- AOCPlayerController.uc:9239");
+	ClientDisplayConsoleMessage("Auto-netspeed: config=" $ iXangModMinNetSpeed @ "fallback=" $ iXangModMinNetSpeedFallback @ "tries=" $ iXangModNetSpeedTries @ "last=" $ nXangModNetSpeedBlock);
+	ClientDisplayConsoleMessage("-----------------------------");
+}
+
+/**
+ * Undo the login bandwidth cap that pins this client at the server's login ceiling.
+ *
+ * Measured while voice was still in the mod: a live client sat at CurrentNetSpeed 10000
+ * while its ini asked for 100000, and the client pushed ~9951 B/s -- pinned at the
+ * ceiling, so stat net read "Connection saturated!". ReplicateMove hardcodes 0.05s
+ * (20 Hz) on dedicated, so every deferred packet is a 50 ms hole in the server's view of
+ * your position. That is the rubber-banding.
+ *
+ * The cap is AOCGame.uc:1810 -> ClientCapBandwidth -> SetNetSpeed at PostLogin, which is why
+ * editing MaxInternetClientRate changed nothing.
+ *
+ * 15000 because that is where the engine clamps -- 0x3A98 is a hardcoded immediate in the
+ * net driver, and SetNetSpeed(100000) was observed landing on exactly 15000. This only
+ * raises what THIS client sends. Set iXangModMinNetSpeed negative to opt out.
+ */
+simulated function XangModRestoreNetSpeed()
+{
+	local int Target;
+
+	// Every bail-out records WHY. The automatic path was reported as doing nothing while
+	// the identical SetNetSpeed call from the XangModNetSpeed exec worked, so the
+	// difference has to be one of these guards -- and naming which one beats another
+	// round of me speculating about it.
+	if (Player == none)
+	{
+		nXangModNetSpeedBlock = 'Player_is_none';
+		return;
+	}
+	// 0 means "config never delivered a value" -- fall back rather than do nothing.
+	Target = iXangModMinNetSpeed;
+	if (Target == 0)
+		Target = default.iXangModMinNetSpeedFallback;
+
+	if (Target < 0)
+	{
+		nXangModNetSpeedBlock = 'opted_out';
+		return;
+	}
+	if (!IsLocalPlayerController())
+	{
+		nXangModNetSpeedBlock = 'not_local_PC';
+		return;
+	}
+	if (Player.CurrentNetSpeed >= Target)
+	{
+		nXangModNetSpeedBlock = 'already_at_or_above';
+		return;
+	}
+
+	iXangModNetSpeedTries++;
+	SetNetSpeed(Target);
+
+	// Did the call actually stick? If SetNetSpeed silently refuses in this context the
+	// value will not have moved, and that is a different problem from never being called.
+	if (Player.CurrentNetSpeed < Target)
+		nXangModNetSpeedBlock = 'SetNetSpeed_refused';
+	else
+		nXangModNetSpeedBlock = 'applied';
+}
+
+/** The server caps us here at login; put it back afterwards. */
+reliable client function ClientCapBandwidth(int Cap)
+{
+	super.ClientCapBandwidth(Cap);
+	XangModRestoreNetSpeed();
+}
+
+/**
+ * Raise this client's own send budget at runtime. Usage: XangModNetSpeed 100000, then
+ * check stat net under load.
+ *
+ * "Connection saturated!" is IsNetReady(0) judged against Player.CurrentNetSpeed, not any
+ * ini value. AOCGame.uc:1810 caps it at login via ClientCapBandwidth, so the server's view
+ * at that instant becomes a hard ceiling. An exec rather than automatic: it changes only
+ * what this client pushes upstream, which should be a measured decision.
+ */
+exec function XangModNetSpeed(int NewSpeed)
+{
+	if (Player == none)
+		return;
+
+	if (NewSpeed < 1800)
+	{
+		ClientDisplayConsoleMessage("Refusing" @ NewSpeed $ ": UE3 treats anything under 1800 as unusable.");
+		return;
+	}
+
+	ClientDisplayConsoleMessage("CurrentNetSpeed" @ Player.CurrentNetSpeed @ "->" @ NewSpeed
+		@ "(ClientCap was" @ ClientCap $ ")");
+	SetNetSpeed(NewSpeed);
+	ClientDisplayConsoleMessage("Now:" @ Player.CurrentNetSpeed);
+}
+

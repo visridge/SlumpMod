@@ -1,0 +1,550 @@
+// XangMod - AdminCommands.uci
+// Included via XangModPlayerController.uci. Vars live in PC/Vars.uci; DefaultProperties in PC/Effects.uci (last).
+reliable server function bool IsAdmin() {
+	return WorldInfo.Game.AccessControl.IsAdmin(self) || WorldInfo.NetMode == NM_Standalone;
+}
+
+reliable server function S_AdminBroadcastMessage(string Message, optional bool bShowName=true) {
+	local AOCPlayerController PC;
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC) {
+		if (bShowName)
+			PC.ReceiveChatMessage(AOCPRI(PlayerReplicationInfo).GetHumanReadableName()$":"@Message, EFAC_ALL, false, false, ,false);
+		else
+			PC.ReceiveChatMessage(Message, EFAC_ALL, false, false, ,false);
+	}
+}
+
+// Admin-only pause/unpause. Overrides the engine SetPause so a non-admin can
+// neither pause (e.g. typing "pause" in the console) nor unpause the game.
+function bool SetPause(bool bPause, optional delegate<CanUnpause> CanUnpauseDelegate=CanUnpause) {
+	local bool bResult;
+	if (bPause) {
+		if (!IsAdmin()) {
+			ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+			return false;
+		}
+		bFire = 0;
+		bResult = WorldInfo.Game.SetPause(self, CanUnpauseDelegate);
+		if (bResult) {
+			PauseRumbleForAllPlayers();
+			bIsPaused = true;
+		}
+	} else if (IsAdmin() && bIsPaused) {
+		// Route through countdown instead of immediate unpause
+		S_StartUnpauseCountdown();
+	}
+	return bResult;
+}
+
+// Explicit admin command to start the unpause countdown.
+exec function UnPause() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_StartUnpauseCountdown();
+}
+
+reliable server function S_StartUnpauseCountdown() {
+	if (!IsAdmin())
+		return;
+	if (!bIsPaused) {
+		ClientDisplayConsoleMessage("The game is not currently paused.");
+		return;
+	}
+	UnpauseCountdownTime = Default.UnpauseCountdownTime;
+	S_AdminBroadcastMessage("Unpausing in...", false);
+	WorldInfo.Game.ClearPause();
+	PauseRumbleForAllPlayers(false);
+	bIsPaused = false;
+	UnpauseCountdownTick();
+	SetTimer(1.0f, true, 'UnpauseCountdownTick');
+}
+
+function UnpauseCountdownTick() {
+	if (UnpauseCountdownTime == 0) {
+		S_AdminBroadcastMessage("GO!", false);
+		ClearTimer('UnpauseCountdownTick');
+	} else {
+		S_AdminBroadcastMessage("    "$UnpauseCountdownTime$"...", false);
+		UnpauseCountdownTime--;
+	}
+}
+
+exec function AdminBroadcastMessage(String Message) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage(Message);
+}
+
+exec function AdminCoinFlip() {
+	local int Coin;
+	local string Result;
+	local AOCPlayerController PC;
+
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+
+	Coin = Rand(2);
+	if (Coin == 0)
+		Result = "Heads";
+	else
+		Result = "Tails";
+
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC) {
+		PC.ReceiveChatMessage(AOCPRI(PlayerReplicationInfo).GetHumanReadableName()@"flipped a coin:"@Result, EFAC_ALL, false, true, "#00FF00");
+	}
+}
+
+exec function AdminChangeTeam(String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminChangeTeam "$PlayerName);
+	super.AdminChangeTeam(PlayerName);
+}
+
+exec function AdminChangeTeamDamageAmount(float Amount) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminChangeTeamDamageAmount "$Amount);
+	super.AdminChangeTeamDamageAmount(Amount);
+}
+
+exec function AdminCancelVote() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminCancelVote");
+	super.AdminCancelVote();
+}
+
+exec function AdminReadyAll() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminReadyAll");
+	super.AdminReadyAll();
+}
+
+exec function AdminKick(optional String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminKick "$PlayerName);
+	super.AdminKick(PlayerName);
+}
+
+exec function AdminKickScoreboard(optional String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminKick "$PlayerName);
+	super.AdminKickScoreboard(PlayerName);
+}
+
+exec function AdminKickBan(optional String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminKickBan "$PlayerName);
+	super.AdminKickBan(PlayerName);
+}
+
+exec function AdminKickBanScoreboard(optional String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminKickBan "$PlayerName);
+	super.AdminKickBanScoreboard(PlayerName);
+}
+
+exec function AdminUnban(optional String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminUnban "$PlayerName);
+	super.AdminUnban(PlayerName);
+}
+
+exec function AdminBanNetID(string NetIDString, optional string Reason) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminBanNetID "$NetIDString);
+	super.AdminBanNetID(NetIDString, Reason);
+}
+
+
+//quilt
+//debug functions
+
+
+
+reliable client function NotifyTournamentWaiting(float Threshold) {
+	bShowedTournamentWaitingMessage = true;
+}
+
+exec function AdminTournamentMode(optional bool bEnable = true)
+{
+	ClientDisplayConsoleMessage("Deprecated: use 'Admin TournamentMode' instead");
+	ClientDisplayConsoleMessage("Disable: Admin TournamentMode 0");
+	ClientDisplayConsoleMessage("Enable: Admin TournamentMode 1");
+}
+
+// Override AdminLoginHidden to prevent silent admin logins on XangMod servers.
+// Redirects to the standard AdminLogin which broadcasts to all players.
+exec function AdminLoginHidden(string Password)
+{
+	AdminLogin(Password);
+}
+
+reliable server function ServerAdminLoginHidden(string Password)
+{
+	// Intentionally disabled - use ServerAdminLogin instead (broadcasts to server)
+}
+
+exec function AdminToggleParryBox(optional bool bEnable = true)
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminToggleParryBox(bEnable);
+}
+
+reliable server function S_AdminToggleParryBox(bool bEnable) {
+	if (!IsAdmin())
+		return;
+	// Must set on the class default — pawn reads class'XangModAOCDuelPlayerController'.default.bXangModParryBox
+	class'XangModAOCDuelPlayerController'.default.bXangModParryBox = bEnable;
+	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
+	ClientSyncParryBoxSettings(class'XangModAOCDuelPlayerController'.default.bXangModParryBox,
+		class'XangModAOCDuelPlayerController'.default.bSkeletalParry);
+	if (bEnable)
+		S_AdminBroadcastMessage("XangMod parry box ENABLED (respawn to apply)", false);
+	else
+		S_AdminBroadcastMessage("XangMod parry box DISABLED - using vanilla AOC parry box (respawn to apply)", false);
+}
+
+exec function AdminEnableSkeletalParry(optional bool bEnable = true)
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminEnableSkeletalParry(bEnable);
+}
+
+reliable server function S_AdminEnableSkeletalParry(bool bEnable) {
+	if (!IsAdmin())
+		return;
+	class'XangModAOCDuelPlayerController'.default.bSkeletalParry = bEnable;
+	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
+	ClientSyncParryBoxSettings(class'XangModAOCDuelPlayerController'.default.bXangModParryBox,
+		class'XangModAOCDuelPlayerController'.default.bSkeletalParry);
+	if (bEnable)
+		S_AdminBroadcastMessage("Skeletal parry ENABLED - parry box covers full body (respawn to apply)", false);
+	else
+		S_AdminBroadcastMessage("Skeletal parry DISABLED - using directional parry box (respawn to apply)", false);
+}
+
+reliable server function S_AdminTournamentMode(bool bEnable) {}
+
+exec function AdminDisableButtParries(optional bool bEnable = true)
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminDisableButtParries(bEnable);
+}
+
+reliable server function S_AdminDisableButtParries(bool bEnable) {
+	if (!IsAdmin())
+		return;
+	class'XangModAOCDuelPlayerController'.default.bDisableButtParries = bEnable;
+	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
+	if (bEnable)
+		S_AdminBroadcastMessage("Butt-parry prevention ENABLED - attacks from behind cannot be parried", false);
+	else
+		S_AdminBroadcastMessage("Butt-parry prevention DISABLED - attacks from behind are parryable (vanilla)", false);
+}
+
+exec function AdminSetCollisionRadius(float NewRadius)
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminSetCollisionRadius(NewRadius);
+}
+
+reliable server function S_AdminSetCollisionRadius(float NewRadius) {
+	local AOCPlayerController PC;
+
+	if (!IsAdmin())
+		return;
+
+	// Clamp to a sane range to prevent griefing (1 to 200)
+	NewRadius = FClamp(NewRadius, 1.0, 200.0);
+
+	class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius = NewRadius;
+	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
+
+	// Sync all connected players
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+	{
+		if (XangModAOCDuelPlayerController(PC) != none)
+			XangModAOCDuelPlayerController(PC).ClientSyncCollisionRadius(NewRadius);
+	}
+
+	S_AdminBroadcastMessage("Collision bubble radius set to" @ NewRadius @ "(respawn to apply)", false);
+}
+
+// CE Autoskip: auto-fires "ce skip" when TO timer reaches 5 seconds
+exec function AdminCEAutoskip()
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminCEAutoskip();
+}
+
+reliable server function S_AdminCEAutoskip() {
+	local XangModTO TOGame;
+
+	if (!IsAdmin())
+		return;
+
+	TOGame = XangModTO(WorldInfo.Game);
+	if (TOGame == none) {
+		ClientDisplayConsoleMessage("CE Autoskip only works in Team Objective.");
+		return;
+	}
+
+	TOGame.bCEAutoskipEnabled = !TOGame.bCEAutoskipEnabled;
+	TOGame.bCEAutoskipFired = false;
+	if (TOGame.bCEAutoskipEnabled)
+		S_AdminBroadcastMessage("CE Autoskip ENABLED (auto-skip at 5s)", false);
+	else
+		S_AdminBroadcastMessage("CE Autoskip DISABLED", false);
+}
+
+exec function AdminCompForestAlternatingSpawns(optional bool bEnable = true)
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminCompForestAlternatingSpawns(bEnable);
+}
+
+reliable server function S_AdminCompForestAlternatingSpawns(bool bEnable)
+{
+	local XangModTO TOGame;
+
+	if (!IsAdmin())
+		return;
+
+	TOGame = XangModTO(WorldInfo.Game);
+	if (TOGame == none || !TOGame.XangModIsCompForestTO()) {
+		ClientDisplayConsoleMessage("CompForest alternating spawns only work on AOCTO-CompForest_p.");
+		return;
+	}
+
+	TOGame.bEnableCompForestAlternatingSpawns = bEnable;
+	TOGame.iXangModCompForestLastStage = -1;
+	TOGame.iXangModCompForestLastAgathaGroup = -1;
+	TOGame.iXangModCompForestLastMasonGroup = -1;
+
+	if (bEnable)
+		S_AdminBroadcastMessage("CompForest alternating spawns ENABLED", false);
+	else
+		S_AdminBroadcastMessage("CompForest alternating spawns DISABLED", false);
+}
+
+// Option A: Reset ALL physics volumes to default friction (nuclear)
+exec function AdminResetAllTraction()
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminResetAllTraction();
+}
+
+reliable server function S_AdminResetAllTraction() {
+	local PhysicsVolume PV;
+	local int Count;
+
+	if (!IsAdmin())
+		return;
+
+	foreach AllActors(class'PhysicsVolume', PV)
+	{
+		if (PV.GroundFriction != 8.0)
+		{
+			PV.GroundFriction = 8.0;
+			Count++;
+		}
+	}
+	S_AdminBroadcastMessage("Reset traction on" @ Count @ "physics volumes (Option A - all volumes)", false);
+}
+
+// Option C: Reset only non-water low-friction volumes (selective)
+exec function AdminResetIceTraction()
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminResetIceTraction();
+}
+
+reliable server function S_AdminResetIceTraction() {
+	local PhysicsVolume PV;
+	local int Count;
+
+	if (!IsAdmin())
+		return;
+
+	foreach AllActors(class'PhysicsVolume', PV)
+	{
+		if (PV.GroundFriction < 8.0 && !PV.bWaterVolume)
+		{
+			PV.GroundFriction = 8.0;
+			Count++;
+		}
+	}
+	S_AdminBroadcastMessage("Reset ice traction on" @ Count @ "physics volumes (Option C - non-water only)", false);
+}
+
+reliable server function S_SendF10Message() {
+	ReceiveChatMessage("You will implode in 1 second.", EFAC_ALL, false, false, ,false);
+}
+
+exec function ce(optional name EventName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("CauseEvent "$EventName);
+	super.ce(EventName);
+}
+
+exec function CauseEvent(optional name EventName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminBroadcastMessage("CauseEvent "$EventName);
+	super.CauseEvent(EventName);
+}
+
+// Log map changes to chat (chat is mirrored to the in-game console) so everyone
+// can see which admin changed the map, and to where.
+reliable server function ServerChangeMap(string URL)
+{
+	if (IsAdmin() && AOCGame(WorldInfo.Game).MapExists(URL))
+		S_AdminBroadcastMessage("changed map to "$URL);
+	super.ServerChangeMap(URL);
+}
+
+// Restart the current map (admin only) and log who did it.
+exec function AdminRestartMap()
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminRestartMap();
+}
+
+reliable server function S_AdminRestartMap()
+{
+	if (!IsAdmin())
+		return;
+	S_AdminBroadcastMessage("restarted the map");
+	WorldInfo.ServerTravel("?restart", false);
+}
+
+exec function AdminForceSpectate(String PlayerName) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminForceSpectate(PlayerName);
+}
+
+reliable server function S_AdminForceSpectate(String PlayerName) {
+	local AOCPlayerController Target;
+	local AOCAccessControl AccessControl;
+
+	AccessControl = AOCAccessControl(WorldInfo.Game.AccessControl);
+
+	if (!IsAdmin()) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+
+	Target = AOCPlayerController(AccessControl.GetControllerFromString(PlayerName));
+	if (Target == none) {
+		ClientDisplayConsoleMessage("The specified player was not found.");
+		return;
+	}
+
+	if(Target.CurrentFamilyInfo.class == class'AOCFamilyInfo_Agatha_King' || Target.CurrentFamilyInfo.class == class'AOCFamilyInfo_Mason_King' || AOCPRI(Target.PlayerReplicationInfo).bAdmin) {
+		ClientDisplayConsoleMessage("The specified player cannot be moved to spectate.");
+		return;
+	}
+
+	Target.JoinSpectatorTeam();
+
+	S_AdminBroadcastMessage("AdminForceSpectate "$AOCPRI(Target.PlayerReplicationInfo).GetHumanReadableName());
+}
+
+exec function AdminForceSpectateAll() {
+	S_AdminForceSpectateAll();
+}
+
+reliable server function S_AdminForceSpectateAll() {
+	local AOCPlayerController Target;
+
+	if (!IsAdmin()) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+
+	foreach WorldInfo.AllControllers(class'AOCPlayerController', Target)
+	{
+		if (Target.CurrentFamilyInfo.class == class'AOCFamilyInfo_Agatha_King' ||
+			Target.CurrentFamilyInfo.class == class'AOCFamilyInfo_Mason_King' ||
+			Target.PlayerReplicationInfo.bAdmin
+		) {
+			ClientDisplayConsoleMessage("'" $ Target.PlayerReplicationInfo.GetHumanReadableName() $ "' cannot be forced to spectate.");
+			continue;
+		}
+
+		Target.JoinSpectatorTeam();
+	}
+
+	S_AdminBroadcastMessage("AdminForceSpectateAll");
+}
+

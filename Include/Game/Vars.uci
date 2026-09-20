@@ -1,0 +1,37 @@
+// XangMod - Vars.uci
+// Included via XangModGame.uci. Vars live in Game/Vars.uci; DefaultProperties in Game/Server.uci (last).
+//SetGameType returns which game mode should be used for which map prefix
+//You can do whatever you want with this. You can even use Options
+// (options => the ?blah=blah things added after the map name when launching a server or in the map list)
+//to add even more variety. See the ParseOption function in Src\Engine\Classes\GameInfo.uc
+var config array<GameTypePrefix> SDKPrefixes;
+
+// Local stats bridge. These values are per game-mode class in DefaultXangMod.ini.
+// Keep it disabled until the Chivalry dedicated server and local backend run on
+// the same machine, then configure a non-empty API key before enabling it.
+//
+// Disabled 2026-09-14: superseded by the RCON round-start/end event stream. The HTTP
+// JSON snapshot upload is no longer needed; kept as comments so the wiring is visible
+// if a JSON endpoint is ever wanted again.
+//var config bool bEnableStatsReporting;
+//var config string StatsEndpoint;
+//var config string StatsApiKey;
+//var config string StatsServerId;
+//var config float StatsReportInterval;
+
+// XANGMOD: watchdog on the tournament ready gate. Vanilla never gives up, so a gate that
+// can never be satisfied leaves the server in a permanent pre-round. Turns a brick into
+// a delay.
+var config float fXangModTournamentHoldLimit;   // seconds before giving up; 0 disables
+var float fXangModTournamentHoldSince;          // when the gate first blocked; 0 = not blocking
+
+//var string StatsMatchId;
+//var bool bStatsRequestInFlight;
+//var HttpRequestInterface StatsRequest;
+
+// RCON round-boundary reporting (opcodes 65-68). XangModRoundNumber counts the real
+// rounds played on this map (incremented at each StartRound, so warmup never bumps it).
+var int XangModRoundNumber;
+var bool bXangModRoundEnding;   // re-entrancy guard for AOCEndRound (LTS draw recursion)
+var bool bXangModMatchEnded;    // set when EndGame emits, suppresses the AOCEndRound emit
+var bool bXangModMatchEndEmitted; // stops a second EndGame call (time limit + admin) re-emitting 66

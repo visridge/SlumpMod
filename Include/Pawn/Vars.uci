@@ -1,0 +1,56 @@
+// XangMod - Vars.uci
+// Included via XangModPawn.uci. Vars live in Pawn/Vars.uci; DefaultProperties in Pawn/Camera.uci (last).
+var float fLastParryTimeSeconds;                // The game time at which the pawn last parried
+var float fSuccessiveParryStaminaReward;        // Flat stamina reward for parrying within successive parry threshold
+var float fSuccessiveParryThresholdSeconds;     // The maximum time in seconds after the pawn's last parry that they are eligible for reward
+// var int iLastParryCost;                      // [DEPRECATED] Stamina cost tracking no longer needed (flat reward system)
+
+var bool bStoredExtraFlag;
+var float altRiposteExtraWindup;
+
+var float fLastReleaseStartTime;
+var bool bShowHitTime;
+var float fLastParrySuccessTime;                // Time when parry successfully activated (for riposte grace period)
+var float fRiposteGracePeriod;                  // Grace period after parry where flinch is disabled (default 200ms)
+// var float BastardSwordSprintStartTime;
+// var bool bWasBastardSwordSprinting;
+var bool bKanaboExtraJumpUsed;
+var CylinderComponent OuterCylinderComp; // Reference to the OuterCylinder component (player collision bubble)
+var bool bXangModWarnedNoOwnerMesh;      // one-shot log guard: 1P -> 3P camera socket fallback
+var bool bXangModWarnedNoCameraSocket;   // one-shot log guard: neither mesh usable
+var bool bXangModWarnedStock1PMesh;      // one-shot log guard: stock 1P mesh substituted
+
+// (Deferred-hit state removed — replaced by the PendingHits hold model in XangModPawn.uc)
+
+// XANGMOD: Client-timestamp hit-trade priority state/tunables (see RecentIncomingHit in
+// XangModPawn.uc and the helpers/arbitration further down).
+var float fClientClockOffset;          // EMA of (serverTime - oneWayPing - clientStamp)
+var bool  bClientClockOffsetInit;      // has the offset EMA been seeded yet?
+var float fPendingHitClientTime;       // last client hit-moment stamp received (their clock); consumed by AttackOtherPawn
+var float fLastParryActionServerTime;  // last parry-active moment mapped to server time
+var float fLastParryStampServerTime;   // server time when that parry stamp arrived (freshness check)
+var float fTradeWindowSeconds;         // hits within this gap (normalized) still trade; staggered ones drop
+var float fParryTradeGraceSeconds;     // a parry counts unless it went active later than the swing by more than this
+var float fMaxPlausibleLatency;        // clamp for reconstructed action times (anti-spoof / one-way ping cap)
+var float fRecentHitTTL;               // how long a taken hit stays eligible to cancel a trade swing
+var float fClockOffsetAlpha;           // EMA weight for new clock-offset samples
+var bool  bEnableTradeCancellation;    // master toggle: whether hit-trade cancellation is active
+
+var AOCPawn StoredFirebugHitActor;     // cached victim for delayed Firebug ignition timer
+
+/** Adjust mesh scale for Man at Arms class to make them smaller */
+// simulated function CharacterAssetStoreAllAssetsLoaded()
+// {
+// 	super.CharacterAssetStoreAllAssetsLoaded();
+	
+// 	// Make Man at Arms 15% smaller
+// 	if (PawnFamily != none && PawnFamily.ClassReference == ECLASS_ManAtArms)
+// 	{
+// 		Mesh.SetScale(0.85);
+// 		OwnerMesh.SetScale(0.85);
+		
+// 		// Adjust collision to match new scale (optional, may affect gameplay)
+// 		CylinderComponent.SetCylinderSize(0.85 * 36, 0.85 * 65);
+// 	}
+// }
+

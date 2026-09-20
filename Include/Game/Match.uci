@@ -1,0 +1,491 @@
+// XangMod - Match.uci
+// Included via XangModGame.uci. Vars live in Game/Vars.uci; DefaultProperties in Game/Server.uci (last).
+static event class<GameInfo> SetGameType(string MapName, string Options, string Portal)
+{
+    local string ThisMapPrefix;
+    local int i,pos;
+    local class<GameInfo> NewGameType;
+
+    LogAlwaysInternal("SetGameType is being called on"@default.Class);
+
+    MapName = StripPlayOnPrefix( MapName );
+
+    // replace self with appropriate gametype if no game specified
+    pos = InStr(MapName,"-");
+    ThisMapPrefix = left(MapName,pos);
+
+    for (i = 0; i < default.SDKPrefixes.length; i++)
+    {
+        if (default.SDKPrefixes[i].Prefix ~= ThisMapPrefix)
+        {
+            NewGameType = class<GameInfo>(DynamicLoadObject(default.SDKPrefixes[i].GameType, class'Class'));
+            if ( NewGameType != None )
+            {
+                return NewGameType;
+            }
+        }
+    }
+
+    return super.SetGameType(MapName, Options, Portal);
+}
+
+function bool ShouldCountDown()
+{
+    local int AgathaSize, MasonSize;
+    local int AgathaMod, MasonMod;
+    local int AgathiansReady, MasonsReady;
+    local int CorrectedAgathaSize, CorrectedMasonSize;
+    local bool bCanSpawn;
+    local bool bEachTeamHasAtleastOnePlayer;
+    local bool bReadyGateOpen;
+
+    local Controller C;
+    local AOCPlayerController PC;
+
+    AgathaMod = 0;
+    MasonMod = 0;
+    foreach WorldInfo.AllControllers(class'Controller', C)
+    {
+        PC = AOCPlayerController(C);
+        bCanSpawn = (PC != none && PC.CurrentFamilyInfo != none && PC.bReady) || AOCAIController(C) != none;
+
+        if(CMWTO2GRI(GameReplicationInfo) != none && AOCAIController(C) != none)
+        {
+            //bots cannot trigger countdown in TO2 (is breaking horde-type maps)
+            continue;
+        }
+        
+        if(!bCanSpawn)
+        {
+            continue;
+        }
+
+        if (AOCPRI(C.PlayerReplicationInfo).IsOnTeam(EAOCFaction(Teams[0].TeamIndex)))
+        {
+            AgathaSize += 1;
+
+            if(PC.IsVoluntarySpectator())
+            {
+                AgathaMod += 1;
+            }
+            else if(PC.bTournamentReady)
+            {
+                AgathiansReady += 1;
+            }
+        }
+        else if (AOCPRI(C.PlayerReplicationInfo).IsOnTeam(EAOCFaction(Teams[1].TeamIndex)))
+        {
+            MasonSize += 1;
+
+            if(PC.IsVoluntarySpectator())
+            {
+                MasonMod += 1;
+            }
+            else if(PC.bTournamentReady)
+            {
+                MasonsReady += 1;
+            }
+        }
+    }
+
+    CorrectedAgathaSize = AgathaSize - AgathaMod;
+    CorrectedMasonSize = MasonSize - MasonMod;
+
+    bEachTeamHasAtleastOnePlayer = (CorrectedAgathaSize > 0 && CorrectedMasonSize > 0);
+
+    if (bTournamentMode)
+    {
+        bReadyGateOpen =
+        (
+            bEachTeamHasAtleastOnePlayer &&
+            (
+                // each team has more than the minimum tolerable amount of 'ready' players
+                (
+                    (AgathiansReady / float(CorrectedAgathaSize)) >= TournamentTeamReadyThreshold &&
+                    (MasonsReady / float(CorrectedMasonSize)) >= TournamentTeamReadyThreshold
+                )
+
+                // or an admin forced the match to start
+                || bAdminForcedTournamentReady
+            )
+        );
+
+        if (bReadyGateOpen)
+        {
+            fXangModTournamentHoldSince = 0;
+            return true;
+        }
+
+        if (fXangModTournamentHoldSince == 0)
+        {
+            fXangModTournamentHoldSince = WorldInfo.TimeSeconds;
+        }
+        else if (fXangModTournamentHoldLimit > 0
+                 && WorldInfo.TimeSeconds - fXangModTournamentHoldSince > fXangModTournamentHoldLimit)
+        {
+            // Only StartRound clears bTournamentMode, and it cannot run while this
+            // returns false -- so give up rather than hold the server hostage.
+            LogAlwaysInternal("[XangMod] Tournament ready gate held the pre-round for"
+                @ int(fXangModTournamentHoldLimit) @ "seconds. Dropping tournament mode.");
+            S_BroadcastServerMessage("Tournament mode could not start the round. Starting normally.");
+
+            bTournamentMode = false;
+            if (AOCGRI(GameReplicationInfo) != none)
+                AOCGRI(GameReplicationInfo).bTournamentModeWaiting = false;
+            fXangModTournamentHoldSince = 0;
+
+            return (bEachTeamHasAtleastOnePlayer || !bWaitForTeams);
+        }
+
+        return false;
+    }
+    else
+    {
+        return (bEachTeamHasAtleastOnePlayer || !bWaitForTeams);
+    }
+}
+
+// Deprecated
+function AdminTournamentMode(bool bEnable){}
+
+function UpdateVoteTally()
+{
+    local int VoteTimeLeft;
+
+    switch(VoteCategory)
+    {
+    case EVOTECAT_KICK:
+        VoteTimeLeft = Round(GetRemainingTimeForTimer('EndKickVote'));
+        break;
+    case EVOTECAT_ChangeMap:
+        VoteTimeLeft = Round(GetRemainingTimeForTimer('EndChangeMapVote'));
+        break;
+    case EVOTECAT_RestartMap:
+        VoteTimeLeft = Round(GetRemainingTimeForTimer('EndResetMapVote'));
+        break;
+    default:
+        super.UpdateVoteTally();
+        return;
+    }
+
+    if (VoteTimeLeft == -1)
+        VoteTimeLeft = Round(GetRemainingTimeForTimer('EndCustomVote'));
+
+    CountVotes();
+
+    BroadcastSystemMessage(iLocVoteSecondsLeft,
+        class'AOCSystemMessages'.static.CreateLocalizationdata("INVALIDDATA", String(VoteTimeLeft),""),
+        class'AOCSystemMessages'.static.CreateLocalizationdata("INVALIDDATA", String(Round(100.0f * VotesYes/Float(VotesNo + VotesYes))),""),
+        EFAC_ALL);
+}
+
+function bool DidVoteSucceed()
+{
+    local int NumVoters;
+
+    CountVotes();
+    NumVoters = VotesYes + VotesNo;
+
+    if (Float(NumVoters) / (NumVoters + VoteAbstains) < fVoteMinAmountNonAbstainers)
+    {
+        BroadcastSystemMessage(iLocVoteFailedTooManyAbstain,
+            class'AOCSystemMessages'.static.CreateLocalizationdata("INVALIDDATA", String(NumVoters),""),
+            class'AOCSystemMessages'.static.CreateLocalizationdata("INVALIDDATA", String(NumVoters + VoteAbstains),""),
+            EFAC_ALL);
+
+        return false;
+    }
+
+    if (Float(VotesYes) / (NumVoters) <= fVoteSuccessThreshold)
+    {
+        BroadcastSystemMessage(iLocVoteFailedTooManyNo,
+            class'AOCSystemMessages'.static.CreateLocalizationdata("INVALIDDATA", String(Round(100.0f * VotesYes/Float(VotesNo + VotesYes))),""),
+            class'AOCSystemMessages'.static.CreateLocalizationdata("INVALIDDATA", String(100.0f * fVoteSuccessThreshold),""),
+            EFAC_ALL);
+
+        return false;
+    }
+
+    BroadcastSystemMessage(iLocVoteVotedYesVotedNo,
+        class'AOCSystemMessages'.static.CreateLocalizationdata("INVALIDDATA", String(VotesYes),""),
+        class'AOCSystemMessages'.static.CreateLocalizationdata("INVALIDDATA", String(VotesNo),""),
+        EFAC_ALL);
+
+    return true;
+}
+
+function int GetActualPlayersCount()
+{
+    local AOCPlayerController PC;
+    local int PlayerCount;
+
+    foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+    {
+        if (!PC.IsVoluntarySpectator() && PC.CurrentFamilyInfo != none && PC.bReady)
+            PlayerCount += 1;
+    }
+
+    return PlayerCount;
+}
+
+function ResetParryScoreboardCounts()
+{
+    local int i;
+    local AOCPRI PRI;
+
+    if (WorldInfo == none || WorldInfo.GRI == none)
+    {
+        return;
+    }
+
+    for (i = 0; i < WorldInfo.GRI.PRIArray.Length; ++i)
+    {
+        PRI = AOCPRI(WorldInfo.GRI.PRIArray[i]);
+        if (PRI != none)
+        {
+            PRI.TeamDamageDealt = 0;
+        }
+    }
+}
+
+function StartMatch()
+{
+    ResetParryScoreboardCounts();
+    super.StartMatch();
+
+    //BeginStatsReporting();
+
+    // XANGMOD: make catapults permanently destructible (see DisableCatapultRespawns). One
+    // immediate pass covers catapults already on the map, and a low-frequency looping sweep
+    // catches any destroyed or Kismet-spawned later in the round.
+    DisableCatapultRespawns();
+    SetTimer(3.0, true, 'DisableCatapultRespawns');
+
+    // XANGMOD: disable siege weapons and non-objective gates on Slumforest only.
+    // Objective-tied AOCInterpActor instances (e.g. Darkforest doors, peasant gates) are
+    // excluded via IsPartOfObjective(). Repeated on a timer to catch Kismet-spawned actors.
+    // DisableSiegeObjects();
+    // SetTimer(3.0, true, 'DisableSiegeObjects');
+}
+
+/**
+ * Round start. Every XangMod game class includes this file, so this override replaces the
+ * inherited StartRound everywhere. It calls super first, so each mode's own StartRound
+ * still runs unchanged (AOCLTS.StartRound notably does NOT call its own parent), then
+ * emits 65. Because StartRound only ever runs out of the pre-round, warmup can never
+ * produce this event.
+ */
+function StartRound()
+{
+    local XangModRCon RCon;
+    local int AgathaScore, MasonScore, Goal;
+
+    super.StartRound();
+
+    if (!XangModRoundReportingEnabled())
+        return;
+
+    XangModRoundNumber++;
+    bXangModMatchEnded = false;
+    bXangModMatchEndEmitted = false;
+
+    RCon = XangModRCon(RemoteConsole);
+    if (RCon == none)
+        return;
+
+    XangModRoundScores(AgathaScore, MasonScore, Goal);
+    RCon.SendRoundStart(XangModRoundMapName(), XangModRoundNumber, AgathaScore, MasonScore, Goal);
+}
+
+/**
+ * Round end. For LTS this fires once per scored round; for TD/TO it fires when the match
+ * ends. If EndGame already ran (LTS reaching GoalScore, or any TD/TO end), it emitted 66
+ * itself with matchEnding=1, so this stays quiet. The bXangModRoundEnding flag stops
+ * AOCLTS's internal draw recursion (AOCLTS.AOCEndRound calls itself) from double-emitting.
+ */
+function AOCEndRound()
+{
+    local bool bEmit;
+
+    bEmit = !bXangModRoundEnding;
+    bXangModRoundEnding = true;
+
+    super.AOCEndRound();
+
+    bXangModRoundEnding = false;
+
+    if (!XangModRoundReportingEnabled() || !bEmit)
+        return;
+    if (bXangModMatchEnded)
+        return;
+
+    XangModSendRoundEnd(XangModRoundWinnerTeamIndex(), 0);
+}
+
+/**
+ * Match end. Fires 66 with matchEnding=1 and the final stat burst, then lets each mode's
+ * own EndGame run. Overrides every mode's EndGame, so it is gated the same way as
+ * AOCEndRound; non-reporting modes still get super.EndGame and nothing else.
+ */
+function EndGame(PlayerReplicationInfo Winner, string Reason)
+{
+    bXangModMatchEnded = true;
+    super.EndGame(Winner, Reason);
+
+    if (!XangModRoundReportingEnabled())
+        return;
+    if (bXangModMatchEndEmitted)
+        return;
+    bXangModMatchEndEmitted = true;
+
+    XangModSendRoundEnd(XangModRoundWinnerTeamIndex(), 1);
+}
+
+// Disabled 2026-09-14: superseded by the RCON round-start/end event stream. Kept as
+// comments for reference -- the JSON snapshot uploader is no longer called.
+//function BeginStatsReporting()
+//{
+//    if (!bEnableStatsReporting || StatsEndpoint == "" || StatsApiKey == "" || StatsServerId == "")
+//    {
+//        return;
+//    }
+//
+//    // Map names and the server's elapsed time are engine-produced, safe identifier
+//    // components. This ID stays stable for all snapshots in the current match.
+//    StatsMatchId = WorldInfo.GetMapName() $ "-" $ string(int(WorldInfo.TimeSeconds));
+//    ClearTimer('SendStatsSnapshot');
+//    SendStatsSnapshot();
+//    SetTimer(FMax(10.0, StatsReportInterval), true, 'SendStatsSnapshot');
+//}
+//
+//function SendStatsSnapshot()
+//{
+//    local string Payload;
+//
+//    if (!bEnableStatsReporting || bStatsRequestInFlight || StatsMatchId == "")
+//    {
+//        return;
+//    }
+//
+//    Payload = BuildStatsPayload();
+//    StatsRequest = class'HttpFactory'.static.CreateRequest();
+//    if (StatsRequest == none)
+//    {
+//        LogAlwaysInternal("SlumpMod stats: failed to create HTTP request.");
+//        return;
+//    }
+//
+//    bStatsRequestInFlight = true;
+//    StatsRequest.SetURL(StatsEndpoint $ "?key=" $ StatsApiKey);
+//    StatsRequest.SetVerb("POST");
+//    StatsRequest.SetHeader("Content-Type", "application/json");
+//    StatsRequest.SetContentAsString(Payload);
+//    StatsRequest.SetProcessRequestCompleteDelegate(StatsRequestComplete);
+//    StatsRequest.ProcessRequest();
+//}
+//
+//function string BuildStatsPayload()
+//{
+//    local string Quote;
+//
+//    Quote = Chr(34);
+//    return "{" $
+//        Quote $ "matchId" $ Quote $ ":" $ Quote $ StatsMatchId $ Quote $ "," $
+//        Quote $ "serverId" $ Quote $ ":" $ Quote $ StatsServerId $ Quote $ "," $
+//        Quote $ "map" $ Quote $ ":" $ Quote $ WorldInfo.GetMapName() $ Quote $ "," $
+//        Quote $ "elapsedSeconds" $ Quote $ ":" $ string(int(WorldInfo.TimeSeconds)) $ "," $
+//        Quote $ "players" $ Quote $ ":" $ BuildStatsPlayersJson() $
+//        "}";
+//}
+//
+//function string BuildStatsPlayersJson()
+//{
+//    local `{GAMEMODE}PRI ModPRI;
+//    local int i;
+//    local int TeamIndex;
+//    local string Quote;
+//    local string Result;
+//
+//    Quote = Chr(34);
+//    Result = "[";
+//
+//    if (WorldInfo == none || WorldInfo.GRI == none)
+//    {
+//        return Result $ "]";
+//    }
+//
+//    for (i = 0; i < WorldInfo.GRI.PRIArray.Length; ++i)
+//    {
+//        ModPRI = `{GAMEMODE}PRI(WorldInfo.GRI.PRIArray[i]);
+//        if (ModPRI == none || ModPRI.bBot)
+//        {
+//            continue;
+//        }
+//
+//        if (ModPRI.Team != none)
+//        {
+//            TeamIndex = ModPRI.Team.TeamIndex;
+//        }
+//        else
+//        {
+//            TeamIndex = -1;
+//        }
+//
+//        if (Result != "[")
+//        {
+//            Result $= ",";
+//        }
+//
+//        Result $= "{" $
+//            Quote $ "idA" $ Quote $ ":" $ string(ModPRI.UniqueId.Uid.A) $ "," $
+//            Quote $ "idB" $ Quote $ ":" $ string(ModPRI.UniqueId.Uid.B) $ "," $
+//            Quote $ "team" $ Quote $ ":" $ string(TeamIndex) $ "," $
+//            Quote $ "kills" $ Quote $ ":" $ string(ModPRI.NumKills) $ "," $
+//            Quote $ "deaths" $ Quote $ ":" $ string(ModPRI.Deaths) $ "," $
+//            Quote $ "assists" $ Quote $ ":" $ string(ModPRI.NumAssists) $ "," $
+//            Quote $ "enemyDamage" $ Quote $ ":" $ string(ModPRI.EnemyDamageDealt) $ "," $
+//            Quote $ "teamDamage" $ Quote $ ":" $ string(ModPRI.TeamDamageDealt) $ "," $
+//            Quote $ "damageTaken" $ Quote $ ":" $ string(ModPRI.AllDamageTaken) $ "," $
+//            Quote $ "parries" $ Quote $ ":" $ string(ModPRI.Parries) $ "," $
+//            Quote $ "feints" $ Quote $ ":" $ string(ModPRI.Feints) $ "," $
+//            Quote $ "meleeHits" $ Quote $ ":" $ string(ModPRI.MeleeHits) $ "," $
+//            Quote $ "projectileHits" $ Quote $ ":" $ string(ModPRI.ProjectileHits) $ "," $
+//            Quote $ "blocks" $ Quote $ ":" $ string(ModPRI.Blocks) $ "," $
+//            Quote $ "dodges" $ Quote $ ":" $ string(ModPRI.Dodges) $
+//            "}";
+//    }
+//
+//    return Result $ "]";
+//}
+//
+//function StatsRequestComplete(HttpRequestInterface Request, HttpResponseInterface Response, bool bWasSuccessful)
+//{
+//    bStatsRequestInFlight = false;
+//
+//    if (!bWasSuccessful)
+//    {
+//        LogAlwaysInternal("SlumpMod stats: snapshot upload failed for" @ StatsMatchId);
+//    }
+//}
+
+
+exec function TournamentMode(bool bEnable)
+{
+    if (default.bTournamentMode == bEnable)
+        return;
+
+    S_BroadcastServerMessage("Admin TournamentMode");
+
+    ConfigureTournamentMode(bEnable);
+    WorldInfo.ServerTravel("?restart", false);
+}
+
+reliable server function ConfigureTournamentMode(bool bEnable)
+{
+    bTournamentMode = bEnable;
+    SaveConfig();
+
+    class'AOCGame'.default.bTournamentMode = bEnable;
+    class'AOCGame'.static.StaticSaveConfig();
+}
+

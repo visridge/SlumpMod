@@ -7,6 +7,9 @@
 */
 class XangModWeaponAttachment_Broadsword extends AOCWeaponAttachment_Broadsword;
 
+// Parry-box + netcode overrides. MUST be at class level - see the file header.
+`include(XangMod/Include/XangModWeaponAttachmentCode.uci)
+
 DefaultProperties
 {
 	`include(XangMod/Include/XangModWeaponAttachment.uci);	

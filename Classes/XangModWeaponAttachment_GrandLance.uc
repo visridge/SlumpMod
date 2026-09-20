@@ -7,6 +7,9 @@
 */
 class XangModWeaponAttachment_GrandLance extends AOCWeaponAttachment_Halberd;
 
+// Parry-box + netcode overrides. MUST be at class level - see the file header.
+`include(XangMod/Include/XangModWeaponAttachmentCode.uci)
+
 simulated function float GetHandleTracerPercent(int i)
 {
     local vector vStart, vMid, vEnd;

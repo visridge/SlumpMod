@@ -1,0 +1,103 @@
+// XangMod - SiegeObjects.uci
+// Included via XangModGame.uci. Vars live in Game/Vars.uci; DefaultProperties in Game/Server.uci (last).
+// XANGMOD: Make catapults permanently destructible — once broken they stay a broken wreck for
+// the rest of the round instead of self-repairing.
+//
+// Catapults (AOCSWCatapult) are placed directly in maps as the AOC class, so we can't subclass
+// them without editing every map. Instead we reach the live instances from the game mode. In
+// AOCSW_Base.TakeDamage a destroyed siege weapon schedules its own respawn via
+// SetTimer(RepairTime, false, 'Repair'); Repair() then clears bDestroyed, restores Health and
+// returns it to Idle. We defeat that two ways:
+//   (a) push RepairTime far out so any FUTURE destruction won't repair within a round, and
+//   (b) ClearTimer('Repair') on any catapult that is ALREADY destroyed, cancelling an in-flight
+//       respawn (RepairTime captured at SetTimer time, so bumping it isn't enough on its own).
+// A destroyed catapult's bDestroyed stays true, so TakeDamage no-ops and clients keep showing
+// the broken-down wreck. Scoped to catapults only; ballistae keep vanilla respawn behaviour.
+//
+// This replaces the old per-frame Tick that zeroed catapult-rock velocity — that hack mutated a
+// replicated projectile server-side every frame, which is what produced the "invisible shot
+// lands next to the catapult" desync. Rocks now fly their normal arc; catapults are balanced by
+// staying dead once destroyed instead.
+function DisableCatapultRespawns()
+{
+	local AOCSWCatapult Catapult;
+    local AOCSWBallista Ballista;
+
+	foreach WorldInfo.AllActors(class'AOCSWCatapult', Catapult)
+	{
+		Catapult.RepairTime = 1000000.0;
+		if (Catapult.bDestroyed)
+			Catapult.ClearTimer('Repair');
+	}
+
+	foreach WorldInfo.AllActors(class'AOCSWBallista', Ballista)
+	{
+		Ballista.RepairTime = 1000000.0;
+		if (Ballista.bDestroyed)
+			Ballista.ClearTimer('Repair');
+	}
+}
+
+// ---------------------------------------------------------------------------
+// XANGMOD: Disable ballistae, catapults, and non-objective gates on Slumforest.
+//
+// Ballistae / catapults: set health to zero and prevent repair so they stay as
+// broken wrecks (or are already destroyed).
+//
+// Gates (AOCInterpActor): hide and disable collision UNLESS the actor is
+// referenced by an AOCObjective_Breakable (i.e. the Darkforest peasant doors).
+// Objective-tied breakables are left alone so the map's Kismet logic works.
+// ---------------------------------------------------------------------------
+function DisableSiegeObjects()
+{
+	local AOCSWBallista Ballista;
+	local AOCSWCatapult Catapult;
+	local AOCInterpActor InterpActor;
+
+	// Only apply on Slumforest — completely inert on every other map.
+	if (InStr(WorldInfo.GetMapName(), "AOCTO-Slumforest_p", false, true) == INDEX_NONE)
+		return;
+
+	// Ballistae: zero out health, kill any in-flight repair timer.
+	foreach WorldInfo.AllActors(class'AOCSWBallista', Ballista)
+	{
+		Ballista.RepairTime = 1000000.0;
+		if (Ballista.bDestroyed)
+			Ballista.ClearTimer('Repair');
+		Ballista.Health = 0;
+	}
+
+	// Catapults: same treatment.
+	foreach WorldInfo.AllActors(class'AOCSWCatapult', Catapult)
+	{
+		Catapult.RepairTime = 1000000.0;
+		if (Catapult.bDestroyed)
+			Catapult.ClearTimer('Repair');
+		Catapult.Health = 0;
+	}
+
+	// Gates / breakable objects: only hide the ones NOT tied to an objective.
+	// Objective-tied actors (e.g. Darkforest final-stage doors) must remain
+	// intact so the map's Kismet objective sequence can still function.
+	foreach WorldInfo.AllActors(class'AOCInterpActor', InterpActor)
+	{
+		if (!IsPartOfObjective(InterpActor))
+		{
+			InterpActor.SetHidden(true);
+			InterpActor.SetCollision(false, false);
+		}
+	}
+}
+
+function bool IsPartOfObjective(AOCInterpActor CheckActor)
+{
+	local AOCObjective_Breakable Obj;
+
+	foreach WorldInfo.AllActors(class'AOCObjective_Breakable', Obj)
+	{
+		if (Actor(Obj.DestroyObject) == CheckActor)
+			return true;
+	}
+
+	return false;
+}

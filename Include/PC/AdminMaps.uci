@@ -1,0 +1,133 @@
+// XangMod - AdminMaps.uci
+// Included via XangModPlayerController.uci. Vars live in PC/Vars.uci; DefaultProperties in PC/Effects.uci (last).
+exec function AdminGotoSF() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-Slumforest_p");
+}
+
+exec function AdminGotoSH() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-Slumpshill_p");
+}
+
+exec function AdminGotoSP() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-Slumppost_p");
+}
+
+exec function AdminGotoDuel() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCFFA-YeedYard_p");
+}
+
+exec function AdminGotoMoor() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCLTS-Moor_p");
+}
+
+exec function AdminGotoKendo() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTDM-Moor_p");
+}
+
+exec function AdminGotoOF() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-OldForest_p");
+}
+
+exec function AdminGotoWF() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-Snowforest_p");
+}
+
+exec function AdminGotoSpooky() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-SpookyForest_p");
+}
+
+exec function AdminGotoDF() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-Darkforest_p");
+}
+
+exec function AdminGotoCF() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerChangeMap("AOCTO-CompForest_p");
+}
+
+// Switch to CompMod3 server (players without the mod will be kicked and must rejoin manually)
+exec function AdminGotoCompMod() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminGotoCompMod();
+}
+
+reliable server function S_AdminGotoCompMod() {
+	if (!IsAdmin()) return;
+	S_AdminBroadcastMessage("changed map to AOCFFA-YeedYard_p?modname=CompMod3");
+	WorldInfo.ServerTravel("AOCFFA-YeedYard_p?modname=CompMod3", false);
+}
+
+exec function AdminGotoNateMod() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminGotoNateMod();
+}
+
+reliable server function S_AdminGotoNateMod() {
+	if (!IsAdmin()) return;
+	S_AdminBroadcastMessage("changed map to AOCFFA-YeedYard_p?modname=NateMod");
+	WorldInfo.ServerTravel("AOCFFA-YeedYard_p?modname=NateMod", false);
+}
+
+exec function AdminGotoZwangMod() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminGotoZwangMod();
+}
+
+reliable server function S_AdminGotoZwangMod() {
+	if (!IsAdmin()) return;
+	S_AdminBroadcastMessage("changed map to AOCFFA-YeedYard_p?modname=Slump3");
+	WorldInfo.ServerTravel("AOCFFA-YeedYard_p?modname=Slump3", false);
+}
+

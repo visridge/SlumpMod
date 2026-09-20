@@ -7,6 +7,9 @@
 */
 class XangModWeaponAttachment_WarHammer extends AOCWeaponAttachment_WarHammer;
 
+// Parry-box + netcode overrides. MUST be at class level - see the file header.
+`include(XangMod/Include/XangModWeaponAttachmentCode.uci)
+
 simulated function UpdateLeftHandVisibility(bool bBehindView)
 {
 }

@@ -1,0 +1,458 @@
+// XangMod - Animation.uci
+// Included via XangModPawn.uci. Vars live in Pawn/Vars.uci; DefaultProperties in Pawn/Camera.uci (last).
+/* 
+simulated function ReplicateCompressedAnimation(AnimationInfo AnimInfo, EWeaponState State, int Index, optional bool ExtraFlag = false, optional bool bLowerBody = false, optional bool bStartTimer = true, optional bool bStopPreviousTimer = true, optional float StartTimeMod = 1.f)
+{	
+	local byte NewForceReplicationVar;
+	
+	bStoredExtraFlag = ExtraFlag;
+	
+	
+	if (AOCMeleeWeapon(Weapon).bWindupStartAlternateSide && (AnimInfo.AlternateAnimation  != '' && AnimInfo.ALternateAnimation != 'None'))
+		AnimInfo.AnimationName = AnimInfo.AlternateAnimation;
+			
+			
+	//if (bStoredExtraFlag)
+	//	AnimInfo.AnimationName = AnimInfo.AlternateAnimation;
+	
+	//DrawTextOverHead(string(AnimInfo.AnimationName) @", " @string(ExtraFlag) @", Index: "@string(Index));
+	//does a Byte loop around if we increment past 255? Is this necessary?
+	if(NewReplicatedAnimation.ForceReplicationVar < 255)
+		NewForceReplicationVar = NewReplicatedAnimation.ForceReplicationVar + 1;
+	else
+		NewForceReplicationVar = 0;
+	
+	
+	if (bStopPreviousTimer)
+		ClearTimer('OnAttackAnimEnd');
+
+	//`log("PLAY COMPRESS ANIM"@AnimInfo.AnimationName@AnimInfo.fAnimationLength);
+	if (Role == ROLE_Authority || IsLocallyControlled() || DrivenVehicle.IsLocallyControlled())
+	{
+		// Make sure body resets turn
+		bForceNullAim = true;
+		SResetBlends.bResetBlends = false;
+
+		// Create animation info to be replicated
+		NewReplicatedAnimation = class'AOCWeaponSimulation'.static.CompressAnimationInfo(self, AnimInfo, State, Index, bLowerBody, ExtraFlag); //check compressedanimationinfo function
+		NewReplicatedAnimation.ForceReplicationVar = NewForceReplicationVar;
+		NewReplicatedAnimation.ResetFlag = false; // Set to False just in case.
+		
+		// handle movement debuffs here for movement modifier...let it stack just in case
+		if (AnimInfo.fModifiedMovement != 1.0f)
+			AddDebuff(true, EDEBF_ANIMATION, AnimInfo.fModifiedMovement, -1.0f, true);
+		
+		// Create Actual Animation Information to Play
+		// We need to play on server and if NM_Standalone, on the client.
+		// Recreate animation info 
+		AnimInfo = class'AOCWeaponSimulation'.static.DecompressAnimationReplicatedInfo(NewReplicatedAnimation , self);
+		if (AOCMeleeWeapon(Weapon).bWindupStartAlternateSide && (AnimInfo.AlternateAnimation  != '' && AnimInfo.ALternateAnimation != 'None'))
+			AnimInfo.AnimationName = AnimInfo.AlternateAnimation;
+		//if (bStoredExtraFlag)
+			//AnimInfo.AnimationName = AnimInfo.AlternateAnimation;
+		//`log("RECONSTRUCT ANIMATION"@AnimInfo.AnimationName@AnimInfo.fAnimationLength@AnimInfo.bDoNotPlayInitially);
+		// Let Weapon Use Old System for Now
+		if (AnimInfo.bPlayOnWeapon){
+			//DrawTextOverHead("Weapon: " @AnimInfo.AnimationName);
+			PlayWeaponAnimation(AnimInfo);}
+
+		// Server - Use the less complicated function
+		if (WorldInfo.NetMode == NM_DedicatedServer){
+			//DrawTextOverHead("Server Animation: " @AnimInfo.AnimationName);
+			Server_PlayAnimation(AnimInfo);
+			}
+		// Client - Play animation regularly
+		else{
+			//DrawTextOverHead("HandlePawnAnims: " @AnimInfo.AnimationName);
+			HandlePawnAnim(false, AnimInfo);
+			//DrawTextOverHead("Pawn Play");
+			}
+
+		// To keep track of how long the animation lasts.
+		ElapsedAnimationTime = WorldInfo.TimeSeconds;
+		// Start Timer to move between weapon states.
+		if (bStartTimer)
+		{
+			//`log("START TIMER"@AnimInfo.AnimationName@AOCWeapon(Weapon).GetRealAnimLength(AnimInfo) - AnimInfo.StartTime * StartTimeMod@AnimInfo.StartTime@AnimInfo.AnimationName);
+			SetTimer(AOCWeapon(Weapon).GetRealAnimLength(AnimInfo) - AnimInfo.StartTime * StartTimeMod, false, 'OnAttackAnimEnd');
+		}
+	}
+	else
+	{
+	}
+}
+ */
+/* 
+simulated function HandlePawnAnim(bool bReplicated, optional AnimationInfo ClientAnimInfo)
+{
+	// Ignore for locally controlled pawn
+ 	if (bReplicated && IsLocallyControlled() && !ReplicatedAnimation.bForcePlayOnLocal){
+		//DrawTextOverHead("Replicated, Locally Controlled");
+		return;}
+	
+	if (bReplicated && (ReplicatedAnimation.AnimationName == '' || ReplicatedAnimation.AnimationName=='None') && ClientAnimInfo.AnimationName == ''){
+		//DrawTextOverHead("Replicated, no replicated anim");
+		return;}
+	
+	
+	// use ClientAnimInfo
+	if (ClientAnimInfo.AnimationName == '')
+		ClientAnimInfo = ReplicatedAnimation;
+	
+	//bForceNullAim = true;
+	
+	// get proper animation [combo or normal]
+	if (!ClientAnimInfo.bCombo){
+		AnimationToPlay = ClientAnimInfo.AnimationName;
+		// if (bStoredExtraFlag)
+			// AnimationToPlay = ClientAnimInfo.AlternateAnimation;
+		if (AOCMeleeWeapon(Weapon).bWindupStartAlternateSide && ClientAnimInfo.AlternateAnimation != '' && ClientAnimInfo.AlternateAnimation != 'None'){
+			AnimationToPlay = ClientAnimInfo.AlternateAnimation;
+			ClientAnimInfo.bUseAltNode=true; //testing
+			}
+		//DrawTextOverHead(string(ClientAnimInfo.fAnimationLength)); //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! alt ripostes should be 0.1 longer, u should test
+		}
+	else
+		AnimationToPlay = ClientAnimInfo.ComboAnimation;
+
+	//`log("HANDLE PAWN PLAY ANIM"@ClientAnimInfo.AnimationName@GetScriptTrace());
+	// if there's an animation to play, play it
+	if (AnimationToPlay != '' && AnimationToPlay != 'None')
+	{
+		//`log("  -HandlePawnAnim "@self@" "@AnimationToPlay@GetScriptTrace());
+		// Handle Arrow for weapons that don't play animation (i.e. Javelin)
+		if (!ClientAnimInfo.bPlayOnWeapon && ClientAnimInfo.bAttachArrow != 2)
+		{
+			if (ClientAnimInfo.bAttachArrow == 1)
+				AOCWeaponAttachment(CurrentWeaponAttachment).AttachArrow();
+			else if (ClientAnimInfo.bAttachArrow == 0)
+				AOCWeaponAttachment(CurrentWeaponAttachment).DetachArrow();
+		}
+
+		if (!ClientAnimInfo.bPlayOnWeapon)
+			AOCWeaponAttachment(CurrentWeaponAttachment).ResetAnimation();
+
+		//`log("PLAY ANIM SLOTS?"@ClientAnimInfo.bUseSlotSystem);
+		if (ClientAnimInfo.bUseSlotSystem)
+			PlayAnimationOnSlots(ClientAnimInfo);
+		else
+			PlayAnimationOnBlendNodes(ClientAnimInfo);
+		if (!ClientAnimInfo.bDoNotPlayInitially)
+		{
+			if (ClientAnimInfo.AssociatedSoundCue != none)
+			{
+				// Be sure to stop last soundcue, in case it was looping
+				if (WAnimAudioCompReference.IsPlaying())
+					WAnimAudioCompReference.Stop();
+				
+				//WAnimAudioCompReference = CreateAudioComponent(ClientAnimInfo.AssociatedSoundCue);
+				WAnimAudioCompReference.SoundCue = ClientAnimInfo.AssociatedSoundCue;
+				WAnimAudioCompReference.Play();
+			}
+			else if (ClientAnimInfo.UniqueShieldSound != none && StateVariables.bShieldEquipped)
+				PlaySound(ClientAnimInfo.UniqueShieldSound, true);
+		}
+	}
+} */
+
+/** Handles Playing Animation on the Server (Slim Play) because we don't have to worry about blending and all that jazz here */
+/*
+function Server_PlayAnimation(AnimationInfo AnimInfo)
+{
+	local name LocalAnimToPlay;
+	
+	if (AnimInfo.bCombo)
+		LocalAnimToPlay = AnimInfo.ComboAnimation;
+	else
+		LocalAnimToPlay = AnimInfo.AnimationName;
+	
+	
+	
+		//AOCMeleeWeapon(Weapon).bIgnoreAlternate=false;
+		//AOCMeleeWeapon(Weapon).bUseAlternateSide=true;
+		
+		//test
+		
+		//AOCMeleeWeapon(Weapon).bWindupStartAlternateSide = true;
+		
+		if (AOCMeleeWeapon(Weapon).bWindupStartAlternateSide && (AnimInfo.AlternateAnimation  != '' && AnimInfo.ALternateAnimation != 'None'))
+		{
+			AOCMeleeWeapon(Weapon).bPlayAlternateAnimation=true;
+			//AOCMeleeWeapon(Weapon).bUseAlternateSide=true;
+			LocalAnimToPlay = AnimInfo.AlternateAnimation;
+			AnimInfo.bUseAltNode = true; //testing
+			
+			//ReplicatedAnimation.AnimationName = AnimInfo.AlternateAnimation;
+			//AnimInfo.AnimationName = AnimInfo.AlternateAnimation;
+			
+			//ClientAnimInfo.AnimationName = AnimInfo.AlternateAnimation;
+			//NewReplicatedAnimation = class'AOCWeaponSimulation'.static.CompressAnimationInfo(self, AnimInfo, State, Index, bLowerBody, ExtraFlag);
+			//NewReplicatedAnimation.AnimationName = AnimInfo.AlternateAnimation;
+		}
+		
+// 		if (AOCMeleeWeapon(Weapon).bWindupStartAlternateSide && (ReplicatedAnimation.AlternateAnimation  != '' && ReplicatedAnimation.AlternateAnimation != 'None'))
+	//	{
+		//	AOCMeleeWeapon(Weapon).bPlayAlternateAnimation=true;
+			//AOCMeleeWeapon(Weapon).bUseAlternateSide=true;
+			//LocalAnimToPlay = ReplicatedAnimation.AlternateAnimation;
+			
+			//ReplicatedAnimation.AnimationName = ReplicatedAnimation.AlternateAnimation;
+			//AnimInfo.AnimationName = ReplicatedAnimation.AlternateAnimation;
+			
+			//ClientAnimInfo.AnimationName = AnimInfo.AlternateAnimation;
+			//NewReplicatedAnimation = class'AOCWeaponSimulation'.static.CompressAnimationInfo(self, AnimInfo, State, Index, bLowerBody, ExtraFlag);
+			//NewReplicatedAnimation.AnimationName = AnimInfo.AlternateAnimation;
+		//}
+	
+	LowerHalfAnimSlot.StopCustomAnim(0.0f);
+	TopHalfAnimSlot.StopCustomAnim(0.0f);
+	FullBodyAnimSlot.StopCustomAnim(0.0f);
+	// Top Half/Lower Body
+	if (!AnimInfo.bFullBody)
+	{
+		// Lower Body Animation
+		if (AnimInfo.bLowerBody)
+		{
+			// Lower Body doesn't need any fancy blendings
+			LowerHalfAnimSlot.PlayCustomAnim(LocalAnimToPlay, CalcAnimRate(LocalAnimToPlay, AnimInfo.fAnimationLength), 0.0f,
+				0.0f, AnimInfo.bLoop, true, AnimInfo.StartTime);
+		}
+		// Upper Body Animation
+		else
+		{
+			TopHalfAnimSlot.PlayCustomAnim(LocalAnimToPlay, CalcAnimRate(LocalAnimToPlay, AnimInfo.fAnimationLength), 0.0f,
+				0.0f, AnimInfo.bLoop, true, AnimInfo.StartTime);
+		}
+	}
+	// Full Body Animation
+	else
+	{
+		// Check for RMM
+		if (AnimInfo.bUseRMM)
+		{
+			RMMAnimNode.PlayCustomAnim(LocalAnimToPlay, CalcAnimRate(LocalAnimToPlay, AnimInfo.fAnimationLength), AnimInfo.fBlendInTime,
+				AnimInfo.fBlendOutTime, AnimInfo.bLoop, true);
+			RMMAnimNode.SetRootBoneAxisOption(RBA_Translate, RBA_Translate, RBA_Translate);
+			Mesh.RootMotionMode = RMM_Accel;
+			bIsUsingRMM = true;
+		}
+		else
+		{
+			FullBodyAnimSlot.PlayCustomAnim(LocalAnimToPlay, CalcAnimRate(LocalAnimToPlay, AnimInfo.fAnimationLength), 0.0f,
+				0.0f, AnimInfo.bLoop, true, AnimInfo.StartTime);
+		}
+	}
+}
+
+simulated function PlayAnimationOnBlendNodes(AnimationInfo ClientAnimInfo)
+{
+ 	local AnimNodeBlendPerBone  BlendPerBoneNode;
+	local AnimNodeSequence      AnimSeq;
+	local int   Index, PreIndex;
+	
+	//if (AOCMeleeWeapon(Weapon).bWindupStartAlternateSide && ClientAnimInfo.AlternateAnimation != '' && ClientAnimInfo.AlternateAnimation != 'None'){
+	//	AnimationToPlay = ClientAnimInfo.AlternateAnimation;
+	//	}
+	 
+	if ((AOCMeleeWeapon(Weapon).CurrentFireMode==Attack_AltOverhead || AOCMeleeWeapon(Weapon).CurrentFireMode==Attack_AltSlash) || AOCMeleeWeapon(Weapon).bPlayAlternateAnimation || AOCMeleeWeapon(Weapon).bUseAlternateSide || AOCMeleeWeapon(Weapon).bWindupStartAlternateSide || ClientAnimInfo.bUseAltBoneBranch)
+	{
+		//test
+		AOCMeleeWeapon(Weapon).bIgnoreAlternate=false;
+		AOCMeleeWeapon(Weapon).bUseAlternateSide=true;
+		AOCMeleeWeapon(Weapon).bPlayAlternateAnimation=true;
+		//test
+		
+		AOCMeleeWeapon(Weapon).bWindupStartAlternateSide = true;
+		
+		ClientAnimInfo.AnimationName = ClientAnimInfo.AlternateAnimation;
+		ClientAnimInfo.bUseAltNode=true; //testing
+		ClientAnimInfo.bUseAltBoneBranch=true;
+		
+		//ReplicatedAnimation.bUseAltNode = true; // added
+		//Info.AnimationName = Info.AlternateAnimation;
+		//Inf.fAnimationLength += 0.1f;
+	}
+	
+	Index = EABLI_FULL;
+	// Calculate index first
+	if (ClientAnimInfo.bForceSameIndex)
+		Index = BlendAnimationListNode.ActiveChildIndex;
+	else
+	{
+		if ((!ClientAnimInfo.bFullBody || PawnState == ESTATE_IDLE || PawnState == ESTATE_Frozen ||  StateVariables.bIsManualJumpDodge ) && !ClientAnimInfo.bForceFullBody)
+		{
+			Index += 2;
+			if (BlendAnimationListNode.ActiveChildIndex == EABLI_TOP || BlendAnimationListNode.ActiveChildIndex == EABLI_TOP_AB)
+				Index += 1;
+		}
+		else if (BlendAnimationListNode.ActiveChildIndex == EABLI_FULL || BlendAnimationListNode.ActiveChildIndex == EABLI_FULL_AB)
+			Index += 1;
+
+		if (ClientAnimInfo.bUseAltBoneBranch)
+			Index += 6; 
+	}
+	
+	DrawTextOverHead(string(ClientAnimInfo.AnimationName) @", Index: " @string(Index));
+	
+	
+	//if (!bIsBot && Weapon != none && AOCWeapon(Weapon).bDebugLogs)
+	//`log("USING INDEX"@Index@ClientAnimInfo.AnimationName@ClientAnimInfo.StartTime@ClientAnimInfo.fAnimationLength);
+
+	// First grab the appropriate nodes that we will be using to play this animation
+	// Set the proper animation
+	// Set the AnimNodeBlendPerBone to focus on target
+	// Then set list to the appropriate EAnimBlendListIndex based on ClientAnimInfo (fullbody/alt node).
+	if (BlendAnimationListNode != none)
+	{
+		PreIndex = Index;
+		// Account for RMM list index here
+		if (ClientAnimInfo.bUseRMM && ClientAnimInfo.bFullBody)
+		{
+			if (ClientAnimInfo.bUseAltBoneBranch)
+				Index = EABLI_FULLROOT_AB;
+			else
+				Index = EABLI_FULLROOT;
+			Mesh.RootMotionMode = RMM_Accel;
+			bIsUsingRMM = true;
+		}
+		BlendPerBoneNode = AnimNodeBlendPerBone(BlendAnimationListNode.Children[Index].Anim);
+		AnimSeq = AnimNodeSequence(BlendPerBoneNode.Children[1].Anim);
+		if (ClientAnimInfo.bUseRMM && ClientAnimInfo.bFullBody)
+		{
+			AnimSeq.SetRootBoneAxisOption(RBA_Translate, RBA_Translate, RBA_Translate);
+		}
+		AnimSeq.SetAnim(AnimationToPlay);
+		AnimSeq.SetPosition(ClientAnimInfo.StartTime, false);
+		if (!ClientAnimInfo.bDoNotPlayInitially)
+			AnimSeq.PlayAnim(ClientAnimInfo.bLoop, CalcAnimRate(AnimationToPlay, ClientAnimInfo.fAnimationLength), ClientAnimInfo.StartTime);
+		else
+			AnimSeq.StopAnim();
+		BlendPerBoneNode.SetBlendTarget(1.0f, 0.0f);
+		BlendAnimationListNode.SetActiveChild(Index, ClientAnimInfo.fBlendListNodeTime);
+		Index = PreIndex;
+	}
+
+	//`log("CHECK PLAY NODE"@IsLocallyControlled()@OwnerMesh);
+	if (OwnerBlendAnimationListNode != none && (((IsLocallyControlled() || OwnerMesh != none) && !bIsBot) || bIsBeingFPObserved))
+	{
+		OwnerTopHalfSlot.StopCustomAnim(0.5f);
+		BlendPerBoneNode = AnimNodeBlendPerBone(OwnerBlendAnimationListNode.Children[Index].Anim);
+		AnimSeq = AnimNodeSequence(BlendPerBoneNode.Children[1].Anim);
+		AnimSeq.SetAnim(AnimationToPlay);
+		AnimSeq.SetPosition(ClientAnimInfo.StartTime, false);
+		if (!ClientAnimInfo.bDoNotPlayInitially)
+			AnimSeq.PlayAnim(ClientAnimInfo.bLoop, CalcAnimRate(AnimationToPlay, ClientAnimInfo.fAnimationLength), ClientAnimInfo.StartTime);
+		else
+			AnimSeq.StopAnim();
+		BlendPerBoneNode.SetBlendTarget(1.0f, 0.0f);
+		OwnerBlendAnimationListNode.SetActiveChild(Index, ClientAnimInfo.fBlendListNodeTime);
+	}
+
+	// Reset Animations on Full Body Slot
+	FullBodyAnimSlot.StopCustomAnim(0.1f);
+	if (OwnerMesh != none && ((IsLocallyControlled() && !bIsBot) || bIsBeingFPObserved))
+		OwnerFullBodySlot.StopCustomAnim(0.1f);
+	 
+}
+*/
+//
+//debugging commands (remove in release)
+//
+
+
+
+
+
+//
+//Rotation Interpolation
+//
+
+function Rotator GetInterpolatedRotation()
+{
+	DrawTextOverHead(string(Rotation));
+}
+
+/* simulated event tick(float DeltaTime)
+{
+	//GetInterpolatedRotation(); //check if pawn is player controlled or not
+	super.tick(DeltaTime);
+} */
+
+
+/**
+ * Called from PlayerController UpdateRotation() -> ProcessViewRotation() to (pre)process player ViewRotation
+ * adds delta rot (player input), applies any limits and post-processing
+ * returns the final ViewRotation set on PlayerController
+ *
+ * @param	DeltaTime, time since last frame
+ * @param	ViewRotation, actual PlayerController view rotation
+ * @input	out_DeltaRot, delta rotation to be applied on ViewRotation. Represents player's input.
+ * @return	processed ViewRotation to be set on PlayerController.
+ */
+/* simulated function ProcessViewRotation( float DeltaTime, out rotator out_ViewRotation, out Rotator out_DeltaRot )
+{
+	// Add Delta Rotation
+	out_ViewRotation	+= out_DeltaRot;
+	out_DeltaRot		 = rot(0,0,0);
+
+	// Limit Player View Pitch
+	if ( PlayerController(Controller) != None )
+	{
+		out_ViewRotation = PlayerController(Controller).LimitViewRotation( out_ViewRotation, ViewPitchMin, ViewPitchMax );
+	}
+} */
+
+
+/* simulated function FaceRotation(rotator NewRotation, float DeltaTime) //this function doesn't control the yaw
+{
+	super.FaceRotation(NewRotation, DeltaTime);
+	if (((IsLocallyControlled() && !bIsBot) || bIsBeingFPObserved) && OwnerAimNode != none)
+	{
+		OwnerAimNode.Aim.X = AimNode.Aim.X;
+		OwnerAimNode.Aim.Y = AimNode.Aim.Y;
+	}
+} */
+
+/* simulated event tick(float DeltaTime)
+{
+	local rotator rott;
+	rott.Yaw = 150;
+	rott.Pitch = -2500;
+	//FaceRotation(rott, DeltaTime);
+	OwnerAimNode.Aim.Y = 1551;
+	OwnerAimNode.Aim.X = 2155;
+	AimNode.Aim.X = 1551;
+	AimNode.Aim.Y = 2155;
+	SetRotation(rott);
+	super.Tick( DeltaTime );
+	//FaceRotation(rott, DeltaTime);
+	OwnerAimNode.Aim.Y = 1551;
+	OwnerAimNode.Aim.X = 2155;
+	AimNode.Aim.X = 1551;
+	AimNode.Aim.Y = 2155;
+} */
+
+/* event tick(float DeltaTime)
+{
+	local rotator rott;
+	rott.Yaw = 150;
+	rott.Pitch = -2500;
+	//FaceRotation(rott, DeltaTime);
+	OwnerAimNode.Aim.Y = 1551;
+	OwnerAimNode.Aim.X = 2155;
+	AimNode.Aim.X = 1551;
+	AimNode.Aim.Y = 2155;
+	SetRotation(rott);
+	super.Tick( DeltaTime );
+	//FaceRotation(rott, DeltaTime);
+	OwnerAimNode.Aim.Y = 1551;
+	OwnerAimNode.Aim.X = 2155;
+	AimNode.Aim.X = 1551;
+	AimNode.Aim.Y = 2155;
+} */
+
+
+//
+//GIRU Trade Fix
+//Override
+

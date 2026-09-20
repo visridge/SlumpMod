@@ -1,0 +1,317 @@
+// XangMod - Debug.uci
+// Included via XangModPlayerController.uci. Vars live in PC/Vars.uci; DefaultProperties in PC/Effects.uci (last).
+exec function DrawParryHitbox() 
+{//box parry system isn't even enabled?
+	if (bDrawParryBox)
+		bDrawParryBox=false;
+	else
+		bDrawParryBox=true;
+}
+
+/* exec function EnableParryDebug(bool b)
+	{
+		S_EnableParryDebug(b);
+	}
+
+reliable server function S_EnableParryDebug(bool b)
+	{
+		bEnableParryDebug = b;
+	} */
+
+exec function ShowMyParryBox()
+{
+	AOCPawn(Pawn).ParryComponent.SetMaterial(0, Material'CHV_Material_Pack.Materials.Masters.M_Water_Master');	
+	AOCPawn(Pawn).ParryComponent.SetHidden(false);
+}
+
+exec function ShowOthersParryBoxes()
+{
+	local AOCPawn P;
+	foreach Worldinfo.AllPawns(class'AOCPawn', P)
+	{
+		if(P != Pawn)
+		{
+			P.ParryComponent.SetMaterial(0, Material'CHV_Material_Pack.Materials.Masters.M_Water_Master');	
+			P.ParryComponent.SetHidden(false);
+		}
+	}
+}
+exec function ShowAllParryBoxes()
+{
+	local AOCPawn P;
+	foreach Worldinfo.AllPawns(class'AOCPawn', P)
+	{
+		P.ParryComponent.SetMaterial(0, Material'CHV_Material_Pack.Materials.Masters.M_Water_Master');	
+		P.ParryComponent.SetHidden(false);
+	}
+}
+
+exec function ShowStats()
+{
+	local `{GAMEMODE}PRI PRI;
+
+	PRI = `{GAMEMODE}PRI(PlayerReplicationInfo);
+
+	ClientDisplayConsoleMessage("--------------------------------------------------");
+	ClientDisplayConsoleMessage("--------------------------------------------------");
+	ClientDisplayConsoleMessage("Score:"   @ PRI.Score);
+	ClientDisplayConsoleMessage("Kills:"   @ PRI.NumKills);
+	ClientDisplayConsoleMessage("Deaths:"  @ PRI.Deaths);
+	ClientDisplayConsoleMessage("Assists:" @ PRI.NumAssists);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Health:");
+	ClientDisplayConsoleMessage("    Regenerated:"        @ PRI.HealthRegenerated);
+	ClientDisplayConsoleMessage("    Damage Received:");
+	ClientDisplayConsoleMessage("        from all:"       @ PRI.AllDamageTaken);
+	ClientDisplayConsoleMessage("        from enemies:"   @ PRI.DamageTaken);
+	ClientDisplayConsoleMessage("        from teammates:" @ PRI.TeamDamageTaken);
+	ClientDisplayConsoleMessage("    Damage Dealt:");
+	ClientDisplayConsoleMessage("        to enemies:"     @ PRI.EnemyDamageDealt);
+	ClientDisplayConsoleMessage("        to teammates:"   @ PRI.TeamDamageDealt);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Stamina:");
+	ClientDisplayConsoleMessage("    Regenerated:"        @ PRI.StaminaRegenerated);
+	ClientDisplayConsoleMessage("    Damage Received:");
+	ClientDisplayConsoleMessage("        from all:"       @ PRI.AllStaminaConsumed);
+	ClientDisplayConsoleMessage("        from enemies:"   @ PRI.EnemyStaminaDamageTaken);
+	ClientDisplayConsoleMessage("        from teammates:" @ PRI.TeamStaminaDamageTaken);
+	ClientDisplayConsoleMessage("    Damage Dealt:");
+	ClientDisplayConsoleMessage("        to enemies:"     @ PRI.EnemyStaminaDamageDealt);
+	ClientDisplayConsoleMessage("        to teammates:"   @ PRI.TeamStaminaDamageDealt);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Feints:" @ PRI.Feints);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Attacks:");
+	ClientDisplayConsoleMessage("    Total:"      @ PRI.NumAttacks);
+	ClientDisplayConsoleMessage("    Successful:" @ PRI.NumHits);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Hits:");
+	ClientDisplayConsoleMessage("    Melee:"       @ PRI.MeleeHits);
+	ClientDisplayConsoleMessage("    Projectile:"  @ PRI.ProjectileHits);
+	ClientDisplayConsoleMessage("    Light Shove:" @ PRI.LightShoveHits);
+	ClientDisplayConsoleMessage("    Heavy Shove:" @ PRI.HeavyShoveHits);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Parries:" @ PRI.Parries);
+	ClientDisplayConsoleMessage("Blocks:"  @ PRI.Blocks);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Crouches:" @ PRI.Crouches);
+	ClientDisplayConsoleMessage("Jumps:"    @ PRI.Jumps);
+	ClientDisplayConsoleMessage("Dodges:"   @ PRI.Dodges);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Objective Points:" @ PRI.ObjPoints);
+	ClientDisplayConsoleMessage("");
+	ClientDisplayConsoleMessage("Decapitations:"    @ PRI.NumDecaps);
+	ClientDisplayConsoleMessage("Chatter:"    @ PRI.Chatter);
+	ClientDisplayConsoleMessage("--------------------------------------------------");
+	ClientDisplayConsoleMessage("--------------------------------------------------");
+}
+
+function DrawTextOverHead(string DebugText)
+{
+	local color tcolor;
+	tcolor.G = 0;
+	FlushDebugStrings();
+	DrawDebugString(Vect(0, 0, 85.0), DebugText, Pawn, tcolor); //off for now
+}
+
+//death messages
+exec function ToggleDeathMessages() //toggles dying messages in console
+{
+	if (bShowDeathMessages){
+		bShowDeathMessages = false;
+		ClientDisplayConsoleMessage("death messages off");
+	}
+	else {
+		bShowDeathMessages = true;
+		ClientDisplayConsoleMessage("death messages on");
+	}
+}
+
+exec function EnableDeathMessages() //toggles dying messages in console
+{
+	bShowDeathMessages = true;
+	ClientDisplayConsoleMessage("death messages on");
+	
+}
+
+exec function DisableDeathMessages() //toggles dying messages in console
+{
+	bShowDeathMessages = false;
+	ClientDisplayConsoleMessage("death messages off");
+}
+
+simulated function PrintAndClearConsoleDamage()
+{
+	local int i;
+	
+	if(!bShowDamageOnConsole || VerboseDamageMessages.Length <= 0)
+	{
+		return;
+	}
+	
+	if (bShowDeathMessages == false)
+	{
+		return;
+	}
+	
+	if(bShowVerboseDamageMessagesOnConsole)
+	{
+		ClientDisplayConsoleMessage("-------------------");
+		ClientDisplayConsoleMessage("Last life recap:");
+		ClientDisplayConsoleMessage("");
+
+		for(i = 0; i < VerboseDamageMessages.Length; ++i)
+		{
+			ClientDisplayConsoleMessage(VerboseDamageMessages[i]);
+		}
+		ClientDisplayConsoleMessage("-------------------");
+	}
+	else
+	{
+		ClientDisplayConsoleMessage("-------------------");
+		ClientDisplayConsoleMessage("Last life recap:");
+		ClientDisplayConsoleMessage("");
+
+		if(RecordedDamageDealt.Length > 0)
+		{
+			ClientDisplayConsoleMessage("Damage dealt:");
+			ClientDisplayConsoleMessage("");
+
+			for(i = 0; i < RecordedDamageDealt.Length; ++i)
+			{
+				ClientDisplayConsoleMessage(RecordedDamageDealt[i].Damage@"damage dealt to"@GetPriOrActorName(RecordedDamageDealt[i].Other)@"in"@RecordedDamageDealt[i].Hits@"hits");
+			}
+			if(RecordedDamageTaken.Length > 0)
+			{
+				ClientDisplayConsoleMessage("");
+			}
+		}
+		if(RecordedDamageTaken.Length > 0)
+		{
+			ClientDisplayConsoleMessage("Damage received:");
+			ClientDisplayConsoleMessage("");
+
+			for(i = 0; i < RecordedDamageTaken.Length; ++i)
+			{
+				ClientDisplayConsoleMessage(RecordedDamageTaken[i].Damage@"damage taken from"@GetPriOrActorName(RecordedDamageTaken[i].Other)@"in"@RecordedDamageTaken[i].Hits@"hits");
+			}
+		}
+
+		ClientDisplayConsoleMessage("-------------------");
+	}
+
+	VerboseDamageMessages.Remove(0, VerboseDamageMessages.Length);
+	RecordedDamageDealt.Remove(0, RecordedDamageDealt.Length);
+	RecordedDamageTaken.Remove(0, RecordedDamageTaken.Length);
+}
+
+exec function ToggleReleaseHitMessage() //toggles messages that show how far into release you hit your opponent
+{
+	if (bPCShowHitTime){
+		XangModPawn(Pawn).Set_bShowHitTime(true);
+		ClientDisplayConsoleMessage("release hit time messages off");
+	}
+	else {
+		XangModPawn(Pawn).Set_bShowHitTime(false);
+		ClientDisplayConsoleMessage("release hit time messages on");
+	}
+}
+// this is dumb, just let ppl set it
+exec function EnableReleaseHitMessage() //toggles messages that show how far into release you hit your opponent
+{
+	XangModPawn(Pawn).Set_bShowHitTime(true);
+	ClientDisplayConsoleMessage("release hit time messages on");
+}
+
+exec function DisableReleaseHitMessage() //toggles messages that show how far into release you hit your opponent
+{
+	XangModPawn(Pawn).Set_bShowHitTime(true);
+	ClientDisplayConsoleMessage("release hit time messages off");
+}
+
+exec function aoc_DrawTracerHitDetails( bool draw )
+	{
+		bDrawWeaponTracers = draw;
+		bDrawTracerHitDetails = draw;
+	}
+
+/* exec function ShowTraceReach()
+	{
+		AOCBaseHUD(myHUD).bDebugReach = !AOCBaseHUD(myHUD).bDebugReach;
+	} */
+
+exec function ShowGroundSpeed(bool set)
+{
+	bShowGroundSpeed = set;
+}
+
+
+function DrawDebugTextToHud(string DebugText, float func_xpos, float func_ypos)
+{
+	local color tcolor;
+	//tcolor = (255, int(Sin(WorldInfo.TimeSeconds)), int(Sin(WorldInfo.TimeSeconds + 15.0)));
+	//tcolor = (255, 255, 255);
+	tcolor.r = int(Sin(WorldInfo.TimeSeconds));
+	tcolor.g = int(Sin(WorldInfo.TimeSeconds * 0.9 + 15.0));
+	tcolor.b = int(Sin(WorldInfo.TimeSeconds * 1.1 + 25.0));
+	tcolor.a = 255;
+	
+	AOCBaseHUD(myHUD).Canvas.Font = Font'AOC_UI_Common.DescriptionFont';
+	AOCBaseHUD(myHUD).Canvas.DrawColor = tcolor;
+	
+	AOCBaseHUD(myHUD).Canvas.SetPos(AOCBaseHUD(myHUD).Canvas.SizeX - func_xpos, AOCBaseHUD(myHUD).Canvas.SizeY - func_ypos * AOCBaseHUD(myHUD).Canvas.Font.GetMaxCharHeight() );
+	AOCBaseHUD(myHUD).Canvas.DrawText(DebugText, true);
+	
+	//AOCPlayerController(myCombatTarget.Controller).Announce(DebugText);
+}
+
+//release
+
+
+exec function GetServerTickTime()
+{
+	ServerGetServerTickTime();
+}
+
+reliable server function ServerGetServerTickTime()
+{
+	if(PlayerReplicationInfo.bAdmin)
+	{
+		ClientDisplayConsoleMessage(GetWorldTickTime());
+	}
+}
+
+exec function StartPollingServerTickTime()
+{
+	if(!bPollingServerTickTime)
+	{
+		ServerStartPollingServerTickTime();
+		bPollingServerTickTime = true;
+	}
+}
+
+reliable server function ServerStartPollingServerTickTime()
+{
+	if(Worldinfo.Game.AccessControl.IsAdmin(self))
+	{
+		SetTimer(1.0f, true, 'UpdateServerTickTime');
+	}
+}
+
+function UpdateServerTickTime()
+{
+	ClientUpdateServerTickTime(GetWorldTickTime());
+	ClientUpdateServerRelevancyBonus(GetAlwaysRelevantBonus());
+}
+
+unreliable client function ClientUpdateServerTickTime(float time)
+{
+	ServerTickMs = 	time;
+	bPollingServerTickTime = true;
+}
+
+unreliable client function ClientUpdateServerRelevancyBonus(float bonus)
+{
+	ServerRelBonus = bonus;
+}
+
