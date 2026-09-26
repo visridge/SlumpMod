@@ -109,6 +109,9 @@ static function bool IsEmblemOwnedBy(int EmblemID, int Faction, PlayerReplicatio
 
 static function bool IsCharacterOwnedBy(int CharacterID, int FactionID, int ClassID, PlayerReplicationInfo PRI)
 {
+	local AOCGearData GearData;
+	local int CharCount;
+
 	// Character IDs from XangModCustomizationContent:
 	// 0 = Skeleton (placeholder), 1 = Skeleton, 12 = Peasant, 13 = Playable_Peasant, 14 = Playable_Skeleton
 
@@ -122,6 +125,21 @@ static function bool IsCharacterOwnedBy(int CharacterID, int FactionID, int Clas
 	if (CharacterID == 12 || CharacterID == 13)
 	{
 		return EAOCClass(ClassID) == ECLASS_Archer;
+	}
+
+	// XangMod: Group-locked characters (e.g. Saint, Turtle) require Steam group
+	// membership. Their GearData.GroupHexID is set on the character info, but the
+	// blanket "return true" below was skipping it. Defer to the vanilla ownership
+	// path so the GroupHexID is actually enforced.
+	CharCount = class'XangModCustomizationContent'.default.Characters.Length;
+	if (CharacterID >= 0 && CharacterID < CharCount
+		&& class'XangModCustomizationContent'.default.Characters[CharacterID] != none)
+	{
+		GearData = class'XangModCustomizationContent'.default.Characters[CharacterID].default.GearData;
+		if (GearData.GroupHexID != "")
+		{
+			return IsGearOwnedBy(GearData, PRI, ClassID);
+		}
 	}
 
 	return true;
