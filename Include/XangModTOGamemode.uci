@@ -31,6 +31,21 @@ function bool IsCompForest()
     return InStr(WorldInfo.GetMapName(), "AOCTO-CompForest_p", false, true) != INDEX_NONE;
 }
 
+/**
+ * Static respawn floor for Team Objective maps.
+ *
+ * Vanilla GetMinimumRespawnTime returns MinimumRespawnTime plus whatever the map's Kismet
+ * "Set minimum spawn time" node (AOCSeqAction_SetMinimumSpawnTime) adds. Custom TO maps
+ * routinely push a negative bonus through that node to shrink respawns (e.g. 10s - 7 = 3s).
+ * Returning a flat value here ignores both the gametype default and any Kismet bonus, so
+ * mid-round respawns stay at a fixed 10s regardless of what the map does. First spawn is
+ * unaffected: AddPlayerToQueue zeroes SpawnTime for firstSpawn after this check runs.
+ */
+function float GetMinimumRespawnTime(Controller PC)
+{
+    return 10.0f;
+}
+
 // Override Timer to only force net updates when scoreboard values actually change
 State AOCRoundInProgress
 {
