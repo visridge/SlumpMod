@@ -487,6 +487,38 @@ function GameEvent_MapChanged(string mapName, int mapIndex)
 	super.GameEvent_MapChanged(mapName, mapIndex);
 }
 
+// XANGMOD: During tournament-mode warmup (pre-round before the round starts / before
+// !adminreadyall) players can freely hit and kill teammates. Those warmup kills must not
+// reach RCON stat consumers (heir.gg) as real kills/deaths. GameEvent_Kill / GameEvent_Suicide
+// are the exact KILL/SUICIDE pushes (AOCPawn.Died) that vanilla opcodes 15/16 emit, so
+// suppress them for the same window the pawn-side negates team damage.
+function bool IsTournamentWarmup()
+{
+	local AOCGame G;
+
+	G = AOCGame(WorldInfo.Game);
+	if (G == none)
+		return false;
+
+	return G.bTournamentMode && G.IsInState('AOCPreRound');
+}
+
+function GameEvent_Kill(PlayerReplicationInfo Attacker, PlayerReplicationInfo Victim, AOCWeapon Weapon)
+{
+	if (IsTournamentWarmup())
+		return;
+
+	super.GameEvent_Kill(Attacker, Victim, Weapon);
+}
+
+function GameEvent_Suicide(PlayerReplicationInfo Victim)
+{
+	if (IsTournamentWarmup())
+		return;
+
+	super.GameEvent_Suicide(Victim);
+}
+
 /* ============================ ChivAdmin parity ============================== */
 
 /** 24: set a player's score. */

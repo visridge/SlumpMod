@@ -2047,6 +2047,24 @@ data issues in weapon and character classes). The useful signal is the *fingerpr
 Chronological history, newest first. Carried over verbatim apart from heading levels
 and two include paths that the September 2026 split renamed.
 
+### Tournament warmup no longer pollutes tracked kills/deaths (2026-09-26)
+
+In tournament mode the pre-round (before the round starts / before `!adminreadyall`)
+lets players move freely and hit/kill teammates. Those team kills and deaths were being
+pushed to RCON (vanilla opcodes 15/16 KILL/SUICIDE and the deaths counter), so stat
+consumers like heir.gg would credit e.g. 34 kills / 74 deaths when half the deaths came
+from warmup.
+
+- `Include/Pawn/Combat.uci` — team damage is negated entirely during the tournament
+  pre-round (`IsTournamentWarmup()`), so a warmup team hit cannot kill a teammate.
+- `Include/XangModPRI.uci` — `IncrementDeaths` is overridden to ignore deaths during the
+  tournament pre-round, keeping warmup deaths out of the tracked `Deaths` stat.
+- `Classes/XangModRCon.uc` — `GameEvent_Kill` / `GameEvent_Suicide` are suppressed during
+  the tournament pre-round, so opcode 15/16 pushes never fire for warmup deaths.
+
+The gate is `bTournamentMode && IsInState('AOCPreRound')`; `StartRound` clears
+`bTournamentMode`, so the round proper is unaffected.
+
 ### Proximity chat removed; 165Hz performance notes dropped (2026-09-15)
 
 Finishes the job started on 2026-09-02. That change pulled the voice *enabler* but

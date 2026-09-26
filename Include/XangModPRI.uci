@@ -117,6 +117,22 @@ function SaveOriginalName()
         OriginalName = PlayerName;
 }
 
+// XANGMOD: Never count a death that happens during tournament-mode warmup (the pre-round
+// before the round starts / before !adminreadyall). Team-kill deaths in that window are what
+// pollute the tracked deaths stat that RCON consumers like heir.gg report. Vanilla's Killed()
+// (AOCGame.uc) and AOCDuel.Killed() call PRI.IncrementDeaths() unconditionally; blocking it
+// here keeps warmup deaths out of the stat stream without touching the precompiled AOC package.
+function IncrementDeaths(optional int Amt = 1)
+{
+	local AOCGame G;
+
+	G = AOCGame(WorldInfo.Game);
+	if (G != none && G.bTournamentMode && G.IsInState('AOCPreRound'))
+		return;
+
+	Deaths += Amt;
+}
+
 function RestoreOriginalName()
 {
     if (OriginalName != "" && OriginalName != PlayerName)

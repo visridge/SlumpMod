@@ -608,7 +608,21 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 
 	// If this was a team hit, reduce by team damage amount
 	if (PawnFamily.FamilyFaction == Info.HitActor.PawnFamily.FamilyFaction)
-		ActualDamage *= AOCGame(WorldInfo.Game).fTeamDamagePercent;
+	{
+		// XANGMOD: During a tournament-mode pre-round (the warmup before the round
+		// starts / before !adminreadyall) team damage is negated entirely. Warmup
+		// team hits and team kills are exactly what pollute the deaths/kills that
+		// stat-tracking RCON consumers record, so prevent the damage rather than
+		// letting a pre-round team kill bump a tracked death. GenericDamage is the
+		// flat portion re-added below, so it must be zeroed too.
+		if (IsTournamentWarmup())
+		{
+			ActualDamage = 0.0f;
+			GenericDamage = 0.0f;
+		}
+		else
+			ActualDamage *= AOCGame(WorldInfo.Game).fTeamDamagePercent;
+	}
 
 	ActualDamage += GenericDamage;
 
@@ -879,6 +893,23 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 }
 
 
+
+// XANGMOD: True when the game is in tournament mode and still in the pre-round warmup,
+// i.e. the period before the round starts (or before !adminreadyall / opcode 50). This is
+// when players can freely move and hit/kill teammates, which would otherwise be tracked
+// as real kills/deaths by RCON stat consumers. Used to negate team damage in that window.
+function bool IsTournamentWarmup()
+{
+	local AOCGame G;
+
+	G = AOCGame(WorldInfo.Game);
+	if (G == none)
+		return false;
+
+	// bTournamentMode is cleared by StartRound (vanilla AOCGame.uc), so it is only true
+	// during the pre-round. Still gate on IsInState for safety on gametypes that reuse it.
+	return G.bTournamentMode && G.IsInState('AOCPreRound');
+}
 
 //debug release hit time
 function Set_fLastReleaseStartTime(float set)
