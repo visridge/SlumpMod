@@ -46,6 +46,52 @@ function float GetMinimumRespawnTime(Controller PC)
     return 10.0f;
 }
 
+// Apply [XangMod.XangModObjTimer] overrides; vanilla reads BonusTime inside super.
+function ActivateNextObjectiveStage()
+{
+    local int i, Stage;
+
+    for (i = 0; i < class'XangModObjTimer'.default.Overrides.Length; i++)
+    {
+        Stage = class'XangModObjTimer'.default.Overrides[i].Obj - 1;
+        if (Stage >= 0 && Stage < AllObjectives.Length
+            && class'XangModObjTimer'.default.Overrides[i].Map ~= WorldInfo.GetMapName())
+        {
+            AllObjectives[Stage].BonusTime = class'XangModObjTimer'.default.Overrides[i].Bonus;
+        }
+    }
+
+    if (XangModSkipStage >= 0 && XangModSkipStage == CurrentObjectiveStage)
+        AllObjectives[CurrentObjectiveStage].BonusTime = 0;
+    XangModSkipStage = -1;
+
+    super.ActivateNextObjectiveStage();
+}
+
+// Completes every objective in the current stage so the map's own Kismet advances it.
+function bool XangModSkipObjective()
+{
+    local int i;
+    local bool bAny;
+
+    if (!IsInState('AOCRoundInProgress') || CurrentObjectiveStage < 0 || CurrentObjectiveStage >= AllObjectives.Length)
+        return false;
+
+    XangModSkipStage = CurrentObjectiveStage;
+    for (i = 0; i < 7; i++)
+    {
+        if (IAOCObjective(AllObjectives[CurrentObjectiveStage].StageObjectives[i]) != none)
+        {
+            IAOCObjective(AllObjectives[CurrentObjectiveStage].StageObjectives[i]).CompleteObjective();
+            bAny = true;
+        }
+    }
+
+    if (!bAny)
+        XangModSkipStage = -1;
+    return bAny;
+}
+
 // Override Timer to only force net updates when scoreboard values actually change
 State AOCRoundInProgress
 {

@@ -347,6 +347,34 @@ reliable server function S_AdminCEAutoskip() {
 		S_AdminBroadcastMessage("CE Autoskip DISABLED", false);
 }
 
+// Completes the current TO stage; the map advances itself and the skipped stage awards no bonus time.
+exec function AdminSkipObjective()
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminSkipObjective();
+}
+
+reliable server function S_AdminSkipObjective() {
+	local XangModTO TOGame;
+
+	if (!IsAdmin())
+		return;
+
+	TOGame = XangModTO(WorldInfo.Game);
+	if (TOGame == none) {
+		ClientDisplayConsoleMessage("Objective skip only works in Team Objective.");
+		return;
+	}
+
+	if (TOGame.XangModSkipObjective())
+		S_AdminBroadcastMessage("skipped the current objective");
+	else
+		ClientDisplayConsoleMessage("No active objective to skip.");
+}
+
 exec function AdminCompForestAlternatingSpawns(optional bool bEnable = true)
 {
 	if (!PlayerReplicationInfo.bAdmin) {

@@ -1815,6 +1815,7 @@ understanding before you touch them:
 | `AdminDisableButtParries [bool]` | Attacks from behind the defender cannot be parried | `bDisableButtParries` |
 | `AdminSetCollisionRadius <float>` | Player collision bubble radius. Vanilla AOC default is 39.0 | `fXangModCollisionRadius` |
 | `AdminCEAutoskip` | Fire `ce skip` automatically when the objective timer reaches 5 seconds | — |
+| `AdminSkipObjective` | Complete every objective in the current TO stage so the map's Kismet advances it; that stage awards no bonus time. Skipping the final stage ends the match | — |
 | `AdminCompForestAlternatingSpawns [bool]` | Alternate A/B spawn groups during the CompForest sluice gate objective only | `bEnableCompForestAlternatingSpawns` |
 | `AdminResetAllTraction` | Reset traction on all surfaces |
 | `AdminResetIceTraction` | Reset ice traction specifically |
@@ -1970,6 +1971,20 @@ The compiler rejects a config array seeded from defaults, which left the list em
 `quit` runnable over RCON. Scope 1 runs on the server-side controller, so a `quit` aimed at
 a player kills the server. See §7.
 
+**TO stage bonus time per map** (`Classes/XangModObjTimer.uc`, applied in
+`XangModTO.ActivateNextObjectiveStage`):
+
+```ini
+[XangMod.XangModObjTimer]
++Overrides=(Map="AOCTO-MapName_p",Obj=2,Bonus=900)
+```
+
+`Map` is matched case-insensitively against `WorldInfo.GetMapName()`. `Obj` is the 1-based
+stage in the map's Register Objective Sequence order. `Bonus` replaces that stage's
+`BonusTime` (vanilla default 600) - the seconds added to the round clock when it completes.
+Clients resync through the vanilla `RequestTime` call after each stage change, so the HUD
+needs nothing extra. Plain TO maps only; the final stage ends the match, so its bonus is moot.
+
 The stats-reporting keys (`bEnableStatsReporting`, `StatsEndpoint`, `StatsApiKey`,
 `StatsServerId`, `StatsReportInterval`) are commented out throughout — that system was
 removed on 2026-09-14 and superseded by the RCON round events in §7.
@@ -2046,6 +2061,17 @@ data issues in weapon and character classes). The useful signal is the *fingerpr
 
 Chronological history, newest first. Carried over verbatim apart from heading levels
 and two include paths that the September 2026 split renamed.
+
+### Per-map TO stage bonus time (2026-09-28)
+
+`[XangMod.XangModObjTimer]` overrides a stage's `BonusTime` per map without touching the
+map package. New `Classes/XangModObjTimer.uc`; `ActivateNextObjectiveStage` override in
+`Include/XangModTOGamemode.uci`. See §8.8.
+
+`AdminSkipObjective` calls `CompleteObjective()` on each actor in the current stage, which
+fires the map's own Complete Objective event, so doors, spawns and the next stage follow
+the map's normal Kismet. `XangModSkipStage` zeroes that stage's `BonusTime` when the map
+calls `ActivateNextObjectiveStage`. Does nothing to maps whose Kismet ignores the event.
 
 ### Tournament warmup no longer pollutes tracked kills/deaths (2026-09-26)
 
