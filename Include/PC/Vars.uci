@@ -21,6 +21,7 @@ var globalconfig bool bDisableScreenShake;  // Disable all camera shake effects 
 var globalconfig bool bXangModParryBox;  // When true, use XangMod parry box values; when false, revert to vanilla AOC defaults
 var globalconfig bool bSkeletalParry;    // When true, parry hitbox wraps the full player model (skeletal parry) instead of directional shield-style
 var globalconfig bool bDisableButtParries;  // When true, attacks from behind the defender cannot be parried
+var globalconfig bool bXangModGoFast;  // When true, shortens sprint ramp-up per class (top speed unchanged)
 
 // Collision bubble radius (OuterCylinder)
 var globalconfig float fXangModCollisionRadius;  // Radius of the player collision bubble; vanilla AOC default is 39.0

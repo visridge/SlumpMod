@@ -234,8 +234,7 @@ reliable server function S_AdminToggleParryBox(bool bEnable) {
 	// Must set on the class default — pawn reads class'XangModAOCDuelPlayerController'.default.bXangModParryBox
 	class'XangModAOCDuelPlayerController'.default.bXangModParryBox = bEnable;
 	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
-	ClientSyncParryBoxSettings(class'XangModAOCDuelPlayerController'.default.bXangModParryBox,
-		class'XangModAOCDuelPlayerController'.default.bSkeletalParry);
+	XangModSyncParryBoxToAll();
 	if (bEnable)
 		S_AdminBroadcastMessage("XangMod parry box ENABLED (respawn to apply)", false);
 	else
@@ -256,8 +255,7 @@ reliable server function S_AdminEnableSkeletalParry(bool bEnable) {
 		return;
 	class'XangModAOCDuelPlayerController'.default.bSkeletalParry = bEnable;
 	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
-	ClientSyncParryBoxSettings(class'XangModAOCDuelPlayerController'.default.bXangModParryBox,
-		class'XangModAOCDuelPlayerController'.default.bSkeletalParry);
+	XangModSyncParryBoxToAll();
 	if (bEnable)
 		S_AdminBroadcastMessage("Skeletal parry ENABLED - parry box covers full body (respawn to apply)", false);
 	else
@@ -284,6 +282,30 @@ reliable server function S_AdminDisableButtParries(bool bEnable) {
 		S_AdminBroadcastMessage("Butt-parry prevention ENABLED - attacks from behind cannot be parried", false);
 	else
 		S_AdminBroadcastMessage("Butt-parry prevention DISABLED - attacks from behind are parryable (vanilla)", false);
+}
+
+exec function AdminEnableGoFast(optional bool bEnable = true)
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminEnableGoFast(bEnable);
+}
+
+reliable server function S_AdminEnableGoFast(bool bEnable) {
+	local AOCFamilyInfo F;
+
+	if (!IsAdmin())
+		return;
+	class'XangModAOCDuelPlayerController'.default.bXangModGoFast = bEnable;
+	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
+	foreach WorldInfo.AllActors(class'AOCFamilyInfo', F)
+		class'XangModAdminActions'.static.ApplyGoFast(F);
+	if (bEnable)
+		S_AdminBroadcastMessage("GoFast ENABLED - faster sprint ramp-up (MAA -50%, Vanguard -35%, Knight -20%)", false);
+	else
+		S_AdminBroadcastMessage("GoFast DISABLED - vanilla sprint ramp-up", false);
 }
 
 exec function AdminSetCollisionRadius(float NewRadius)

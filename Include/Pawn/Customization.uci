@@ -84,6 +84,10 @@ simulated function AOCSetCharacterClassFromInfo(AOCFamilyInfo Info)
 {
 	super.AOCSetCharacterClassFromInfo(Info);
 
+	// GoFast: HandleDebuffs reads PawnFamily.MaxSprintSpeedTime server-side only.
+	if (Role == ROLE_Authority)
+		class'XangModAdminActions'.static.ApplyGoFast(PawnFamily);
+
 	// NOTE: Do NOT guard on Controller != none here. This function fires during pawn setup,
 	// before the controller is associated, so that check would always fail and the reset
 	// would never run on the server.
@@ -96,8 +100,8 @@ simulated function AOCSetCharacterClassFromInfo(AOCFamilyInfo Info)
 	else if (class'XangModAOCDuelPlayerController'.default.bSkeletalParry)
 	{
 		// Skeletal parry: full-body coverage
-		ParryComponent.SetScale3D(vect(0.18, 0.17, 0.35));
-		ParryComponent.SetTranslation(vect(10, 5, -28));
+		ParryComponent.SetScale3D(vect(0.32, 0.32, 0.45));
+		ParryComponent.SetTranslation(vect(0, 0, -45));
 	}
 	// else: XangMod parry enabled, non-skeletal — super already applied FamilyInfo values
 

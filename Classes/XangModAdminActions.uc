@@ -2,7 +2,8 @@
  * Statics shared by the RCON handlers. On an Object rather than the game class because the
  * game class differs per mode and XangModRCon has no single type to cast WorldInfo.Game to.
  */
-class XangModAdminActions extends Object;
+class XangModAdminActions extends Object
+	dependson(AOCPawn);
 
 /** How far from the destination player we try to place someone, in unreal units. */
 const TELEPORT_RADIUS = 120.0;
@@ -70,4 +71,26 @@ static function Slap(Pawn P, int Power)
 	Push.Z = float(Power);
 
 	P.AddVelocity(Push, P.Location, class'AOCDmgType_Swing');
+}
+
+
+/** GoFast: cuts time-to-full-sprint by MAA 50%, Vanguard 35%, Knight 20%. Off restores the class default. */
+static function ApplyGoFast(AOCFamilyInfo F)
+{
+	local float Scale;
+
+	if (F == none)
+		return;
+
+	Scale = 1.0;
+	if (class'XangModAOCDuelPlayerController'.default.bXangModGoFast)
+	{
+		if (F.ClassReference == ECLASS_ManAtArms)
+			Scale = 0.5;
+		else if (F.ClassReference == ECLASS_Vanguard)
+			Scale = 0.65;
+		else if (F.ClassReference == ECLASS_Knight)
+			Scale = 0.8;
+	}
+	F.MaxSprintSpeedTime = F.default.MaxSprintSpeedTime * Scale;
 }

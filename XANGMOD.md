@@ -1811,9 +1811,10 @@ understanding before you touch them:
 |---|---|---|
 | `AdminTournamentMode [bool]` | Enable tournament mode (mod supplies its own readiness via `!ready` in chat; vanilla `bReady` is a join gate, not readiness) | — |
 | `AdminToggleParryBox [bool]` | XangMod parry box values, or revert to vanilla AOC defaults | `bXangModParryBox` |
-| `AdminEnableSkeletalParry [bool]` | Parry hitbox wraps the full player model instead of a directional shield-style box | `bSkeletalParry` |
+| `AdminEnableSkeletalParry [bool]` | Parry box becomes a body-sized box centred on the player instead of a shield in front. Pair with `AdminDisableButtParries` to reject hits from behind. Respawn to apply | `bSkeletalParry` |
 | `AdminDisableButtParries [bool]` | Attacks from behind the defender cannot be parried | `bDisableButtParries` |
 | `AdminSetCollisionRadius <float>` | Player collision bubble radius. Vanilla AOC default is 39.0 | `fXangModCollisionRadius` |
+| `AdminEnableGoFast [bool]` | Cuts `MaxSprintSpeedTime` (time to reach full sprint) by MAA 50%, Vanguard 35%, Knight 20%; archers unchanged. Top sprint speed is unchanged. Applies immediately, no respawn | `bXangModGoFast` |
 | `AdminCEAutoskip` | Fire `ce skip` automatically when the objective timer reaches 5 seconds | — |
 | `AdminSkipObjective` | Complete every objective in the current TO stage so the map's Kismet advances it; that stage awards no bonus time. Skipping the final stage ends the match | — |
 | `AdminCompForestAlternatingSpawns [bool]` | Alternate A/B spawn groups during the CompForest sluice gate objective only | `bEnableCompForestAlternatingSpawns` |
@@ -1906,6 +1907,7 @@ All in `Include/PC/Debug.uci` unless noted.
 | `GetServerTickTime` | One-shot server tick time |
 | `StartPollingServerTickTime` | Continuous server tick time |
 | `NetDebug` | Net diagnostics (`PC/Network.uci`) |
+| `XangModShowParryBoxes [bool]` | Admin-only, client-side: draws every pawn's parry box for tuning (`PC/ParryConfig.uci`) |
 | `FPSpectateDebug` | First-person spectate diagnostics (`PC/Spectate.uci`) — renders in game via `ClientDisplayConsoleMessage` |
 
 ### 8.7 Config variables
@@ -1919,6 +1921,7 @@ persist per-client in the user's config:
 | `bXangModParryBox` | XangMod parry box values vs vanilla AOC defaults |
 | `bSkeletalParry` | Full-model parry hitbox vs directional |
 | `bDisableButtParries` | Block parries of attacks from behind |
+| `bXangModGoFast` | Faster sprint ramp-up per class (`AdminEnableGoFast`) |
 | `fXangModCollisionRadius` | Player collision bubble radius (vanilla 39.0) |
 | `iXangModMinNetSpeed` | Minimum net speed to enforce |
 
@@ -2061,6 +2064,26 @@ data issues in weapon and character classes). The useful signal is the *fingerpr
 
 Chronological history, newest first. Carried over verbatim apart from heading levels
 and two include paths that the September 2026 split renamed.
+
+### Skeletal parry actually reaches players (2026-09-28)
+
+Two reasons it never worked. (1) Parry-box hits are traced on the attacker's client
+(`AOCWeaponAttachment` Release state skips tracing on a dedicated server), but the toggle only
+synced the admin's own client and the on-possess sync was commented out - every other client
+kept its own `bSkeletalParry=false`. Now `XangModSyncParryBoxToAll` pushes to every player, the
+possess sync is back (collision-radius sync left commented), and the client re-applies to all
+pawns, not just its own. (2) The "skeletal" box was only a thicker front box (0.18 x 0.17 x 0.35
+at 10,5,-28). It is now 0.32 x 0.32 x 0.45 at 0,0,-45 on the camera socket - about 82 x 82 x 115
+units (cube is +/-128) centred on the head and hanging to roughly the knees. Starting values;
+tune with `XangModShowParryBoxes`. Same numbers in `Pawn/Customization.uci`,
+`XangModWeaponAttachmentCode.uci` and `PC/ParryConfig.uci` - keep them identical.
+
+### AdminEnableGoFast (2026-09-28)
+
+Scales each class's `MaxSprintSpeedTime` on the live `AOCFamilyInfo` actors - MAA x0.5,
+Vanguard x0.65, Knight x0.8 - so sprint reaches the same top speed sooner. Vanilla only
+reads it server-side (`AOCPawn.HandleDebuffs`), so no client sync is needed. Helper is
+`XangModAdminActions.ApplyGoFast`; `Pawn/Customization.uci` re-applies it on class assignment.
 
 ### Per-map TO stage bonus time (2026-09-28)
 

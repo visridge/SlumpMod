@@ -22,39 +22,69 @@ simulated function SetAllParryBoxClassDefaults(bool bEnableXangMod, bool bEnable
 	class'XangModTUTPlayerController'.default.bSkeletalParry = bEnableSkeletal;
 }
 
-simulated function ApplyParryBoxSettingsToCurrentPawn()
+// Parry-box hits are traced on the ATTACKER's client, so every pawn on every client needs the server's box.
+simulated function ApplyParryBoxSettingsToAllPawns()
 {
-	local AOCPawn CurrentPawn;
+	local AOCPawn P;
 	local vector ParryBoxTranslation;
 
-	CurrentPawn = AOCPawn(Pawn);
-	if (CurrentPawn == none || CurrentPawn.ParryComponent == none || CurrentPawn.PawnFamily == none)
+	foreach WorldInfo.AllPawns(class'AOCPawn', P)
 	{
+		if (P.ParryComponent == none || P.PawnFamily == none)
+			continue;
+
+		if (!class'XangModAOCDuelPlayerController'.default.bXangModParryBox)
+		{
+			P.ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
+			P.ParryComponent.SetTranslation(vect(30, 0, -30));
+		}
+		else if (class'XangModAOCDuelPlayerController'.default.bSkeletalParry)
+		{
+			P.ParryComponent.SetScale3D(vect(0.32, 0.32, 0.45));
+			P.ParryComponent.SetTranslation(vect(0, 0, -45));
+		}
+		else
+		{
+			ParryBoxTranslation = P.PawnFamily.ParryBoxTranslation;
+			if (AOCWeaponAttachment(P.CurrentWeaponAttachment) != none)
+				ParryBoxTranslation += AOCWeaponAttachment(P.CurrentWeaponAttachment).ParryBoxTranslation;
+			P.ParryComponent.SetScale3D(P.PawnFamily.ParryBoxScale);
+			P.ParryComponent.SetTranslation(ParryBoxTranslation);
+		}
+	}
+}
+
+// Server: push the parry box settings to every player, not just the admin who changed them.
+function XangModSyncParryBoxToAll()
+{
+	local `{GAMEMODE}PlayerController PC;
+
+	foreach WorldInfo.AllControllers(class'`{GAMEMODE}PlayerController', PC)
+		PC.ClientSyncParryBoxSettings(class'XangModAOCDuelPlayerController'.default.bXangModParryBox,
+			class'XangModAOCDuelPlayerController'.default.bSkeletalParry);
+}
+
+// Admin-only visual: shows every pawn's parry box on this client for tuning.
+exec function XangModShowParryBoxes(optional bool bShow = true)
+{
+	local AOCPawn P;
+
+	if (!PlayerReplicationInfo.bAdmin && WorldInfo.NetMode != NM_Standalone)
+	{
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
 		return;
 	}
 
-	if (!class'XangModAOCDuelPlayerController'.default.bXangModParryBox)
+	foreach WorldInfo.AllPawns(class'AOCPawn', P)
 	{
-		CurrentPawn.ParryComponent.SetScale3D(vect(0.1, 0.17, 0.35));
-		CurrentPawn.ParryComponent.SetTranslation(vect(30, 0, -30));
-		return;
+		if (P.ParryComponent == none)
+			continue;
+		if (bShow)
+			P.ParryComponent.SetMaterial(0, Material'CHV_Material_Pack.Materials.Masters.M_Water_Master');
+		else
+			P.ParryComponent.SetMaterial(0, Material'CHV_stoneshill_lightfx.Materials.Wall.Invisible');
+		P.ParryComponent.SetHidden(!bShow);
 	}
-
-	if (class'XangModAOCDuelPlayerController'.default.bSkeletalParry)
-	{
-		CurrentPawn.ParryComponent.SetScale3D(vect(0.18, 0.17, 0.35));
-		CurrentPawn.ParryComponent.SetTranslation(vect(10, 5, -28));
-		return;
-	}
-
-	ParryBoxTranslation = CurrentPawn.PawnFamily.ParryBoxTranslation;
-	if (AOCWeaponAttachment(CurrentPawn.CurrentWeaponAttachment) != none)
-	{
-		ParryBoxTranslation += AOCWeaponAttachment(CurrentPawn.CurrentWeaponAttachment).ParryBoxTranslation;
-	}
-
-	CurrentPawn.ParryComponent.SetScale3D(CurrentPawn.PawnFamily.ParryBoxScale);
-	CurrentPawn.ParryComponent.SetTranslation(ParryBoxTranslation);
 }
 
 reliable client function ClientSyncParryBoxSettings(bool bEnableXangMod, bool bEnableSkeletal)
@@ -62,7 +92,7 @@ reliable client function ClientSyncParryBoxSettings(bool bEnableXangMod, bool bE
 	bXangModParryBox = bEnableXangMod;
 	bSkeletalParry = bEnableSkeletal;
 	SetAllParryBoxClassDefaults(bEnableXangMod, bEnableSkeletal);
-	ApplyParryBoxSettingsToCurrentPawn();
+	ApplyParryBoxSettingsToAllPawns();
 }
 
 simulated function SetAllCollisionRadiusClassDefaults(float Radius)

@@ -31,8 +31,8 @@ simulated function AttachTo(UTPawn OwnerPawn)
 	else if (class'XangModAOCDuelPlayerController'.default.bSkeletalParry)
 	{
 		// Skeletal parry: hitbox wraps the full player model instead of a directional shield
-		AOCOwner.ParryComponent.SetScale3D(vect(0.18, 0.17, 0.35));
-		AOCOwner.ParryComponent.SetTranslation(vect(10, 5, -28));
+		AOCOwner.ParryComponent.SetScale3D(vect(0.32, 0.32, 0.45));
+		AOCOwner.ParryComponent.SetTranslation(vect(0, 0, -45));
 	}
 }
 

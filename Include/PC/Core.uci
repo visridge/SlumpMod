@@ -281,15 +281,13 @@ event Possess(Pawn inPawn, bool bVehicleTransition)
 	// Force ragdolls disabled on every spawn (catches players with read-only configs)
 	ConsoleCommand("SetRagdollLimit 0");
 
-	// Parry box settings live on the server class default and are read on the client when
-	// pawns/attachments size the local debug box. Sync them on every possess so respawns and
-	// late joins don't keep stale client-side defaults.
-	// if (Role == ROLE_Authority)
-	// {
-	// 	ClientSyncParryBoxSettings(class'XangModAOCDuelPlayerController'.default.bXangModParryBox,
-	// 		class'XangModAOCDuelPlayerController'.default.bSkeletalParry);
-	// 	ClientSyncCollisionRadius(class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius);
-	// }
+	// Parry boxes are traced on the attacker's client, so late joiners and respawns need the server's settings.
+	if (Role == ROLE_Authority)
+	{
+		ClientSyncParryBoxSettings(class'XangModAOCDuelPlayerController'.default.bXangModParryBox,
+			class'XangModAOCDuelPlayerController'.default.bSkeletalParry);
+		// ClientSyncCollisionRadius(class'XangModAOCDuelPlayerController'.default.fXangModCollisionRadius);
+	}
 	
 	// Show optimization tip once when player first spawns
 	if (!bShownOptimizationTip && Role == ROLE_Authority)
