@@ -1576,6 +1576,13 @@ round when `StartRound()` runs. The start event is emitted from the `StartRound`
     blocks, dodges` -- one per connected, non-bot player, sent as a burst immediately after a
     66. Stats are **match-cumulative**, not per-round: a consumer diffs two consecutive
     bursts. Bots carry the same synthetic `{A=0, B=PlayerID}` uid as everywhere else.
+    Every reported counter is zeroed when round 1 starts (`XangModResetRoundStats`), so the
+    first burst is round 1 alone and holds nothing from the pre-round.
+    `teamDamage` is real team damage dealt (`RealTeamDamageDealt`), not the PRI's
+    `TeamDamageDealt`, which this mod reuses as the scoreboard parry count; that count is
+    sent as `parries`. `damageTaken` covers enemy and team hits. `meleeHits` and
+    `projectileHits` count landed, unparried hits on enemies. `blocks` and `dodges` are
+    still unwired and always 0.
   * **68 ROUND_STAT_END** `int count` -- closes the 67 burst.
 
 **Mode gate.** `XangModRoundReportingEnabled()`, in `Include/Game/RoundReporting.uci`, emits
@@ -2064,6 +2071,30 @@ data issues in weapon and character classes). The useful signal is the *fingerpr
 
 Chronological history, newest first. Carried over verbatim apart from heading levels
 and two include paths that the September 2026 split renamed.
+
+### RCON round stats: round 1 reset, real team damage, wired counters (2026-10-01)
+
+Found by comparing a consumer's capture of opcodes 65-68 (562 opcode 67 rows) against the
+source. **Not yet compiled or tested in game** -- written without a UDK build.
+
+- **Pre-round activity was reported as round 1.** `ProcessResolvedAttack` bumps
+  `EnemyDamageDealt` and `DamageTaken` before `TakeDamage` runs, so a swing on an
+  invulnerable pre-round player still counted, as did pre-round parries and feints. Nothing
+  cleared them before the first round: after a 60-90 second pre-round, round 1 showed
+  roughly twice the damage of a normal round. The `StartRound` override in
+  `Include/Game/Match.uci` now calls `XangModResetRoundStats` when `XangModRoundNumber`
+  becomes 1, which zeroes kills, deaths, assists, score and every counter opcode 67 sends.
+  `AOCPlayerController.TeamDamageDealt` (the penalty system) is not touched.
+- **`teamDamage` carried the parry count.** `AOCPRI.TeamDamageDealt` is the scoreboard
+  "Prys" column, and that was what opcode 67 sent. A new `RealTeamDamageDealt` on the mod
+  PRI accumulates real team damage and is sent instead; the parry count now also goes into
+  `Parries`. Opcode 23's `teamDamageDealt` slot is unchanged and still carries parries.
+- **Counters that were sent but never written.** `AllDamageTaken`, `Parries`, `MeleeHits`
+  and `ProjectileHits` were declared, reset and sent, but nothing incremented them. They are
+  now written in `Include/Pawn/Combat.uci`. `Blocks` and `Dodges` are still unwired.
+
+Still open: `Deaths` in opcode 67 can miss the death that ends a round (it stays lower than
+the opcode 15 kill feed). The cause was not found in this repo.
 
 ### Skeletal parry actually reaches players (2026-09-28)
 

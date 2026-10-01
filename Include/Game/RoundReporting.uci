@@ -108,6 +108,26 @@ function XangModSendRoundEnd(int WinningTeam, int MatchEnding)
     XangModSendRoundStats(RCon);
 }
 
+/**
+ * Clear every player's reported counters. Called from StartRound when round 1 begins, so
+ * the cumulative 67 bursts cover the match and exclude whatever happened in the pre-round.
+ */
+function XangModResetRoundStats()
+{
+    local int i;
+    local `{GAMEMODE}PRI ModPRI;
+
+    if (WorldInfo == none || WorldInfo.GRI == none)
+        return;
+
+    for (i = 0; i < WorldInfo.GRI.PRIArray.Length; ++i)
+    {
+        ModPRI = `{GAMEMODE}PRI(WorldInfo.GRI.PRIArray[i]);
+        if (ModPRI != none)
+            ModPRI.XangModResetRoundStats();
+    }
+}
+
 /** Walk every connected, non-bot player and push one 67 each, then a 68. */
 function XangModSendRoundStats(XangModRCon RCon)
 {
@@ -136,7 +156,7 @@ function XangModSendRoundStats(XangModRCon RCon)
             ModPRI.NumAssists,
             int(ModPRI.Score),
             ModPRI.EnemyDamageDealt,
-            ModPRI.TeamDamageDealt,
+            ModPRI.RealTeamDamageDealt,
             ModPRI.AllDamageTaken,
             ModPRI.Parries,
             ModPRI.Feints,
