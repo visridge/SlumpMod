@@ -286,6 +286,10 @@ function StartRound()
         return;
 
     XangModRoundNumber++;
+    // The stat counters run from map load. Clear them as the first real round begins so
+    // pre-round swings, parries and feints are not reported as round 1.
+    if (XangModRoundNumber == 1)
+        XangModResetRoundStats();
     bXangModMatchEnded = false;
     bXangModMatchEndEmitted = false;
 

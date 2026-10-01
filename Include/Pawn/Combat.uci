@@ -184,6 +184,10 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 	if (Info.HitActor.PlayerReplicationInfo != none) {
 		AOCPRI(Info.HitActor.PlayerReplicationInfo).TeamDamageDealt++;
 		AOCPRI(Info.HitActor.PlayerReplicationInfo).bForceNetUpdate = true;
+
+		// The same parry in its own counter, which is what RCON opcode 67 reports as parries.
+		if (`{GAMEMODE}PRI(Info.HitActor.PlayerReplicationInfo) != none)
+			`{GAMEMODE}PRI(Info.HitActor.PlayerReplicationInfo).Parries++;
 	}
 
 	// Make the weapon (and thus the pawn) go into a deflect state
@@ -762,7 +766,18 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	if (PRI != none) {
 		// Register non-team damage
 		if (!bSameTeam)
+		{
 			AOCPRI(PRI).EnemyDamageDealt += ActualDamage;
+
+			// Landed enemy hits for RCON opcode 67. A parried hit is not a landed hit.
+			if (!bParry && `{GAMEMODE}PRI(PRI) != none)
+			{
+				if (Info.DamageType.default.bIsProjectile)
+					`{GAMEMODE}PRI(PRI).ProjectileHits++;
+				else
+					`{GAMEMODE}PRI(PRI).MeleeHits++;
+			}
+		}
 		// Register team damage with the PlayerController
 		else
 			if (Info.HitActor.PawnInfo.myFamily.ClassReference != ECLASS_Peasant
@@ -770,6 +785,11 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 				// TeamDamageDealt is repurposed for successful parry counting (scoreboard "Prys" column)
 				// AOCPlayerController.TeamDamageDealt still tracks TDmg for the penalty system
 				AOCPlayerController(Controller).TeamDamageDealt += ActualDamage;
+
+				// A match-long total for RCON opcode 67. The PRI field of the same name
+				// holds parries and the controller copy belongs to the penalty system.
+				if (`{GAMEMODE}PRI(PRI) != none)
+					`{GAMEMODE}PRI(PRI).RealTeamDamageDealt += ActualDamage;
 			}
 
 		// Force an update
@@ -780,6 +800,10 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	if (Info.HitActor.PlayerReplicationInfo != none) {
 		AOCPRI(Info.HitActor.PlayerReplicationInfo).DamageTaken += ActualDamage;
 		AOCPRI(Info.HitActor.PlayerReplicationInfo).bForceNetUpdate = TRUE;
+
+		// Match-long damage taken for RCON opcode 67 (enemy and team hits alike).
+		if (`{GAMEMODE}PRI(Info.HitActor.PlayerReplicationInfo) != none)
+			`{GAMEMODE}PRI(Info.HitActor.PlayerReplicationInfo).AllDamageTaken += ActualDamage;
 	}
 
 	// Is the target burning?
