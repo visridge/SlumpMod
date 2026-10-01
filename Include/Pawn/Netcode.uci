@@ -66,12 +66,15 @@ function float ReconstructActionTime(float fClientStamp)
 }
 
 // Drop taken-hit records older than the TTL so the trade window only sees recent hits.
+// TTL is floored at fMaxPlausibleLatency: a counter-swing's RPC can legitimately take that
+// long to arrive from a high-ping attacker, and the record it needs to compare against must
+// still be here when it does, or a clearly-staggered swing finds nothing to cancel against.
 function PruneRecentIncomingHits()
 {
 	local int i;
 	local float fCutoff;
 
-	fCutoff = WorldInfo.TimeSeconds - fRecentHitTTL;
+	fCutoff = WorldInfo.TimeSeconds - FMax(fRecentHitTTL, fMaxPlausibleLatency);
 
 	for (i = RecentIncomingHits.Length - 1; i >= 0; i--)
 	{

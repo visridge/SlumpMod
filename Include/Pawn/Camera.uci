@@ -312,7 +312,11 @@ DefaultProperties
 	fTradeWindowSeconds=0.025     // hits within 25ms (~3 frames at 120Hz) still trade
 	fParryTradeGraceSeconds=0.051  // a parry counts unless it went active >50ms after the swing landed (~6 frames at 120Hz)
 	fMaxPlausibleLatency=0.500     // clamp for reconstructed client timestamps / one-way ping
-	fRecentHitTTL=0.200            // how long a taken hit stays eligible to cancel a trade swing
+	// Must stay >= fMaxPlausibleLatency: a hit's RPC can legitimately take that long to arrive
+	// from a high-ping attacker, and the record must still be here when a late counter-swing's
+	// RPC shows up, or the cancellation check finds nothing to compare against and the trade
+	// goes through uncancelled even though the two swings were clearly staggered.
+	fRecentHitTTL=0.550            // how long a taken hit stays eligible to cancel a trade swing
 	fClockOffsetAlpha=0.10         // EMA weight for per-message clock-offset samples
 	bEnableTradeCancellation=true  // master toggle: hit-trade cancellation; false disables it
 
