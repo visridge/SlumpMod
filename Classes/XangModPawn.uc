@@ -1,5 +1,7 @@
 class XangModPawn extends AOCPawn;
 
+`define GAMEMODE XangModTD
+
 // XANGMOD: Parry rollback — "decide once" netcode.
 // An incoming melee swing is HELD on the defender for a latency-sized window (the time an
 // in-flight parry could still take to reach the server). Nothing is applied during the hold,
