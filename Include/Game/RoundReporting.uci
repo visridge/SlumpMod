@@ -1,7 +1,7 @@
 // XangMod - RoundReporting.uci
 // Included via XangModGame.uci. Vars live in Game/Vars.uci; DefaultProperties in Game/Server.uci (last).
 /**
- * True when this game mode should report round boundaries over RCON (opcodes 65-68).
+ * True when this game mode should report round boundaries over RCON (opcodes 65-69).
  * LTS (many scored rounds per map) and TD/TO (one round == the map) are covered.
  * Everything else -- FFA, CTF, KOTH, Duel, CDWDuel, TUT, Survival -- is deliberately
  * excluded: their round semantics don't map cleanly to a start/end boundary. AOCTUT is a
@@ -103,9 +103,74 @@ function XangModSendRoundEnd(int WinningTeam, int MatchEnding)
     if (RCon == none)
         return;
 
+    // TO: say how the stage the match ended on finished, so the last 69 before this 66
+    // always holds the totals.
+    if (MatchEnding == 1)
+        XangModSendObjectiveEnd();
+
     XangModRoundScores(AgathaScore, MasonScore, Goal);
     RCon.SendRoundEnd(WinningTeam, XangModRoundMapName(), XangModRoundNumber, AgathaScore, MasonScore, MatchEnding);
     XangModSendRoundStats(RCon);
+}
+
+/**
+ * 69: how one Team Objective stage ended. Stage is the 0-based index of that stage.
+ * Outcome is 1 when the attackers completed it, 2 when a skip ended it (AdminSkipObjective
+ * or the timed "ce skip"), 0 when the match ended with the stage still standing. The
+ * running counts include this stage. Nothing is sent outside a real round, for the
+ * tutorial, or for any other game mode.
+ */
+function XangModSendObjectiveStage(int Stage, bool bMatchEnd)
+{
+    local AOCGame G;
+    local AOCTeamObjective TOGame;
+    local XangModRCon RCon;
+    local int Outcome;
+
+    // Same downcast route as XangModRoundReportingEnabled: through an AOCGame local.
+    G = self;
+    TOGame = AOCTeamObjective(G);
+    if (TOGame == none || AOCTUT(G) != none || XangModRoundNumber < 1)
+        return;
+    if (Stage < 0 || Stage >= TOGame.AllObjectives.Length)
+        return;
+
+    // At match end the stage only counts when the map itself declared the attackers the
+    // winners (ObjectiveEndGame sets TheWinningTeam). A time-out, or an admin ending the
+    // match, leaves it standing.
+    if (bMatchEnd && (TOGame.TheWinningTeam == EFAC_None || TOGame.TheWinningTeam != TOGame.AttackingTeam))
+        Outcome = 0;
+    else if (XangModObjSkipMark == Stage + 1)
+        Outcome = 2;
+    else
+        Outcome = 1;
+
+    if (Outcome == 1)
+        XangModObjCompleted++;
+    else if (Outcome == 2)
+        XangModObjSkipped++;
+    XangModObjSkipMark = 0;
+
+    RCon = XangModRCon(RemoteConsole);
+    if (RCon == none)
+        return;
+
+    RCon.SendObjectiveStage(XangModRoundMapName(), XangModRoundNumber, Stage + 1, TOGame.AllObjectives.Length,
+        Outcome, XangModRoundTeamIndex(TOGame.AttackingTeam), XangModObjCompleted, XangModObjSkipped, TOGame.TimeLeft);
+}
+
+/** The 69 for the stage a Team Objective match ended on. Does nothing in other modes. */
+function XangModSendObjectiveEnd()
+{
+    local AOCGame G;
+    local AOCTeamObjective TOGame;
+
+    G = self;
+    TOGame = AOCTeamObjective(G);
+    if (TOGame == none)
+        return;
+
+    XangModSendObjectiveStage(TOGame.CurrentObjectiveStage, true);
 }
 
 /**

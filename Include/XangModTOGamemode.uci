@@ -65,6 +65,11 @@ function ActivateNextObjectiveStage()
         AllObjectives[CurrentObjectiveStage].BonusTime = 0;
     XangModSkipStage = -1;
 
+    // The map advances by calling this, so the stage still current here is the one that
+    // just ended. The first call (stage -1) only opens stage one and reports nothing.
+    if (CurrentObjectiveStage >= 0)
+        XangModSendObjectiveStage(CurrentObjectiveStage, false);
+
     super.ActivateNextObjectiveStage();
 }
 
@@ -78,6 +83,7 @@ function bool XangModSkipObjective()
         return false;
 
     XangModSkipStage = CurrentObjectiveStage;
+    XangModObjSkipMark = CurrentObjectiveStage + 1;
     for (i = 0; i < 7; i++)
     {
         if (IAOCObjective(AllObjectives[CurrentObjectiveStage].StageObjectives[i]) != none)
@@ -88,7 +94,10 @@ function bool XangModSkipObjective()
     }
 
     if (!bAny)
+    {
         XangModSkipStage = -1;
+        XangModObjSkipMark = 0;
+    }
     return bAny;
 }
 
@@ -111,6 +120,7 @@ State AOCRoundInProgress
             // TimeLeft (not WorldInfo.TimeSeconds) so admin pause doesn't skew the trigger.
             if (CurrentObjectiveStage == 0 && TimeLeft <= 60 && TimeLeft > 0 && !bCECompForestAutoskipFired)
             {
+                XangModObjSkipMark = CurrentObjectiveStage + 1;
                 TriggerConsoleEvent('skip');
                 bCECompForestAutoskipFired = true;
             }
@@ -125,6 +135,7 @@ State AOCRoundInProgress
             // Generic admin-toggled autoskip: fire "ce skip" when timer drops to 10s
             if (TimeLeft <= 10 && TimeLeft > 0 && !bCEAutoskipFired)
             {
+                XangModObjSkipMark = CurrentObjectiveStage + 1;
                 TriggerConsoleEvent('skip');
                 bCEAutoskipFired = true;
             }

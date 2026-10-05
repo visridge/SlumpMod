@@ -61,6 +61,7 @@ const RCONX_ROUND_START          = 65;  // out: string map, int roundNumber, int
 const RCONX_ROUND_END            = 66;  // out: int winningTeam, string map, int roundNumber, int agathaScore, int masonScore, int matchEnding
 const RCONX_ROUND_PLAYER_STAT    = 67;  // out: one per player, see SendRoundPlayerStat
 const RCONX_ROUND_STAT_END       = 68;  // out: int count
+const RCONX_OBJECTIVE_STAGE      = 69;  // out: see SendObjectiveStage
 
 const SLOT_PRIMARY   = 0;
 const SLOT_SECONDARY = 1;
@@ -1139,6 +1140,32 @@ function SendRoundStatEnd(int Count)
 	Packet = new class'AOCRConPacket';
 	Packet.SetMessageType(RCONX_ROUND_STAT_END);
 	Packet.AddInt(Count);
+	SendPacket(Packet);
+}
+
+/**
+ * 69: one Team Objective stage has ended. stage is 1-based, in the map's Register
+ * Objective Sequence order. outcome is 1 completed by the attackers, 2 skipped, 0 still
+ * standing when the match ended. attackingTeam is a raw EAOCFaction int (0 = Agatha,
+ * 1 = Mason, -1 unknown). completed and skipped are the running counts for this round,
+ * this stage included. timeLeft is the round clock in seconds before any bonus time.
+ */
+function SendObjectiveStage(string MapName, int RoundNumber, int Stage, int TotalStages, int Outcome,
+	int AttackingTeam, int Completed, int Skipped, int SecondsLeft)
+{
+	local AOCRConPacket Packet;
+
+	Packet = new class'AOCRConPacket';
+	Packet.SetMessageType(RCONX_OBJECTIVE_STAGE);
+	Packet.AddString(MapName);
+	Packet.AddInt(RoundNumber);
+	Packet.AddInt(Stage);
+	Packet.AddInt(TotalStages);
+	Packet.AddInt(Outcome);
+	Packet.AddInt(AttackingTeam);
+	Packet.AddInt(Completed);
+	Packet.AddInt(Skipped);
+	Packet.AddInt(SecondsLeft);
 	SendPacket(Packet);
 }
 
