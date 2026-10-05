@@ -1486,7 +1486,7 @@ to be right:
     Sober-up restores `Engine.static.GetWorldPostProcessChain()` the same way, and only when
     XangMod was the one that swapped it.
 
-#### 29-47 and 65-68 -- XangMod additions
+#### 29-47 and 65-69 -- XangMod additions
 
 ChivAdmin ignores opcodes it does not know, so these cannot break it.
 
@@ -1551,7 +1551,7 @@ match with no winner rather than failing silently.
 29 replies with a burst of 30s then a 31. Kills come from `AOCPRI.NumKills`, not
 `PlayerReplicationInfo.Kills` -- AOCPRI's own comment says `Kills` is not replicated.
 
-### Round events (65-68)
+### Round events (65-69)
 
 Server-push only -- there is no request opcode; the game mode emits them as rounds begin
 and end. Scope: **LTS, TD, TO** only (see the gate below). They exist to give a consumer
@@ -1586,6 +1586,22 @@ round when `StartRound()` runs. The start event is emitted from the `StartRound`
     `projectileHits` count landed, unparried hits on enemies. `blocks` and `dodges` are
     still unwired and always 0.
   * **68 ROUND_STAT_END** `int count` -- closes the 67 burst.
+  * **69 OBJECTIVE_STAGE** `string map, int roundNumber, int stage, int totalStages,
+    int outcome, int attackingTeam, int completed, int skipped, int timeLeft` -- TO only,
+    one per objective stage as it ends. `stage` is 1-based, in the map's Register Objective
+    Sequence order. `outcome` is 1 when the attackers completed the stage, 2 when a skip
+    ended it (`AdminSkipObjective`, the CompForest timed skip, or `AdminCEAutoskip`), and 0
+    when the match ended with the stage still standing. `attackingTeam` is a raw
+    `EAOCFaction` int (0 = Agatha, 1 = Mason, -1 unknown). `completed` and `skipped` are
+    running counts for the round, this stage included, zeroed when round 1 starts; they
+    never overlap, so stages the attackers got through is `completed + skipped`.
+    `timeLeft` is the round clock in seconds, read before the stage's bonus time is added.
+    One 69 is always sent immediately before a match-ending 66, for the stage the match
+    ended on, so the last 69 before a 66 holds the totals even for a consumer that
+    connected mid-match. The final stage only reports outcome 1 or 2 when the map itself
+    ended the match for the attackers (`ObjectiveEndGame`); a time-out or an admin ending
+    the match reports 0. A `ce skip` typed by hand is indistinguishable from a real
+    completion and reports 1.
 
 **Mode gate.** `XangModRoundReportingEnabled()`, in `Include/Game/RoundReporting.uci`, emits
 only for `AOCLTS` (per-round), `AOCTD`, and `AOCTeamObjective` **excluding `AOCTUT`**
@@ -2068,6 +2084,27 @@ data issues in weapon and character classes). The useful signal is the *fingerpr
 
 Chronological history, newest first. Carried over verbatim apart from heading levels
 and two include paths that the September 2026 split renamed.
+
+### RCON objective stages: opcode 69 for Team Objective (2026-10-05)
+
+**Not yet compiled or tested in game** -- written without a UDK build.
+
+TO reported nothing about objectives: 66 carries the engine team scores, which stay 0-0
+in TO, so a consumer could only tell which side won. Opcode 69 now reports each stage as
+it ends, with whether the attackers completed it or a skip ended it, which side is
+attacking, running completed and skipped counts, and the clock. See §7 for the fields.
+
+- `Include/XangModTOGamemode.uci`: the `ActivateNextObjectiveStage` override reports the
+  stage that just ended before calling super. `XangModSkipObjective` and both timed
+  `ce skip` triggers mark the stage first, so it is reported as skipped.
+- `Include/Game/RoundReporting.uci`: `XangModSendObjectiveStage` builds the event;
+  `XangModSendObjectiveEnd` sends the one for the stage the match ended on, called from
+  `XangModSendRoundEnd` ahead of a match-ending 66.
+- `Include/Game/Vars.uci`, `Include/Game/Match.uci`: three counters, zeroed with the
+  round stats when round 1 starts.
+- `Classes/XangModRCon.uc`: `RCONX_OBJECTIVE_STAGE = 69` and `SendObjectiveStage`.
+
+Opcodes 65-68 are unchanged. LTS, TD and every other mode send no 69.
 
 ### RCON round stats: round 1 reset, real team damage, wired counters (2026-10-01)
 
