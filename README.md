@@ -8,7 +8,8 @@ custom character and weapon customization system.
 
 ## Documentation
 
-Everything is in one file: **[XANGMOD.md](XANGMOD.md)**.
+The main reference is **[XANGMOD.md](XANGMOD.md)**. The experimental network animation
+plan is in **[NETWORK_ANIMATION_INTERPOLATION.md](NETWORK_ANIMATION_INTERPOLATION.md)**.
 
 Build and deploy is §2, code layout is §3, and the UnrealScript constraints that will
 cost you a build round-trip are §4. Read those three before your first change.

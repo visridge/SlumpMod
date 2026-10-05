@@ -1,8 +1,8 @@
 # XangMod
 
-The complete documentation for XangMod, the competitive gameplay modification for
-*Chivalry: Medieval Warfare*. Everything lives in this one file — if you are looking for
-something, search it.
+The main documentation for XangMod, the competitive gameplay modification for
+*Chivalry: Medieval Warfare*. The focused experimental plan for visual network animation
+interpolation is in [NETWORK_ANIMATION_INTERPOLATION.md](NETWORK_ANIMATION_INTERPOLATION.md).
 
 **Last restructured: 2026-09-14.**
 
@@ -268,10 +268,11 @@ Missing '=' in default properties assignment: AOCOwner.ParryComponent.SetScale3D
 redundant data:                               AOCOwner.ParryComponent.SetTranslation(...)
 ```
 
-The practical effect was that `AdminToggleParryBox` and `AdminEnableSkeletalParry` did
-nothing through the attachment path, and the pawn-side setup was being overwritten by
-vanilla `AttachTo` with no correction applied. If those warnings ever reappear, the include
-has been moved back inside a defaults block.
+The practical effect was that the parry-component setup did nothing through the attachment
+path, and the pawn-side setup was being overwritten by vanilla `AttachTo` with no correction
+applied. If those warnings ever reappear, the include has been moved back inside a defaults
+block. Melee parry success is now decided by the directional gate in `Include/Pawn/Combat.uci`,
+not by parry-box intersection.
 
 **Coverage is 46 of 63 attachment classes.** 41 carry the include directly and 5 more
 inherit it from a fixed XangMod parent (`_BastardSword extends _Katana`, `_Gladius extends
@@ -453,7 +454,8 @@ Two paths then resolve it, and exactly one of them fires per swing:
 
 - `ProcessPendingHits` (`Include/Pawn/Netcode.uci`) is polled from the pawn's `Tick` on authority
   only. Any entry whose `fCommitTime` has passed is removed and committed through
-  `ProcessResolvedAttack` as a normal hit.
+  `ProcessResolvedAttack` with `bNoParry = true` as a normal hit, so a later active parry cannot
+  recapture a swing that already failed the timestamp gate.
 - `ResolvePendingHitsAsParry` (`Include/Pawn/Netcode.uci`) runs on the defender from
   `XangModMeleeWeapon`'s `Parry.BeginState`, *after* `super.BeginState` so that
   `bIsParrying` / `bIsActiveShielding` are set before parry validation reads them. It replays each
@@ -461,8 +463,8 @@ Two paths then resolve it, and exactly one of them fires per swing:
 
 `ProcessResolvedAttack` (`Include/Pawn/Combat.uci`) is the single commit path — damage, feedback,
 replication, AI notification, stat and achievement bookkeeping, all applied at once. `bForceParry`
-does not bypass validation: `DetectSuccessfulParry` still rejects illegal parries (a back hit, a
-butt-parry), and a rejected one falls straight through to a normal hit inside the same call. The
+does not bypass validation: held parry-window resolutions still have to pass the directional melee
+parry gate. A rejected one falls straight through to a normal hit inside the same call. The
 parry-active test also honours a fresh authoritative `Parry` state whose replicated booleans have
 not serialized yet, using `fServerParryStartTime` and `fParryGracePeriod` on the defending weapon
 (see 5.4).
@@ -1615,7 +1617,6 @@ server functions and admin execs. It does not execute on their machine.
 That single opcode exposes everything XangMod already has without a per-command opcode:
 `AdminKick`, `AdminKickBan`, `AdminUnban`, `AdminBanNetID`, `AdminChangeTeam`,
 `AdminCoinFlip`, `AdminReadyAll`, `AdminCancelVote`, `AdminTournamentMode`,
-`AdminToggleParryBox`, `AdminEnableSkeletalParry`, `AdminDisableButtParries`,
 `AdminForceSpectate`, `AdminForceSpectateAll`, `ce`, and anything added later.
 
 It is also arbitrary execution against a live server, gated only by the RCON password.
@@ -1817,9 +1818,6 @@ understanding before you touch them:
 | Command | Effect | Backing config var |
 |---|---|---|
 | `AdminTournamentMode [bool]` | Enable tournament mode (mod supplies its own readiness via `!ready` in chat; vanilla `bReady` is a join gate, not readiness) | — |
-| `AdminToggleParryBox [bool]` | XangMod parry box values, or revert to vanilla AOC defaults | `bXangModParryBox` |
-| `AdminEnableSkeletalParry [bool]` | Parry box becomes a body-sized box centred on the player instead of a shield in front. Pair with `AdminDisableButtParries` to reject hits from behind. Respawn to apply | `bSkeletalParry` |
-| `AdminDisableButtParries [bool]` | Attacks from behind the defender cannot be parried | `bDisableButtParries` |
 | `AdminSetCollisionRadius <float>` | Player collision bubble radius. Vanilla AOC default is 39.0 | `fXangModCollisionRadius` |
 | `AdminEnableGoFast [bool]` | Cuts `MaxSprintSpeedTime` (time to reach full sprint) by MAA 50%, Vanguard 35%, Knight 20%; archers unchanged. Top sprint speed is unchanged. Applies immediately, no respawn | `bXangModGoFast` |
 | `AdminCEAutoskip` | Fire `ce skip` automatically when the objective timer reaches 5 seconds | — |
@@ -1828,8 +1826,8 @@ understanding before you touch them:
 | `AdminResetAllTraction` | Reset traction on all surfaces |
 | `AdminResetIceTraction` | Reset ice traction specifically |
 
-The parry-box and skeletal-parry commands depend on the weapon-attachment `AttachTo`
-override actually compiling — see §3.4. They were silently inert until that was fixed.
+Melee parry success is default-on directional logic in `Include/Pawn/Combat.uci`; there is no
+admin parry-box toggle. The old parry component can still be visualized for debugging.
 
 ### 8.3 CompForest alternating spawns
 
@@ -1925,9 +1923,8 @@ persist per-client in the user's config:
 | Variable | Meaning |
 |---|---|
 | `bDisableScreenShake` | Disable all camera shake effects |
-| `bXangModParryBox` | XangMod parry box values vs vanilla AOC defaults |
-| `bSkeletalParry` | Full-model parry hitbox vs directional |
-| `bDisableButtParries` | Block parries of attacks from behind |
+| `bXangModParryBox` | Legacy parry-component visualization/sizing value; not the melee parry rule |
+| `bSkeletalParry` | Legacy parry-component visualization/sizing value; not the melee parry rule |
 | `bXangModGoFast` | Faster sprint ramp-up per class (`AdminEnableGoFast`) |
 | `fXangModCollisionRadius` | Player collision bubble radius (vanilla 39.0) |
 | `iXangModMinNetSpeed` | Minimum net speed to enforce |

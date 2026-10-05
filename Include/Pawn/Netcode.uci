@@ -208,7 +208,7 @@ function ProcessPendingHits()
 			i--;
 
 			if (Entry.Attacker != none && Entry.Attacker.Weapon != none)
-				Entry.Attacker.ProcessResolvedAttack(Entry.Info, Entry.DamageString, false, Entry.bBoxParrySuccess, Entry.bHitShield, Entry.LastHit, Entry.bQuickKick, false, Entry.fActionServerTime);
+				Entry.Attacker.ProcessResolvedAttack(Entry.Info, Entry.DamageString, false, Entry.bBoxParrySuccess, Entry.bHitShield, Entry.LastHit, Entry.bQuickKick, false, Entry.fActionServerTime, true);
 		}
 	}
 }

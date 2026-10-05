@@ -219,70 +219,7 @@ reliable server function ServerAdminLoginHidden(string Password)
 	// Intentionally disabled - use ServerAdminLogin instead (broadcasts to server)
 }
 
-exec function AdminToggleParryBox(optional bool bEnable = true)
-{
-	if (!PlayerReplicationInfo.bAdmin) {
-		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
-		return;
-	}
-	S_AdminToggleParryBox(bEnable);
-}
-
-reliable server function S_AdminToggleParryBox(bool bEnable) {
-	if (!IsAdmin())
-		return;
-	// Must set on the class default — pawn reads class'XangModAOCDuelPlayerController'.default.bXangModParryBox
-	class'XangModAOCDuelPlayerController'.default.bXangModParryBox = bEnable;
-	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
-	XangModSyncParryBoxToAll();
-	if (bEnable)
-		S_AdminBroadcastMessage("XangMod parry box ENABLED (respawn to apply)", false);
-	else
-		S_AdminBroadcastMessage("XangMod parry box DISABLED - using vanilla AOC parry box (respawn to apply)", false);
-}
-
-exec function AdminEnableSkeletalParry(optional bool bEnable = true)
-{
-	if (!PlayerReplicationInfo.bAdmin) {
-		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
-		return;
-	}
-	S_AdminEnableSkeletalParry(bEnable);
-}
-
-reliable server function S_AdminEnableSkeletalParry(bool bEnable) {
-	if (!IsAdmin())
-		return;
-	class'XangModAOCDuelPlayerController'.default.bSkeletalParry = bEnable;
-	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
-	XangModSyncParryBoxToAll();
-	if (bEnable)
-		S_AdminBroadcastMessage("Skeletal parry ENABLED - parry box covers full body (respawn to apply)", false);
-	else
-		S_AdminBroadcastMessage("Skeletal parry DISABLED - using directional parry box (respawn to apply)", false);
-}
-
 reliable server function S_AdminTournamentMode(bool bEnable) {}
-
-exec function AdminDisableButtParries(optional bool bEnable = true)
-{
-	if (!PlayerReplicationInfo.bAdmin) {
-		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
-		return;
-	}
-	S_AdminDisableButtParries(bEnable);
-}
-
-reliable server function S_AdminDisableButtParries(bool bEnable) {
-	if (!IsAdmin())
-		return;
-	class'XangModAOCDuelPlayerController'.default.bDisableButtParries = bEnable;
-	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
-	if (bEnable)
-		S_AdminBroadcastMessage("Butt-parry prevention ENABLED - attacks from behind cannot be parried", false);
-	else
-		S_AdminBroadcastMessage("Butt-parry prevention DISABLED - attacks from behind are parryable (vanilla)", false);
-}
 
 exec function AdminEnableGoFast(optional bool bEnable = true)
 {

@@ -155,27 +155,48 @@ simulated function bool CheckProjectileParry(HitInfo Info) {
 	return false;
 }
 
+simulated function bool XangModDirectionalMeleeParry(HitInfo Info) {
+	local vector DefenderForward;
+	local vector Offset;
+
+	if (Info.HitActor == none || Info.DamageType == none || Info.DamageType.default.bIsProjectile)
+		return false;
+
+	DefenderForward = Normal(Info.HitActor.GetForwardDirection());
+	if (VSize(DefenderForward) <= 0.0f)
+	{
+		DefenderForward = vector(Info.HitActor.Rotation);
+		DefenderForward.Z = 0.0f;
+		DefenderForward = Normal(DefenderForward);
+	}
+	if (VSize(DefenderForward) <= 0.0f)
+		return false;
+
+	Offset = Info.HitLocation - Info.HitActor.Location;
+	Offset.Z = 0.0f;
+
+	// Near the vertical centerline, front/back from hit location is mostly trace noise.
+	if (VSize(Offset) < 10.0f)
+	{
+		Offset = Location - Info.HitActor.Location;
+		Offset.Z = 0.0f;
+	}
+
+	if (VSize(Offset) <= 1.0f)
+		return false;
+
+	return (Normal(Offset) dot DefenderForward) >= 0.0f;
+}
+
 simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, bool bCheckParryOnly, int ParryLR) {
 	local int StaminaDamage;
 	local bool bOutOfStamina;
 	local float fParryTimeSeconds;
 	local bool bRewardableParry;
-	local vector AttackerDir;
 
 	// Don't (non-shield) parry oil pots or smoke pots
 	if (!Info.HitActor.StateVariables.bIsActiveShielding && (AOCWeapon_OilPot(Info.Instigator.Weapon) != none || XangModWeapon_SmokePot(Info.Instigator.Weapon) != none))
 		return false;
-
-	// Prevent butt-parrying: attacker must be in the front hemisphere of the defender.
-	// self = attacker, Info.HitActor = defender.
-	// AttackerDir points from defender toward attacker; defender.Rotation is their forward vector.
-	// If dot < 0 the attacker is behind the defender — strip the parry entirely.
-	if (class'XangModAOCDuelPlayerController'.default.bDisableButtParries)
-	{
-		AttackerDir = Normal(Location - Info.HitActor.Location);
-		if ((AttackerDir dot vector(Info.HitActor.Rotation)) < 0.0)
-			return false;
-	}
 
 	// bParry = 1;
 	// StaminaDamage = 0;
@@ -392,10 +413,10 @@ reliable server function AttackOtherPawn(HitInfo Info, string DamageString, opti
 // XANGMOD: The single commit path for a swing — damage, feedback, and replication applied at
 // once. Called directly from AttackOtherPawn (no hold needed), or from ProcessPendingHits /
 // ResolvePendingHitsAsParry once a held swing's fate is decided. 'self' is the ATTACKER.
-// When bForceParry is true the swing resolves as a parry (the defender parried while this swing
-// was held); DetectSuccessfulParry still rejects illegal parries (e.g. back hits), which then
-// fall through to a normal hit. Nothing is ever played and then undone.
-function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool bCheckParryOnly = false, optional bool bBoxParrySuccess = false, optional bool bHitShield = false, optional SwingTypeImpactSound LastHit = ESWINGSOUND_Slash, optional bool bQuickKick = false, optional bool bForceParry = false, optional float fActionServerTime = 0.0)
+// bForceParry means the defender parried while this swing was held; the final result still has
+// to pass the same directional melee parry gate below. bNoParry commits an expired held swing as
+// a normal hit after it already failed the parry timestamp gate. Nothing is ever played and then undone.
+function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool bCheckParryOnly = false, optional bool bBoxParrySuccess = false, optional bool bHitShield = false, optional SwingTypeImpactSound LastHit = ESWINGSOUND_Slash, optional bool bQuickKick = false, optional bool bForceParry = false, optional float fActionServerTime = 0.0, optional bool bNoParry = false)
 {
 	local bool bParry;
 	local float ActualDamage;
@@ -419,6 +440,7 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	local bool bParryActive;
 	local float fTimeSinceParryStart;
 	local bool bBallistaBolt;
+	local bool bDirectionalParry;
 
 	// Initialise player replication information
 	if (PlayerReplicationInfo == none)
@@ -432,8 +454,8 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	// XANGMOD: Client-timestamp trade priority. If THIS opponent hit us (or has a swing held on
 	// us that will hit) clearly before our own swing landed — beyond fTradeWindowSeconds — the
 	// trade is too staggered, so drop our swing and let whoever connected first win. Swings
-	// within the window still trade. Only real enemy melee swings are eligible; parries (those
-	// resolve via bForceParry), kicks, projectiles, team hits and ripostes are never cancelled.
+	// within the window still trade. Only real enemy melee swings are eligible; held parry-window
+	// resolutions (bForceParry), kicks, projectiles, team hits and ripostes are never cancelled.
 	// Replaces the disabled ping-estimate "Fair trade window" block below.
 	if (!bCheckParryOnly
 		&& !bForceParry
@@ -531,8 +553,14 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 			bParryActive = true;
 		}
 	}
+
+	if (Info.DamageType.default.bIsProjectile)
+		bDirectionalParry = CheckProjectileParry(Info);
+	else
+		bDirectionalParry = Info.AttackType != Attack_Shove && XangModDirectionalMeleeParry(Info);
 	
-	bParry = (CheckProjectileParry(Info) || bBoxParrySuccess || bForceParry)
+	bParry = !bNoParry
+			 && bDirectionalParry
 			 && bParryActive
 			 && class<AOCDmgType_Generic>(Info.DamageType) == none
 			 && Info.DamageType != class'AOCDmgType_SiegeWeapon';

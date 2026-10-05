@@ -184,12 +184,9 @@ DefaultProperties
 	iXangModMinNetSpeed=15000
 	iXangModMinNetSpeedFallback=15000
 
-	// Parry box toggle default (disabled = use vanilla AOC values until an admin enables XangMod parry)
+	// Legacy parry-component visualization/sizing defaults; melee parry success is directional.
 	bXangModParryBox=false
-	// Skeletal parry default (disabled = use directional/shield-style parry box)
 	bSkeletalParry=false
-	// Butt-parry prevention default (disabled = attacks from behind are parryable, vanilla behaviour)
-	bDisableButtParries=false
 
 	// Collision bubble radius default (39.0 = vanilla AOC OuterCylinder radius)
 	fXangModCollisionRadius=39.0
