@@ -208,7 +208,7 @@ function ProcessPendingHits()
 			i--;
 
 			if (Entry.Attacker != none && Entry.Attacker.Weapon != none)
-				Entry.Attacker.ProcessResolvedAttack(Entry.Info, Entry.DamageString, false, Entry.bBoxParrySuccess, Entry.bHitShield, Entry.LastHit, Entry.bQuickKick, false, Entry.fActionServerTime, true);
+				Entry.Attacker.ProcessResolvedAttack(Entry.Info, Entry.DamageString, false, Entry.bBoxParrySuccess, Entry.bHitShield, Entry.LastHit, Entry.bQuickKick, false, Entry.fActionServerTime, Entry.bParryTooLate);
 		}
 	}
 }
@@ -250,6 +250,7 @@ function ResolvePendingHitsAsParry(optional float fParryActionServerTime = 0.0)
 			&& Entry.fActionServerTime > 0.0
 			&& fParryActionServerTime - Entry.fActionServerTime > fParryTradeGraceSeconds)
 		{
+			PendingHits[i].bParryTooLate = true;
 			continue;
 		}
 

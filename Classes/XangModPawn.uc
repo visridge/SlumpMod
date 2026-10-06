@@ -20,6 +20,7 @@ struct PendingHit
     var SwingTypeImpactSound LastHit;
     var bool bQuickKick;
     var float fActionServerTime;        // attacker's hit moment (their client clock) mapped to server time
+    var bool bParryTooLate;             // timestamp gate rejected a parry for this swing
 };
 var array<PendingHit> PendingHits;       // swings held on this (defender) pawn awaiting resolution
 var float fParryRollbackMaxHoldSeconds;  // cap on how long a swing may be held (s)
