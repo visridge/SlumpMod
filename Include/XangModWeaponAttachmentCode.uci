@@ -34,6 +34,7 @@ simulated function AttachTo(UTPawn OwnerPawn)
 		AOCOwner.ParryComponent.SetScale3D(vect(0.32, 0.32, 0.45));
 		AOCOwner.ParryComponent.SetTranslation(vect(0, 0, -45));
 	}
+	AOCOwner.ParryComponent.SetTraceBlocking(false, false);
 }
 
 // // Secondary filter: strip the parry-box component flag if the attacker is behind the defender.

@@ -104,6 +104,7 @@ simulated function AOCSetCharacterClassFromInfo(AOCFamilyInfo Info)
 		ParryComponent.SetTranslation(vect(0, 0, -45));
 	}
 	// else: XangMod parry enabled, non-skeletal — super already applied FamilyInfo values
+	ParryComponent.SetTraceBlocking(false, false);
 
 	// Apply admin-controlled collision bubble radius (OuterCylinder)
 	if (OuterCylinderComp != none)

@@ -15,7 +15,7 @@ No admin command should be required to enable this. The new system should be the
 - Do not keep `AdminDisableButtParries` as the main protection layer.
 - Do not change hit-trade rollback, parry timing rollback, stamina drain, deflect state, or shield stamina behavior unless required by the new geometry gate.
 - Do not use the directional parry result to move pawns or change weapon traces.
-- Do not remove the engine `ParryComponent` object unless a later compile/test pass proves all inherited projectile/debug/attachment code no longer needs it.
+- Do not remove the engine `ParryComponent` object unless a later compile/test pass proves all inherited projectile/debug/attachment code no longer needs it. It should remain available for visualization, but it must not trace-block melee.
 
 ## Current Behavior
 
@@ -159,6 +159,17 @@ Only after compile and live testing, consider cleaning up:
 - Parry-box debug commands
 
 Do not do that in the first pass unless the new directional system is proven and the inherited code no longer depends on `ParryComponent`.
+
+### Legacy parry component handling
+
+Keep the component for visualization/debugging, but force it non-trace-blocking anywhere XangMod resizes or moves it:
+
+- `Include/Pawn/Customization.uci`
+- `Include/PC/ParryConfig.uci`
+- `Include/XangModWeaponAttachmentCode.uci`
+- `Classes/XangModWeaponAttachment_DualBucklers.uc`
+
+This prevents vanilla `AOCWeaponAttachment.HandleHitPawn` from adding defenders to `ParryPawns` through `HitInfoTrace.HitComponent == HitPawn.ParryComponent` before the server directional gate runs.
 
 ## Expected Gameplay Effects
 

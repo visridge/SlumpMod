@@ -71,6 +71,7 @@ simulated function AttachTo(UTPawn OwnerPawn)
 	}
 
 	AOCOwner.ParryComponent.SetTranslation(AOCOwner.PawnFamily.ParryBoxTranslation + ParryBoxTranslation);
+	AOCOwner.ParryComponent.SetTraceBlocking(false, false);
 
 	GotoState('CurrentlyAttached');
 }

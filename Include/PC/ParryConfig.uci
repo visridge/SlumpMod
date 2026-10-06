@@ -51,6 +51,7 @@ simulated function ApplyParryBoxSettingsToAllPawns()
 			P.ParryComponent.SetScale3D(P.PawnFamily.ParryBoxScale);
 			P.ParryComponent.SetTranslation(ParryBoxTranslation);
 		}
+		P.ParryComponent.SetTraceBlocking(false, false);
 	}
 }
 

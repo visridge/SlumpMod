@@ -272,7 +272,9 @@ The practical effect was that the parry-component setup did nothing through the 
 path, and the pawn-side setup was being overwritten by vanilla `AttachTo` with no correction
 applied. If those warnings ever reappear, the include has been moved back inside a defaults
 block. Melee parry success is now decided by the directional gate in `Include/Pawn/Combat.uci`,
-not by parry-box intersection.
+not by parry-box intersection. XangMod keeps the `ParryComponent` for visualization/debugging but
+forces it non-trace-blocking when it is resized or moved, so vanilla `ParryPawns` classification
+does not pre-empt the directional gate.
 
 **Coverage is 46 of 63 attachment classes.** 41 carry the include directly and 5 more
 inherit it from a fixed XangMod parent (`_BastardSword extends _Katana`, `_Gladius extends
@@ -1843,7 +1845,8 @@ understanding before you touch them:
 | `AdminResetIceTraction` | Reset ice traction specifically |
 
 Melee parry success is default-on directional logic in `Include/Pawn/Combat.uci`; there is no
-admin parry-box toggle. The old parry component can still be visualized for debugging.
+admin parry-box toggle. The old parry component can still be visualized for debugging, but XangMod
+forces it non-trace-blocking so it does not drive melee parry classification.
 
 ### 8.3 CompForest alternating spawns
 
