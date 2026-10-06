@@ -69,16 +69,21 @@ HitDot = Normal(HitOffset) dot Info.HitActor.GetForwardDirection()
 ```
 
 6. Accept if `HitDot >= 0.0` for a front 180-degree hemisphere.
-7. If the flattened hit location is near the vertical centerline (`VSize(HitOffset) < 10.0`), fall back to attacker position:
+7. Also compute the attacker-position check:
 
 ```text
-AttackerDir = Normal(self.Location - Info.HitActor.Location)
-AttackerDot = AttackerDir dot Info.HitActor.GetForwardDirection()
+AttackerOffset = self.Location - Info.HitActor.Location
+AttackerOffset.Z = 0
+AttackerDot = Normal(AttackerOffset) dot Info.HitActor.GetForwardDirection()
 ```
 
-8. Accept fallback if `AttackerDot >= 0.0`.
+8. Accept the parry if EITHER the hit landed in the defender's front half OR the attacker is in the defender's front half:
 
-This gives priority to where the weapon actually landed, so an attacker standing in front cannot automatically block a hit dragged into the defender's back.
+```text
+(HitDot >= 0.0) || (AttackerDot >= 0.0)
+```
+
+The attacker-position term closes the close-range overhead gap: a large weapon can arc over the head and land behind it while the attacker is still standing directly in front, and the handle+damage tracer mix made that effectively unparryable under a hit-location-only rule.
 
 Kicks (`Attack_Shove`) are not melee parry candidates. Expired held swings that failed the parry timestamp gate pass `bNoParry=true` into `ProcessResolvedAttack`, so a later active parry cannot recapture them.
 
