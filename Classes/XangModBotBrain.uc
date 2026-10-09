@@ -23,6 +23,13 @@ var AOCPawn MyPawn;
 var AOCAICombatController MyBot;
 var array<BrainThreat> Threats;
 
+// VO / chatter
+var float LastHealth;                          // MyPawn.Health snapshot (damage taunt)
+var AOCPawn PrevTarget;                        // last combat target ("all clear" transition)
+var float NextVOAt;                            // cooldown gate between voice lines
+var float VOMinInterval;                       // min seconds between voice lines
+var float VOChance;                            // chance a calm bot calls out near a teammate
+
 // Current defence plan
 var AOCPawn PlanThreat;
 var float PlanEnd;          // threat's windup end when planned
@@ -67,6 +74,7 @@ function Init(AOCPawn P)
 	MyBot = AOCAICombatController(P.Controller);
 	bIsKing = P.PawnFamily != none && P.PawnFamily.ClassReference == ECLASS_King;
 	bCompForest = InStr(WorldInfo.GetMapName(), "AOCTO-CompForest_p", false, true) != INDEX_NONE;
+	LastHealth = P.Health;
 	SetTimer(0.05f, true, 'Think');
 }
 
@@ -121,6 +129,7 @@ function Think()
 
 	Pursue();
 	TrackThreats();
+	Chatter();
 	FollowTeammates();
 	RunDefence(W);
 	TryRiposte(W);
@@ -500,6 +509,75 @@ function AOCPawn FindFollowTeammate()
 	return BestBot;
 }
 
+// ---- VO / chatter ----
+// Vanilla Z/X menus (PlayZMenuVO/PlayXMenuVO) early-return on dedicated servers and only
+// replicate while Role < ROLE_Authority, so a bot's server-owned pawn would say nothing.
+// Call the static cue lookup directly and replicate through s_PlayVO, the same path a human
+// voice command takes to other clients. Indices are 0-based (menu key "N" = N-1).
+function SayTactical(int Index)
+{
+	local SoundCue Cue;
+
+	if (MyPawn == none || MyPawn.SoundGroupClass == none)
+		return;
+	class<AOCPawnSoundGroup>(MyPawn.SoundGroupClass).static.getAOCZMenuVO(MyPawn, Index, Cue);
+	if (Cue != none)
+		MyPawn.s_PlayVO(Cue);
+}
+
+function SaySocial(int Index)
+{
+	local SoundCue Cue;
+
+	if (MyPawn == none || MyPawn.SoundGroupClass == none)
+		return;
+	class<AOCPawnSoundGroup>(MyPawn.SoundGroupClass).static.getAOCXMenuVO(MyPawn, Index, Cue);
+	if (Cue != none)
+		MyPawn.s_PlayVO(Cue);
+}
+
+// Four cheap triggers mapped onto the menus, cooldown-gated so a bot never spams:
+// hurt -> taunt (X+8), enemy acquired -> "hold your ground" (Z+6), enemy gone -> "all clear"
+// (Z+0), and the occasional "follow me"/"forward" (Z+1/Z+2) when calm near a teammate.
+function Chatter()
+{
+	local bool bHurt;
+	local AOCPawn Target;
+	local int Idx;
+
+	Target = MyBot.myCombatTarget;
+	bHurt = MyPawn.Health < LastHealth;
+
+	if (bHurt && MyPawn.Health > 0 && WorldInfo.TimeSeconds >= NextVOAt)
+	{
+		NextVOAt = WorldInfo.TimeSeconds + VOMinInterval + FRand() * 1.5f;
+		SaySocial(7);
+	}
+	else if (Target != none && Target != PrevTarget && WorldInfo.TimeSeconds >= NextVOAt)
+	{
+		NextVOAt = WorldInfo.TimeSeconds + VOMinInterval + FRand() * 1.5f;
+		SayTactical(7);
+	}
+	else if (Target == none && PrevTarget != none && WorldInfo.TimeSeconds >= NextVOAt)
+	{
+		NextVOAt = WorldInfo.TimeSeconds + VOMinInterval + FRand() * 1.5f;
+		SayTactical(9);
+	}
+	else if (Target == none && PrevTarget == none && WorldInfo.TimeSeconds >= NextVOAt)
+	{
+		// Re-arm regardless so we don't sweep AllPawns every 50 ms looking for a teammate.
+		NextVOAt = WorldInfo.TimeSeconds + VOMinInterval + FRand() * 1.5f;
+		if (FindFollowTeammate() != none && FRand() < VOChance)
+		{
+			Idx = (FRand() < 0.5f) ? 0 : 1;
+			SayTactical(Idx);
+		}
+	}
+
+	LastHealth = MyPawn.Health;
+	PrevTarget = Target;
+}
+
 DefaultProperties
 {
 	RemoteRole=ROLE_None
@@ -525,8 +603,10 @@ DefaultProperties
 	MaxLead=0.6
 	ChaseSprintDist=450.0
 	StuckDist=25.0
-	FollowRange=2500.0
+	FollowRange=3000.0
 	FollowDist=400.0
 	FollowEnemyRange=1800.0
 	FollowReissueInterval=1.5
+	VOMinInterval=3.0
+	VOChance=0.05
 }
