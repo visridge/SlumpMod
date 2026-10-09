@@ -12,6 +12,7 @@ event Possess(Pawn aPawn, bool bVehicleTransition)
 function PawnDied(Pawn P)
 {
 	super.PawnDied(P);
+	LogAlwaysInternal("[XangModKing] died"@P@"killer="$P.LastHitBy);
 	SetTimer(0.5f, false, 'XangModLeave');
 }
 

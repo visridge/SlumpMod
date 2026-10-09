@@ -104,14 +104,44 @@ function bool XangModSkipObjective()
 // ---- AI King (XangModAIKing maps) ----
 // The map's assassination objective only takes a human King. We hand it any player so it
 // doesn't complete on the spot, then take the slot back next tick and spawn a bot King.
+function XangModKingLog(string S)
+{
+    LogAlwaysInternal("[XangModKing]"@S);
+}
+
+// Letters and digits only, lower case: "King's Garden" and AOCTO-KingsGarden-CM_p both give kingsgarden.
+function string XangModNameKey(string S)
+{
+    local string Out, C;
+    local int i;
+
+    S = Locs(S);
+    for (i = 0; i < Len(S); i++)
+    {
+        C = Mid(S, i, 1);
+        if (InStr("abcdefghijklmnopqrstuvwxyz0123456789", C) != INDEX_NONE)
+            Out $= C;
+    }
+    return Out;
+}
+
+// GetMapName gives the friendly title on some maps, so the package name is checked too.
+// No Maps= in [XangMod.XangModAIKing]: the two stock King maps.
 function bool XangModUsesAIKing()
 {
     local int i;
+    local string Map, List, Item;
 
-    for (i = 0; i < class'XangModAIKing'.default.Maps.Length; i++)
+    Map = XangModNameKey(WorldInfo.GetMapName()) $ "|" $ XangModNameKey(string(WorldInfo.GetPackageName()));
+    List = class'XangModAIKing'.default.Maps;
+    if (List == "")
+        List = "Stoneshill,KingsGarden";
+    while (List != "")
     {
-        if (class'XangModAIKing'.default.Maps[i] != ""
-            && InStr(WorldInfo.GetMapName(), class'XangModAIKing'.default.Maps[i], false, true) != INDEX_NONE)
+        i = InStr(List, ",");
+        Item = i == INDEX_NONE ? List : Left(List, i);
+        List = i == INDEX_NONE ? "" : Mid(List, i + 1);
+        if (XangModNameKey(Item) != "" && InStr(Map, XangModNameKey(Item)) != INDEX_NONE)
             return true;
     }
     return false;
@@ -122,6 +152,7 @@ function AOCPlayerController ChooseHighestScoreController(EAOCFaction Faction, a
     local AOCPlayerController PC, Any;
 
     PC = super.ChooseHighestScoreController(Faction, InvalidSel);
+    XangModKingLog("pick map="$WorldInfo.GetMapName()@"pkg="$WorldInfo.GetPackageName()@"ini maps="$class'XangModAIKing'.default.Maps@"AI="$XangModUsesAIKing()@"human="$PC);
     if (!XangModUsesAIKing())
         return PC;
     if (PC == none)
@@ -149,6 +180,7 @@ function XangModTakeKingSlot()
     bXangModKingHandoff = false;
     foreach AllActors(class'AOCObjective_Assassination', Obj)
     {
+        XangModKingLog("take"@Obj@"temp="$Obj.TemporaryController@"enabled="$Obj.bIsEnabled@"spawn="$Obj.KingSpawnLocation@"class="$Obj.KingClass);
         PC = AOCTeamObjectivePC(Obj.TemporaryController);
         if (PC == none || Obj.bIsEnabled)
             continue;
@@ -179,6 +211,7 @@ function XangModSpawnAIKing()
 
     T = XangModKingObj.TeamOwner == EFAC_AGATHA ? 0 : 1;
     B = Spawn(class'XangModKingBot');
+    XangModKingLog("spawn bot="$B@"team="$T);
     if (B == none)
         return;
     XangModAIKingBot = B;
@@ -199,16 +232,36 @@ function XangModSpawnAIKing()
 
     // Loadout from AOCTeamObjectivePC.MyPawnIsKing.
     Fam = AOCGRI(WorldInfo.GRI).GetOrSpawnFamilyInfoFromClass(XangModKingObj.KingClass);
+    XangModKingLog("family="$Fam);
     if (T == 0)
         B.SetLoadout(Fam, class'XangModWeapon_DoubleAxe', class'XangModWeapon_Longsword', class'XangModWeapon_WarAxe');
     else
         B.SetLoadout(Fam, class'XangModWeapon_Messer', class'XangModWeapon_Maul', class'XangModWeapon_MorningStar');
     SpawnPlayer(B);
+    SetTimer(3.0f, false, 'XangModCheckAIKing');
+}
+
+// The spawn can fail if the King spawn point is occupied: keep retrying until there's a pawn.
+function XangModCheckAIKing()
+{
+    local XangModKingBot B;
+
+    B = XangModAIKingBot;
+    XangModKingLog("check bot="$B@"pawn="$(B != none ? string(B.Pawn) : "")@"objEnabled="$(XangModKingObj != none ? string(XangModKingObj.bIsEnabled) : "")@"parent="$(XangModKingObj != none ? string(XangModKingObj.Parent) : ""));
+    if (B == none || XangModKingObj == none)
+        return;
+    if (B.Pawn == none)
+    {
+        RemoveFromQueue(B);
+        SpawnPlayer(B);
+        SetTimer(3.0f, false, 'XangModCheckAIKing');
+    }
 }
 
 // Called from XangModKingBot.Possess: point the objective at the new King, as PawnHasRespawned does.
 function XangModAIKingSpawned(XangModKingBot B, AOCPawn P)
 {
+    XangModKingLog("possess bot="$B@"pawn="$P@"family="$(P != none ? string(P.PawnFamily) : "none")@"current="$XangModAIKingBot);
     if (B != XangModAIKingBot || XangModKingObj == none || P == none)
     {
         B.SetTimer(0.01f, false, 'XangModLeave'); // stale King: leave once the spawn finishes
@@ -227,6 +280,7 @@ function XangModRemoveAIKing(XangModKingBot B)
 {
     if (B == none)
         return;
+    XangModKingLog("remove bot="$B);
     if (B == XangModAIKingBot)
         XangModAIKingBot = none;
     if (B.PlayerReplicationInfo != none && B.PlayerReplicationInfo.Team != none)
@@ -246,8 +300,12 @@ function XangModRemoveAIKing(XangModKingBot B)
 
 function NavigationPoint FindPlayerStart(Controller Player, optional byte InTeam, optional string IncomingName)
 {
-    if (Player != none && Player == XangModAIKingBot && XangModKingObj != none && XangModKingObj.KingSpawnLocation != none)
-        return XangModKingObj.KingSpawnLocation;
+    if (Player != none && Player == XangModAIKingBot && XangModKingObj != none)
+    {
+        XangModKingLog("start="$XangModKingObj.KingSpawnLocation);
+        if (XangModKingObj.KingSpawnLocation != none)
+            return XangModKingObj.KingSpawnLocation;
+    }
     return super.FindPlayerStart(Player, InTeam, IncomingName);
 }
 

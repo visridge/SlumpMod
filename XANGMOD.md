@@ -2019,11 +2019,13 @@ needs nothing extra. Plain TO maps only; the final stage ends the match, so its 
 
 ```ini
 [XangMod.XangModAIKing]
-+Maps=Stoneshill
-+Maps=KingsGarden
+Maps=Stoneshill,KingsGarden
 ```
 
-Each entry is matched case-insensitively inside the map name. The map's
+Comma-separated; each entry is matched inside the map's title or file name, ignoring case
+and punctuation (`+Maps=` array lines did not load from the mod ini, a plain string does).
+Idle-bot teammate following is listed the same way under `[XangMod.XangModBotBrain]`
+`FollowMaps=` (`*` = every map). The map's
 `AOCObjective_Assassination` only accepts a human King, so `ChooseHighestScoreController`
 hands it any player, mutes the "X will be King" messages, and next tick undoes that pick
 (as if they'd rejected) and spawns `XangModKingBot` at `KingSpawnLocation` with the King
