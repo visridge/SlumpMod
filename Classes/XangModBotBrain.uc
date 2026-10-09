@@ -56,7 +56,12 @@ var float PostDist;    // we turned to face a threat that isn't our target; rele
 
 // Tunables (normal bots / Kings)
 var float SkillFloor, KingSkillFloor;
-var float Aggression, KingAggression;          // vanilla fAggressiveBehavior, -1..1
+var float Aggression, KingAggression;          // 0..1, scales how often the brain starts attacks
+var float ProvokedUntil;                       // hit or attacked recently: press harder until then
+var float ProvokedTime;                        // how long a provocation lasts (s)
+var float FeintChance;                         // share of pressure attacks that feint first, at skill 1
+var float LastSeenHealth;                      // for the provocation check
+var bool bInZone;                              // King: current target is close enough to the throne to fight
 var float ReactSlow, ReactFast;                // reaction at skill 0 / 1 (s)
 var float ErrSlow, ErrFast;                    // parry timing spread at skill 0 / 1 (s)
 var float ContactLead;                         // windup end to blade contact, roughly (s)
@@ -76,7 +81,7 @@ var float KingLeash;                           // Kings further than this from h
 var float KingEngage;                          // ...unless an enemy is within this of home
 var float KingHighGround;                      // a nav point this far above the throne counts as high ground
 var float OnUsDot;                             // during a release, the blade counts as on us past this facing
-var config string FollowMaps;                  // [XangMod.XangModBotBrain] comma-separated maps that allow following; "*" = every map
+var config string FollowMaps;                  // [XangMod.XangModBotBrain] comma-separated maps that allow following; "*" (default) = every map
 var float FollowRange;                         // max distance to consider a teammate worth following
 var float FollowDist;                          // stop this far from the followed teammate
 var float FollowEnemyRange;                    // any enemy nearer than this stops the follow
@@ -90,8 +95,9 @@ function Init(AOCPawn P)
 	Home = P.LastStartSpot;
 	if (bIsKing)
 		FindPost();
-	bFollowMap = MapListed(FollowMaps != "" ? FollowMaps : "CompForest,KingsGarden,Stoneshill");
+	bFollowMap = MapListed(FollowMaps != "" ? FollowMaps : "*");
 	LastHealth = P.Health;
+	LastSeenHealth = P.Health;
 	SetTimer(0.05f, true, 'Think');
 }
 
@@ -140,7 +146,16 @@ function Think()
 	}
 	if (MyBot.fSkill < (bIsKing ? KingSkillFloor : SkillFloor))
 		MyBot.SetSkill(bIsKing ? KingSkillFloor : SkillFloor);
-	MyBot.fAggressiveBehavior = bIsKing ? KingAggression : Aggression;
+	// The brain starts every attack (ConsiderAttack): vanilla's once-a-second attack/feint roll is
+	// parked so it can't swing into a windup it hasn't seen. Its kicks and shoves still run.
+	MyBot.fAggressiveBehavior = -2.f;
+	MyBot.fAggressiveBonus = 0.f;
+	if (MyPawn.Health < LastSeenHealth)
+		ProvokedUntil = WorldInfo.TimeSeconds + ProvokedTime;
+	LastSeenHealth = MyPawn.Health;
+	bInZone = !bIsKing || Home == none || MyBot.myCombatTarget == none
+		|| VSize2D(MyBot.myCombatTarget.Location - Home.Location) <= KingEngage
+		|| VSize(MyBot.myCombatTarget.Location - MyPawn.Location) < 350.f;
 	if (MyBot.IsInState('MeleeAttack') && !W.bIsInCombo)
 		MyBot.myComboPercent = FMax(MyBot.myComboPercent, bIsKing ? KingComboChance : ComboChance);
 
@@ -360,8 +375,17 @@ function Pursue()
 	Dist = VSize(T.Location - MyPawn.Location);
 	bSee = FastTrace(T.Location, MyPawn.Location);
 	bChasing = Dist > MyBot.StrafeDistance * 1.2f;
-	if (bIsKing && Home != none && VSize2D(T.Location - Home.Location) > KingEngage)
-		bChasing = false; // let them come to the throne
+	if (!bInZone)
+	{
+		// They're baiting us out of the throne room: hold position and face them; KeepHome brings us back.
+		if (MyBot.vStrafeTarget == self)
+			MyBot.vStrafeTarget = T;
+		MyBot.ApproachTendency = 0.f;
+		MyBot.AvoidTendency = 0.f;
+		MyBot.StrafeTendency = 0.f;
+		StopChaseSprint();
+		return;
+	}
 
 	if (bSee && bChasing)
 	{
@@ -542,6 +566,7 @@ function RunDefence(AOCMeleeWeapon W)
 		Contact = BestEnd + ContactLead;
 		PlanThreat = Threats[Best].P;
 		PlanEnd = BestEnd;
+		ProvokedUntil = Now + ProvokedTime;
 		PressAt = FMax(Now + React, Contact - ParryLength(W) * 0.45f + Jitter(SkillLerp(ErrSlow, ErrFast)));
 
 		// Mid-windup, feint out first if we still can; otherwise we have to take the trade.
@@ -579,7 +604,7 @@ function RunDefence(AOCMeleeWeapon W)
 			return;
 		// Drag read: they're releasing but looking away, so the blade isn't here yet. Wait for it to
 		// come round, up to the point where the swing must be past us anyway. Skill decides who can.
-		if (TS == 'Release' && FaceDot(PlanThreat) < OnUsDot && Now < PlanEnd + ReleaseLength(PlanThreat) * 0.5f
+		if (TS == 'Release' && FaceDot(PlanThreat) < OnUsDot && Now < PlanEnd + ReleaseLength(PlanThreat) * 0.35f
 			&& FRand() < MyBot.fSkill)
 		{
 			PressAt = Now + 0.05f;
@@ -625,6 +650,7 @@ function ConsiderAttack(AOCMeleeWeapon W)
 	local AOCPawn T;
 	local float Now, Dist, Reach, Gap;
 	local name TS;
+	local bool bProvoked;
 
 	Now = WorldInfo.TimeSeconds;
 	T = MyBot.myCombatTarget;
@@ -636,15 +662,16 @@ function ConsiderAttack(AOCMeleeWeapon W)
 	Dist = VSize(T.Location - MyPawn.Location);
 	Reach = MyBot.CalculateVanillaAttackStartDistance(Attack_Slash) + T.GetCollisionRadius() + 30.f;
 	TS = WeaponState(T);
-	if (TeammateInArc(Reach))
+	if (TeammateInArc(Reach) || !bInZone)
 		return;
+	bProvoked = Now < ProvokedUntil;
 
 	if (TS == 'Recovery' || TS == 'Feint' || TS == 'Flinch' || TS == 'Hit' || TS == 'Deflect' || TS == 'WorldDeflect')
 	{
 		if (Dist > Reach + 40.f)
 			return;
 		if (PunishAt == 0.f)
-			PunishAt = FRand() < SkillLerp(PunishSlow, PunishFast) ? Now + SkillLerp(ReactSlow, ReactFast) : -1.f;
+			PunishAt = (bProvoked || FRand() < SkillLerp(PunishSlow, PunishFast)) ? Now + SkillLerp(ReactSlow, ReactFast) : -1.f;
 		if (PunishAt > 0.f && Now >= PunishAt)
 		{
 			PunishAt = -1.f;
@@ -661,13 +688,20 @@ function ConsiderAttack(AOCMeleeWeapon W)
 		return;
 
 	Gap = SkillLerp(GapSlow, GapFast) * (0.7f + 0.6f * FRand());
+	Gap *= 1.25f - 0.75f * (bIsKing ? KingAggression : Aggression); // aggression 1 halves the gap
 	if (bIsKing)
 		Gap *= KingGapScale;
 	if (T.Stamina < 40.f)
 		Gap *= 0.6f;
+	if (bProvoked)
+		Gap *= 0.5f;
 	NextPressureAt = Now + Gap;
 	if (MyPawn.Stamina >= LowStamina || FRand() < 0.3f)
+	{
+		// Vanilla feints at 90% of the windup and swings again when this is set.
+		MyBot.bFeintNextAttack = FRand() < FeintChance * MyBot.fSkill && MyPawn.Stamina > W.iFeintStaminaCost + 10.f;
 		MyBot.GotoState('MeleeAttack');
+	}
 }
 
 // When no enemies are around, drift toward a nearby teammate instead of standing alone.
@@ -677,10 +711,15 @@ function FollowTeammates()
 {
 	local AOCPawn Follow;
 	local float Dist;
+	local bool bWalking;
 
 	if (!bFollowMap || bIsKing)
 		return;
-	if (MyBot.myCombatTarget != none || MyBot.bRemainStill || !MyBot.IsInState('Active'))
+	if (MyBot.myCombatTarget != none || MyBot.bRemainStill || MyBot.bNoInterrupt)
+		return;
+	// Idle, or on an objective walk (a move whose target isn't a pawn): both can be redirected.
+	bWalking = MyBot.IsInState('LongRangeMove') && AOCPawn(MyBot.myMoveTarget) == none;
+	if (!MyBot.IsInState('Active') && !bWalking)
 		return;
 	if (WorldInfo.TimeSeconds < NextFollowAt)
 		return;
@@ -697,6 +736,8 @@ function FollowTeammates()
 	if (Dist <= FollowDist + MyPawn.GetCollisionRadius())
 		return;
 
+	if (bWalking)
+		MyBot.PopState(); // drop the objective walk; the hive brain re-issues it when we stop following
 	MyBot.myMoveTarget = Follow;
 	MyBot.myDestReachRadius = FollowDist;
 	MyBot.PushState('LongRangeMove');
@@ -714,8 +755,8 @@ function AOCPawn FindFollowTeammate()
 
 	foreach WorldInfo.AllPawns(class'AOCPawn', P, MyPawn.Location, FollowRange)
 	{
-		if (P == MyPawn || P.Health <= 0 || IsEnemy(P))
-			continue;
+		if (P == MyPawn || P.Health <= 0 || IsEnemy(P) || AOCAIController_NPC(P.Controller) != none)
+			continue; // peasants wander; nobody follows them
 
 		D = VSize(P.Location - MyPawn.Location);
 		if (P.bIsBot)
@@ -836,12 +877,14 @@ DefaultProperties
 	ThreatReach=340.0
 	DodgeChance=0.1
 	KingLeash=700.0
-	KingEngage=1400.0
+	KingEngage=1000.0
 	KingHighGround=150.0
-	OnUsDot=0.8
+	OnUsDot=0.6
+	ProvokedTime=4.0
+	FeintChance=0.25
 	FollowRange=3000.0
-	FollowDist=400.0
-	FollowEnemyRange=1800.0
+	FollowDist=300.0
+	FollowEnemyRange=1200.0
 	FollowReissueInterval=1.5
 	VOMinInterval=3.0
 	VOChance=0.05
