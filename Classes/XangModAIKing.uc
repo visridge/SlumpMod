@@ -3,6 +3,7 @@
 class XangModAIKing extends Object config(Game);
 
 var config string Maps;
+var config bool bDisabled;   // bDisabled=true: Kings stay human everywhere; AdminAIKing overrides per match
 
 DefaultProperties
 {

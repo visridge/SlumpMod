@@ -306,6 +306,36 @@ reliable server function S_AdminCEAutoskip() {
 		S_AdminBroadcastMessage("CE Autoskip DISABLED", false);
 }
 
+// Bot King on/off for this match. No argument toggles. Works before or during the King stage.
+exec function AdminAIKing(optional string OnOff)
+{
+	if (!PlayerReplicationInfo.bAdmin && WorldInfo.NetMode != NM_Standalone) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminAIKing(OnOff);
+}
+
+reliable server function S_AdminAIKing(string OnOff) {
+	local XangModTO TOGame;
+	local bool bOn;
+
+	if (!IsAdmin())
+		return;
+	TOGame = XangModTO(WorldInfo.Game);
+	if (TOGame == none) {
+		ClientDisplayConsoleMessage("Bot King only applies to Team Objective.");
+		return;
+	}
+	if (OnOff ~= "on" || OnOff ~= "1" || OnOff ~= "true")
+		bOn = true;
+	else if (OnOff ~= "off" || OnOff ~= "0" || OnOff ~= "false")
+		bOn = false;
+	else
+		bOn = !TOGame.XangModUsesAIKing();
+	S_AdminBroadcastMessage(TOGame.XangModSetAIKing(bOn), false);
+}
+
 // Completes the current TO stage; the map advances itself and the skipped stage awards no bonus time.
 exec function AdminSkipObjective()
 {

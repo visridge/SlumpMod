@@ -15,6 +15,7 @@ var int XangModSkipStage;
 var XangModKingBot XangModAIKingBot;
 var AOCObjective_Assassination XangModKingObj;
 var bool bXangModKingHandoff;
+var int XangModAIKingMode;    // AdminAIKing: 0 = as configured, 1 = on, 2 = off for this match
 
 `include(XangMod/Include/XangModTO.uci)
 `include(XangMod/Include/XangModGame.uci)

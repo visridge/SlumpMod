@@ -2024,6 +2024,9 @@ Maps=Stoneshill,KingsGarden
 
 Comma-separated; each entry is matched inside the map's title or file name, ignoring case
 and punctuation (`+Maps=` array lines did not load from the mod ini, a plain string does).
+`bDisabled=true` keeps Kings human by default. `AdminAIKing [on|off]` switches it for the
+current match (no argument toggles); during the King stage, off hands the throne to the
+top-scoring defender and on takes it back for the bot.
 Idle-bot teammate following is listed the same way under `[XangMod.XangModBotBrain]`
 `FollowMaps=` (`*` = every map). The map's
 `AOCObjective_Assassination` only accepts a human King, so `ChooseHighestScoreController`

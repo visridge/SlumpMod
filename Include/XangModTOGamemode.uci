@@ -132,6 +132,8 @@ function bool XangModUsesAIKing()
     local int i;
     local string Map, List, Item;
 
+    if (XangModAIKingMode == 2 || (XangModAIKingMode == 0 && class'XangModAIKing'.default.bDisabled))
+        return false;
     Map = XangModNameKey(WorldInfo.GetMapName()) $ "|" $ XangModNameKey(string(WorldInfo.GetPackageName()));
     List = class'XangModAIKing'.default.Maps;
     if (List == "")
@@ -307,6 +309,53 @@ function NavigationPoint FindPlayerStart(Controller Player, optional byte InTeam
             return XangModKingObj.KingSpawnLocation;
     }
     return super.FindPlayerStart(Player, InTeam, IncomingName);
+}
+
+// AdminAIKing: switch the bot King on or off. Before the King stage it decides who gets picked;
+// during it, off hands the throne to a human defender and on takes it back.
+function string XangModSetAIKing(bool bOn)
+{
+    local AOCTeamObjectivePC PC;
+
+    XangModAIKingMode = bOn ? 1 : 2;
+    if (XangModKingObj == none)
+        return "Bot King " $ (bOn ? "ON" : "OFF") $ " for this match";
+    if (!bOn && XangModAIKingBot != none)
+    {
+        XangModKingObj.bIsEnabled = false;
+        XangModKingObj.Parent = none;
+        XangModRemoveAIKing(XangModAIKingBot);
+        XangModKingObj.ActivateObjective(); // vanilla picks the top-scoring defender, 10s warning as usual
+        return "Bot King OFF: handing the throne to a player";
+    }
+    if (bOn && XangModAIKingBot == none)
+    {
+        PC = AOCTeamObjectivePC(XangModKingObj.TemporaryController);
+        if (PC != none && !XangModKingObj.bIsEnabled)
+            XangModTakeKingSlot();
+        else if (PC != none)
+        {
+            // A human already holds the throne: retire them and spawn the bot in their place.
+            XangModKingObj.bIsEnabled = false;
+            if (XangModKingObj.Parent != none)
+                XangModKingObj.Parent.RemoveDeathListener(XangModKingObj);
+            PC.MyAssassinationObjective = none;
+            PC.bIsKing = false;
+            PC.bSpawnAsKing = false;
+            PC.bCanChangeClass = true;
+            // They'd respawn as the King class otherwise: back to a knight of their faction (index 0-4 Agatha, 5-9 Mason).
+            PC.SetNewClass(AOCGRI(GameReplicationInfo).FamilyInfos[(XangModKingObj.TeamOwner == EFAC_AGATHA ? 0 : 5) + ECLASS_Knight], false, true);
+            if (PC.Pawn != none)
+                PC.Pawn.Suicide();
+            XangModKingObj.Parent = none;
+            XangModKingObj.TemporaryController = none;
+            XangModSpawnAIKing();
+        }
+        else
+            XangModSpawnAIKing();
+        return "Bot King ON: taking the throne";
+    }
+    return "Bot King already " $ (bOn ? "ON" : "OFF");
 }
 
 // killbots would kill the King and complete the objective; replace it instead.
