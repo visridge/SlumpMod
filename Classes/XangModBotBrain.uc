@@ -38,6 +38,8 @@ var vector LastPos;
 var float LastPosTime;
 var float NextRepathAt;
 var bool bChaseSprint;
+var bool bCompForest;                          // set in Init: running AOCTO-CompForest_p
+var float NextFollowAt;                        // throttle for FollowTeammates
 
 // Tunables (normal bots / Kings)
 var float SkillFloor, KingSkillFloor;
@@ -54,12 +56,17 @@ var float LowStamina;                          // below this a bot stops pressin
 var float MaxLead;                             // furthest ahead of a moving target to steer (s)
 var float ChaseSprintDist;                     // sprint when the target is further than this
 var float StuckDist;                           // moved less than this in a second while chasing = stuck
+var float FollowRange;                         // max distance to consider a teammate worth following
+var float FollowDist;                          // stop this far from the followed teammate
+var float FollowEnemyRange;                    // any enemy nearer than this stops the follow
+var float FollowReissueInterval;               // how often to (re)consider following
 
 function Init(AOCPawn P)
 {
 	MyPawn = P;
 	MyBot = AOCAICombatController(P.Controller);
 	bIsKing = P.PawnFamily != none && P.PawnFamily.ClassReference == ECLASS_King;
+	bCompForest = InStr(WorldInfo.GetMapName(), "AOCTO-CompForest_p", false, true) != INDEX_NONE;
 	SetTimer(0.05f, true, 'Think');
 }
 
@@ -114,6 +121,7 @@ function Think()
 
 	Pursue();
 	TrackThreats();
+	FollowTeammates();
 	RunDefence(W);
 	TryRiposte(W);
 	ConsiderAttack(W);
@@ -406,13 +414,99 @@ function ConsiderAttack(AOCMeleeWeapon W)
 		MyBot.GotoState('MeleeAttack');
 }
 
+// CompForest only: when no enemies are around, drift toward a nearby teammate instead of
+// standing alone. Follows humans first, then other bots; the King is excluded (it holds
+// the throne). Only moves while the bot is truly idle (state Active), so squad and
+// objective orders always win.
+function FollowTeammates()
+{
+	local AOCPawn Follow;
+	local float Dist;
+
+	if (!bCompForest || bIsKing)
+		return;
+	if (MyBot == none || MyBot.myCombatTarget != none)
+		return;
+	if (MyBot.bRemainStill || MyBot.IsInState('MeleeAttack') || MyBot.IsInState('MeleeStance'))
+		return;
+	if (!MyBot.IsInState('Active'))
+		return;
+	if (WorldInfo.TimeSeconds < NextFollowAt)
+		return;
+	NextFollowAt = WorldInfo.TimeSeconds + FollowReissueInterval;
+
+	if (HasEnemyNear(FollowEnemyRange))
+		return;
+
+	Follow = FindFollowTeammate();
+	if (Follow == none)
+		return;
+
+	Dist = VSize(Follow.Location - MyPawn.Location);
+	if (Dist <= FollowDist + MyPawn.GetCollisionRadius())
+		return;
+
+	MyBot.myMoveTarget = Follow;
+	MyBot.myDestReachRadius = FollowDist;
+	MyBot.PushState('LongRangeMove');
+}
+
+function bool HasEnemyNear(float Range)
+{
+	local AOCPawn P;
+
+	foreach WorldInfo.AllPawns(class'AOCPawn', P, MyPawn.Location, Range)
+	{
+		if (P == MyPawn || P.Health <= 0 || !IsEnemy(P))
+			continue;
+		return true;
+	}
+	return false;
+}
+
+// Nearest alive teammate, humans preferred so the pack clusters on human anchors; on a
+// bot-only server the bots still fall back to grouping on each other.
+function AOCPawn FindFollowTeammate()
+{
+	local AOCPawn P, BestHuman, BestBot;
+	local float D, BestHumanD, BestBotD;
+
+	BestHumanD = FollowRange;
+	BestBotD = FollowRange;
+
+	foreach WorldInfo.AllPawns(class'AOCPawn', P, MyPawn.Location, FollowRange)
+	{
+		if (P == MyPawn || P.Health <= 0 || P.GetTeamNum() != MyPawn.GetTeamNum())
+			continue;
+
+		D = VSize(P.Location - MyPawn.Location);
+		if (P.bIsBot)
+		{
+			if (D < BestBotD)
+			{
+				BestBot = P;
+				BestBotD = D;
+			}
+		}
+		else if (D < BestHumanD)
+		{
+			BestHuman = P;
+			BestHumanD = D;
+		}
+	}
+
+	if (BestHuman != none)
+		return BestHuman;
+	return BestBot;
+}
+
 DefaultProperties
 {
 	RemoteRole=ROLE_None
 
-	SkillFloor=0.75
+	SkillFloor=0.95
 	KingSkillFloor=0.95
-	Aggression=0.5
+	Aggression=0.75
 	KingAggression=1.0
 	ReactSlow=0.32
 	ReactFast=0.12
@@ -431,4 +525,8 @@ DefaultProperties
 	MaxLead=0.6
 	ChaseSprintDist=450.0
 	StuckDist=25.0
+	FollowRange=2500.0
+	FollowDist=400.0
+	FollowEnemyRange=1800.0
+	FollowReissueInterval=1.5
 }
