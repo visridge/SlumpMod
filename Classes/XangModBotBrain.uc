@@ -82,6 +82,8 @@ var float KingEngage;                          // ...unless an enemy is within t
 var float KingHighGround;                      // a nav point this far above the throne counts as high ground
 var float OnUsDot;                             // during a release, the blade counts as on us past this facing
 var config string FollowMaps;                  // [XangMod.XangModBotBrain] comma-separated maps that allow following; "*" (default) = every map
+var config bool bAlwaysSprint;                 // bots hold sprint the whole time, never walk
+var config bool bMuteBattlecry;                // bots never battlecry
 var float FollowRange;                         // max distance to consider a teammate worth following
 var float FollowDist;                          // stop this far from the followed teammate
 var float FollowEnemyRange;                    // any enemy nearer than this stops the follow
@@ -146,6 +148,18 @@ function Think()
 	}
 	if (MyBot.fSkill < (bIsKing ? KingSkillFloor : SkillFloor))
 		MyBot.SetSkill(bIsKing ? KingSkillFloor : SkillFloor);
+	// XANGMOD: hold sprint constantly (the pawn re-engages sprint each frame while this stays
+	// true) and keep the vanilla battlecry decision permanently cooled down so bots never cry.
+	if (bAlwaysSprint && !MyBot.IsInState('MeleeAttack'))
+		MyPawn.bClientWantsToSprint = true;
+	if (bMuteBattlecry)
+	{
+		// Two independent guards on the vanilla AOCAICombatController.DecideCombatAction()
+		// battlecry branch: keep the cooldown timestamp permanently "now" so the wait gate can
+		// never open, and zero the accumulating chance so fDecBattlecry stays -huge regardless.
+		MyBot.fLastBattlecryTimeSeconds = WorldInfo.TimeSeconds;
+		MyBot.fBattlecryChance = 0.f;
+	}
 	// The brain starts every attack (ConsiderAttack): vanilla's once-a-second attack/feint roll is
 	// parked so it can't swing into a windup it hasn't seen. Its kicks and shoves still run.
 	MyBot.fAggressiveBehavior = -2.f;
@@ -184,7 +198,10 @@ function StopChaseSprint()
 	if (bChaseSprint)
 	{
 		bChaseSprint = false;
-		MyPawn.ServerSprintState(false);
+		// With always-sprint on, leave bClientWantsToSprint alone so the bot keeps sprinting
+		// whenever it moves; Think() re-asserts it every tick anyway.
+		if (!bAlwaysSprint)
+			MyPawn.ServerSprintState(false);
 	}
 }
 
@@ -852,40 +869,42 @@ DefaultProperties
 {
 	RemoteRole=ROLE_None
 
-	SkillFloor=0.95
-	KingSkillFloor=0.95
-	Aggression=0.75
+	SkillFloor=1.0
+	KingSkillFloor=1.0
+	Aggression=1.0
 	KingAggression=1.0
-	ReactSlow=0.32
-	ReactFast=0.12
-	ErrSlow=0.22
-	ErrFast=0.05
+	ReactSlow=0.06
+	ReactFast=0.02
+	ErrSlow=0.02
+	ErrFast=0.0
 	ContactLead=0.15
 	ThreatRange=500.0
-	PunishSlow=0.35
-	PunishFast=0.95
-	GapSlow=1.5
-	GapFast=0.6
-	KingGapScale=0.7
-	ComboChance=0.65
-	KingComboChance=0.8
-	LowStamina=25.0
-	MaxLead=0.6
+	PunishSlow=1.0
+	PunishFast=1.0
+	GapSlow=0.4
+	GapFast=0.15
+	KingGapScale=0.4
+	ComboChance=1.0
+	KingComboChance=1.0
+	LowStamina=0.0
+	MaxLead=0.8
 	ChaseSprintDist=450.0
 	StuckDist=25.0
-	ThreatDot=0.55
+	ThreatDot=0.35
 	ThreatReach=340.0
-	DodgeChance=0.1
+	DodgeChance=0.3
 	KingLeash=700.0
 	KingEngage=1000.0
 	KingHighGround=150.0
-	OnUsDot=0.6
-	ProvokedTime=4.0
-	FeintChance=0.25
+	OnUsDot=0.7
+	ProvokedTime=10.0
+	FeintChance=0.5
 	FollowRange=3000.0
-	FollowDist=300.0
-	FollowEnemyRange=1200.0
+	FollowDist=500.0
+	FollowEnemyRange=1000.0
 	FollowReissueInterval=1.5
 	VOMinInterval=3.0
 	VOChance=0.05
+	bAlwaysSprint=true
+	bMuteBattlecry=true
 }
