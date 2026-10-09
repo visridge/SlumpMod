@@ -48,6 +48,7 @@ var bool bChaseSprint;
 var float FocusUnlockAt;
 var Actor Home;             // where we spawned; Kings are leashed to it
 var Actor Post;             // high ground near home a King waits on, if the map has any
+var AOCPawn KingMate;       // defender the King is currently holding next to
 var float NextHomeAt;
 var bool bFollowMap;                           // set in Init: this map allows teammate following
 var float NextFollowAt;                        // throttle for FollowTeammates
@@ -167,9 +168,7 @@ function Think()
 	if (MyPawn.Health < LastSeenHealth)
 		ProvokedUntil = WorldInfo.TimeSeconds + ProvokedTime;
 	LastSeenHealth = MyPawn.Health;
-	bInZone = !bIsKing || Home == none || MyBot.myCombatTarget == none
-		|| VSize2D(MyBot.myCombatTarget.Location - Home.Location) <= KingEngage
-		|| VSize(MyBot.myCombatTarget.Location - MyPawn.Location) < 350.f;
+	bInZone = !bIsKing || Home == none || MyBot.myCombatTarget == none || KingWantsFight();
 	if (MyBot.IsInState('MeleeAttack') && !W.bIsInCombo)
 		MyBot.myComboPercent = FMax(MyBot.myComboPercent, bIsKing ? KingComboChance : ComboChance);
 
@@ -307,6 +306,43 @@ function FindPost()
 	}
 }
 
+// A King fights only a threat that has actually reached it or a defender beside it.
+// Everything further is bait -- this is what stops it sprinting to the attackers' spawn.
+function bool KingWantsFight()
+{
+	if (EnemyDistFrom(MyPawn.Location, 350.f) < 350.f)
+		return true;
+	return EnemyNearMate(KingEngage);
+}
+
+// Is there an enemy within Range of a defender in the King's immediate group? A fight
+// that came to us, not one we go looking for.
+function bool EnemyNearMate(float Range)
+{
+	local AOCPawn Mate;
+
+	foreach WorldInfo.AllPawns(class'AOCPawn', Mate, MyPawn.Location, KingLeash)
+	{
+		if (Mate == MyPawn || Mate.Health <= 0 || IsEnemy(Mate) || AOCAIController_NPC(Mate.Controller) != none)
+			continue;
+		if (EnemyDistFrom(Mate.Location, Range) < Range)
+			return true;
+	}
+	return false;
+}
+
+// A defender close enough to anchor beside, or none. Only the group actually holding the
+// throne counts -- a wanderer off toward the enemy spawn must not drag the King with it.
+function AOCPawn KingHoldMate()
+{
+	local AOCPawn Mate;
+
+	Mate = FindFollowTeammate();
+	if (Mate != none && (Home == none || VSize(Mate.Location - MyPawn.Location) <= KingLeash))
+		return Mate;
+	return none;
+}
+
 // Kings hold the throne: fight whatever comes near it, walk back when nothing does. True while walking.
 function bool KeepHome()
 {
@@ -318,17 +354,18 @@ function bool KeepHome()
 		return false;
 	Now = WorldInfo.TimeSeconds;
 	if (MyBot.IsInState('LongRangeMove'))
-		return MyBot.myMoveTarget == Home || MyBot.myMoveTarget == Post;
+		return MyBot.myMoveTarget == Home || MyBot.myMoveTarget == Post || MyBot.myMoveTarget == KingMate;
 	// Leash is measured flat, so the floors above the throne are still "home".
 	Dist = VSize2D(MyPawn.Location - Home.Location);
 	bAway = Dist > KingLeash || Abs(MyPawn.Location.Z - Home.Location.Z) > 1200.f;
 	if (Now < NextHomeAt || MyBot.IsInState('MeleeAttack'))
 		return false;
-	// An enemy near the throne, or on us, is worth fighting out here.
-	if (EnemyDistFrom(Home.Location, KingEngage) < KingEngage || EnemyDistFrom(MyPawn.Location, 350.f) < 350.f)
+	// Fight only what has actually reached us or a defender beside us; never chase across the map.
+	if (KingWantsFight())
 		return false;
-	// Nothing coming: take the high ground if the map has it, else the throne.
-	Goal = Post != none ? Post : Home;
+	// Stick with the defenders: hold next to a nearby teammate, else high ground, else the throne.
+	KingMate = KingHoldMate();
+	Goal = KingMate != none ? KingMate : (Post != none ? Post : Home);
 	if (!bAway && VSize(MyPawn.Location - Goal.Location) < 200.f)
 		return false;
 	NextHomeAt = Now + 3.f;
