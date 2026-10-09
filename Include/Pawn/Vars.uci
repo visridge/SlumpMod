@@ -20,6 +20,7 @@ var CylinderComponent OuterCylinderComp; // Reference to the OuterCylinder compo
 var bool bXangModWarnedNoOwnerMesh;      // one-shot log guard: 1P -> 3P camera socket fallback
 var bool bXangModWarnedNoCameraSocket;   // one-shot log guard: neither mesh usable
 var bool bXangModWarnedStock1PMesh;      // one-shot log guard: stock 1P mesh substituted
+var float fXangModBrainCheckAt;          // AI pawns: next check for an XangModBotBrain (server)
 
 // (Deferred-hit state removed — replaced by the PendingHits hold model in XangModPawn.uc)
 

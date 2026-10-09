@@ -101,6 +101,187 @@ function bool XangModSkipObjective()
     return bAny;
 }
 
+// ---- AI King (XangModAIKing maps) ----
+// The map's assassination objective only takes a human King. We hand it any player so it
+// doesn't complete on the spot, then take the slot back next tick and spawn a bot King.
+function bool XangModUsesAIKing()
+{
+    local int i;
+
+    for (i = 0; i < class'XangModAIKing'.default.Maps.Length; i++)
+    {
+        if (class'XangModAIKing'.default.Maps[i] != ""
+            && InStr(WorldInfo.GetMapName(), class'XangModAIKing'.default.Maps[i], false, true) != INDEX_NONE)
+            return true;
+    }
+    return false;
+}
+
+function AOCPlayerController ChooseHighestScoreController(EAOCFaction Faction, array<int> InvalidSel)
+{
+    local AOCPlayerController PC, Any;
+
+    PC = super.ChooseHighestScoreController(Faction, InvalidSel);
+    if (!XangModUsesAIKing())
+        return PC;
+    if (PC == none)
+    {
+        foreach WorldInfo.AllControllers(class'AOCPlayerController', Any)
+        {
+            PC = Any;
+            break;
+        }
+    }
+    if (PC != none)
+    {
+        bXangModKingHandoff = true;
+        SetTimer(0.01f, false, 'XangModTakeKingSlot');
+    }
+    return PC;
+}
+
+// Undo vanilla's pick (as if they'd rejected), then spawn the bot King.
+function XangModTakeKingSlot()
+{
+    local AOCObjective_Assassination Obj;
+    local AOCTeamObjectivePC PC;
+
+    bXangModKingHandoff = false;
+    foreach AllActors(class'AOCObjective_Assassination', Obj)
+    {
+        PC = AOCTeamObjectivePC(Obj.TemporaryController);
+        if (PC == none || Obj.bIsEnabled)
+            continue;
+        Obj.ClearTimer('RespawnPawnAsKing');
+        if (Obj.Parent != none)
+            Obj.Parent.RemoveDeathListener(Obj);
+        PC.MyAssassinationObjective = none;
+        PC.bIsKing = false;
+        PC.bSpawnAsKing = false;
+        Obj.Parent = none;
+        Obj.TemporaryController = none;
+        Obj.bForcingKingSelect = false;
+        XangModKingObj = Obj;
+        XangModSpawnAIKing();
+    }
+}
+
+function XangModSpawnAIKing()
+{
+    local XangModKingBot B;
+    local AOCFamilyInfo Fam;
+    local int T;
+
+    if (XangModKingObj == none)
+        return;
+    if (XangModAIKingBot != none)
+        XangModRemoveAIKing(XangModAIKingBot);
+
+    T = XangModKingObj.TeamOwner == EFAC_AGATHA ? 0 : 1;
+    B = Spawn(class'XangModKingBot');
+    if (B == none)
+        return;
+    XangModAIKingBot = B;
+
+    // Same bookkeeping as AOCGame.AddAOCBot, so Logout and KillBots balance it.
+    B.PlayerReplicationInfo.PlayerID = GetNextPlayerID();
+    Teams[T].AddToTeam(B);
+    B.myHiveBrain = AIBrain[T];
+    AIBrain[T].AddBot(B);
+    if (T == 0)
+        AOCGRI(GameReplicationInfo).AgathaSize += 1;
+    else
+        AOCGRI(GameReplicationInfo).MasonSize += 1;
+    B.PlayerReplicationInfo.SetPlayerTeam(Teams[T]);
+    ChangeName(B, "The King", true);
+    NumBots++;
+    UpdateGameSettingsCounts();
+
+    // Loadout from AOCTeamObjectivePC.MyPawnIsKing.
+    Fam = AOCGRI(WorldInfo.GRI).GetOrSpawnFamilyInfoFromClass(XangModKingObj.KingClass);
+    if (T == 0)
+        B.SetLoadout(Fam, class'XangModWeapon_DoubleAxe', class'XangModWeapon_Longsword', class'XangModWeapon_WarAxe');
+    else
+        B.SetLoadout(Fam, class'XangModWeapon_Messer', class'XangModWeapon_Maul', class'XangModWeapon_MorningStar');
+    SpawnPlayer(B);
+}
+
+// Called from XangModKingBot.Possess: point the objective at the new King, as PawnHasRespawned does.
+function XangModAIKingSpawned(XangModKingBot B, AOCPawn P)
+{
+    if (B != XangModAIKingBot || XangModKingObj == none || P == none)
+    {
+        B.SetTimer(0.01f, false, 'XangModLeave'); // stale King: leave once the spawn finishes
+        return;
+    }
+    XangModKingObj.Parent = P;
+    XangModKingObj.bIsEnabled = true;
+    XangModKingObj.bForceNetUpdate = true;
+    P.AddDeathListener(XangModKingObj);
+    P.bAlwaysRelevant = true;
+    P.bForceNetUpdate = true;
+}
+
+// Same cleanup as KillBots, for one bot.
+function XangModRemoveAIKing(XangModKingBot B)
+{
+    if (B == none)
+        return;
+    if (B == XangModAIKingBot)
+        XangModAIKingBot = none;
+    if (B.PlayerReplicationInfo != none && B.PlayerReplicationInfo.Team != none)
+    {
+        if (B.PlayerReplicationInfo.Team.TeamIndex == 0)
+            AOCGRI(GameReplicationInfo).AgathaSize -= 1;
+        else
+            AOCGRI(GameReplicationInfo).MasonSize -= 1;
+    }
+    if (B.Pawn != none && XangModKingObj != none)
+        AOCPawn(B.Pawn).RemoveDeathListener(XangModKingObj);
+    RemoveFromQueue(B);
+    if (B.Pawn != none)
+        B.Pawn.Destroy();
+    B.Destroy();
+}
+
+function NavigationPoint FindPlayerStart(Controller Player, optional byte InTeam, optional string IncomingName)
+{
+    if (Player != none && Player == XangModAIKingBot && XangModKingObj != none && XangModKingObj.KingSpawnLocation != none)
+        return XangModKingObj.KingSpawnLocation;
+    return super.FindPlayerStart(Player, InTeam, IncomingName);
+}
+
+// killbots would kill the King and complete the objective; replace it instead.
+exec function KillBots()
+{
+    local bool bHadKing;
+
+    bHadKing = XangModAIKingBot != none && XangModKingObj != none && XangModKingObj.bIsEnabled;
+    if (bHadKing)
+    {
+        XangModKingObj.bIsEnabled = false;
+        XangModKingObj.Parent = none;
+        XangModRemoveAIKing(XangModAIKingBot);
+    }
+    super.KillBots();
+    if (bHadKing)
+        XangModSpawnAIKing();
+}
+
+function BroadcastSystemMessage(int Indx, optional LocalizationData ExtraText1, optional LocalizationData ExtraText2, optional EAOCFaction DesignatedTeam = EFAC_ALL)
+{
+    if (bXangModKingHandoff && Indx == 13)
+        return;
+    super.BroadcastSystemMessage(Indx, ExtraText1, ExtraText2, DesignatedTeam);
+}
+
+function PrivateMessage(PlayerController Sender, PlayerController Receiever, string Message, optional bool bUseCustomCol = false, optional string CustomCol)
+{
+    if (bXangModKingHandoff && InStr(Message, "PGUP") != INDEX_NONE)
+        return;
+    super.PrivateMessage(Sender, Receiever, Message, bUseCustomCol, CustomCol);
+}
+
 // Override Timer to only force net updates when scoreboard values actually change
 State AOCRoundInProgress
 {

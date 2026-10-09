@@ -297,7 +297,10 @@ _Messer`). Still without it:
 | `Classes/XangModCustomization*.uc` | character/helmet/armour customization system |
 | `Classes/XangModCharacterInfo_*.uc` | per-class character data (`DefaultProperties` only) |
 | `Classes/XangModFamilyInfo_*.uc` | per-class family/stat data |
-| `Classes/XangModAOCCombatBot.uc` | melee bot brain (skill floor + timed defence, feint reads, punish, riposte); extends `AOCAIDuelCombatController` so it also backs duel-practice bots |
+| `Classes/XangModAOCCombatBot.uc` | `addbots` controller: skill floor and wider threat detection; extends `AOCAIDuelCombatController` so it also backs duel-practice bots |
+| `Classes/XangModBotBrain.uc` | timed parries, punishes, ripostes, pressure and pursuit for every combat-AI pawn, Kings hardest; attached from `Pawn/Core.uci` `Tick` |
+| `Classes/XangModKingBot.uc` | bot King for `[XangMod.XangModAIKing]` maps; spawned by `XangModTO` |
+| `Classes/XangModAIKing.uc` | config: TO maps that get a bot King |
 | `Classes/XangModNPC_New*.uc` | reduced-replication NPC variants |
 | `Localization/INT/XangMod.INT` | localized strings |
 
@@ -2010,6 +2013,23 @@ stage in the map's Register Objective Sequence order. `Bonus` replaces that stag
 `BonusTime` (vanilla default 600) - the seconds added to the round clock when it completes.
 Clients resync through the vanilla `RequestTime` call after each stage change, so the HUD
 needs nothing extra. Plain TO maps only; the final stage ends the match, so its bonus is moot.
+
+**Bot King per map** (`Classes/XangModAIKing.uc`, `Classes/XangModKingBot.uc`, handled in
+`Include/XangModTOGamemode.uci`):
+
+```ini
+[XangMod.XangModAIKing]
++Maps=Stoneshill
++Maps=KingsGarden
+```
+
+Each entry is matched case-insensitively inside the map name. The map's
+`AOCObjective_Assassination` only accepts a human King, so `ChooseHighestScoreController`
+hands it any player, mutes the "X will be King" messages, and next tick undoes that pick
+(as if they'd rejected) and spawns `XangModKingBot` at `KingSpawnLocation` with the King
+family and loadout. Its pawn is set as the objective's `Parent` with the death listener,
+so killing it completes the objective as normal. The bot leaves when it dies; `killbots`
+replaces it instead of completing the objective. No map changes.
 
 The stats-reporting keys (`bEnableStatsReporting`, `StatsEndpoint`, `StatsApiKey`,
 `StatsServerId`, `StatsReportInterval`) are commented out throughout — that system was
