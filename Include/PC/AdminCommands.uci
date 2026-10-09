@@ -309,7 +309,7 @@ reliable server function S_AdminCEAutoskip() {
 // Completes the current TO stage; the map advances itself and the skipped stage awards no bonus time.
 exec function AdminSkipObjective()
 {
-	if (!PlayerReplicationInfo.bAdmin) {
+	if (!PlayerReplicationInfo.bAdmin && WorldInfo.NetMode != NM_Standalone) {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
 		return;
 	}

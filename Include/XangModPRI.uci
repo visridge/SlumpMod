@@ -1,4 +1,7 @@
 var string OriginalName;
+var bool bXangModPacketLossAboveThreshold;
+var bool bXangModPacketLossReconnectIssued;
+var float fXangModPacketLossAboveSince;
 var int AllDamageTaken,
         RealTeamDamageDealt,
         TeamDamageTaken,
@@ -31,6 +34,45 @@ replication
         Parries, Blocks,
         Crouches, Jumps, Dodges,
         Chatter;
+}
+
+// Ask humans whose server-reported packet loss stays above the player-list threshold to
+// reconnect instead of kicking them to the server browser. Sample the raw server metric here
+// rather than using PacketLossMax: that value is a client-side rolling maximum, so a single
+// transient spike would otherwise remain kick-worthy for a while.
+simulated event Tick(float DeltaTime)
+{
+    local `{GAMEMODE}PlayerController PacketLossPC;
+
+    super.Tick(DeltaTime);
+
+    if (Role != ROLE_Authority || bIsBot || bXangModPacketLossReconnectIssued)
+        return;
+
+    if (PacketLoss <= 25.0)
+    {
+        bXangModPacketLossAboveThreshold = false;
+        fXangModPacketLossAboveSince = 0.0;
+        return;
+    }
+
+    if (!bXangModPacketLossAboveThreshold)
+    {
+        bXangModPacketLossAboveThreshold = true;
+        fXangModPacketLossAboveSince = WorldInfo.TimeSeconds;
+        return;
+    }
+
+    // Give short loss bursts time to recover; this is a reconnect, not a ban.
+    if (WorldInfo.TimeSeconds - fXangModPacketLossAboveSince < 5.0)
+        return;
+
+    PacketLossPC = `{GAMEMODE}PlayerController(OwnerController);
+    if (PacketLossPC == none)
+        return;
+
+    bXangModPacketLossReconnectIssued = true;
+    PacketLossPC.ClientReconnectDueToPacketLoss();
 }
 
 

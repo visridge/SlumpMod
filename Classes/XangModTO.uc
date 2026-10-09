@@ -11,6 +11,11 @@ var bool bCECompForestAutoskipFired;
 // Stage index skipped by AdminSkipObjective; its bonus time is zeroed when the map advances. -1 = none.
 var int XangModSkipStage;
 
+// Bot King (XangModAIKing maps); the flag mutes vanilla's King pick for one tick.
+var XangModKingBot XangModAIKingBot;
+var AOCObjective_Assassination XangModKingObj;
+var bool bXangModKingHandoff;
+
 `include(XangMod/Include/XangModTO.uci)
 `include(XangMod/Include/XangModGame.uci)
 `include(XangMod/Include/XangModTOGamemode.uci)

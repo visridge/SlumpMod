@@ -10,8 +10,9 @@ var float altRiposteExtraWindup;
 
 var float fLastReleaseStartTime;
 var bool bShowHitTime;
-var float fLastParrySuccessTime;                // Time when parry successfully activated (for riposte grace period)
-var float fRiposteGracePeriod;                  // Grace period after parry where flinch is disabled (default 200ms)
+var float fLastParrySuccessTime;                // Local/server time of the last successful parry
+var bool bHasSuccessfulParryTimeForFeintLockout;
+var float fRiposteGracePeriod;                  // Legacy flinch grace-period field; currently unused
 // var float BastardSwordSprintStartTime;
 // var bool bWasBastardSwordSprinting;
 var bool bKanaboExtraJumpUsed;
@@ -19,6 +20,7 @@ var CylinderComponent OuterCylinderComp; // Reference to the OuterCylinder compo
 var bool bXangModWarnedNoOwnerMesh;      // one-shot log guard: 1P -> 3P camera socket fallback
 var bool bXangModWarnedNoCameraSocket;   // one-shot log guard: neither mesh usable
 var bool bXangModWarnedStock1PMesh;      // one-shot log guard: stock 1P mesh substituted
+var float fXangModBrainCheckAt;          // AI pawns: next check for an XangModBotBrain (server)
 
 // (Deferred-hit state removed — replaced by the PendingHits hold model in XangModPawn.uc)
 

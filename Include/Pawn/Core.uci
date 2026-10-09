@@ -5,6 +5,7 @@ simulated event Tick(float DeltaTime)
 {
 	// local bool bCanUseBastardSwordSprintAttack;
 	// local bool bUsingBastardSword;
+	local XangModBotBrain Brain;
 
 	// Call parent first to do all normal tick logic
 	super.Tick(DeltaTime);
@@ -12,6 +13,18 @@ simulated event Tick(float DeltaTime)
 	// XANGMOD: commit any held swings whose latency window elapsed without a parry.
 	if (Role == ROLE_Authority)
 		ProcessPendingHits();
+
+	// XANGMOD: any combat-AI pawn gets the bot brain, whatever controller class the map spawned it with.
+	if (Role == ROLE_Authority && Health > 0 && WorldInfo.TimeSeconds >= fXangModBrainCheckAt && AOCAICombatController(Controller) != none)
+	{
+		fXangModBrainCheckAt = WorldInfo.TimeSeconds + 1.0f;
+		if (!XangModHasBrain())
+		{
+			Brain = Spawn(class'XangModBotBrain', self);
+			if (Brain != none)
+				Brain.Init(self);
+		}
+	}
 
 	if (Physics == PHYS_Walking || Physics == PHYS_Ladder || Physics == PHYS_Spider)
 	{
@@ -35,6 +48,16 @@ simulated event Tick(float DeltaTime)
 	PlayLowStaminaLoop(Stamina <= 15.0f && Health > 0.0f);
 }
 
+
+// Owned-actor check, so the parent and gamemode copies of Tick can't spawn two brains.
+function bool XangModHasBrain()
+{
+	local XangModBotBrain B;
+
+	foreach ChildActors(class'XangModBotBrain', B)
+		return true;
+	return false;
+}
 
 //simple debug function
 function DrawTextOverHead(string DebugText)

@@ -10,9 +10,55 @@ exec function PerformAim() {
 		StartFire(1);
 }
 
+exec function PerformFeint(optional bool bMeleeOnly = false)
+{
+	if (ScriptBlockedInputs[EINBLOCK_Feint])
+		return;
+
+	// Stop both local prediction and listen-server input immediately after a successful parry.
+	if (XangModPawn(Pawn) != none && XangModPawn(Pawn).IsPostParryFeintLockoutActive())
+		return;
+
+	if (bMeleeOnly && (AOCRangeWeapon(Pawn.Weapon) != none || !(Pawn.Weapon.IsInState('Windup') || Pawn.Weapon.IsInState('Transition'))))
+		return;
+
+	if (Role == ROLE_Authority)
+	{
+		AOCPawn(Pawn).OnActionInitiated(EACT_Feint);
+
+		if (!Pawn.Weapon.IsInState('Active'))
+			AOCWeapon(Pawn.Weapon).DoFeintAttack();
+	}
+
+	if (Role < ROLE_Authority)
+	{
+		if (AOCWeapon(Pawn.Weapon).bCanFeint || Pawn.Weapon.IsInState('Reload'))
+		{
+			ServerPerformFeint();
+			AOCWeapon(Pawn.Weapon).DoFeintAttack();
+		}
+	}
+
+	// Cancel longbow windup
+	if (!bMeleeOnly && AOCRangeWeapon(Pawn.Weapon) != none)
+	{
+		if (Pawn.Weapon.IsInState('Reload') || Pawn.Weapon.IsInState('Hold') || Pawn.Weapon.IsInState('Windup') || Pawn.Weapon.IsInState('IronSightWindup'))
+		{
+			if (AOCWeapon_Longbow(Pawn.Weapon) != none)
+				AOCRangeWeapon(Pawn.Weapon).CancelRangedAttack();
+			else
+				StartFire(Attack_Parry);
+		}
+	}
+}
+
 reliable server function ServerPerformFeint()
 {
 	local float TimeSinceLastFeint;
+
+	// Server-authoritative backstop for clients that predict input before the parry RPC arrives.
+	if (XangModPawn(Pawn) != none && XangModPawn(Pawn).IsPostParryFeintLockoutActive())
+		return;
 	
 	// Block feint if already in Active/Feint state
 	if (Pawn.Weapon.IsInState('Active') || Pawn.Weapon.IsInState('Feint'))

@@ -1,7 +1,8 @@
 /**
 * XangMod combat bot — drop-in replacement for AOCAICombatController that makes "addbots"
-* bots noticeably less dumb in melee, with zero changes to the AI's decision logic. Only two
-* low-risk levers are pulled:
+* bots noticeably less dumb in melee. Extends AOCAIDuelCombatController so one controller covers
+* both "addbots" and duel-practice bots. Combat timing comes from XangModBotBrain; this class
+* pulls two low-risk levers:
 *
 *  1. SKILL FLOOR. Vanilla bots default to fSkill=0.6, and AOCAICombatController.ChooseBehaviour()
 *     OVERWRITES fSkill from AOCGame.GameDifficulty at spawn whenever GameDifficulty != 0 — so
@@ -20,7 +21,7 @@
 * avoid bots over-committing or running into walls. Tune fXangModMinSkill / the menacing vars
 * below to taste. Wired in via DefaultAIControllerClass in XangMod/Include/XangModGame.uci.
 */
-class XangModAOCCombatBot extends AOCAICombatController;
+class XangModAOCCombatBot extends AOCAIDuelCombatController;
 
 // Lower bound on bot skill (0.0-1.0). Applied after super.ChooseBehaviour() so it survives the
 // GameDifficulty overwrite. 0.85 ≈ markedly sharper than the 0.6 vanilla default without being

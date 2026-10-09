@@ -191,6 +191,18 @@ simulated function bool XangModDirectionalMeleeParry(HitInfo Info) {
 	return (HitDot >= 0.1736f) || (AttackerDot >= 0.1736f);
 }
 
+simulated function RecordSuccessfulParryTime()
+{
+	fLastParrySuccessTime = WorldInfo.TimeSeconds;
+	bHasSuccessfulParryTimeForFeintLockout = true;
+}
+
+simulated function bool IsPostParryFeintLockoutActive()
+{
+	return bHasSuccessfulParryTimeForFeintLockout
+		&& WorldInfo.TimeSeconds - fLastParrySuccessTime < 0.2;
+}
+
 simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, bool bCheckParryOnly, int ParryLR) {
 	local int StaminaDamage;
 	local bool bOutOfStamina;
@@ -224,11 +236,10 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
 	}
 
 	// Opponent has a successful parry
+	if (XangModPawn(Info.HitActor) != none)
+		XangModPawn(Info.HitActor).RecordSuccessfulParryTime();
+
 	AOCWeapon(Info.HitActor.Weapon).NotifySuccessfulParry(Info.AttackType, ParryLR);
-	
-	// Damage grace period disabled.
-	// if (XangModPawn(Info.HitActor) != none)
-	// 	XangModPawn(Info.HitActor).fLastParrySuccessTime = WorldInfo.TimeSeconds;
 
 	// If it hit the shield
 	if(Info.HitActor.StateVariables.bIsActiveShielding) {
