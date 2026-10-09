@@ -10,8 +10,9 @@ var float altRiposteExtraWindup;
 
 var float fLastReleaseStartTime;
 var bool bShowHitTime;
-var float fLastParrySuccessTime;                // Time when parry successfully activated (for riposte grace period)
-var float fRiposteGracePeriod;                  // Grace period after parry where flinch is disabled (default 200ms)
+var float fLastParrySuccessTime;                // Local/server time of the last successful parry
+var bool bHasSuccessfulParryTimeForFeintLockout;
+var float fRiposteGracePeriod;                  // Legacy flinch grace-period field; currently unused
 // var float BastardSwordSprintStartTime;
 // var bool bWasBastardSwordSprinting;
 var bool bKanaboExtraJumpUsed;

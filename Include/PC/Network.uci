@@ -122,6 +122,17 @@ reliable client function ClientCapBandwidth(int Cap)
 }
 
 /**
+ * Ask a client whose server-reported packet loss has stayed above the threshold to drop
+ * and re-join automatically instead of being kicked to the server browser. Invokes the
+ * engine's built-in `reconnect` console command (Engine.PlayerController exec Reconnect),
+ * which travels to the URL the client last connected to.
+ */
+reliable client function ClientReconnectDueToPacketLoss()
+{
+	ConsoleCommand("reconnect");
+}
+
+/**
  * Raise this client's own send budget at runtime. Usage: XangModNetSpeed 100000, then
  * check stat net under load.
  *

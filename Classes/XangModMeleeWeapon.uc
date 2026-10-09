@@ -28,6 +28,15 @@ var bool bAcceptLateParrySuccessInRecovery; // True only for ParryRelease -> Rec
 var float fMinComboTransitionTime;  // Minimum time before combo can release (100ms floor)
 var float fComboTransitionStartTime;  // When transition state began
 
+// Stamp the owning client's local clock when the authoritative parry-success RPC arrives.
+reliable client function ClientSuccessfulParry(EAttack Type, int Dir)
+{
+	if (XangModPawn(AOCOwner) != none)
+		XangModPawn(AOCOwner).RecordSuccessfulParryTime();
+
+	super.ClientSuccessfulParry(Type, Dir);
+}
+
 // Returns true when the weapon is in a riposte flow and should ignore flinch.
 simulated function bool IsRiposteFlinchProtected()
 {

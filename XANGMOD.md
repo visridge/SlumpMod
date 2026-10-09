@@ -297,7 +297,7 @@ _Messer`). Still without it:
 | `Classes/XangModCustomization*.uc` | character/helmet/armour customization system |
 | `Classes/XangModCharacterInfo_*.uc` | per-class character data (`DefaultProperties` only) |
 | `Classes/XangModFamilyInfo_*.uc` | per-class family/stat data |
-| `Classes/XangModAOCCombatBot.uc` | smarter melee bots for `addbots` |
+| `Classes/XangModAOCCombatBot.uc` | melee bot brain (skill floor + timed defence, feint reads, punish, riposte); extends `AOCAIDuelCombatController` so it also backs duel-practice bots |
 | `Classes/XangModNPC_New*.uc` | reduced-replication NPC variants |
 | `Localization/INT/XangMod.INT` | localized strings |
 
