@@ -127,6 +127,114 @@ exec function AdminCancelVote() {
 	super.AdminCancelVote();
 }
 
+exec function AdminRConStatus() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerAdminRConStatus();
+}
+
+// Listener state, every RCON session and recent rejected logins, to this admin's console.
+reliable server function ServerAdminRConStatus() {
+	local XangModRCon RCon;
+	local array<string> Lines;
+	local string Line;
+
+	if (!PlayerReplicationInfo.bAdmin)
+		return;
+
+	foreach WorldInfo.AllActors(class'XangModRCon', RCon) {
+		if (XangModRConSession(RCon) == none) {
+			RCon.XangModStatusLines(Lines);
+			break;
+		}
+	}
+	if (Lines.Length == 0)
+		Lines.AddItem("No XangMod RCON listener on this server.");
+
+	foreach Lines(Line)
+		ClientDisplayConsoleMessage(Line);
+}
+
+// Timer set by Game/Match.uci GenericPlayerInitialization, once per player per map.
+function XangModShowRankedHint() {
+	ReceiveChatMessage("Type !rankedhelp to see ranked commands.", EFAC_ALL, false, true, class'XangModRanked'.const.CHAT_COLOUR, false);
+}
+
+// Ranked lives on LTS only; every other mode just answers with a message.
+exec function VoteRanked() {
+	ServerVoteRanked();
+}
+
+reliable server function ServerVoteRanked() {
+	if (XangModLTS(WorldInfo.Game) == none) {
+		ClientDisplayConsoleMessage("Ranked mode is only available on LTS maps.");
+		return;
+	}
+	XangModLTS(WorldInfo.Game).InitiateVoteRanked(self, true);
+}
+
+exec function VoteUnranked() {
+	ServerVoteUnranked();
+}
+
+reliable server function ServerVoteUnranked() {
+	if (XangModLTS(WorldInfo.Game) == none) {
+		ClientDisplayConsoleMessage("Ranked mode is only available on LTS maps.");
+		return;
+	}
+	XangModLTS(WorldInfo.Game).InitiateVoteRanked(self, false);
+}
+
+exec function AdminStartMatch() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerAdminStartMatch();
+}
+
+// Skip the ranked queue countdown; needs an even number of queued players.
+reliable server function ServerAdminStartMatch() {
+	local string Problem;
+
+	if (!PlayerReplicationInfo.bAdmin)
+		return;
+
+	if (XangModLTS(WorldInfo.Game) == none)
+		Problem = "Ranked mode is only available on LTS maps.";
+	else
+		Problem = XangModLTS(WorldInfo.Game).AdminStartRankedMatch();
+
+	if (Problem != "") {
+		ClientDisplayConsoleMessage(Problem);
+		ReceiveChatMessage(Problem, EFAC_ALL, false, true, class'XangModRanked'.const.CHAT_COLOUR, false);
+		return;
+	}
+	S_AdminBroadcastMessage("AdminStartMatch");
+}
+
+exec function AdminTerminateMatch() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerAdminTerminateMatch();
+}
+
+// Void the live ranked match, no Elo changes, restart the map.
+reliable server function ServerAdminTerminateMatch() {
+	if (!PlayerReplicationInfo.bAdmin)
+		return;
+
+	if (XangModLTS(WorldInfo.Game) == none || !XangModLTS(WorldInfo.Game).TerminateRankedMatch()) {
+		ClientDisplayConsoleMessage("There is no ranked match in progress to terminate.");
+		return;
+	}
+	S_AdminBroadcastMessage("AdminTerminateMatch");
+}
+
 exec function AdminReadyAll() {
 	if (!PlayerReplicationInfo.bAdmin) {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
@@ -479,6 +587,10 @@ exec function CauseEvent(optional name EventName) {
 // can see which admin changed the map, and to where.
 reliable server function ServerChangeMap(string URL)
 {
+	// Covers AdminChangeMap and every AdminGoto*. A live ranked match restarts the map itself.
+	if (XangModLTS(WorldInfo.Game) != none && XangModLTS(WorldInfo.Game).RankedBlocksMapChange(self))
+		return;
+
 	if (IsAdmin() && AOCGame(WorldInfo.Game).MapExists(URL))
 		S_AdminBroadcastMessage("changed map to "$URL);
 	super.ServerChangeMap(URL);
@@ -497,6 +609,8 @@ exec function AdminRestartMap()
 reliable server function S_AdminRestartMap()
 {
 	if (!IsAdmin())
+		return;
+	if (XangModLTS(WorldInfo.Game) != none && XangModLTS(WorldInfo.Game).RankedBlocksMapChange(self))
 		return;
 	S_AdminBroadcastMessage("restarted the map");
 	WorldInfo.ServerTravel("?restart", false);

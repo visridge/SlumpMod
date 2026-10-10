@@ -1,0 +1,4 @@
+# Game servers authenticate with their own x-server-token header, not a Supabase JWT,
+# so the gateway's JWT check has to be off for this function.
+[functions.ranked]
+verify_jwt = false

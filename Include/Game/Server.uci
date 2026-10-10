@@ -35,7 +35,54 @@ function BroadcastMessage(PlayerController Sender, string Message, EAOCFaction D
         }
     }
 
+    // !rankedhelp: shown to everyone at most once per 30s; the typed line is never shown.
+    if (!bSystemMessage && SenderPC != none && Locs(Repl(Message, " ", "")) == "!rankedhelp")
+    {
+        if (LastRankedHelpTime == 0 || WorldInfo.RealTimeSeconds - LastRankedHelpTime >= 30.0)
+        {
+            LastRankedHelpTime = WorldInfo.RealTimeSeconds;
+            SendRankedHelp(SenderPC);
+        }
+        return;
+    }
+
     super.BroadcastMessage(Sender, Message, DesignatedTeam, bSystemMessage, bUseCustomColor, Col);
+}
+
+/** The !rankedhelp reply. Admin lines go only to the admin who asked. */
+function SendRankedHelp(AOCPlayerController Asker)
+{
+    local array<string> Lines;
+    local string Line;
+    local AOCPlayerController PC;
+
+    if (Ranked == none || Ranked.bTagsOnly)
+        Lines.AddItem("Ranked is played on LTS maps only.");
+    else
+        Lines.AddItem("Ranked is" @ (Ranked.bRankedEnabled ? "ON" : "OFF") @ "on this server.");
+    Lines.AddItem("To play: while ranked is on, pick a team and class on an LTS map to queue.");
+    Lines.AddItem("Any even number of players makes a match (2v2, 3v3, ...); it starts 30s after enough join.");
+    Lines.AddItem("voteranked (console): start a vote to turn ranked on.");
+    Lines.AddItem("voteunranked (console): start a vote to turn it off (between matches).");
+
+    foreach WorldInfo.AllControllers(class'AOCPlayerController', PC)
+    {
+        foreach Lines(Line)
+            PC.ReceiveChatMessage(Line, EFAC_ALL, false, true, class'XangModRanked'.const.CHAT_COLOUR, false);
+    }
+
+    if (Asker.PlayerReplicationInfo == none || !Asker.PlayerReplicationInfo.bAdmin)
+        return;
+
+    Lines.Length = 0;
+    Lines.AddItem("Admin: admin RankedMode 1|0 -- turn ranked on/off.");
+    Lines.AddItem("Admin: adminstartmatch -- start now with an even number queued (any size).");
+    Lines.AddItem("Admin: adminterminatematch -- end the ranked match, no Elo changes.");
+    Lines.AddItem("Admin: admin RankedExtend [seconds] / admin RankedAbandon -- during a leaver pause.");
+    Lines.AddItem("Admin: admin RankedMinTeamSize <n> / admin RankedMaxTeamSize <n> -- match size, per side.");
+
+    foreach Lines(Line)
+        Asker.ReceiveChatMessage(Line, EFAC_ALL, false, true, class'XangModRanked'.const.CHAT_COLOUR, false);
 }
 
 /**

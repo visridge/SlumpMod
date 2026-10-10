@@ -42,6 +42,10 @@ function bool ShouldCountDown()
     local Controller C;
     local AOCPlayerController PC;
 
+    // Ranked holds the countdown until matchmaking has locked the teams.
+    if (Ranked != none && !Ranked.AllowsCountdown())
+        return false;
+
     AgathaMod = 0;
     MasonMod = 0;
     foreach WorldInfo.AllControllers(class'Controller', C)
@@ -341,6 +345,9 @@ function EndGame(PlayerReplicationInfo Winner, string Reason)
     bXangModMatchEnded = true;
     super.EndGame(Winner, Reason);
 
+    if (Ranked != none)
+        Ranked.MatchEnded();
+
     if (!XangModRoundReportingEnabled())
         return;
     if (bXangModMatchEndEmitted)
@@ -498,3 +505,41 @@ reliable server function ConfigureTournamentMode(bool bEnable)
     class'AOCGame'.static.StaticSaveConfig();
 }
 
+
+// Ranked on LTS, Elo tags only on TO.
+function PostBeginPlay()
+{
+    super.PostBeginPlay();
+
+    if (!IsA('XangModLTS') && !IsA('XangModTO'))
+        return;
+
+    Ranked = Spawn(class'XangModRanked');
+    Ranked.InitRanked(IsA('XangModTO'));
+    if (IsA('XangModLTS'))
+        Ranked.Ping();
+}
+
+// Every player on every map, from PostLogin and seamless travel: ranked hint and Elo tag.
+function GenericPlayerInitialization(Controller C)
+{
+    local string StrippedName;
+
+    super.GenericPlayerInitialization(C);
+
+    // Delayed so the client HUD exists; earlier chat lines are dropped.
+    if (AOCPlayerController(C) != none)
+        C.SetTimer(8.0, false, 'XangModShowRankedHint');
+
+    if (Ranked != none && Ranked.IsConfigured())
+    {
+        Ranked.PlayerJoined(C);
+    }
+    else if (C.PlayerReplicationInfo != none)
+    {
+        // Names carry over between maps; drop the tag where Elo is not shown.
+        StrippedName = class'XangModRanked'.static.StripEloTag(C.PlayerReplicationInfo.PlayerName);
+        if (StrippedName != C.PlayerReplicationInfo.PlayerName)
+            ChangeName(C, StrippedName, false);
+    }
+}

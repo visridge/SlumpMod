@@ -20,6 +20,7 @@ class XangModRConSession extends XangModRCon;
 event PostBeginPlay()
 {
 	RConState = RCON_Connecting;
+	XangModOpenedAt = WorldInfo.RealTimeSeconds;
 
 	ParentLink = XangModFindListener();
 
@@ -27,6 +28,14 @@ event PostBeginPlay()
 		ParentLink.XangModRegisterSession(self);
 	else
 		LogAlwaysInternal("[XangModRCon] session spawned with no listener to attach to");
+}
+
+/** RemoteAddr is set by the time the native accept calls this. */
+event Accepted()
+{
+	XangModRemote = IpAddrToString(RemoteAddr);
+	LogAlwaysInternal("[XangModRCon] connection from" @ XangModRemote);
+	super.Accepted();
 }
 
 event Closed()

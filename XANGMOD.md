@@ -2047,6 +2047,36 @@ removed on 2026-09-14 and superseded by the RCON round events in §7.
 
 ---
 
+### 8.9 Ranked LTS
+
+Ported from MustMod (Love Norström's fork) 2026-10-10. Plan, backend contract and test
+list: project doc `ranked-lts-plan.md`. Backend source: `supabase/` in this folder.
+
+- `Classes/XangModRanked.uc` -- server-only state machine (queue, locked teams, leaver
+  pause, result) and HTTP to the Supabase `ranked` function. Spawned by `PostBeginPlay` in
+  `Game/Match.uci`: ranked on LTS, Elo name tags only on TO (`InitRanked(true)`).
+- Hooks: `ShouldCountDown` holds the countdown until teams lock; `EndGame` calls
+  `MatchEnded`; `GenericPlayerInitialization` tags names (strips them in other modes);
+  `BroadcastMessage` handles `!rankedhelp`. LTS-only hooks are in `Classes/XangModLTS.uc`.
+- Player: `voteranked`, `voteunranked`, chat `!rankedhelp`.
+- Admin: `admin RankedMode 1|0`, `adminstartmatch`, `adminterminatematch`,
+  `admin RankedExtend [s]`, `admin RankedAbandon`, `admin RankedMinTeamSize n`,
+  `admin RankedMaxTeamSize n`, `admin RankedPing`. While a match is live,
+  `AdminRestartMap`, `AdminChangeMap`/`AdminGoto*` and restart/change-map votes are refused.
+  RCON is deliberately not guarded.
+- Config goes in the **server's** `UDKGame.ini` only, never `DefaultXangMod.ini`:
+
+```
+[XangMod.XangModRanked]
+bRankedEnabled=false
+RankedEndpoint=https://<project-ref>.supabase.co/functions/v1/ranked
+RankedServerToken=<secret>
+RankedMinTeamSize=2
+RankedMaxTeamSize=16
+QueueCountdown=30
+LeaverPauseSeconds=120
+```
+
 ## 9. Testing
 
 ### 9.1 Host testing hides real bugs
@@ -2112,6 +2142,23 @@ data issues in weapon and character classes). The useful signal is the *fingerpr
 
 Chronological history, newest first. Carried over verbatim apart from heading levels
 and two include paths that the September 2026 split renamed.
+
+### RCON connection diagnostics: AdminRConStatus (2026-10-10)
+
+**Not yet compiled or tested in game.** For the report that RCON refuses other clients on
+servers tracked by heir.gg (heir.gg holds a persistent RCON event feed). `admin
+AdminRConStatus` prints the listener state and bound port, any non-XangMod `AOCRCon`
+actor, every session (peer, state, age, last data) and rejected logins this map. Sessions
+now log `connection from`, `authenticated`, and `login failed ... <reason>` (password
+rejected, frame not 50 bytes, no password within 2s) via `LogAlwaysInternal`.
+
+### Ranked LTS ported from MustMod (2026-10-10)
+
+**Not yet compiled or tested in game.** Ranked LTS and Elo name tags, ported from Love
+Norström's MustMod fork (MIT, modelled on ImbaMod). See §8.9. Differences from MustMod:
+the `switch` on the HTTP action became an `if / else` chain (§4.6); the ranked `EndGame`
+call lives in `Game/Match.uci` because that file already defines `EndGame`; the actor is
+spawned from `Game/Match.uci` and also runs on TO, tags only.
 
 ### RCON objective stages: opcode 69 for Team Objective (2026-10-05)
 

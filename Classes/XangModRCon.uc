@@ -89,6 +89,15 @@ var XangModRCon ParentLink;
 /** Live sessions. Listener only. */
 var array<XangModRCon> Sessions;
 
+/** Connection diagnostics for AdminRConStatus. Per session: peer, opened, last data. */
+var string XangModRemote;
+var float XangModOpenedAt;
+var float XangModLastRecvAt;
+/** Listener only: port actually bound, and rejected logins this map. */
+var int XangModBoundPort;
+var int XangModAuthFailures;
+var string XangModLastAuthFailure;
+
 /**
  * Persistent text mutes, mirroring AOCAccessControl.BanInfo/Bans. globalconfig so the
  * session subclass shares the listener's section ([XangMod.XangModRCon] in UDKGame.ini) rather than
@@ -200,6 +209,9 @@ function Tick(float fDeltaTime)
 	if (XangModRConSession(self) != none && RConState == RCON_Initialized)
 		RConState = RCON_Closing;
 
+	if (RConState == RCON_Connecting && AuthorizationTime + fDeltaTime > AUTHORIZATION_TIMEOUT)
+		XangModNoteAuthFailure("no password within 2s");
+
 	if (RConState != RCON_Initialized)
 	{
 		super.Tick(fDeltaTime);
@@ -229,12 +241,86 @@ function Tick(float fDeltaTime)
 	if (Listen())
 	{
 		RConState = RCON_Listening;
+		XangModBoundPort = Bound;
 		LogAlwaysInternal("[XangModRCon] listening on port" @ Bound);
 		return;
 	}
 
 	XangModNextBindTime = WorldInfo.TimeSeconds + BIND_RETRY_INTERVAL;
 	LogAlwaysInternal("[XangModRCon] bound port" @ Bound @ "but Listen() failed. RCON is NOT accepting connections.");
+}
+
+event ReceivedBinary(int Count, byte B[255])
+{
+	XangModLastRecvAt = WorldInfo.RealTimeSeconds;
+	if (RConState == RCON_Connecting && Count != 50)
+		XangModNoteAuthFailure("password frame was" @ Count @ "bytes, expected 50");
+	super.ReceivedBinary(Count, B);
+}
+
+function HandlePassword(AOCRConPacket Packet)
+{
+	super.HandlePassword(Packet);
+	if (RConState == RCON_Connected)
+		LogAlwaysInternal("[XangModRCon] authenticated" @ XangModRemote);
+	else
+		XangModNoteAuthFailure("password rejected");
+}
+
+function XangModNoteAuthFailure(string Reason)
+{
+	local XangModRCon Listener;
+
+	LogAlwaysInternal("[XangModRCon] login failed from" @ XangModRemote $ ":" @ Reason);
+	Listener = XangModShared();
+	Listener.XangModAuthFailures++;
+	Listener.XangModLastAuthFailure = XangModRemote @ "-" @ Reason;
+}
+
+function string XangModStateName()
+{
+	switch (RConState)
+	{
+		case RCON_Initialized: return "Initialized";
+		case RCON_Listening:   return "Listening";
+		case RCON_Connecting:  return "Authenticating";
+		case RCON_Connected:   return "Connected";
+		case RCON_Closing:     return "Closing";
+	}
+	return "?";
+}
+
+/** AdminRConStatus output. Call on the listener. */
+function XangModStatusLines(out array<string> Lines)
+{
+	local AOCRCon Other;
+	local int i, Foreign;
+	local float Now;
+
+	Now = WorldInfo.RealTimeSeconds;
+	Lines.AddItem("RCON listener:" @ XangModStateName() @ "| configured port" @ RConPort @ "| bound" @ XangModBoundPort
+		@ "| AcceptClass" @ string(AcceptClass));
+
+	foreach WorldInfo.AllActors(class'AOCRCon', Other)
+	{
+		if (XangModRCon(Other) == none)
+			Foreign++;
+	}
+	if (Foreign > 0)
+		Lines.AddItem("WARNING:" @ Foreign @ "non-XangMod AOCRCon actor(s) present.");
+
+	Lines.AddItem("Sessions:" @ Sessions.Length);
+	for (i = 0; i < Sessions.Length; i++)
+	{
+		if (Sessions[i] == none)
+			continue;
+		Lines.AddItem("  " $ Sessions[i].XangModRemote @ Sessions[i].XangModStateName()
+			@ "| open" @ int(Now - Sessions[i].XangModOpenedAt) $ "s"
+			@ "| last data" @ (Sessions[i].XangModLastRecvAt > 0 ? int(Now - Sessions[i].XangModLastRecvAt) $ "s ago" : "never"));
+	}
+
+	Lines.AddItem("Rejected logins this map:" @ XangModAuthFailures
+		$ (XangModLastAuthFailure != "" ? " | last: " $ XangModLastAuthFailure : ""));
 }
 
 /** Shared state lives on the listener, so two admins cannot each keep their own copy. */
