@@ -20,6 +20,7 @@ var int XangModAIKingMode;    // AdminAIKing: 0 = as configured, 1 = on, 2 = off
 `include(XangMod/Include/XangModTO.uci)
 `include(XangMod/Include/XangModGame.uci)
 `include(XangMod/Include/XangModTOGamemode.uci)
+`include(XangMod/Include/XangModRankedHooks.uci)
 
 DefaultProperties
 {

@@ -168,11 +168,12 @@ exec function VoteRanked() {
 }
 
 reliable server function ServerVoteRanked() {
-	if (XangModLTS(WorldInfo.Game) == none) {
-		ClientDisplayConsoleMessage("Ranked mode is only available on LTS maps.");
-		return;
-	}
-	XangModLTS(WorldInfo.Game).InitiateVoteRanked(self, true);
+	if (XangModLTS(WorldInfo.Game) != none)
+		XangModLTS(WorldInfo.Game).InitiateVoteRanked(self, true);
+	else if (XangModTO(WorldInfo.Game) != none)
+		XangModTO(WorldInfo.Game).InitiateVoteRanked(self, true);
+	else
+		ClientDisplayConsoleMessage("Ranked mode is only available on LTS and TO maps.");
 }
 
 exec function VoteUnranked() {
@@ -180,11 +181,12 @@ exec function VoteUnranked() {
 }
 
 reliable server function ServerVoteUnranked() {
-	if (XangModLTS(WorldInfo.Game) == none) {
-		ClientDisplayConsoleMessage("Ranked mode is only available on LTS maps.");
-		return;
-	}
-	XangModLTS(WorldInfo.Game).InitiateVoteRanked(self, false);
+	if (XangModLTS(WorldInfo.Game) != none)
+		XangModLTS(WorldInfo.Game).InitiateVoteRanked(self, false);
+	else if (XangModTO(WorldInfo.Game) != none)
+		XangModTO(WorldInfo.Game).InitiateVoteRanked(self, false);
+	else
+		ClientDisplayConsoleMessage("Ranked mode is only available on LTS and TO maps.");
 }
 
 exec function AdminStartMatch() {
@@ -202,10 +204,12 @@ reliable server function ServerAdminStartMatch() {
 	if (!PlayerReplicationInfo.bAdmin)
 		return;
 
-	if (XangModLTS(WorldInfo.Game) == none)
-		Problem = "Ranked mode is only available on LTS maps.";
-	else
+	if (XangModLTS(WorldInfo.Game) != none)
 		Problem = XangModLTS(WorldInfo.Game).AdminStartRankedMatch();
+	else if (XangModTO(WorldInfo.Game) != none)
+		Problem = XangModTO(WorldInfo.Game).AdminStartRankedMatch();
+	else
+		Problem = "Ranked mode is only available on LTS and TO maps.";
 
 	if (Problem != "") {
 		ClientDisplayConsoleMessage(Problem);
@@ -225,10 +229,17 @@ exec function AdminTerminateMatch() {
 
 // Void the live ranked match, no Elo changes, restart the map.
 reliable server function ServerAdminTerminateMatch() {
+	local bool bTerminated;
+
 	if (!PlayerReplicationInfo.bAdmin)
 		return;
 
-	if (XangModLTS(WorldInfo.Game) == none || !XangModLTS(WorldInfo.Game).TerminateRankedMatch()) {
+	if (XangModLTS(WorldInfo.Game) != none)
+		bTerminated = XangModLTS(WorldInfo.Game).TerminateRankedMatch();
+	else if (XangModTO(WorldInfo.Game) != none)
+		bTerminated = XangModTO(WorldInfo.Game).TerminateRankedMatch();
+
+	if (!bTerminated) {
 		ClientDisplayConsoleMessage("There is no ranked match in progress to terminate.");
 		return;
 	}
@@ -583,12 +594,22 @@ exec function CauseEvent(optional name EventName) {
 	super.CauseEvent(EventName);
 }
 
+// A live ranked match (LTS or TO) restarts its own map; block admin map changes while it is on.
+function bool XangModRankedBlockingMapChange()
+{
+	if (XangModLTS(WorldInfo.Game) != none)
+		return XangModLTS(WorldInfo.Game).RankedBlocksMapChange(self);
+	if (XangModTO(WorldInfo.Game) != none)
+		return XangModTO(WorldInfo.Game).RankedBlocksMapChange(self);
+	return false;
+}
+
 // Log map changes to chat (chat is mirrored to the in-game console) so everyone
 // can see which admin changed the map, and to where.
 reliable server function ServerChangeMap(string URL)
 {
 	// Covers AdminChangeMap and every AdminGoto*. A live ranked match restarts the map itself.
-	if (XangModLTS(WorldInfo.Game) != none && XangModLTS(WorldInfo.Game).RankedBlocksMapChange(self))
+	if (XangModRankedBlockingMapChange())
 		return;
 
 	if (IsAdmin() && AOCGame(WorldInfo.Game).MapExists(URL))
@@ -610,7 +631,7 @@ reliable server function S_AdminRestartMap()
 {
 	if (!IsAdmin())
 		return;
-	if (XangModLTS(WorldInfo.Game) != none && XangModLTS(WorldInfo.Game).RankedBlocksMapChange(self))
+	if (XangModRankedBlockingMapChange())
 		return;
 	S_AdminBroadcastMessage("restarted the map");
 	WorldInfo.ServerTravel("?restart", false);

@@ -1,6 +1,6 @@
 /**
- * Ranked LTS and Elo name tags. Server-only; spawned by Game/Match.uci PostBeginPlay on LTS
- * (ranked) and TO (tags only). Ported from MustMod (Love Norstrom), modelled on ImbaMod.
+ * Ranked LTS/TO and Elo name tags. Server-only; spawned by Game/Match.uci PostBeginPlay on LTS
+ * and TO (both matchmade when bRankedEnabled). Ported from MustMod (Love Norstrom), modelled on ImbaMod.
  * Backend: supabase/functions/ranked. Config: server UDKGame.ini [XangMod.XangModRanked] only;
  * the token must never go in DefaultXangMod.ini.
  */
@@ -29,7 +29,7 @@ enum ERankedState
 
 var ERankedState RankedState;
 
-/** Set by InitRanked on TO: Elo tags only, never queues or matchmakes. */
+/** Tags-only mode; always false now (InitRanked(false)), so ranked queues on LTS and TO alike. */
 var bool bTagsOnly;
 
 var float QueueStartTime;

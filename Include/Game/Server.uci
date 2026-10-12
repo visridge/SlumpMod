@@ -56,11 +56,11 @@ function SendRankedHelp(AOCPlayerController Asker)
     local string Line;
     local AOCPlayerController PC;
 
-    if (Ranked == none || Ranked.bTagsOnly)
-        Lines.AddItem("Ranked is played on LTS maps only.");
+    if (Ranked == none)
+        Lines.AddItem("Ranked is not available on this map.");
     else
         Lines.AddItem("Ranked is" @ (Ranked.bRankedEnabled ? "ON" : "OFF") @ "on this server.");
-    Lines.AddItem("To play: while ranked is on, pick a team and class on an LTS map to queue.");
+    Lines.AddItem("To play: while ranked is on, pick a team and class to queue.");
     Lines.AddItem("Any even number of players makes a match (2v2, 3v3, ...); it starts 30s after enough join.");
     Lines.AddItem("voteranked (console): start a vote to turn ranked on.");
     Lines.AddItem("voteunranked (console): start a vote to turn it off (between matches).");

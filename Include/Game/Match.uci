@@ -506,7 +506,7 @@ reliable server function ConfigureTournamentMode(bool bEnable)
 }
 
 
-// Ranked on LTS, Elo tags only on TO.
+// Ranked on LTS and TO, both gated by the same bRankedEnabled flag. Elo tags still show when off.
 function PostBeginPlay()
 {
     super.PostBeginPlay();
@@ -515,9 +515,8 @@ function PostBeginPlay()
         return;
 
     Ranked = Spawn(class'XangModRanked');
-    Ranked.InitRanked(IsA('XangModTO'));
-    if (IsA('XangModLTS'))
-        Ranked.Ping();
+    Ranked.InitRanked(false);
+    Ranked.Ping();
 }
 
 // Every player on every map, from PostLogin and seamless travel: ranked hint and Elo tag.
