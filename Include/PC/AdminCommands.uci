@@ -246,6 +246,110 @@ reliable server function ServerAdminTerminateMatch() {
 	S_AdminBroadcastMessage("AdminTerminateMatch");
 }
 
+// ---- Ranked admin commands (GameInfo-side work lives in XangModRankedHooks.uci) ----
+
+exec function RankedMode(bool bEnable) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerRankedMode(bEnable);
+}
+
+reliable server function ServerRankedMode(bool bEnable) {
+	if (!PlayerReplicationInfo.bAdmin)
+		return;
+	if (XangModLTS(WorldInfo.Game) != none)
+		XangModLTS(WorldInfo.Game).SetRankedMode(bEnable);
+	else if (XangModTO(WorldInfo.Game) != none)
+		XangModTO(WorldInfo.Game).SetRankedMode(bEnable);
+}
+
+exec function RankedMinTeamSize(int Size) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerRankedMinTeamSize(Size);
+}
+
+reliable server function ServerRankedMinTeamSize(int Size) {
+	if (!PlayerReplicationInfo.bAdmin)
+		return;
+	if (XangModLTS(WorldInfo.Game) != none)
+		XangModLTS(WorldInfo.Game).RankedMinTeamSize(Size);
+	else if (XangModTO(WorldInfo.Game) != none)
+		XangModTO(WorldInfo.Game).RankedMinTeamSize(Size);
+}
+
+exec function RankedMaxTeamSize(int Size) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerRankedMaxTeamSize(Size);
+}
+
+reliable server function ServerRankedMaxTeamSize(int Size) {
+	if (!PlayerReplicationInfo.bAdmin)
+		return;
+	if (XangModLTS(WorldInfo.Game) != none)
+		XangModLTS(WorldInfo.Game).RankedMaxTeamSize(Size);
+	else if (XangModTO(WorldInfo.Game) != none)
+		XangModTO(WorldInfo.Game).RankedMaxTeamSize(Size);
+}
+
+exec function RankedExtend(optional int Seconds) {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerRankedExtend(Seconds);
+}
+
+reliable server function ServerRankedExtend(optional int Seconds) {
+	if (!PlayerReplicationInfo.bAdmin)
+		return;
+	if (XangModLTS(WorldInfo.Game) != none)
+		XangModLTS(WorldInfo.Game).RankedExtend(Seconds);
+	else if (XangModTO(WorldInfo.Game) != none)
+		XangModTO(WorldInfo.Game).RankedExtend(Seconds);
+}
+
+exec function RankedAbandon() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerRankedAbandon();
+}
+
+reliable server function ServerRankedAbandon() {
+	if (!PlayerReplicationInfo.bAdmin)
+		return;
+	if (XangModLTS(WorldInfo.Game) != none)
+		XangModLTS(WorldInfo.Game).RankedAbandon();
+	else if (XangModTO(WorldInfo.Game) != none)
+		XangModTO(WorldInfo.Game).RankedAbandon();
+}
+
+exec function RankedPing() {
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	ServerRankedPing();
+}
+
+reliable server function ServerRankedPing() {
+	if (!PlayerReplicationInfo.bAdmin)
+		return;
+	if (XangModLTS(WorldInfo.Game) != none)
+		XangModLTS(WorldInfo.Game).RankedPing();
+	else if (XangModTO(WorldInfo.Game) != none)
+		XangModTO(WorldInfo.Game).RankedPing();
+}
+
 exec function AdminReadyAll() {
 	if (!PlayerReplicationInfo.bAdmin) {
 		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");

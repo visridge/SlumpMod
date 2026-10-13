@@ -37,12 +37,6 @@ function RequestJoinClass(AOCPlayerController inController, EAOCFaction inTeam, 
 	super.RequestJoinClass(inController, inTeam, inClass, bForce, bSetClass);
 }
 
-/** admin RankedMode 1|0 */
-exec function RankedMode(bool bEnable)
-{
-	SetRankedMode(bEnable);
-}
-
 /** Saved to UDKGame.ini; restarts the map. Turning off mid-match voids it. */
 function SetRankedMode(bool bEnable)
 {
@@ -188,7 +182,7 @@ function bool TerminateRankedMatch()
 	return true;
 }
 
-exec function RankedMinTeamSize(int Size)
+function RankedMinTeamSize(int Size)
 {
 	if (Ranked == none || Size < 1 || Size > 16)
 		return;
@@ -198,7 +192,7 @@ exec function RankedMinTeamSize(int Size)
 	Ranked.Broadcast("Admin RankedMinTeamSize" @ Size);
 }
 
-exec function RankedMaxTeamSize(int Size)
+function RankedMaxTeamSize(int Size)
 {
 	if (Ranked == none || Size < 1 || Size > 16)
 		return;
@@ -209,14 +203,14 @@ exec function RankedMaxTeamSize(int Size)
 }
 
 /** No argument = another full LeaverPauseSeconds. */
-exec function RankedExtend(optional int Seconds)
+function RankedExtend(optional int Seconds)
 {
 	if (Ranked != none)
 		Ranked.ExtendPause(Seconds);
 }
 
 /** End a paused match now: leavers lose Elo, the rest is void. */
-exec function RankedAbandon()
+function RankedAbandon()
 {
 	if (Ranked != none && Ranked.IsPaused())
 	{
@@ -226,7 +220,7 @@ exec function RankedAbandon()
 }
 
 /** Backend connectivity check; result in Launch.log. */
-exec function RankedPing()
+function RankedPing()
 {
 	if (Ranked != none)
 		Ranked.Ping();

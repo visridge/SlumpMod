@@ -2061,11 +2061,11 @@ list: project doc `ranked-lts-plan.md`. Backend source: `supabase/` in this fold
   votes, ranked admin execs) lives in `Include/XangModRankedHooks.uci`, included by both
   `Classes/XangModLTS.uc` and `Classes/XangModTO.uc`.
 - Player: `voteranked`, `voteunranked`, chat `!rankedhelp`.
-- Admin: `admin RankedMode 1|0`, `adminstartmatch`, `adminterminatematch`,
-  `admin RankedExtend [s]`, `admin RankedAbandon`, `admin RankedMinTeamSize n`,
-  `admin RankedMaxTeamSize n`, `admin RankedPing`. While a match is live,
-  `AdminRestartMap`, `AdminChangeMap`/`AdminGoto*` and restart/change-map votes are refused.
-  RCON is deliberately not guarded.
+- Admin (typed directly, no `admin` prefix -- same as every other command in §8.2):
+  `RankedMode 1|0`, `adminstartmatch`, `adminterminatematch`, `RankedExtend [s]`,
+  `RankedAbandon`, `RankedMinTeamSize n`, `RankedMaxTeamSize n`, `RankedPing`. While a match
+  is live, `AdminRestartMap`, `AdminChangeMap`/`AdminGoto*` and restart/change-map votes are
+  refused. RCON is deliberately not guarded.
 - Config goes in the **server's** `UDKGame.ini` only, never `DefaultXangMod.ini`:
 
 ```
@@ -2144,6 +2144,15 @@ data issues in weapon and character classes). The useful signal is the *fingerpr
 
 Chronological history, newest first. Carried over verbatim apart from heading levels
 and two include paths that the September 2026 split renamed.
+
+### Ranked admin commands fixed to PlayerController execs (2026-10-12)
+
+**Not yet compiled or tested in game.** The ranked admin commands were `exec function` on the
+GameInfo, so a client's console never dispatched to them -- `RankedMode`, `RankedPing`, etc.
+came back "unrecognized". They are now PlayerController `exec` + `reliable server function`
+pairs (§8.1) in `Include/PC/AdminCommands.uci`, forwarding to the plain GameInfo methods in
+`Include/XangModRankedHooks.uci`. Typed directly, no `admin` prefix: `RankedMode 1|0`,
+`RankedPing`, `RankedMinTeamSize n`, `RankedMaxTeamSize n`, `RankedExtend [s]`, `RankedAbandon`.
 
 ### Ranked on TO (2026-10-12)
 
