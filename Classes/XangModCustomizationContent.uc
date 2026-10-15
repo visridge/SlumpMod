@@ -87,6 +87,8 @@ defaultproperties
 	Characters.Add(class'XangModCharacterInfo_Mason_Assassin')
 	Characters.Add(class'XangModCharacterInfo_Agatha_Footman_Archer')
 	Characters.Add(class'XangModCharacterInfo_Mason_Footman_Archer')
+	Characters.Add(class'XangModCharacterInfo_Agatha_Ninja')
+	Characters.Add(class'XangModCharacterInfo_Mason_Ninja')
 
     Teams.Empty()
     Teams.Add(class'XangModCustomizationTeam_Agatha') //0

@@ -138,4 +138,8 @@ defaultproperties
 
 	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_Cowboy", StaticMeshPath="CH_SlumpMod.SM_Cowboy", GearData=(GroupHexID="1700000027DC808", GearNameID=Cowboy, bVisibleInSelectorIfUnowned=false)))
 	Helmets.Add((SkeletalMeshPath="CH_SlumpMod.SK_baseball", StaticMeshPath="CH_SlumpMod.SM_baseball", GearData=(GroupHexID="170000002457482", GearNameID=Oakland_As, bVisibleInSelectorIfUnowned=false)))
+
+	/** Roll animations (shared with the Archer's ninja roll) **/
+	ThirdPersonAnimSets(19)=AnimSet'NinjaAnims.NinjaRollAnims'
+	FirstPersonAnimSets(19)=AnimSet'NinjaAnims.NinjaRollAnims_1p'
 }

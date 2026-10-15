@@ -248,7 +248,9 @@ simulated function SetCharacterAppearance(AssetStore_AOCPawn_Character AssetStor
 		&& AssetStore.BodyMaterial != none)
 	{
 		if (AssetStore.CharacterInfo == class'XangModCharacterInfo_Agatha_Assassin'
-			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Assassin')
+			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Assassin'
+			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Agatha_Ninja'
+			|| AssetStore.CharacterInfo == class'XangModCharacterInfo_Mason_Ninja')
 		{
 			// Ninja arms ship as a single neutral-grey slot; tint everything body.
 			for (i = 0; i < AssetStore.OwnerMesh.Materials.Length; ++i)
@@ -311,25 +313,19 @@ simulated function ResetBlends(optional float BlendOutTime = 0.3f, optional bool
 }
 
 /* ************************************************************************
- * WEAPON-KEYED NINJA (ASSASSIN) SKIN
+ * WEAPON-KEYED NINJA ROLL
  *
- * Picking one of the "ninja" primary weapons (SpikedMace, BastardSword, Kanabo,
- * Katana, GrandHammer -- currently on the Man-At-Arms) makes the pawn spawn with
- * the Assassin (ninja) mesh instead of its own class mesh, with no new UI slot
- * and no Flash asset. XangModRoll keys the roll dodge off the same weapons.
+ * The ninja skin is now a normal Man-At-Arms customization choice
+ * (XangModCharacterInfo_Agatha_Ninja / _Mason_Ninja) instead of being forced
+ * by the equipped primary weapon. XangModIsNinjaPrimary below is only used to
+ * key the ninja-roll dodge (XangModRoll) off the same weapons, so a MAA with a
+ * ninja weapon still rolls even without the ninja skin selected.
  *
- * The Assassin presentation already exists and is fully registered:
- *   - XangModCharacterInfo_Agatha_Assassin / _Mason_Assassin (SlumpCharacters.NinjaMesh*)
- *   - XangModCustomizationContent.GetDefaultCharacterIDFor maps ECLASS_SiegeEngineer
- *     -> the faction Assassin CharacterInfo.
- *
- * AOCPawn.LoadCharacterAssets() resolves the mesh from
- * PawnInfo.myCustomization.Character; we simply rewrite that ID before the
- * superclass runs. LoadCharacterAssets is per-pawn and simulated, so the same
- * remap runs on the server and on every client.
+ * The MAA CharacterInfo classes carry the ninja-roll anim sets (slot 19) so the
+ * roll animates on the default MAA mesh and on the selectable Ninja skin alike.
  **************************************************************************/
 
-/** True when the equipped primary is one of the ninja (Assassin-skin) weapons. */
+/** True when the equipped primary is one of the ninja weapons (keys the roll dodge). */
 simulated function bool XangModIsNinjaPrimary()
 {
 	return PawnInfo.myPrimary == class'XangModWeapon_Rapier'
@@ -417,24 +413,12 @@ simulated function ApplyXangModFootmanStats()
 	}
 }
 
-/** Rewrite the character ID to the Assassin or Footman before the character mesh is loaded. */
+/** Rewrite the character ID to the Footman before the character mesh is loaded. */
 simulated function LoadCharacterAssets()
 {
 	local EAOCFaction TeamID;
 
-	if (PawnFamily != none && XangModIsNinjaPrimary())
-	{
-		TeamID = GetCustomizationFactionFromActualFaction(PawnFamily.FamilyFaction);
-		PawnInfo.myCustomization.Character =
-			CustomizationClass.static.GetDefaultCharacterID(TeamID, ECLASS_SiegeEngineer);
-
-		// The Assassin inherits the Man-At-Arms helmet list, so a MAA's saved helmet
-		// index resolves to the correct helmet. Any other class's saved helmet index
-		// would point at the wrong helmet, so strip it to NoHat.
-		if (PawnFamily.ClassReference != ECLASS_ManAtArms)
-			PawnInfo.myCustomization.Helmet = 0;
-	}
-	else if (PawnFamily != none && XangModIsFootmanPrimary())
+	if (PawnFamily != none && XangModIsFootmanPrimary())
 	{
 		TeamID = GetCustomizationFactionFromActualFaction(PawnFamily.FamilyFaction);
 		PawnInfo.myCustomization.Character =
@@ -442,7 +426,7 @@ simulated function LoadCharacterAssets()
 
 		// The Footmen head mesh is modelled bare; a saved Archer helmet would sit on
 		// top of it (and resolve against the Archer helmet list, picking an unrelated
-		// hat). Strip it to NoHat like the Assassin path does for non-MAA classes.
+		// hat). Strip it to NoHat.
 		PawnInfo.myCustomization.Helmet = 0;
 	}
 
