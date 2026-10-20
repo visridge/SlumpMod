@@ -506,7 +506,7 @@ reliable server function ConfigureTournamentMode(bool bEnable)
 }
 
 
-// Ranked on LTS and TO, both gated by the same bRankedEnabled flag. Elo tags still show when off.
+// Ranked on LTS and TO, both gated by bRankedEnabled. Elo tags: LTS whenever configured; TO only while ranked is on.
 function PostBeginPlay()
 {
     super.PostBeginPlay();
@@ -515,7 +515,7 @@ function PostBeginPlay()
         return;
 
     Ranked = Spawn(class'XangModRanked');
-    Ranked.InitRanked(false);
+    Ranked.InitRanked(false, IsA('XangModTO'));
     Ranked.Ping();
 }
 
@@ -530,7 +530,7 @@ function GenericPlayerInitialization(Controller C)
     if (AOCPlayerController(C) != none)
         C.SetTimer(8.0, false, 'XangModShowRankedHint');
 
-    if (Ranked != none && Ranked.IsConfigured())
+    if (Ranked != none && Ranked.ShowEloTag())
     {
         Ranked.PlayerJoined(C);
     }

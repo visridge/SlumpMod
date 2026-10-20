@@ -32,6 +32,9 @@ var ERankedState RankedState;
 /** Tags-only mode; always false now (InitRanked(false)), so ranked queues on LTS and TO alike. */
 var bool bTagsOnly;
 
+/** True on TO: Elo name tags show only while bRankedEnabled (ranked mode on). LTS tags whenever configured. */
+var bool bTagRequiresRanked;
+
 var float QueueStartTime;
 var float NextQueueNotice;
 var string MatchId;
@@ -69,9 +72,10 @@ var bool bLoggedNotConfigured;
 
 // ---- Lifecycle -------------------------------------------------------------------------
 
-function InitRanked(bool bTagsOnlyMode)
+function InitRanked(bool bTagsOnlyMode, optional bool bTagRequiresRankedMode)
 {
 	bTagsOnly = bTagsOnlyMode;
+	bTagRequiresRanked = bTagRequiresRankedMode;
 
 	if (!IsActive())
 	{
@@ -125,6 +129,16 @@ function bool IsConfigured()
 function bool IsActive()
 {
 	return !bTagsOnly && bRankedEnabled && IsConfigured();
+}
+
+/** Whether Elo name tags should show on this map. TO only while ranked mode is on. */
+function bool ShowEloTag()
+{
+	if (!IsConfigured())
+		return false;
+	if (bTagRequiresRanked && !bRankedEnabled)
+		return false;
+	return true;
 }
 
 function int GetMinTeamSize()

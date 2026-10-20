@@ -2060,6 +2060,8 @@ list: project doc `ranked-lts-plan.md`. Backend source: `supabase/` in this fold
   `BroadcastMessage` handles `!rankedhelp`. The shared hook block (team lock, leaver pause,
   votes, ranked admin execs) lives in `Include/XangModRankedHooks.uci`, included by both
   `Classes/XangModLTS.uc` and `Classes/XangModTO.uc`.
+- Elo name tags: LTS shows `[elo] Name` whenever the backend is configured; TO shows it
+  only while `bRankedEnabled` is on (`ShowEloTag`, `bTagRequiresRanked` on the actor).
 - Player: `voteranked`, `voteunranked`, chat `!rankedhelp`.
 - Admin (typed directly, no `admin` prefix -- same as every other command in §8.2):
   `RankedMode 1|0`, `adminstartmatch`, `adminterminatematch`, `RankedExtend [s]`,
@@ -2144,6 +2146,13 @@ data issues in weapon and character classes). The useful signal is the *fingerpr
 
 Chronological history, newest first. Carried over verbatim apart from heading levels
 and two include paths that the September 2026 split renamed.
+
+### TO Elo tags gated on ranked mode (2026-10-20)
+
+**Not yet compiled or tested in game.** Elo name tags on TO now appear only while
+`bRankedEnabled` is on (`ShowEloTag` / `bTagRequiresRanked` on `XangModRanked`). LTS is
+unchanged: it tags whenever the backend is configured. Previously TO tagged whenever
+configured, even with ranked off.
 
 ### Ranked admin commands fixed to PlayerController execs (2026-10-12)
 
