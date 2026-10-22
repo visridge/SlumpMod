@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>XangMod Damage — Head / Torso / Legs per Weapon</title>
+<title>XangMod — Weapon Damage and Turn Caps</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 * { box-sizing: border-box; }
@@ -26,19 +26,37 @@ h1 { text-align: center; color: #58a6ff; font-size: 24px; margin: 0 0 6px; }
 .loc-tab { padding: 6px 16px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; font-size: 13px; transition: all 0.2s; }
 .loc-tab.active { background: #1f6feb; border-color: #1f6feb; color: #fff; }
 .loc-tab:hover:not(.active) { background: #30363d; }
+.turncaps { max-width: 1100px; margin: 0 auto 28px; }
+.turncaps h2 { color: #58a6ff; font-size: 20px; margin-bottom: 8px; }
+.turncaps p { color: #8b949e; font-size: 13px; line-height: 1.6; }
+.turncap-scroll { max-height: 420px; overflow: auto; border: 1px solid #30363d; border-radius: 8px; }
+.turncaps table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.turncaps th, .turncaps td { padding: 10px 12px; border-bottom: 1px solid #21262d; white-space: nowrap; }
+.turncaps thead th { position: sticky; top: 0; background: #21262d; color: #c9d1d9; text-align: center; }
+.turncaps tbody th { text-align: left; font-weight: 500; color: #c9d1d9; }
+.turncaps td { text-align: right; font-variant-numeric: tabular-nums; }
+.turncaps tbody tr:nth-child(even) { background: #161b22; }
 </style>
 </head>
 <body>
 
-<h1>XangMod — Effective Damage by Hit Location</h1>
+<h1>XangMod — Weapon Damage and Turn Caps</h1>
 <p class="subtitle">Damage = fBaseDamage &times; &Sigma;(DmgType[i] &times; Resist[i]) &times; LocationModifier — parsed from XangModWeaponAttachment_*.uc</p>
 
 <div class="info">
 <b>Formula:</b> <code>Resistance = DmgType[Swing]&times;Resist[Swing] + DmgType[Pierce]&times;Resist[Pierce] + DmgType[Blunt]&times;Resist[Blunt]</code><br>
 <b>Effective Damage = &lfloor;BaseDamage &times; Resistance &times; LocationModifier&rceil;</b> (rounded)<br>
-<b>Melee Location Modifiers:</b> Head &times;1.25, Torso &times;1.0, Legs &times;0.8<br>
+<b>Melee Location Modifiers:</b> Head &times;1.25, Torso &times;1.0, Legs &times;1.0<br>
 <b>Resistances (S/P/B):</b> <span style="color:#3fb950;">Archer 0.85/0.85/0.65</span> &middot; <span style="color:#f85149;">Knight 0.40/0.50/0.61</span> &middot; <span style="color:#58a6ff;">MaA 0.80/0.85/0.65</span> &middot; <span style="color:#d2a800;">Vanguard 0.60/0.80/0.70</span>
 </div>
+
+<section class="turncaps" aria-labelledby="turncaps-title">
+<h2 id="turncaps-title">Weapon turn caps</h2>
+<p>Stored rotation limits in Unreal rotation units per second. Parent-class values are included.
+Sprint limits, reversal decay, parry settings and reload state can change the effective limit in play.
+An n/a cell means the available local class hierarchy does not declare that value.</p>
+<div class="turncap-scroll"><table><thead><tr><th scope="col">Weapon</th><th scope="col" title="HorizontalRotateSpeed">Normal horizontal</th><th scope="col" title="AttackHorizRotateSpeed">Attack horizontal</th><th scope="col" title="VerticalRotateSpeed">Vertical</th><th scope="col" title="SprintAttackHorizRotateSpeed">Sprint attack horizontal</th><th scope="col" title="SprintAttackVerticalRotateSpeed">Sprint attack vertical</th></tr></thead><tbody><tr><th scope="row">2HFlail</th><td title="HorizontalRotateSpeed from XangModWeapon_2HFlail">52,500</td><td title="AttackHorizRotateSpeed from XangModWeapon_2HFlail">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_2HFlail">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_2HFlail">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_2HFlail">20,000</td></tr><tr><th scope="row">AgathaFlag</th><td title="HorizontalRotateSpeed from AOCWeapon_Flag">65,000</td><td title="AttackHorizRotateSpeed from AOCWeapon_Flag">45,000</td><td title="VerticalRotateSpeed from AOCWeapon_Flag">50,000</td><td title="SprintAttackHorizRotateSpeed from AOCWeapon_Flag">20,000</td><td title="SprintAttackVerticalRotateSpeed from AOCWeapon_Flag">20,000</td></tr><tr><th scope="row">Bardiche</th><td title="HorizontalRotateSpeed from XangModWeapon_Bardiche">55,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Bardiche">55,000</td><td title="VerticalRotateSpeed from XangModWeapon_Bardiche">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Bardiche">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Bardiche">20,000</td></tr><tr><th scope="row">BastardSword</th><td title="HorizontalRotateSpeed from XangModWeapon_BastardSword">55,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_BastardSword">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_BastardSword">55,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_BastardSword">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_BastardSword">20,000</td></tr><tr><th scope="row">Bearded</th><td title="HorizontalRotateSpeed from XangModWeapon_Bearded">55,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Bearded">53,000</td><td title="VerticalRotateSpeed from XangModWeapon_Bearded">55,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Bearded">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Bearded">20,000</td></tr><tr><th scope="row">Bill</th><td title="HorizontalRotateSpeed from XangModWeapon_Bill">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Bill">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_Bill">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Bill">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Bill">20,000</td></tr><tr><th scope="row">BoStaff</th><td title="HorizontalRotateSpeed from XangModWeapon_BoStaff">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_BoStaff">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_BoStaff">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_BoStaff">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_BoStaff">20,000</td></tr><tr><th scope="row">Brandistock</th><td title="HorizontalRotateSpeed from XangModWeapon_Brandistock">45,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Brandistock">45,000</td><td title="VerticalRotateSpeed from XangModWeapon_Brandistock">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Brandistock">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Brandistock">20,000</td></tr><tr><th scope="row">BroadDagger</th><td title="HorizontalRotateSpeed from XangModWeapon_BroadDagger">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_BroadDagger">75,000</td><td title="VerticalRotateSpeed from XangModWeapon_BroadDagger">75,000</td><td title="SprintAttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackVerticalRotateSpeed: parent value unavailable">n/a</td></tr><tr><th scope="row">Broadsword</th><td title="HorizontalRotateSpeed from XangModWeapon_Broadsword">65,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Broadsword">70,000</td><td title="VerticalRotateSpeed from XangModWeapon_Broadsword">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Broadsword">40,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Broadsword">20,000</td></tr><tr><th scope="row">Buckler_Agatha</th><td title="HorizontalRotateSpeed: parent value unavailable">n/a</td><td title="AttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="VerticalRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackVerticalRotateSpeed: parent value unavailable">n/a</td></tr><tr><th scope="row">Buckler_Mason</th><td title="HorizontalRotateSpeed: parent value unavailable">n/a</td><td title="AttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="VerticalRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackVerticalRotateSpeed: parent value unavailable">n/a</td></tr><tr><th scope="row">Claymore</th><td title="HorizontalRotateSpeed from XangModWeapon_Claymore">50,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Claymore">50,000</td><td title="VerticalRotateSpeed from XangModWeapon_Claymore">50,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Claymore">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Claymore">20,000</td></tr><tr><th scope="row">Crossbow</th><td title="HorizontalRotateSpeed from XangModWeapon_Crossbow">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Crossbow">40,000</td><td title="VerticalRotateSpeed from XangModWeapon_Crossbow">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Crossbow">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Crossbow">20,000</td></tr><tr><th scope="row">Cudgel</th><td title="HorizontalRotateSpeed from XangModWeapon_Cudgel">70,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Cudgel">70,000</td><td title="VerticalRotateSpeed from XangModWeapon_Cudgel">70,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Cudgel">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Cudgel">20,000</td></tr><tr><th scope="row">Dagesse</th><td title="HorizontalRotateSpeed from XangModWeapon_Dagesse">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Dagesse">75,000</td><td title="VerticalRotateSpeed from XangModWeapon_Dagesse">70,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Dagesse">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Dagesse">20,000</td></tr><tr><th scope="row">Dane</th><td title="HorizontalRotateSpeed from XangModWeapon_Dane">65,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Dane">65,000</td><td title="VerticalRotateSpeed from XangModWeapon_Dane">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Dane">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Dane">20,000</td></tr><tr><th scope="row">DoubleAxe</th><td title="HorizontalRotateSpeed from XangModWeapon_DoubleAxe">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_DoubleAxe">53,000</td><td title="VerticalRotateSpeed from XangModWeapon_DoubleAxe">53,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_DoubleAxe">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_DoubleAxe">20,000</td></tr><tr><th scope="row">DualBucklers</th><td title="HorizontalRotateSpeed from XangModWeapon_DualBucklers">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_DualBucklers">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_DualBucklers">60,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_DualBucklers">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_DualBucklers">20,000</td></tr><tr><th scope="row">Falchion</th><td title="HorizontalRotateSpeed from XangModWeapon_Falchion">70,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Falchion">70,000</td><td title="VerticalRotateSpeed from XangModWeapon_Falchion">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Falchion">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Falchion">20,000</td></tr><tr><th scope="row">Firebug</th><td title="HorizontalRotateSpeed from XangModWeapon_Firebug">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Firebug">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_Firebug">60,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Firebug">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Firebug">20,000</td></tr><tr><th scope="row">FirebugThrow</th><td title="HorizontalRotateSpeed from XangModWeapon_FirebugThrow">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_FirebugThrow">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_FirebugThrow">60,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_FirebugThrow">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_FirebugThrow">20,000</td></tr><tr><th scope="row">Flail</th><td title="HorizontalRotateSpeed from XangModWeapon_Flail">70,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Flail">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_Flail">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Flail">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Flail">20,000</td></tr><tr><th scope="row">Fork</th><td title="HorizontalRotateSpeed from XangModWeapon_Fork">45,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Fork">45,000</td><td title="VerticalRotateSpeed from XangModWeapon_Fork">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Fork">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Fork">20,000</td></tr><tr><th scope="row">Gladius</th><td title="HorizontalRotateSpeed from XangModWeapon_Gladius">55,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Gladius">55,000</td><td title="VerticalRotateSpeed from XangModWeapon_Gladius">55,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Gladius">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Gladius">20,000</td></tr><tr><th scope="row">GrandHammer</th><td title="HorizontalRotateSpeed from XangModWeapon_GrandHammer">55,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_GrandHammer">49,500</td><td title="VerticalRotateSpeed from XangModWeapon_GrandHammer">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_GrandHammer">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_GrandHammer">20,000</td></tr><tr><th scope="row">GrandLance</th><td title="HorizontalRotateSpeed from XangModWeapon_GrandLance">40,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_GrandLance">40,000</td><td title="VerticalRotateSpeed from XangModWeapon_GrandLance">40,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_GrandLance">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_GrandLance">20,000</td></tr><tr><th scope="row">GrandMace</th><td title="HorizontalRotateSpeed from XangModWeapon_GrandMace">53,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_GrandMace">53,000</td><td title="VerticalRotateSpeed from XangModWeapon_GrandMace">53,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_GrandMace">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_GrandMace">20,000</td></tr><tr><th scope="row">Greatsword</th><td title="HorizontalRotateSpeed from XangModWeapon_Greatsword">50,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Greatsword">50,000</td><td title="VerticalRotateSpeed from XangModWeapon_Greatsword">50,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Greatsword">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Greatsword">20,000</td></tr><tr><th scope="row">HFlail</th><td title="HorizontalRotateSpeed from XangModWeapon_HFlail">70,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_HFlail">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_HFlail">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_HFlail">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_HFlail">20,000</td></tr><tr><th scope="row">Halberd</th><td title="HorizontalRotateSpeed from XangModWeapon_Halberd">55,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Halberd">55,000</td><td title="VerticalRotateSpeed from XangModWeapon_Halberd">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Halberd">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Halberd">20,000</td></tr><tr><th scope="row">Hatchet</th><td title="HorizontalRotateSpeed from XangModWeapon_Hatchet">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Hatchet">75,000</td><td title="VerticalRotateSpeed from XangModWeapon_Hatchet">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Hatchet">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Hatchet">20,000</td></tr><tr><th scope="row">Heater_Agatha</th><td title="HorizontalRotateSpeed: parent value unavailable">n/a</td><td title="AttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="VerticalRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackVerticalRotateSpeed: parent value unavailable">n/a</td></tr><tr><th scope="row">Heater_Mason</th><td title="HorizontalRotateSpeed: parent value unavailable">n/a</td><td title="AttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="VerticalRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackVerticalRotateSpeed: parent value unavailable">n/a</td></tr><tr><th scope="row">HeavyCrossbow</th><td title="HorizontalRotateSpeed from XangModWeapon_HeavyCrossbow">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_HeavyCrossbow">30,000</td><td title="VerticalRotateSpeed from XangModWeapon_HeavyCrossbow">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_HeavyCrossbow">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_HeavyCrossbow">20,000</td></tr><tr><th scope="row">HeavyJavelinMelee</th><td title="HorizontalRotateSpeed from XangModWeapon_HeavyJavelinMelee">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_HeavyJavelinMelee">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_HeavyJavelinMelee">60,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_HeavyJavelinMelee">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_HeavyJavelinMelee">20,000</td></tr><tr><th scope="row">HeavyJavelinThrow</th><td title="HorizontalRotateSpeed from XangModWeapon_HeavyJavelinThrow">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_HeavyJavelinThrow">75,000</td><td title="VerticalRotateSpeed from XangModWeapon_HeavyJavelinThrow">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_HeavyJavelinThrow">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_HeavyJavelinThrow">20,000</td></tr><tr><th scope="row">HolyWaterSprinkler</th><td title="HorizontalRotateSpeed from XangModWeapon_HolyWaterSprinkler">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_HolyWaterSprinkler">75,000</td><td title="VerticalRotateSpeed from XangModWeapon_HolyWaterSprinkler">60,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_HolyWaterSprinkler">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_HolyWaterSprinkler">20,000</td></tr><tr><th scope="row">HuntingKnife</th><td title="HorizontalRotateSpeed from XangModWeapon_HuntingKnife">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_HuntingKnife">75,000</td><td title="VerticalRotateSpeed from XangModWeapon_HuntingKnife">75,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_HuntingKnife">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_HuntingKnife">20,000</td></tr><tr><th scope="row">JavelinMelee</th><td title="HorizontalRotateSpeed from XangModWeapon_JavelinMelee">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_JavelinMelee">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_JavelinMelee">60,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_JavelinMelee">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_JavelinMelee">20,000</td></tr><tr><th scope="row">JavelinThrow</th><td title="HorizontalRotateSpeed from XangModWeapon_JavelinThrow">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_JavelinThrow">75,000</td><td title="VerticalRotateSpeed from XangModWeapon_JavelinThrow">50,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_JavelinThrow">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_JavelinThrow">20,000</td></tr><tr><th scope="row">Kanabo</th><td title="HorizontalRotateSpeed from XangModWeapon_Kanabo">53,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Kanabo">53,000</td><td title="VerticalRotateSpeed from XangModWeapon_Kanabo">53,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Kanabo">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Kanabo">20,000</td></tr><tr><th scope="row">Katana</th><td title="HorizontalRotateSpeed from XangModWeapon_Katana">55,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Katana">55,000</td><td title="VerticalRotateSpeed from XangModWeapon_Katana">55,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Katana">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Katana">20,000</td></tr><tr><th scope="row">Kite_Agatha</th><td title="HorizontalRotateSpeed: parent value unavailable">n/a</td><td title="AttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="VerticalRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackVerticalRotateSpeed: parent value unavailable">n/a</td></tr><tr><th scope="row">Kite_Mason</th><td title="HorizontalRotateSpeed: parent value unavailable">n/a</td><td title="AttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="VerticalRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackVerticalRotateSpeed: parent value unavailable">n/a</td></tr><tr><th scope="row">LightCrossbow</th><td title="HorizontalRotateSpeed from XangModWeapon_LightCrossbow">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_LightCrossbow">45,000</td><td title="VerticalRotateSpeed from XangModWeapon_LightCrossbow">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_LightCrossbow">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_LightCrossbow">20,000</td></tr><tr><th scope="row">Longbow</th><td title="HorizontalRotateSpeed from XangModWeapon_Longbow">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Longbow">40,000</td><td title="VerticalRotateSpeed from XangModWeapon_Longbow">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Longbow">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Longbow">20,000</td></tr><tr><th scope="row">Longsword</th><td title="HorizontalRotateSpeed from XangModWeapon_Longsword">55,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Longsword">55,000</td><td title="VerticalRotateSpeed from XangModWeapon_Longsword">55,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Longsword">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Longsword">20,000</td></tr><tr><th scope="row">Longsword1H</th><td title="HorizontalRotateSpeed from XangModWeapon_Longsword1H">55,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Longsword1H">65,000</td><td title="VerticalRotateSpeed from XangModWeapon_Longsword1H">55,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Longsword1H">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Longsword1H">20,000</td></tr><tr><th scope="row">Mace</th><td title="HorizontalRotateSpeed from XangModWeapon_Mace">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Mace">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_Mace">60,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Mace">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Mace">20,000</td></tr><tr><th scope="row">MasonFlag</th><td title="HorizontalRotateSpeed from AOCWeapon_Flag">65,000</td><td title="AttackHorizRotateSpeed from AOCWeapon_Flag">45,000</td><td title="VerticalRotateSpeed from AOCWeapon_Flag">50,000</td><td title="SprintAttackHorizRotateSpeed from AOCWeapon_Flag">20,000</td><td title="SprintAttackVerticalRotateSpeed from AOCWeapon_Flag">20,000</td></tr><tr><th scope="row">Maul</th><td title="HorizontalRotateSpeed from XangModWeapon_Maul">50,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Maul">50,000</td><td title="VerticalRotateSpeed from XangModWeapon_Maul">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Maul">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Maul">20,000</td></tr><tr><th scope="row">Messer</th><td title="HorizontalRotateSpeed from XangModWeapon_Messer">55,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Messer">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_Messer">55,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Messer">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Messer">20,000</td></tr><tr><th scope="row">Messer1H</th><td title="HorizontalRotateSpeed from XangModWeapon_Messer1H">55,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Messer1H">65,000</td><td title="VerticalRotateSpeed from XangModWeapon_Messer1H">55,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Messer1H">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Messer1H">20,000</td></tr><tr><th scope="row">MorningStar</th><td title="HorizontalRotateSpeed from XangModWeapon_MorningStar">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_MorningStar">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_MorningStar">60,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_MorningStar">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_MorningStar">20,000</td></tr><tr><th scope="row">Nodachi</th><td title="HorizontalRotateSpeed from XangModWeapon_Nodachi">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Nodachi">55,000</td><td title="VerticalRotateSpeed from XangModWeapon_Nodachi">60,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Nodachi">35,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Nodachi">30,000</td></tr><tr><th scope="row">NorseSword</th><td title="HorizontalRotateSpeed from XangModWeapon_NorseSword">70,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_NorseSword">70,000</td><td title="VerticalRotateSpeed from XangModWeapon_NorseSword">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_NorseSword">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_NorseSword">20,000</td></tr><tr><th scope="row">OilPot</th><td title="HorizontalRotateSpeed from XangModWeapon_OilPot">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_OilPot">65,000</td><td title="VerticalRotateSpeed from XangModWeapon_OilPot">65,000</td><td title="SprintAttackHorizRotateSpeed from AOCWeapon_ThrowingAxe">20,000</td><td title="SprintAttackVerticalRotateSpeed from AOCWeapon_ThrowingAxe">20,000</td></tr><tr><th scope="row">PoleAxe</th><td title="HorizontalRotateSpeed from XangModWeapon_PoleAxe">53,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_PoleAxe">53,000</td><td title="VerticalRotateSpeed from XangModWeapon_PoleAxe">53,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_PoleAxe">53,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_PoleAxe">53,000</td></tr><tr><th scope="row">PoleAxeBack</th><td title="HorizontalRotateSpeed from XangModWeapon_PoleAxeBack">50,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_PoleAxeBack">50,000</td><td title="VerticalRotateSpeed from XangModWeapon_PoleAxeBack">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_PoleAxeBack">53,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_PoleAxeBack">53,000</td></tr><tr><th scope="row">PoleHammer</th><td title="HorizontalRotateSpeed from XangModWeapon_PoleHammer">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_PoleHammer">50,000</td><td title="VerticalRotateSpeed from XangModWeapon_PoleHammer">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_PoleHammer">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_PoleHammer">20,000</td></tr><tr><th scope="row">QuarterStaff</th><td title="HorizontalRotateSpeed from XangModWeapon_QuarterStaff">65,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_QuarterStaff">55,000</td><td title="VerticalRotateSpeed from XangModWeapon_QuarterStaff">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_QuarterStaff">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_QuarterStaff">20,000</td></tr><tr><th scope="row">Rapier</th><td title="HorizontalRotateSpeed from XangModWeapon_Rapier">50,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Rapier">55,000</td><td title="VerticalRotateSpeed from XangModWeapon_Rapier">55,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Rapier">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Rapier">20,000</td></tr><tr><th scope="row">Saber</th><td title="HorizontalRotateSpeed from XangModWeapon_Saber">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Saber">70,000</td><td title="VerticalRotateSpeed from XangModWeapon_Saber">70,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Saber">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Saber">20,000</td></tr><tr><th scope="row">ShortSpearMelee</th><td title="HorizontalRotateSpeed from XangModWeapon_ShortSpearMelee">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_ShortSpearMelee">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_ShortSpearMelee">60,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_ShortSpearMelee">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_ShortSpearMelee">20,000</td></tr><tr><th scope="row">ShortSpearThrow</th><td title="HorizontalRotateSpeed from XangModWeapon_ShortSpearThrow">60,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_ShortSpearThrow">75,000</td><td title="VerticalRotateSpeed from XangModWeapon_ShortSpearThrow">50,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_ShortSpearThrow">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_ShortSpearThrow">20,000</td></tr><tr><th scope="row">Shortbow</th><td title="HorizontalRotateSpeed from XangModWeapon_Shortbow">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Shortbow">45,000</td><td title="VerticalRotateSpeed from XangModWeapon_Shortbow">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Shortbow">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Shortbow">20,000</td></tr><tr><th scope="row">Sling</th><td title="HorizontalRotateSpeed from XangModWeapon_Sling">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Sling">50,000</td><td title="VerticalRotateSpeed from XangModWeapon_Sling">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Sling">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Sling">20,000</td></tr><tr><th scope="row">SmokePot</th><td title="HorizontalRotateSpeed from XangModWeapon_SmokePot">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_SmokePot">65,000</td><td title="VerticalRotateSpeed from XangModWeapon_SmokePot">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_SmokePot">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_SmokePot">20,000</td></tr><tr><th scope="row">Spear</th><td title="HorizontalRotateSpeed from XangModWeapon_Spear">45,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Spear">45,000</td><td title="VerticalRotateSpeed from XangModWeapon_Spear">45,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Spear">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Spear">20,000</td></tr><tr><th scope="row">SpikedMace</th><td title="HorizontalRotateSpeed from XangModWeapon_SpikedMace">47,500</td><td title="AttackHorizRotateSpeed from XangModWeapon_SpikedMace">47,500</td><td title="VerticalRotateSpeed from XangModWeapon_SpikedMace">47,500</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Zweihander">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Zweihander">20,000</td></tr><tr><th scope="row">SwordOfWar</th><td title="HorizontalRotateSpeed from XangModWeapon_SwordOfWar">55,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_SwordOfWar">60,000</td><td title="VerticalRotateSpeed from XangModWeapon_SwordOfWar">55,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_SwordOfWar">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_SwordOfWar">20,000</td></tr><tr><th scope="row">SwordOfWar1H</th><td title="HorizontalRotateSpeed from XangModWeapon_SwordOfWar1H">65,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_SwordOfWar1H">55,000</td><td title="VerticalRotateSpeed from XangModWeapon_SwordOfWar1H">50,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_SwordOfWar1H">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_SwordOfWar1H">20,000</td></tr><tr><th scope="row">ThrowingAxe</th><td title="HorizontalRotateSpeed from XangModWeapon_ThrowingAxe">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_ThrowingAxe">50,000</td><td title="VerticalRotateSpeed from XangModWeapon_ThrowingAxe">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_ThrowingAxe">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_ThrowingAxe">20,000</td></tr><tr><th scope="row">ThrowingKnife</th><td title="HorizontalRotateSpeed from XangModWeapon_ThrowingKnife">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_ThrowingKnife">55,000</td><td title="VerticalRotateSpeed from XangModWeapon_ThrowingKnife">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_ThrowingKnife">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_ThrowingKnife">20,000</td></tr><tr><th scope="row">ThrustDagger</th><td title="HorizontalRotateSpeed from XangModWeapon_ThrustDagger">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_ThrustDagger">75,000</td><td title="VerticalRotateSpeed from XangModWeapon_ThrustDagger">75,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_ThrustDagger">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_ThrustDagger">20,000</td></tr><tr><th scope="row">TowerShield_Agatha</th><td title="HorizontalRotateSpeed: parent value unavailable">n/a</td><td title="AttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="VerticalRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackVerticalRotateSpeed: parent value unavailable">n/a</td></tr><tr><th scope="row">TowerShield_Mason</th><td title="HorizontalRotateSpeed: parent value unavailable">n/a</td><td title="AttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="VerticalRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackHorizRotateSpeed: parent value unavailable">n/a</td><td title="SprintAttackVerticalRotateSpeed: parent value unavailable">n/a</td></tr><tr><th scope="row">WarAxe</th><td title="HorizontalRotateSpeed from XangModWeapon_WarAxe">65,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_WarAxe">65,000</td><td title="VerticalRotateSpeed from XangModWeapon_WarAxe">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_WarAxe">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_WarAxe">20,000</td></tr><tr><th scope="row">WarHammer</th><td title="HorizontalRotateSpeed from XangModWeapon_WarHammer">650,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_WarHammer">65,000</td><td title="VerticalRotateSpeed from XangModWeapon_WarHammer">50,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_WarHammer">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_WarHammer">20,000</td></tr><tr><th scope="row">Warbow</th><td title="HorizontalRotateSpeed from XangModWeapon_Warbow">75,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Warbow">40,000</td><td title="VerticalRotateSpeed from XangModWeapon_Warbow">65,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Warbow">20,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Warbow">20,000</td></tr><tr><th scope="row">Zweihander</th><td title="HorizontalRotateSpeed from XangModWeapon_Zweihander">45,000</td><td title="AttackHorizRotateSpeed from XangModWeapon_Zweihander">45,000</td><td title="VerticalRotateSpeed from XangModWeapon_Zweihander">50,000</td><td title="SprintAttackHorizRotateSpeed from XangModWeapon_Zweihander">25,000</td><td title="SprintAttackVerticalRotateSpeed from XangModWeapon_Zweihander">20,000</td></tr></tbody></table></div>
+</section>
 
 <div class="weapon-grid" id="weaponGrid"></div>
 <div class="byclass" id="byClass"></div>
@@ -87,7 +105,7 @@ const CL = [
     "hex": "#d2a800"
   }
 ];
-const LOC = {"Head": 1.25, "Torso": 1.0, "Legs": 0.8};
+const LOC = {"Head": 1.25, "Torso": 1.0, "Legs": 1.0};
 const ATC = {Swing:"rgba(248,81,73,0.78)",Pierce:"rgba(63,185,80,0.78)",Blunt:"rgba(88,166,255,0.78)",SwingBlunt:"rgba(188,140,255,0.78)",PierceBlunt:"rgba(255,166,87,0.78)"};
 
 function calc(base, dtype, cls, loc) {
@@ -98,13 +116,27 @@ function calc(base, dtype, cls, loc) {
 }
 
 const W = {
+  "2HFlail": {
+    "0": [
+      75,
+      "Blunt"
+    ],
+    "1": [
+      82,
+      "Blunt"
+    ],
+    "2": [
+      25,
+      "PierceBlunt"
+    ]
+  },
   "Bardiche": {
     "0": [
       110,
       "Swing"
     ],
     "1": [
-      95,
+      100,
       "SwingBlunt"
     ],
     "2": [
@@ -132,7 +164,7 @@ const W = {
       "Swing"
     ],
     "1": [
-      100,
+      90,
       "SwingBlunt"
     ],
     "2": [
@@ -142,7 +174,7 @@ const W = {
   },
   "Bill": {
     "0": [
-      75,
+      70,
       "SwingBlunt"
     ],
     "1": [
@@ -150,22 +182,8 @@ const W = {
       "SwingBlunt"
     ],
     "2": [
-      76,
+      70,
       "Pierce"
-    ]
-  },
-  "BoStaff": {
-    "0": [
-      50,
-      "Blunt"
-    ],
-    "1": [
-      50,
-      "Blunt"
-    ],
-    "2": [
-      45,
-      "Blunt"
     ]
   },
   "Brandistock": {
@@ -178,7 +196,7 @@ const W = {
       "Pierce"
     ],
     "2": [
-      61,
+      65,
       "Pierce"
     ]
   },
@@ -198,7 +216,7 @@ const W = {
   },
   "Broadsword": {
     "0": [
-      70,
+      60,
       "Swing"
     ],
     "1": [
@@ -216,7 +234,7 @@ const W = {
       "Swing"
     ],
     "1": [
-      82,
+      80,
       "Swing"
     ],
     "2": [
@@ -230,7 +248,7 @@ const W = {
       "Blunt"
     ],
     "1": [
-      54,
+      55,
       "Blunt"
     ],
     "2": [
@@ -254,11 +272,11 @@ const W = {
   },
   "Dane": {
     "0": [
-      84,
+      90,
       "Swing"
     ],
     "1": [
-      84,
+      75,
       "SwingBlunt"
     ],
     "2": [
@@ -300,12 +318,40 @@ const W = {
       "SwingBlunt"
     ],
     "1": [
-      90,
+      95,
       "Swing"
     ],
     "2": [
       50,
       "Pierce"
+    ]
+  },
+  "Firebug": {
+    "0": [
+      40,
+      "Blunt"
+    ],
+    "1": [
+      54,
+      "Blunt"
+    ],
+    "2": [
+      20,
+      "Blunt"
+    ]
+  },
+  "Flail": {
+    "0": [
+      60,
+      "PierceBlunt"
+    ],
+    "1": [
+      70,
+      "PierceBlunt"
+    ],
+    "2": [
+      35,
+      "Blunt"
     ]
   },
   "Fork": {
@@ -338,16 +384,16 @@ const W = {
   },
   "GrandLance": {
     "0": [
-      25,
+      55,
       "SwingBlunt"
     ],
     "1": [
-      25,
+      65,
       "SwingBlunt"
     ],
     "2": [
-      100,
-      "Pierce"
+      80,
+      "Blunt"
     ]
   },
   "GrandMace": {
@@ -366,16 +412,30 @@ const W = {
   },
   "Greatsword": {
     "0": [
-      93,
+      90,
       "Swing"
     ],
     "1": [
-      93,
+      90,
       "Swing"
     ],
     "2": [
       70,
       "Pierce"
+    ]
+  },
+  "HFlail": {
+    "0": [
+      70,
+      "Blunt"
+    ],
+    "1": [
+      75,
+      "Blunt"
+    ],
+    "2": [
+      35,
+      "Blunt"
     ]
   },
   "Halberd": {
@@ -388,21 +448,21 @@ const W = {
       "SwingBlunt"
     ],
     "2": [
-      72,
+      75,
       "Pierce"
     ]
   },
   "Hatchet": {
     "0": [
-      70,
-      "SwingBlunt"
+      95,
+      "Swing"
     ],
     "1": [
-      74,
-      "SwingBlunt"
+      95,
+      "Swing"
     ],
     "2": [
-      20,
+      30,
       "Blunt"
     ]
   },
@@ -417,6 +477,20 @@ const W = {
     ],
     "2": [
       80,
+      "Pierce"
+    ]
+  },
+  "HeavyJavelinThrow": {
+    "0": [
+      40,
+      "Swing"
+    ],
+    "1": [
+      35,
+      "Blunt"
+    ],
+    "2": [
+      70,
       "Pierce"
     ]
   },
@@ -462,13 +536,27 @@ const W = {
       "Pierce"
     ]
   },
+  "JavelinThrow": {
+    "0": [
+      40,
+      "Swing"
+    ],
+    "1": [
+      35,
+      "Blunt"
+    ],
+    "2": [
+      60,
+      "Pierce"
+    ]
+  },
   "Kanabo": {
     "0": [
       75,
       "Blunt"
     ],
     "1": [
-      90,
+      75,
       "Blunt"
     ],
     "2": [
@@ -478,43 +566,29 @@ const W = {
   },
   "Katana": {
     "0": [
-      79,
+      80,
       "Swing"
     ],
     "1": [
-      86,
+      80,
       "Swing"
     ],
     "2": [
-      64,
-      "Pierce"
-    ]
-  },
-  "Katana1H": {
-    "0": [
-      60,
-      "Swing"
-    ],
-    "1": [
-      75,
-      "Swing"
-    ],
-    "2": [
-      55,
+      40,
       "Pierce"
     ]
   },
   "Longsword": {
     "0": [
-      79,
+      84,
       "Swing"
     ],
     "1": [
-      86,
+      84,
       "Swing"
     ],
     "2": [
-      64,
+      61,
       "Pierce"
     ]
   },
@@ -570,7 +644,7 @@ const W = {
       "Swing"
     ],
     "2": [
-      55,
+      60,
       "Pierce"
     ]
   },
@@ -618,11 +692,11 @@ const W = {
   },
   "NorseSword": {
     "0": [
-      60,
+      55,
       "Swing"
     ],
     "1": [
-      70,
+      65,
       "Swing"
     ],
     "2": [
@@ -632,15 +706,15 @@ const W = {
   },
   "PoleAxe": {
     "0": [
-      75,
-      "Swing"
+      70,
+      "SwingBlunt"
     ],
     "1": [
-      82,
-      "Swing"
+      90,
+      "Blunt"
     ],
     "2": [
-      75,
+      80,
       "Pierce"
     ]
   },
@@ -654,7 +728,7 @@ const W = {
       "Blunt"
     ],
     "2": [
-      70,
+      72,
       "Pierce"
     ]
   },
@@ -674,7 +748,7 @@ const W = {
   },
   "QuarterStaff": {
     "0": [
-      50,
+      45,
       "Blunt"
     ],
     "1": [
@@ -684,6 +758,20 @@ const W = {
     "2": [
       45,
       "Blunt"
+    ]
+  },
+  "Rapier": {
+    "0": [
+      45,
+      "Swing"
+    ],
+    "1": [
+      53,
+      "Pierce"
+    ],
+    "2": [
+      53,
+      "Pierce"
     ]
   },
   "Saber": {
@@ -701,6 +789,20 @@ const W = {
     ]
   },
   "ShortSpear": {
+    "0": [
+      40,
+      "Swing"
+    ],
+    "1": [
+      35,
+      "Blunt"
+    ],
+    "2": [
+      50,
+      "Pierce"
+    ]
+  },
+  "ShortSpearThrow": {
     "0": [
       40,
       "Swing"
@@ -752,7 +854,7 @@ const W = {
       "Swing"
     ],
     "2": [
-      72,
+      75,
       "Pierce"
     ]
   },
@@ -808,7 +910,7 @@ const W = {
       "Swing"
     ],
     "2": [
-      72,
+      70,
       "Pierce"
     ]
   }

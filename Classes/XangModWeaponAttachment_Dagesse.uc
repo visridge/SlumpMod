@@ -25,12 +25,12 @@ KickOffset=(X=50, Y=0, Z=-65)
 	WeaponClass=class'XangModWeapon_Dagesse'
 	WeaponSocket=wep1hpoint
 
-	AttackTypeInfo(0)=(fBaseDamage=40.0, fForce=8000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
-	AttackTypeInfo(1)=(fBaseDamage=45.0, fForce=8000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
-	AttackTypeInfo(2)=(fBaseDamage=50.0, fForce=8000, cDamageType="AOC.AOCDmgType_Pierce", iWorldHitLenience=6)
-	AttackTypeInfo(3)=(fBaseDamage=100.0, fForce=42500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
-	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=22500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
-	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
+	AttackTypeInfo(0)=(fBaseDamage=40.0, fForce=10000, cDamageType="AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=45.0, fForce=10000, cDamageType="AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(2)=(fBaseDamage=50.0, fForce=10000, cDamageType="AOCDmgType_Pierce", iWorldHitLenience=6)
+	AttackTypeInfo(3)=(fBaseDamage=100.0, fForce=42500, cDamageType="AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=22500, cDamageType="AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOCDmgType_Shove", iWorldHitLenience=12)
 
 	Skins(0)={(
 		SkeletalMeshPath="WP_aux_Shortsword.wep_shortsword",
@@ -47,4 +47,10 @@ KickOffset=(X=50, Y=0, Z=-65)
 		StaticMeshScale=1.0,
 		ImagePath="ui_custweaponimages_swf.skin_seax_png"
 		)};
+
+	// Mercenaries 1.996 numeric weapon values (Workshop 705710406).
+	ParryTracersLength=50
+	WeaponWidth=4
+	WeaponNumTracers=1
+	ParryCheckTraceInc=1
 }

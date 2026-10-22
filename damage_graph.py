@@ -2,10 +2,20 @@
 Damage Graph Generator for XangMod (Chivalry: Medieval Warfare)
 Calculates effective damage for each weapon vs each class at 3 hit locations.
 Formula: EffectiveDamage = fBaseDamage * sum(DamageType[i] * DamageResistances[i]) * LocationModifier
-         Melee LocationModifiers: Head=1.25, Torso=1.0, Legs=0.8
+         Melee LocationModifiers: Head=1.25, Torso=1.0, Legs=1.0
 """
 import os
 import re
+from html import escape
+from pathlib import Path
+
+TURN_CAP_FIELDS = (
+    ("HorizontalRotateSpeed", "Normal horizontal"),
+    ("AttackHorizRotateSpeed", "Attack horizontal"),
+    ("VerticalRotateSpeed", "Vertical"),
+    ("SprintAttackHorizRotateSpeed", "Sprint attack horizontal"),
+    ("SprintAttackVerticalRotateSpeed", "Sprint attack vertical"),
+)
 
 # Damage Type Compositions (EDMG_Swing, EDMG_Pierce, EDMG_Blunt, EDMG_Generic)
 DAMAGE_TYPES = {
@@ -26,12 +36,12 @@ CLASSES = {
     "Vanguard":  {"Swing": 0.60, "Pierce": 0.80, "Blunt": 0.70},
 }
 
-# Melee Hit Location Modifiers (from AOCFamilyInfo.uc)
-# Head=1.25, Torso=1.0, Legs=0.8 (Arm also 1.0 but we skip it)
+# Melee Hit Location Modifiers (AOCFamilyInfo.uc plus ProcessResolvedAttack's leg override)
+# Head=1.25, Torso=1.0, Legs=1.0 (Arm also 1.0 but we skip it)
 LOCATION_MODIFIERS = {
     "Head":  1.25,
     "Torso": 1.0,
-    "Legs":  0.8,
+    "Legs":  1.0,
 }
 
 # Color schemes for classes
@@ -96,7 +106,78 @@ def parse_weapon_files(base_dir):
     return weapons
 
 
-def generate_html(weapons, output_path):
+def parse_weapon_turncaps(base_dir):
+    """Resolve stored turn caps from weapon defaults and their local parents."""
+    root = Path(base_dir)
+    classes = root / "Classes"
+    sources = {p.stem.lower(): p for p in classes.glob("*.uc")}
+    # SDK checkouts have AOC beside XangMod; the standalone clone can use the local SDK source copy.
+    for parents in (root.parent / "AOC" / "Classes", root.parent / "Chiv" / "Src" / "AOC" / "Classes"):
+        for path in parents.glob("*.uc"):
+            sources.setdefault(path.stem.lower(), path)
+    cache = {}
+
+    def resolve(class_name, ancestors=()):
+        key = class_name.lower()
+        if key in cache:
+            return cache[key]
+        if key in ancestors:
+            raise ValueError(f"Weapon inheritance cycle at {class_name}")
+        path = sources.get(key)
+        if path is None:
+            return {}
+        text = path.read_text(encoding="utf-8-sig", errors="replace")
+        # Mask comments without treating comment markers inside quoted asset names as comments.
+        text = re.sub(
+            r'"(?:\\.|[^"\\])*"|\x27(?:\\.|[^\x27\\])*\x27|/\*.*?\*/|//[^\r\n]*',
+            lambda m: " " * len(m.group()) if m.group().startswith(("//", "/*")) else m.group(),
+            text, flags=re.DOTALL,
+        )
+        parent = re.search(r"\bclass\s+\w+\s+extends\s+(\w+)", text, re.IGNORECASE)
+        values = dict(resolve(parent[1], ancestors + (key,))) if parent else {}
+        defaults = re.search(r"\bdefaultproperties\s*\{", text, re.IGNORECASE)
+        if defaults:
+            body = text[defaults.end():]
+            for field, _ in TURN_CAP_FIELDS:
+                matches = re.findall(
+                    rf"^\s*{field}\s*=\s*([+-]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)[fF]?\b",
+                    body, flags=re.MULTILINE | re.IGNORECASE,
+                )
+                if matches:
+                    values[field] = {"value": float(matches[-1]), "source": path.stem}
+        cache[key] = values
+        return values
+
+    return {
+        path.stem.removeprefix("XangModWeapon_"): resolve(path.stem)
+        for path in sorted(classes.glob("XangModWeapon_*.uc"))
+    }
+
+
+def turncap_table_html(turncaps):
+    """Keep the stat table readable even when the external chart library is unavailable."""
+    headers = '<th scope="col">Weapon</th>' + "".join(
+        f'<th scope="col" title="{field}">{label}</th>' for field, label in TURN_CAP_FIELDS
+    )
+    rows = []
+    for weapon, values in sorted(turncaps.items()):
+        cells = []
+        for field, _ in TURN_CAP_FIELDS:
+            entry = values.get(field)
+            value = f"{entry['value']:,.0f}" if entry else "n/a"
+            source = escape(f"{field} from {entry['source']}" if entry else f"{field}: parent value unavailable")
+            cells.append(f'<td title="{source}">{value}</td>')
+        rows.append(f'<tr><th scope="row">{escape(weapon)}</th>{"".join(cells)}</tr>')
+    return f'''<section class="turncaps" aria-labelledby="turncaps-title">
+<h2 id="turncaps-title">Weapon turn caps</h2>
+<p>Stored rotation limits in Unreal rotation units per second. Parent-class values are included.
+Sprint limits, reversal decay, parry settings and reload state can change the effective limit in play.
+An n/a cell means the available local class hierarchy does not declare that value.</p>
+<div class="turncap-scroll"><table><thead><tr>{headers}</tr></thead><tbody>{"".join(rows)}</tbody></table></div>
+</section>'''
+
+
+def generate_html(weapons, output_path, turncaps=None):
     """Generate a self-contained HTML file with 3 hit-location charts per weapon."""
     
     # Build JavaScript weapon data
@@ -133,12 +214,13 @@ def generate_html(weapons, output_path):
     weapons_json = json.dumps(js_weapons, indent=2)
     classes_json = json.dumps(class_js, indent=2)
     loc_mod_json = json.dumps(LOCATION_MODIFIERS)
+    turncap_html = turncap_table_html(turncaps or {})
     
     html = f'''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>XangMod Damage — Head / Torso / Legs per Weapon</title>
+<title>XangMod — Weapon Damage and Turn Caps</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
 * {{ box-sizing: border-box; }}
@@ -162,11 +244,21 @@ h1 {{ text-align: center; color: #58a6ff; font-size: 24px; margin: 0 0 6px; }}
 .loc-tab {{ padding: 6px 16px; background: #21262d; border: 1px solid #30363d; border-radius: 6px; color: #8b949e; cursor: pointer; font-size: 13px; transition: all 0.2s; }}
 .loc-tab.active {{ background: #1f6feb; border-color: #1f6feb; color: #fff; }}
 .loc-tab:hover:not(.active) {{ background: #30363d; }}
+.turncaps {{ max-width: 1100px; margin: 0 auto 28px; }}
+.turncaps h2 {{ color: #58a6ff; font-size: 20px; margin-bottom: 8px; }}
+.turncaps p {{ color: #8b949e; font-size: 13px; line-height: 1.6; }}
+.turncap-scroll {{ max-height: 420px; overflow: auto; border: 1px solid #30363d; border-radius: 8px; }}
+.turncaps table {{ width: 100%; border-collapse: collapse; font-size: 13px; }}
+.turncaps th, .turncaps td {{ padding: 10px 12px; border-bottom: 1px solid #21262d; white-space: nowrap; }}
+.turncaps thead th {{ position: sticky; top: 0; background: #21262d; color: #c9d1d9; text-align: center; }}
+.turncaps tbody th {{ text-align: left; font-weight: 500; color: #c9d1d9; }}
+.turncaps td {{ text-align: right; font-variant-numeric: tabular-nums; }}
+.turncaps tbody tr:nth-child(even) {{ background: #161b22; }}
 </style>
 </head>
 <body>
 
-<h1>XangMod — Effective Damage by Hit Location</h1>
+<h1>XangMod — Weapon Damage and Turn Caps</h1>
 <p class="subtitle">Damage = fBaseDamage &times; &Sigma;(DmgType[i] &times; Resist[i]) &times; LocationModifier — parsed from XangModWeaponAttachment_*.uc</p>
 
 <div class="info">
@@ -175,6 +267,8 @@ h1 {{ text-align: center; color: #58a6ff; font-size: 24px; margin: 0 0 6px; }}
 <b>Melee Location Modifiers:</b> Head &times;{LOCATION_MODIFIERS["Head"]}, Torso &times;{LOCATION_MODIFIERS["Torso"]}, Legs &times;{LOCATION_MODIFIERS["Legs"]}<br>
 <b>Resistances (S/P/B):</b> <span style="color:#3fb950;">Archer 0.85/0.85/0.65</span> &middot; <span style="color:#f85149;">Knight 0.40/0.50/0.61</span> &middot; <span style="color:#58a6ff;">MaA 0.80/0.85/0.65</span> &middot; <span style="color:#d2a800;">Vanguard 0.60/0.80/0.70</span>
 </div>
+
+{turncap_html}
 
 <div class="weapon-grid" id="weaponGrid"></div>
 <div class="byclass" id="byClass"></div>
@@ -340,6 +434,7 @@ CL.forEach(cl => {{
     print(f"Generated {output_path}")
     print(f"  Weapons: {len(js_weapons)}")
     print(f"  Hit locations: {list(LOCATION_MODIFIERS.keys())}")
+    print(f"  Turn-cap weapon rows: {len(turncaps or {})}")
     
     # Print summary table (torso for backward compat)
     print(f"\n=== EFFECTIVE DAMAGE SUMMARY (Torso, Max of LMB/OH/Stab) ===")
@@ -365,6 +460,13 @@ CL.forEach(cl => {{
             print(f"{max_eff:>12}", end="")
         print()
 
+    print("\n=== STORED WEAPON TURN CAPS (Unreal rotation units / second) ===")
+    print(f"{'Weapon':<25}{'Normal H':>12}{'Attack H':>12}{'Vertical':>12}{'Sprint H':>12}{'Sprint V':>12}")
+    for weapon, values in sorted((turncaps or {}).items()):
+        cells = [f"{values[field]['value']:>12.0f}" if field in values else f"{'n/a':>12}"
+                 for field, _ in TURN_CAP_FIELDS]
+        print(f"{weapon:<25}" + "".join(cells))
+
 
 def main():
     # Auto-detect base directory: use script's own location
@@ -376,10 +478,11 @@ def main():
         base_dir = r"c:\Program Files (x86)\Steam\steamapps\common\chivalrymedievalwarfare\Development\Src\XangMod"
     
     weapons = parse_weapon_files(base_dir)
+    turncaps = parse_weapon_turncaps(base_dir)
     print(f"Parsed {len(weapons)} weapons from {base_dir}")
     
     output_path = os.path.join(base_dir, "damage_graph.html")
-    generate_html(weapons, output_path)
+    generate_html(weapons, output_path, turncaps)
 
 
 if __name__ == "__main__":

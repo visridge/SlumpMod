@@ -51,12 +51,18 @@ KickOffset=(X=50, Y=0, Z=-65)
 
 	bUseAlternativeKick=true
 
-	AttackTypeInfo(0)=(fBaseDamage=82, fForce=26000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
-	AttackTypeInfo(1)=(fBaseDamage=113.0, fForce=26000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
-	AttackTypeInfo(2)=(fBaseDamage=45.0, fForce=26000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(0)=(fBaseDamage=82, fForce=32500, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=113.0, fForce=32500, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(2)=(fBaseDamage=45.0, fForce=32500, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
 	AttackTypeInfo(3)=(fBaseDamage=0.0, fForce=22500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
 	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=32500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
 	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
 
 
+
+	// Mercenaries 1.996 numeric weapon values (Workshop 705710406).
+	ParryTracersLength=50
+	WeaponWidth=4
+	WeaponNumTracers=1
+	ParryCheckTraceInc=1
 }

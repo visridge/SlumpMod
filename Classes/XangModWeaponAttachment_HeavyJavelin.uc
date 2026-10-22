@@ -43,4 +43,10 @@ KickOffset=(X=50, Y=0, Z=-65)
 		StaticMeshScale=1.0,
 		ImagePath="UI_CustWeaponImages_SWF.skin_bardiche_png"
 		)};
+
+	// Mercenaries 1.996 numeric weapon values (Workshop 705710406).
+	ParryTracersLength=50
+	WeaponWidth=4
+	WeaponNumTracers=1
+	ParryCheckTraceInc=1
 }

@@ -642,6 +642,9 @@ function ProcessResolvedAttack(HitInfo Info, string DamageString, optional bool 
 	// If the hit was in a critical location, increase the damage
 	if (Info.UsedWeapon == 0 && XangModWeapon_Crossbow(Weapon) != none && Info.DamageType.default.bIsProjectile)
 		ActualDamage *= Info.HitActor.PawnFamily.CrossbowLocationModifiers[GetBoneLocation(Info.BoneName)];
+	else if (!Info.DamageType.default.bIsProjectile && GetBoneLocation(Info.BoneName) == EHIT_Legs)
+		// Melee legs use torso scaling globally; projectile leg modifiers stay unchanged.
+		ActualDamage *= Info.HitActor.PawnFamily.LocationModifiers[EHIT_Torso];
 	else
 		ActualDamage *= (Info.DamageType.default.bIsProjectile ? Info.HitActor.PawnFamily.ProjectileLocationModifiers[GetBoneLocation(Info.BoneName)] :
 			Info.HitActor.PawnFamily.LocationModifiers[GetBoneLocation(Info.BoneName)]);

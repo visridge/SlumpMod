@@ -32,11 +32,17 @@ KickOffset=(X=50, Y=0, Z=-65)
 
 	WeaponStaticMeshScale=1
 
-	AttackTypeInfo(0)=(fBaseDamage=30.0, fForce=29600, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
-	AttackTypeInfo(1)=(fBaseDamage=70.0, fForce=0, cDamageType="AOC.AOCDmgType_Pierce", iWorldHitLenience=6)
-	AttackTypeInfo(2)=(fBaseDamage=55.0, fForce=0, cDamageType="AOC.AOCDmgType_Pierce", iWorldHitLenience=6)
-	AttackTypeInfo(3)=(fBaseDamage=100.0, fForce=65000, cDamageType="AOC.AOCDmgType_Pierce", iWorldHitLenience=6)
-	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=32500, cDamageType="AOC.AOCDmgType_Pierce", iWorldHitLenience=6)
-	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
+	AttackTypeInfo(0)=(fBaseDamage=30.0, fForce=37000, cDamageType="AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=70.0, fForce=31500, cDamageType="AOCDmgType_Pierce", iWorldHitLenience=6)
+	AttackTypeInfo(2)=(fBaseDamage=55.0, fForce=26000, cDamageType="AOCDmgType_Pierce", iWorldHitLenience=6)
+	AttackTypeInfo(3)=(fBaseDamage=100.0, fForce=65000, cDamageType="AOCDmgType_Pierce", iWorldHitLenience=6)
+	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=32500, cDamageType="AOCDmgType_Pierce", iWorldHitLenience=6)
+	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOCDmgType_Shove", iWorldHitLenience=12)
 
+
+	// Mercenaries 1.996 numeric weapon values (Workshop 705710406).
+	ParryTracersLength=50
+	WeaponWidth=4
+	WeaponNumTracers=1
+	ParryCheckTraceInc=1
 }

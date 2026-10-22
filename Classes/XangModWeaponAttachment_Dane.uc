@@ -30,12 +30,18 @@ KickOffset=(X=50, Y=0, Z=-65)
 
 	WeaponSocket = wep1hpoint
 
-	AttackTypeInfo(0)=(fBaseDamage=84.0, fForce=18000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
-	AttackTypeInfo(1)=(fBaseDamage=84.0, fForce=16000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
-	AttackTypeInfo(2)=(fBaseDamage=25.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(0)=(fBaseDamage=90, fForce=22500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=75, fForce=25000, cDamageType="AOC.AOCDmgType_SwingBlunt", iWorldHitLenience=6)
+	AttackTypeInfo(2)=(fBaseDamage=25.0, fForce=22500, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
 	AttackTypeInfo(3)=(fBaseDamage=100.0, fForce=55500, cDamageType="AOC.AOCDmgType_SwingBlunt", iWorldHitLenience=6)
 	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=32500, cDamageType="AOC.AOCDmgType_SwingBlunt", iWorldHitLenience=6)
 	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
 
 
+
+	// Mercenaries 1.996 numeric weapon values (Workshop 705710406).
+	ParryTracersLength=50
+	WeaponWidth=4
+	WeaponNumTracers=1
+	ParryCheckTraceInc=1
 }

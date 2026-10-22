@@ -55,12 +55,12 @@ KickOffset=(X=50, Y=0, Z=-65)
 
 	WeaponStaticMeshScale=1
 
-	AttackTypeInfo(0)=(fBaseDamage=100, fForce=32000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
-	AttackTypeInfo(1)=(fBaseDamage=132.0, fForce=18000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
-	AttackTypeInfo(2)=(fBaseDamage=45.0, fForce=32000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
-	AttackTypeInfo(3)=(fBaseDamage=120.0, fForce=22500, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
-	AttackTypeInfo(4)=(fBaseDamage=1.0, fForce=40000, cDamageType="AOC.AOCDmgType_Blunt", iWorldHitLenience=6)
-	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOC.AOCDmgType_Shove", iWorldHitLenience=12)
+	AttackTypeInfo(0)=(fBaseDamage=100, fForce=40000, cDamageType="AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=132.0, fForce=22500, cDamageType="AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(2)=(fBaseDamage=45.0, fForce=40000, cDamageType="AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(3)=(fBaseDamage=120.0, fForce=22500, cDamageType="AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(4)=(fBaseDamage=1.0, fForce=40000, cDamageType="AOCDmgType_Blunt", iWorldHitLenience=6)
+	AttackTypeInfo(5)=(fBaseDamage=5.0, fForce=45500.0, cDamageType="AOCDmgType_Shove", iWorldHitLenience=12)
 
 	Skins(0)={(
 		SkeletalMeshPath="WP_hbl_Maul.WEP_Maul",
@@ -112,4 +112,10 @@ KickOffset=(X=50, Y=0, Z=-65)
 		ImagePath="UI_CustWeaponImages_SWF.skin_maul_png"
 		)};
 
+
+	// Mercenaries 1.996 numeric weapon values (Workshop 705710406).
+	ParryTracersLength=50
+	WeaponWidth=4
+	WeaponNumTracers=1
+	ParryCheckTraceInc=1
 }

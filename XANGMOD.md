@@ -2147,6 +2147,64 @@ data issues in weapon and character classes). The useful signal is the *fingerpr
 Chronological history, newest first. Carried over verbatim apart from heading levels
 and two include paths that the September 2026 split renamed.
 
+### Turn caps shown in the weapon stats (2026-10-21)
+
+The damage/stats page previously parsed only attachment damage, so it omitted turn caps
+even though those values were imported into the weapon classes. `damage_graph.py` now
+also reads weapon defaults and resolves local parent classes. The generated page includes
+a turn-cap table for normal horizontal, attack horizontal, vertical, sprint-attack
+horizontal and sprint-attack vertical limits, with the defining class available on hover.
+The same values are printed in the generator's console summary. Values stay in their
+stored Unreal rotation units per second. They are class defaults;
+the existing sprint, reversal-decay, parry and reload rules can change the effective cap.
+This reporting change does not alter those rules or the retained melee-leg override.
+
+### Mercenaries 1.996 weapon values (2026-10-21)
+
+The local `coltonjman` branch now uses the extracted Mercenaries 1.996 numerical weapon
+settings for all 56 matching weapon classes and their 45 local attachment classes. This
+ports base damage and damage types, forces, parry drain/negation, feint and flinch settings,
+attack/recovery/combo/reload/hold animation numbers, movement/turn limits, display reach,
+and projectile configuration. The 21 weapon-specific handle-tracer formulas were checked
+against the downloaded scripts; six needed their handle fraction reduced to match.
+Class parents, weapon references, custom meshes/skins/sounds and the shared combat/netcode
+functions are retained. The damage chart has been regenerated from the updated attachments.
+
+Source: [Mercenaries 1.996, Workshop item 705710406](https://steamcommunity.com/sharedfiles/filedetails/?id=705710406).
+The downloaded `.cmwsdk` SHA-256 is
+`3d5698919456035084b490f8f0baf6988e298a3375f9eb20105033154a081f47`.
+Inherited values use the installed base-game package, Steam build 5216971; this is not a
+verified 2016 base-game snapshot. The actual file's Norse Sword stab damage is **57**,
+despite the Workshop description saying 58. Light Crossbow's weapon ammo defaults are
+18/18 while its inherited projectile configuration lists 15; both stored values are
+preserved, so projectile initialization may select 15 in play.
+
+Mercenaries-only `Fork2`, `Messer1H2`, `Messer2`, `PoleAxe2`, `SwordOfWar1H2`, and
+`SwordOfWar2` have no corresponding local classes and were not mapped over a different
+weapon. Additional SlumpMod weapons retain their own overrides; ordinary inheritance from
+an updated parent still applies.
+
+The existing shared melee-leg override is preserved exactly: melee legs continue to use
+the torso location multiplier; projectile/crossbow leg modifiers and class resistances
+are unchanged. Static source checks are complete. UnrealScript compilation and gameplay
+verification have not been run, and no cooked package or deployment was changed.
+
+### Melee leg penalty removed (2026-10-21)
+
+`Include/Pawn/Combat.uci`'s shared `ProcessResolvedAttack` now uses the defender's torso
+location multiplier for melee leg hits in every mod game mode. The inherited leg multiplier
+was 0.8; melee legs now receive the same location scaling as torso hits (1.0 for the normal
+classes). Projectile and crossbow leg scaling, head damage, weapon base damage, class
+resistances, team-damage scaling and final rounding are unchanged. The damage chart and
+generator now display the melee leg multiplier as 1.0.
+
+This removes location-dependent extra hits without imposing a hits-to-kill floor. Some
+existing torso attacks still exceed three hits against a full-health Knight or two against
+a Vanguard: Longsword slash deals 32 / 47 damage and Halberd slash deals 33 / 42, respectively,
+against the standard 100-health classes, before team scaling and with no regeneration.
+Those torso values are deliberately preserved. Script compilation and in-game verification
+are still required before deployment; source calculations alone do not verify a running server.
+
 ### TO Elo tags gated on ranked mode (2026-10-20)
 
 **Not yet compiled or tested in game.** Elo name tags on TO now appear only while
