@@ -142,7 +142,7 @@ DefaultProperties
 	iFeintStaminaCost=15
 	FeintTime=0.3
 	TertiaryFeintTime=0.45
-	ComboFeintTime=0.55
+	ComboFeintTime=0.50
 	fParryNegation=24
 	ParryDrain(0)=25
 	ParryDrain(1)=25

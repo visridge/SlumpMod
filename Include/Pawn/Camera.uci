@@ -319,6 +319,7 @@ DefaultProperties
 	fRecentHitTTL=0.550            // how long a taken hit stays eligible to cancel a trade swing
 	fClockOffsetAlpha=0.10         // EMA weight for per-message clock-offset samples
 	bEnableTradeCancellation=true  // master toggle: hit-trade cancellation; false disables it
+	fKnockbackScale=1.05           // global knockback multiplier (1.0 = vanilla)
 
 	// Riposte flinch immunity grace period - 300ms after successful parry
 	// Prevents flinch during Parry->ParryRelease state transition (network desync)
@@ -334,7 +335,7 @@ DefaultProperties
 	OuterCylinderComp=OuterCylinder
 
 	Begin Object Name=OuterCylinder
-	    CollisionRadius=+0039.000000
+	    CollisionRadius=+0035.000000
 	    CollisionHeight=+0065.000000
 	    BlockNonZeroExtent=true
 	    BlockZeroExtent=false

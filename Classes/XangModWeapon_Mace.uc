@@ -141,7 +141,7 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Mace]
 	 */
-	FeintTime=0.35
+	FeintTime=0.3
 	TertiaryFeintTime=0.45
 	ComboFeintTime=0.55
 	iFeintStaminaCost=15

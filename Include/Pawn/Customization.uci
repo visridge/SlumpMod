@@ -332,8 +332,7 @@ simulated function ResetBlends(optional float BlendOutTime = 0.3f, optional bool
 /** True when the equipped primary is one of the ninja (Assassin-skin) weapons. */
 simulated function bool XangModIsNinjaPrimary()
 {
-	return PawnInfo.myPrimary == class'XangModWeapon_Rapier'
-		|| PawnInfo.myPrimary == class'XangModWeapon_BastardSword'
+	return PawnInfo.myPrimary == class'XangModWeapon_BastardSword'
 		|| PawnInfo.myPrimary == class'XangModWeapon_Kanabo'
 		|| PawnInfo.myPrimary == class'XangModWeapon_Katana'
 		|| PawnInfo.myPrimary == class'XangModWeapon_GrandHammer';
@@ -345,7 +344,8 @@ simulated function bool XangModIsFootmanPrimary()
 	return PawnInfo.myPrimary == class'XangModWeapon_Spear'
 		|| PawnInfo.myPrimary == class'XangModWeapon_Brandistock'
 		|| PawnInfo.myPrimary == class'XangModWeapon_GrandLance'
-		|| PawnInfo.myPrimary == class'XangModWeapon_MasonFlag';
+		|| PawnInfo.myPrimary == class'XangModWeapon_MasonFlag'
+		|| PawnInfo.myPrimary == class'XangModWeapon_AgathaFlag';
 }
 
 /** Footman stat-family class for this pawn, or none when no footman weapon is equipped.
