@@ -43,3 +43,7 @@ var bool bXangModMatchEndEmitted; // stops a second EndGame call (time limit + a
 var int XangModObjCompleted;
 var int XangModObjSkipped;
 var int XangModObjSkipMark;
+
+// Ranked LTS / Elo tags (XangModRanked). Spawned on LTS and TO only; none elsewhere.
+var XangModRanked Ranked;
+var float LastRankedHelpTime;   // RealTimeSeconds of the last !rankedhelp; 0 = not yet

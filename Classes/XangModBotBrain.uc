@@ -935,7 +935,7 @@ DefaultProperties
 	KingHighGround=150.0
 	OnUsDot=0.7
 	ProvokedTime=10.0
-	FeintChance=0.5
+	FeintChance=0.9
 	FollowRange=3000.0
 	FollowDist=500.0
 	FollowEnemyRange=1000.0

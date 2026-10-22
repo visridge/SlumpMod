@@ -2047,6 +2047,40 @@ removed on 2026-09-14 and superseded by the RCON round events in §7.
 
 ---
 
+### 8.9 Ranked LTS and TO
+
+Ported from MustMod (Love Norström's fork) 2026-10-10. Plan, backend contract and test
+list: project doc `ranked-lts-plan.md`. Backend source: `supabase/` in this folder.
+
+- `Classes/XangModRanked.uc` -- server-only state machine (queue, locked teams, leaver
+  pause, result) and HTTP to the Supabase `ranked` function. Spawned by `PostBeginPlay` in
+  `Game/Match.uci`: matchmade ranked on both LTS and TO, gated by `bRankedEnabled`.
+- Hooks: `ShouldCountDown` holds the countdown until teams lock; `EndGame` calls
+  `MatchEnded`; `GenericPlayerInitialization` tags names (strips them in other modes);
+  `BroadcastMessage` handles `!rankedhelp`. The shared hook block (team lock, leaver pause,
+  votes, ranked admin execs) lives in `Include/XangModRankedHooks.uci`, included by both
+  `Classes/XangModLTS.uc` and `Classes/XangModTO.uc`.
+- Elo name tags: LTS shows `[elo] Name` whenever the backend is configured; TO shows it
+  only while `bRankedEnabled` is on (`ShowEloTag`, `bTagRequiresRanked` on the actor).
+- Player: `voteranked`, `voteunranked`, chat `!rankedhelp`.
+- Admin (typed directly, no `admin` prefix -- same as every other command in §8.2):
+  `RankedMode 1|0`, `adminstartmatch`, `adminterminatematch`, `RankedExtend [s]`,
+  `RankedAbandon`, `RankedMinTeamSize n`, `RankedMaxTeamSize n`, `RankedPing`. While a match
+  is live, `AdminRestartMap`, `AdminChangeMap`/`AdminGoto*` and restart/change-map votes are
+  refused. RCON is deliberately not guarded.
+- Config goes in the **server's** `UDKGame.ini` only, never `DefaultXangMod.ini`:
+
+```
+[XangMod.XangModRanked]
+bRankedEnabled=false
+RankedEndpoint=https://<project-ref>.supabase.co/functions/v1/ranked
+RankedServerToken=<secret>
+RankedMinTeamSize=2
+RankedMaxTeamSize=16
+QueueCountdown=30
+LeaverPauseSeconds=120
+```
+
 ## 9. Testing
 
 ### 9.1 Host testing hides real bugs
@@ -2112,6 +2146,48 @@ data issues in weapon and character classes). The useful signal is the *fingerpr
 
 Chronological history, newest first. Carried over verbatim apart from heading levels
 and two include paths that the September 2026 split renamed.
+
+### TO Elo tags gated on ranked mode (2026-10-20)
+
+**Not yet compiled or tested in game.** Elo name tags on TO now appear only while
+`bRankedEnabled` is on (`ShowEloTag` / `bTagRequiresRanked` on `XangModRanked`). LTS is
+unchanged: it tags whenever the backend is configured. Previously TO tagged whenever
+configured, even with ranked off.
+
+### Ranked admin commands fixed to PlayerController execs (2026-10-12)
+
+**Not yet compiled or tested in game.** The ranked admin commands were `exec function` on the
+GameInfo, so a client's console never dispatched to them -- `RankedMode`, `RankedPing`, etc.
+came back "unrecognized". They are now PlayerController `exec` + `reliable server function`
+pairs (§8.1) in `Include/PC/AdminCommands.uci`, forwarding to the plain GameInfo methods in
+`Include/XangModRankedHooks.uci`. Typed directly, no `admin` prefix: `RankedMode 1|0`,
+`RankedPing`, `RankedMinTeamSize n`, `RankedMaxTeamSize n`, `RankedExtend [s]`, `RankedAbandon`.
+
+### Ranked on TO (2026-10-12)
+
+**Not yet compiled or tested in game.** TO now runs the same matchmade ranked mode as LTS
+instead of Elo tags only. The ranked hook block moved out of `Classes/XangModLTS.uc` into a
+shared `Include/XangModRankedHooks.uci` included by both LTS and TO; `Game/Match.uci` spawns
+with `InitRanked(false)` for both; the player commands (`voteranked`/`voteunranked`,
+`adminstartmatch`, `adminterminatematch`, map-change guards) and `!rankedhelp` now cover both
+modes. `bRankedEnabled` still gates everything -- off means normal play with Elo tags only.
+
+### RCON connection diagnostics: AdminRConStatus (2026-10-10)
+
+**Not yet compiled or tested in game.** For the report that RCON refuses other clients on
+servers tracked by heir.gg (heir.gg holds a persistent RCON event feed). `admin
+AdminRConStatus` prints the listener state and bound port, any non-XangMod `AOCRCon`
+actor, every session (peer, state, age, last data) and rejected logins this map. Sessions
+now log `connection from`, `authenticated`, and `login failed ... <reason>` (password
+rejected, frame not 50 bytes, no password within 2s) via `LogAlwaysInternal`.
+
+### Ranked LTS ported from MustMod (2026-10-10)
+
+**Not yet compiled or tested in game.** Ranked LTS and Elo name tags, ported from Love
+Norström's MustMod fork (MIT, modelled on ImbaMod). See §8.9. Differences from MustMod:
+the `switch` on the HTTP action became an `if / else` chain (§4.6); the ranked `EndGame`
+call lives in `Game/Match.uci` because that file already defines `EndGame`; the actor is
+spawned from `Game/Match.uci` and runs matchmade on both LTS and TO.
 
 ### RCON objective stages: opcode 69 for Team Objective (2026-10-05)
 
