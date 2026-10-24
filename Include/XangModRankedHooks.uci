@@ -219,9 +219,9 @@ function RankedAbandon()
 	}
 }
 
-/** Backend connectivity check; result in Launch.log. */
-function RankedPing()
+/** Backend connectivity check; result reported to the admin who ran it. */
+function RankedPing(AOCPlayerController Requester)
 {
 	if (Ranked != none)
-		Ranked.Ping();
+		Ranked.Ping(Requester);
 }

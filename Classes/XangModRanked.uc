@@ -70,6 +70,9 @@ var array<string> PendingActions;
 
 var bool bLoggedNotConfigured;
 
+/** Admin who ran the last RankedPing; none when ping came from PostBeginPlay. */
+var AOCPlayerController PingRequester;
+
 // ---- Lifecycle -------------------------------------------------------------------------
 
 function InitRanked(bool bTagsOnlyMode, optional bool bTagRequiresRankedMode)
@@ -895,6 +898,19 @@ function RequestComplete(HttpRequestInterface Request, HttpResponseInterface Res
 	{
 		HandleEloChanges(Data);
 	}
+	else if (Action ~= "ping")
+	{
+		if (PingRequester != none)
+		{
+			if (!bDidSucceed || Response == none)
+				PingRequester.ClientDisplayConsoleMessage("Ranked ping failed in transport (DNS, connection or TLS).");
+			else if (Code >= 200 && Code < 300)
+				PingRequester.ClientDisplayConsoleMessage("Ranked ping: HTTP" @ Code @ "(OK).");
+			else
+				PingRequester.ClientDisplayConsoleMessage("Ranked ping: HTTP" @ Code @ "(error).");
+		}
+		PingRequester = none;
+	}
 }
 
 /** Drop a finished request and return its action. */
@@ -913,9 +929,10 @@ function string ForgetRequest(HttpRequestInterface Request)
 	return Action;
 }
 
-/** Proves DNS, TLS, token and function. Result lands in Launch.log. */
-function Ping()
+/** Proves DNS, TLS, token and function. Reports to Requester (if any) when the reply lands. */
+function Ping(optional AOCPlayerController Requester)
 {
+	PingRequester = Requester;
 	Send("ping", "{" $ JsonField("map", WorldInfo.GetMapName()) $ "}");
 }
 

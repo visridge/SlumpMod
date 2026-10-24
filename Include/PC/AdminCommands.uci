@@ -345,9 +345,9 @@ reliable server function ServerRankedPing() {
 	if (!PlayerReplicationInfo.bAdmin)
 		return;
 	if (XangModLTS(WorldInfo.Game) != none)
-		XangModLTS(WorldInfo.Game).RankedPing();
+		XangModLTS(WorldInfo.Game).RankedPing(self);
 	else if (XangModTO(WorldInfo.Game) != none)
-		XangModTO(WorldInfo.Game).RankedPing();
+		XangModTO(WorldInfo.Game).RankedPing(self);
 }
 
 exec function AdminReadyAll() {
