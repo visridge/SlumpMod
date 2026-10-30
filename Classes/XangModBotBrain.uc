@@ -836,28 +836,55 @@ function AOCPawn FindFollowTeammate()
 // ---- VO / chatter ----
 // Vanilla Z/X menus (PlayZMenuVO/PlayXMenuVO) early-return on dedicated servers and only
 // replicate while Role < ROLE_Authority, so a bot's server-owned pawn would say nothing.
-// Call the static cue lookup directly and replicate through s_PlayVO, the same path a human
-// voice command takes to other clients. Indices are 0-based (menu key "N" = N-1).
+// Call the static cue lookup directly and replicate through s_PlayVOIndex / s_PlayVO, the
+// same pinned-variation path a human voice command takes to other clients. Indices are
+// 0-based (menu key "N" = N-1).
 function SayTactical(int Index)
 {
 	local SoundCue Cue;
+	local int VariationCount;
+	local int VariationIndex;
 
 	if (MyPawn == none || MyPawn.SoundGroupClass == none)
 		return;
 	class<AOCPawnSoundGroup>(MyPawn.SoundGroupClass).static.getAOCZMenuVO(MyPawn, Index, Cue);
-	if (Cue != none)
+	if (Cue == none)
+		return;
+
+	VariationCount = class'XangModVO'.static.GetVariationCount(Cue);
+	if (VariationCount > 1)
+	{
+		VariationIndex = Rand(VariationCount);
+		XangModPawn(MyPawn).s_PlayVOIndex(Cue, VariationIndex);
+	}
+	else
+	{
 		MyPawn.s_PlayVO(Cue);
+	}
 }
 
 function SaySocial(int Index)
 {
 	local SoundCue Cue;
+	local int VariationCount;
+	local int VariationIndex;
 
 	if (MyPawn == none || MyPawn.SoundGroupClass == none)
 		return;
 	class<AOCPawnSoundGroup>(MyPawn.SoundGroupClass).static.getAOCXMenuVO(MyPawn, Index, Cue);
-	if (Cue != none)
+	if (Cue == none)
+		return;
+
+	VariationCount = class'XangModVO'.static.GetVariationCount(Cue);
+	if (VariationCount > 1)
+	{
+		VariationIndex = Rand(VariationCount);
+		XangModPawn(MyPawn).s_PlayVOIndex(Cue, VariationIndex);
+	}
+	else
+	{
 		MyPawn.s_PlayVO(Cue);
+	}
 }
 
 // Four cheap triggers mapped onto the menus, cooldown-gated so a bot never spams:

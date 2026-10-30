@@ -161,6 +161,7 @@ facade that nests its feature files; **the 45 mode classes were not touched**.
 ```unrealscript
 // Include/XangModPawn.uci
 `include(XangMod/Include/Pawn/Vars.uci)
+`include(XangMod/Include/Pawn/VO.uci)
 `include(XangMod/Include/Pawn/Core.uci)
 `include(XangMod/Include/Pawn/Customization.uci)
 `include(XangMod/Include/Pawn/Combat.uci)
@@ -173,6 +174,7 @@ facade that nests its feature files; **the 45 mode classes were not touched**.
 | File | What is in it |
 |---|---|
 | `Pawn/Vars.uci` | every pawn `var`. **Included first.** |
+| `Pawn/VO.uci` | voice-command (Z/X menu) variation pinning so every client hears the same take |
 | `Pawn/Core.uci` | `Tick`, `DrawTextOverHead` |
 | `Pawn/Customization.uci` | helmet/shield colours, character appearance, footman stats, 1P mesh lookup |
 | `Pawn/Combat.uci` | flinch, parry detection, `AttackOtherPawn`, `ProcessResolvedAttack`, `TakeDamage` |

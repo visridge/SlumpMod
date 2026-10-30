@@ -505,9 +505,9 @@ DefaultProperties
 	/*
 	 * Formerly in UDKNewWeapon.ini - [AOC.AOCWeapon_Longbow]
 	 */
-	ConfigProjectileBaseDamage[0]=(Damage=55,InitialSpeed=5000.0,MaxSpeed=5500.0,AmmoCount=12,InitialGravityScale=0.4,Drag=0.0000030,PitchCorrection=50)
-	ConfigProjectileBaseDamage[1]=(Damage=55,InitialSpeed=5000.0,MaxSpeed=5500.0,AmmoCount=12,InitialGravityScale=0.4,Drag=0.0000030,PitchCorrection=0)
-	ConfigProjectileBaseDamage[2]=(Damage=55,InitialSpeed=5000.0,MaxSpeed=5500.0,AmmoCount=12,InitialGravityScale=0.5,Drag=0.000004,PitchCorrection=0)
+	ConfigProjectileBaseDamage[0]=(Damage=48,InitialSpeed=6500.0,MaxSpeed=6500.0,AmmoCount=25,InitialGravityScale=0.25,Drag=0.000015,PitchCorrection=50)
+	ConfigProjectileBaseDamage[1]=(Damage=50,InitialSpeed=6500.0,MaxSpeed=6500.0,AmmoCount=25,InitialGravityScale=0.25,Drag=0.000015,PitchCorrection=0)
+	ConfigProjectileBaseDamage[2]=(Damage=20,InitialSpeed=3500.0,MaxSpeed=3500.0,AmmoCount=15,InitialGravityScale=0.5,Drag=0.000004,PitchCorrection=0)
 	ConfigProjectileBaseDamage[3]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	ConfigProjectileBaseDamage[4]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)
 	ConfigProjectileBaseDamage[5]=(Damage=0,InitialSpeed=0,MaxSpeed=0,AmmoCount=0,InitialGravityScale=0,Drag=0,PitchCorrection=0.0)

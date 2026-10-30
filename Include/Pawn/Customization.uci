@@ -317,22 +317,30 @@ simulated function ResetBlends(optional float BlendOutTime = 0.3f, optional bool
  *
  * The ninja skin is now a normal Man-At-Arms customization choice
  * (XangModCharacterInfo_Agatha_Ninja / _Mason_Ninja) instead of being forced
- * by the equipped primary weapon. XangModIsNinjaPrimary below is only used to
- * key the ninja-roll dodge (XangModRoll) off the same weapons, so a MAA with a
- * ninja weapon still rolls even without the ninja skin selected.
+ * by the equipped primary weapon. XangModIsNinjaPrimary below used to key the
+ * ninja-roll dodge (XangModRoll) off the same weapons, so a MAA with a ninja
+ * weapon still rolled even without the ninja skin selected. It is currently
+ * disabled (always false), so no primary weapon forces either the ninja skin
+ * or the roll.
  *
  * The MAA CharacterInfo classes carry the ninja-roll anim sets (slot 19) so the
  * roll animates on the default MAA mesh and on the selectable Ninja skin alike.
  **************************************************************************/
 
-/** True when the equipped primary is one of the ninja weapons (keys the roll dodge). */
+/** True when the equipped primary is one of the ninja weapons (keys the roll dodge).
+ *  DISABLED: always false, so no primary weapon forces the ninja skin or the roll.
+ *  Restore the return expression below to re-enable the weapon-keyed behaviour. */
 simulated function bool XangModIsNinjaPrimary()
 {
+	return false;
+
+	/*
 	return PawnInfo.myPrimary == class'XangModWeapon_Rapier'
 		|| PawnInfo.myPrimary == class'XangModWeapon_BastardSword'
 		|| PawnInfo.myPrimary == class'XangModWeapon_Kanabo'
 		|| PawnInfo.myPrimary == class'XangModWeapon_Katana'
 		|| PawnInfo.myPrimary == class'XangModWeapon_GrandHammer';
+	*/
 }
 
 /** True when the equipped primary is one of the footman-mesh (Footmen package) weapons. */
@@ -341,7 +349,8 @@ simulated function bool XangModIsFootmanPrimary()
 	return PawnInfo.myPrimary == class'XangModWeapon_Spear'
 		|| PawnInfo.myPrimary == class'XangModWeapon_Brandistock'
 		|| PawnInfo.myPrimary == class'XangModWeapon_GrandLance'
-		|| PawnInfo.myPrimary == class'XangModWeapon_MasonFlag';
+		|| PawnInfo.myPrimary == class'XangModWeapon_MasonFlag'
+		|| PawnInfo.myPrimary == class'XangModWeapon_AgathaFlag';
 }
 
 /** Footman stat-family class for this pawn, or none when no footman weapon is equipped.

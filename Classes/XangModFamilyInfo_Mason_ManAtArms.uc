@@ -19,16 +19,16 @@ DefaultProperties
 	NewPrimaryWeapons(6)=(CWeapon=class'XangModWeapon_Mace',CorrespondingDuelProp=EDUEL_MaceUse)
 	NewPrimaryWeapons(7)=(CWeapon=class'XangModWeapon_MorningStar',CorrespondingDuelProp=EDUEL_MorningStarUse)
 	NewPrimaryWeapons(8)=(CWeapon=class'XangModWeapon_QuarterStaff',CorrespondingDuelProp=EDUEL_QStaffUse)
-	NewPrimaryWeapons(9)=(CWeapon=class'XangModWeapon_Kanabo')
-	NewPrimaryWeapons(10)=(CWeapon=class'XangModWeapon_Rapier')
-	NewPrimaryWeapons(11)=(CWeapon=class'XangModWeapon_Katana')
+	NewPrimaryWeapons(9)=(CWeapon=class'XangModWeapon_HolyWaterSprinkler',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
+	NewPrimaryWeapons(10)=(CWeapon=class'XangModWeapon_Firebug')
 	
 	
 	NewSecondaryWeapons.empty;
 	NewSecondaryWeapons(0)=(CWeapon=class'XangModWeapon_Saber')
 	NewSecondaryWeapons(1)=(CWeapon=class'XangModWeapon_Cudgel')
 	NewSecondaryWeapons(2)=(CWeapon=class'XangModWeapon_Dagesse')
-	NewSecondaryWeapons(3)=(CWeapon=class'XangModWeapon_HolyWaterSprinkler',CorrespondingDuelProp=EDUEL_HolyWaterSprinklerUse)
+	NewSecondaryWeapons(3)=(CWeapon=class'XangModWeapon_Rapier')
+	NewSecondaryWeapons(4)=(CWeapon=class'XangModWeapon_DualBucklers')
 
 	NewTertiaryWeapons.empty;
 	NewTertiaryWeapons(0)=(CWeapon=class'XangModWeapon_ThrowingKnife')

@@ -127,3 +127,18 @@ reliable client function ClientSyncCollisionRadius(float Radius)
 	ApplyCollisionRadiusToCurrentPawn();
 }
 
+reliable client function ClientSyncFeintRecoveryMultiplier(float fMultiplier)
+{
+	fFeintRecoveryMultiplier = fMultiplier;
+	class'XangModAOCDuelPlayerController'.default.fFeintRecoveryMultiplier = fMultiplier;
+}
+
+// Server: push the feint recovery multiplier to every player, not just the admin.
+function XangModSyncFeintRecoveryToAll(float fMultiplier)
+{
+	local `{GAMEMODE}PlayerController PC;
+
+	foreach WorldInfo.AllControllers(class'`{GAMEMODE}PlayerController', PC)
+		PC.ClientSyncFeintRecoveryMultiplier(fMultiplier);
+}
+

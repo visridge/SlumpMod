@@ -499,6 +499,33 @@ reliable server function S_AdminSetCollisionRadius(float NewRadius) {
 	S_AdminBroadcastMessage("Collision bubble radius set to" @ NewRadius @ "(respawn to apply)", false);
 }
 
+exec function AdminOverrideFeintRecovery(optional float fMultiplier = 1.0)
+{
+	if (!PlayerReplicationInfo.bAdmin) {
+		ClientDisplayConsoleMessage("You are not logged in as an administrator on this server.");
+		return;
+	}
+	S_AdminOverrideFeintRecovery(fMultiplier);
+}
+
+reliable server function S_AdminOverrideFeintRecovery(float fMultiplier) {
+	if (!IsAdmin())
+		return;
+
+	// Clamp to a sane range to prevent griefing (0.1x to 5x).
+	fMultiplier = FClamp(fMultiplier, 0.1, 5.0);
+
+	class'XangModAOCDuelPlayerController'.default.fFeintRecoveryMultiplier = fMultiplier;
+	class'XangModAOCDuelPlayerController'.static.StaticSaveConfig();
+
+	XangModSyncFeintRecoveryToAll(fMultiplier);
+
+	if (fMultiplier == 1.0)
+		S_AdminBroadcastMessage("Feint recovery reset to vanilla (1.0)", false);
+	else
+		S_AdminBroadcastMessage("Feint recovery multiplier set to" @ fMultiplier, false);
+}
+
 // CE Autoskip: auto-fires "ce skip" when TO timer reaches 5 seconds
 exec function AdminCEAutoskip()
 {

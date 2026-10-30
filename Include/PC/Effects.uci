@@ -190,6 +190,8 @@ DefaultProperties
 
 	// Collision bubble radius default (39.0 = vanilla AOC OuterCylinder radius)
 	fXangModCollisionRadius=39.0
+	// Feint recovery multiplier default (1.0 = vanilla)
+	fFeintRecoveryMultiplier=1.0
 
 }
 

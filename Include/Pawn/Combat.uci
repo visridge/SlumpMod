@@ -304,7 +304,7 @@ simulated function bool DetectSuccessfulParry(out HitInfo Info, out int bParry, 
         else if (Info.DamageType.default.bIsProjectile)
             StaminaDamage = 15.0f;
         else
-            StaminaDamage = AOCWeapon(Info.HitActor.Weapon).CalculateParryDamage(AOCWeapon(Info.Instigator.Weapon), Info.AttackType);
+            StaminaDamage = Max(0, AOCWeapon(Info.HitActor.Weapon).CalculateParryDamage(AOCWeapon(Info.Instigator.Weapon), Info.AttackType) - 2);
 
 		// Enter stun state if the player is out of stamina
 		if (!Info.HitActor.HasEnoughStamina(StaminaDamage)) {

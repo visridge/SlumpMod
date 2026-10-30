@@ -169,7 +169,37 @@ simulated state Feint
 {
 	simulated event BeginState(Name PreviousStateName)
 	{
+		local float fMult;
+		local float fOrigFeintTime;
+		local float fOrigTertiaryFeintTime;
+		local float fOrigComboFeintTime;
+
+		// XANGMOD: admin-driven global feint-recovery multiplier (AdminOverrideFeintRecovery).
+		// Vanilla AOCWeapon.Feint.BeginState reads FeintTime / TertiaryFeintTime / ComboFeintTime
+		// directly, so we scale the instance values just for the super call and restore them after.
+		fMult = class'XangModAOCDuelPlayerController'.default.fFeintRecoveryMultiplier;
+		if (fMult <= 0.0f)
+			fMult = 1.0f;
+
+		if (fMult != 1.0f)
+		{
+			fOrigFeintTime = FeintTime;
+			fOrigTertiaryFeintTime = TertiaryFeintTime;
+			fOrigComboFeintTime = ComboFeintTime;
+			FeintTime *= fMult;
+			TertiaryFeintTime *= fMult;
+			ComboFeintTime *= fMult;
+		}
+
 		super.BeginState(PreviousStateName);
+
+		if (fMult != 1.0f)
+		{
+			FeintTime = fOrigFeintTime;
+			TertiaryFeintTime = fOrigTertiaryFeintTime;
+			ComboFeintTime = fOrigComboFeintTime;
+		}
+
 		bIsInCombo = false;
 		bJustPlayedCombo = false;
 		MissCount = 0;  // Reset miss counter on feint

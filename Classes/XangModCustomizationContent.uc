@@ -796,6 +796,11 @@ defaultproperties
 			GearData=(GearNameID=Buckler_Variant_03, bVisibleInSelectorIfUnowned=true, GroupHexID="1700000003F72EC", GearStoreDescriptionID=PeasantRevoltDesc, MicroTxID=101038),
 			WeaponItemIds=(127)
 		)};
+	Drops(128)={(
+			bInfoRetrieved=true,
+			GearData=(GearNameID=Kanabo_Variant, GearStoreDescriptionID=Kanabo_Weapon_Variant, bVisibleInSelectorIfUnowned=true),
+			WeaponItemIds=(128)
+		)};
 		
 		
 	Weapons(0)=()
@@ -1814,6 +1819,13 @@ defaultproperties
 			SkinIndex=3,
 			AllowedTeams=(EFAC_AGATHA, EFAC_MASON),
 			ItemName=Buckler_Variant_03,
+			bUseDefaultParameters=true
+		)};
+	Weapons(128)={(
+			WeaponType=EWEP_GrandMace,
+			SkinIndex=4,
+			AllowedTeams=(EFAC_AGATHA, EFAC_MASON),
+			ItemName=Kanabo_Variant,
 			bUseDefaultParameters=true
 		)};
 }

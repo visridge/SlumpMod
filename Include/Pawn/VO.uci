@@ -1,0 +1,142 @@
+// XangMod - VO.uci
+// Included via XangModPawn.uci, right after Vars.uci (vars and the replication block must
+// precede the first function). Voice-command (Z/X menu) variation pinning: vanilla replicates
+// the same SoundCue to every client and each one rolls the cue's SoundNodeRandom
+// independently, so the take the speaker hears differs from everyone else's. We pick one
+// variation, replicate the index, and force that variation on every client so all ears match.
+//
+// The speaker still hears their own line through this replicated path, not the local
+// VOSoundComp: that component is VolumeMultiplier=0 (a silent state tracker / cooldown).
+
+var SoundCue ReplicatedVOCue;              // the cue being played (replicated to all clients)
+var int ReplicatedVOVariationIndex;        // which variation of its random node to play
+var repnotify int ReplicatedVOPlayCounter; // bumped each play to trigger the client callback
+
+replication
+{
+	if (bNetDirty)
+		ReplicatedVOCue, ReplicatedVOVariationIndex, ReplicatedVOPlayCounter;
+}
+
+simulated function PlayZMenuVO(int index)
+{
+	local SoundCue voSound;
+	local int VariationCount;
+	local int VariationIndex;
+
+	if (WorldInfo.NetMode == NM_DedicatedServer)
+		return;
+
+	if (!VOSoundComp.IsPlaying() && Physics != PHYS_Falling && !bIsBurning)
+	{
+		if (AOCCTFPlayerController(Controller) == none || index != 4)
+		{
+			class<AOCPawnSoundGroup>(SoundGroupClass).static.getAOCZMenuVO(self, index, voSound);
+		}
+		else if (AOCCTFPlayerController(Controller) != none && index == 4)
+		{
+			class<AOCPawnSoundGroup>(SoundGroupClass).static.GetCTFDynVO(self, voSound);
+		}
+
+		VariationCount = class'XangModVO'.static.GetVariationCount(voSound);
+		if (VariationCount > 1)
+			VariationIndex = Rand(VariationCount);
+
+		VOSoundComp.SoundCue = voSound;
+		VOSoundComp.Play();
+
+		if (Role < ROLE_Authority || WorldInfo.NetMode == NM_STANDALONE || WorldInfo.NetMode == NM_ListenServer)
+		{
+			if (VariationCount > 1)
+				s_PlayVOIndex(voSound, VariationIndex);
+			else
+				s_PlayVO(voSound);
+		}
+	}
+	else
+	{
+		PlaySound(GenericCantDoSound, true);
+		AOCGame(WorldInfo.Game).LocalizedPrivateMessage(PlayerController(Controller), 12);
+	}
+}
+
+simulated function PlayXMenuVO(int index)
+{
+	local SoundCue voSound;
+	local int VariationCount;
+	local int VariationIndex;
+
+	if (WorldInfo.NetMode == NM_DedicatedServer)
+		return;
+
+	if (!VOSoundComp.IsPlaying() && Physics != PHYS_Falling && !bIsBurning)
+	{
+		class<AOCPawnSoundGroup>(SoundGroupClass).static.getAOCXMenuVO(self, index, voSound);
+
+		VariationCount = class'XangModVO'.static.GetVariationCount(voSound);
+		if (VariationCount > 1)
+			VariationIndex = Rand(VariationCount);
+
+		VOSoundComp.SoundCue = voSound;
+		VOSoundComp.Play();
+
+		if (Role < ROLE_Authority || WorldInfo.NetMode == NM_STANDALONE || WorldInfo.NetMode == NM_ListenServer)
+		{
+			if (VariationCount > 1)
+				s_PlayVOIndex(voSound, VariationIndex);
+			else
+				s_PlayVO(voSound);
+		}
+	}
+	else
+	{
+		PlaySound(GenericCantDoSound, true);
+		AOCGame(WorldInfo.Game).LocalizedPrivateMessage(PlayerController(Controller), 12);
+	}
+}
+
+reliable server function s_PlayVOIndex(SoundCue voSound, int VariationIndex)
+{
+	if (voSound == none)
+		return;
+
+	// Mirror vanilla s_PlayVO so the existing stop-VO path (StopVOSounds /
+	// stopPawnSound / localStopVO) can still find and stop the sound by cue name.
+	replicatedSoundToStop.soundToStop = voSound.Name;
+	replicatedSoundToStop.soundOwnerNetTag = PlayerReplicationInfo.PlayerID;
+
+	ReplicatedVOCue = voSound;
+	ReplicatedVOVariationIndex = VariationIndex;
+	ReplicatedVOPlayCounter++;
+
+	// A listen-server host has no repnotify round-trip for its own pawn, so it hears via
+	// the server's own playback here. bNotReplicated=true keeps this local play from
+	// re-replicating the cue to other clients (which is exactly the desync we're fixing).
+	if (WorldInfo.NetMode != NM_DedicatedServer)
+	{
+		class'XangModVO'.static.ForceVOCueVariation(voSound, VariationIndex);
+		PlaySound(voSound, true, false, true);
+	}
+}
+
+simulated event ReplicatedEvent(name VarName)
+{
+	if (VarName == 'ReplicatedVOPlayCounter')
+	{
+		PlayReplicatedVO();
+		return;
+	}
+
+	super.ReplicatedEvent(VarName);
+}
+
+simulated function PlayReplicatedVO()
+{
+	// Role == ROLE_Authority is the listen-server host's own pawn; it already heard the
+	// sound from s_PlayVOIndex's local playback, so skip to avoid a double play.
+	if (ReplicatedVOCue == none || Role == ROLE_Authority)
+		return;
+
+	class'XangModVO'.static.ForceVOCueVariation(ReplicatedVOCue, ReplicatedVOVariationIndex);
+	PlaySound(ReplicatedVOCue, true, false, true);
+}

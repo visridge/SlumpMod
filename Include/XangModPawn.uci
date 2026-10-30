@@ -2,6 +2,7 @@
 // Splits into Pawn/. Order matters: Vars.uci first (vars must precede functions), the file carrying DefaultProperties last.
 
 `include(XangMod/Include/Pawn/Vars.uci)
+`include(XangMod/Include/Pawn/VO.uci)
 `include(XangMod/Include/Pawn/Core.uci)
 `include(XangMod/Include/Pawn/Customization.uci)
 `include(XangMod/Include/Pawn/Combat.uci)

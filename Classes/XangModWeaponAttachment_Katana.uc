@@ -38,12 +38,12 @@ KickOffset=(X=50, Y=0, Z=-65)
 
 	Begin Object Name=SkeletalMeshComponent0
 		SkeletalMesh=SkeletalMesh'DWKatana.WEP_DWKatana'
-		Scale=1.05
+		Scale=1.15
 	End Object
 
 	Begin Object Name=SkeletalMeshComponent2
 		SkeletalMesh=SkeletalMesh'DWKatana.WEP_DWKatana'
-		Scale=1.05
+		Scale=1.15
 	End Object
 
 	WeaponID=EWEP_Longsword
@@ -52,8 +52,8 @@ KickOffset=(X=50, Y=0, Z=-65)
 
 	bUseAlternativeKick=true
 			
-	AttackTypeInfo(0)=(fBaseDamage=80.0, fForce=24000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
-	AttackTypeInfo(1)=(fBaseDamage=80.0, fForce=24000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(0)=(fBaseDamage=90.0, fForce=24000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
+	AttackTypeInfo(1)=(fBaseDamage=90.0, fForce=24000, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
 	AttackTypeInfo(2)=(fBaseDamage=40.0, fForce=24000, cDamageType="AOC.AOCDmgType_Pierce", iWorldHitLenience=6)
 	AttackTypeInfo(3)=(fBaseDamage=0.0, fForce=22500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
 	AttackTypeInfo(4)=(fBaseDamage=0.0, fForce=32500, cDamageType="AOC.AOCDmgType_Swing", iWorldHitLenience=6)
@@ -61,83 +61,83 @@ KickOffset=(X=50, Y=0, Z=-65)
 
 	
 
-WeaponStaticMeshScale=1.05
+WeaponStaticMeshScale=1.15
 
 Skins(0)={(
 SkeletalMeshPath="DWKatana.WEP_DWKatana",
 StaticMeshPath="DWKatana.SM_DWKatana",
 MaterialPath="",
-StaticMeshScale=1.05,
+StaticMeshScale=1.15,
 ImagePath="UI_WeaponImages_SWF.weapon_select_longsword"
 )};
 Skins(1)={(
 SkeletalMeshPath="DWKatana.WEP_DWKatana",
 StaticMeshPath="DWKatana.SM_DWKatana",
 MaterialPath="",
-StaticMeshScale=1.05,
+StaticMeshScale=1.15,
 ImagePath="UI_WeaponImages_SWF.weapon_select_longsword"
 )};
 Skins(2)={(
 SkeletalMeshPath="DWKatana.WEP_DWKatana",
 StaticMeshPath="DWKatana.SM_DWKatana",
 MaterialPath="",
-StaticMeshScale=1.05,
+StaticMeshScale=1.15,
 ImagePath="UI_WeaponImages_SWF.weapon_select_longsword"
 )};
 Skins(3)={(
 SkeletalMeshPath="DWKatana.WEP_DWKatana",
 StaticMeshPath="DWKatana.SM_DWKatana",
 MaterialPath="",
-StaticMeshScale=1.05,
+StaticMeshScale=1.15,
 ImagePath="UI_WeaponImages_SWF.weapon_select_longsword"
 )};
 Skins(4)={(
 SkeletalMeshPath="DWKatana.WEP_DWKatana",
 StaticMeshPath="DWKatana.SM_DWKatana",
 MaterialPath="",
-StaticMeshScale=1.05,
+StaticMeshScale=1.15,
 ImagePath="UI_WeaponImages_SWF.weapon_select_longsword"
 )};
 Skins(5)={(
 SkeletalMeshPath="DWKatana.WEP_DWKatana",
 StaticMeshPath="DWKatana.SM_DWKatana",
 MaterialPath="",
-StaticMeshScale=1.05,
+StaticMeshScale=1.15,
 ImagePath="UI_WeaponImages_SWF.weapon_select_longsword"
 )};
 Skins(6)={(
 SkeletalMeshPath="DWKatana.WEP_DWKatana",
 StaticMeshPath="DWKatana.SM_DWKatana",
 MaterialPath="",
-StaticMeshScale=1.05,
+StaticMeshScale=1.15,
 ImagePath="UI_WeaponImages_SWF.weapon_select_longsword"
 )};
 Skins(7)={(
 SkeletalMeshPath="DWKatana.WEP_DWKatana",
 StaticMeshPath="DWKatana.SM_DWKatana",
 MaterialPath="",
-StaticMeshScale=1.05,
+StaticMeshScale=1.15,
 ImagePath="UI_WeaponImages_SWF.weapon_select_longsword"
 )};
 Skins(8)={(
 SkeletalMeshPath="DWKatana.WEP_DWKatana",
 StaticMeshPath="DWKatana.SM_DWKatana",
 MaterialPath="",
-StaticMeshScale=1.05,
+StaticMeshScale=1.15,
 ImagePath="UI_WeaponImages_SWF.weapon_select_longsword"
 )};
 Skins(9)={(
 SkeletalMeshPath="DWKatana.WEP_DWKatana",
 StaticMeshPath="DWKatana.SM_DWKatana",
 MaterialPath="",
-StaticMeshScale=1.05,
+StaticMeshScale=1.15,
 ImagePath="UI_WeaponImages_SWF.weapon_select_longsword"
 )};
 Skins(10)={(
 SkeletalMeshPath="DWKatana.WEP_DWKatana",
 StaticMeshPath="DWKatana.SM_DWKatana",
 MaterialPath="",
-StaticMeshScale=1.05,
+StaticMeshScale=1.15,
 ImagePath="UI_WeaponImages_SWF.weapon_select_longsword"
 )};
 }
