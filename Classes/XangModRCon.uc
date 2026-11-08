@@ -293,6 +293,14 @@ function bool XangModIsListening()
 		&& AcceptClass == class'XangModRConSession' && XangModBoundPort == RConPort;
 }
 
+/** Only an unbound retry actor is idle; failing the readiness checks does not prove that. */
+function bool XangModIsIdleListener()
+{
+	return !bDeleteMe && XangModRConSession(self) == none && ParentLink == none
+		&& RConState == RCON_Initialized && LinkState == STATE_Initialized
+		&& Sessions.Length == 0;
+}
+
 function string XangModStateName()
 {
 	switch (RConState)
@@ -315,7 +323,7 @@ function XangModStatusLines(out array<string> Lines)
 
 	Now = WorldInfo.RealTimeSeconds;
 	Lines.AddItem("RCON listener:" @ XangModStateName() @ "| configured port" @ RConPort @ "| bound" @ XangModBoundPort
-		@ "| AcceptClass" @ string(AcceptClass));
+		@ "| class default port" @ class'XangModRCon'.default.RConPort @ "| AcceptClass" @ string(AcceptClass));
 
 	foreach WorldInfo.AllActors(class'AOCRCon', Other)
 	{
@@ -362,8 +370,10 @@ function XangModRCon XangModFindListener()
 	Game = AOCGame(WorldInfo.Game);
 	if (Game == none)
 		return none;
+	// Judge the target by its own port: a session's RConPort is the class default, which
+	// need not match the port the listener actually bound.
 	Listener = XangModRCon(Game.RemoteConsole);
-	if (Listener != none && Listener.XangModCanReuseListener(RConPort))
+	if (Listener != none && Listener.XangModCanReuseListener(Listener.RConPort))
 		return Listener;
 
 	return none;
