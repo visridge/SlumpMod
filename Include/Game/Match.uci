@@ -501,7 +501,7 @@ exec function TournamentMode(bool bEnable)
 reliable server function ConfigureTournamentMode(bool bEnable)
 {
     bTournamentMode = bEnable;
-    SaveConfig();
+    class'XangModRCon'.static.SaveGameKeepBalance(self);
 
     class'AOCGame'.default.bTournamentMode = bEnable;
     class'AOCGame'.static.StaticSaveConfig();
@@ -513,12 +513,30 @@ function PostBeginPlay()
 {
     super.PostBeginPlay();
 
-    if (!IsA('XangModLTS') && !IsA('XangModTO'))
+    if (IsA('XangModLTS') || IsA('XangModTO'))
+    {
+        Ranked = Spawn(class'XangModRanked');
+        Ranked.InitRanked(false, IsA('XangModTO'));
+        Ranked.Ping();
+    }
+
+    ApplyXangModAutoBalance();
+}
+
+// Tournament mode and active ranked always force it off: both need fixed teams.
+function ApplyXangModAutoBalance()
+{
+    local bool bOn;
+
+    if (!bXangModOverrideAutoBalance)
         return;
 
-    Ranked = Spawn(class'XangModRanked');
-    Ranked.InitRanked(false, IsA('XangModTO'));
-    Ranked.Ping();
+    bOn = bXangModAutoBalance && !bTournamentMode && (Ranked == none || !Ranked.IsActive());
+    bAutoBalance = bOn;
+    bDeathBasedAutoBalance = bOn;
+    bPlayersBalanceTeams = bOn;
+    if (AOCGRI(GameReplicationInfo) != none)
+        AOCGRI(GameReplicationInfo).bBalanceTeams = bOn;
 }
 
 // Every player on every map, from PostLogin and seamless travel: ranked hint and Elo tag.

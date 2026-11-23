@@ -2015,6 +2015,23 @@ function SendPlayerPositions()
 	SendPacket(Reply);
 }
 
+/** SaveConfig writes live globalconfig values; keep the per-mode autobalance override out of the ini. */
+static function SaveGameKeepBalance(AOCGame Game)
+{
+	local bool bA, bD, bP;
+
+	bA = Game.bAutoBalance;
+	bD = Game.bDeathBasedAutoBalance;
+	bP = Game.bPlayersBalanceTeams;
+	Game.bAutoBalance = Game.default.bAutoBalance;
+	Game.bDeathBasedAutoBalance = Game.default.bDeathBasedAutoBalance;
+	Game.bPlayersBalanceTeams = Game.default.bPlayersBalanceTeams;
+	Game.SaveConfig();
+	Game.bAutoBalance = bA;
+	Game.bDeathBasedAutoBalance = bD;
+	Game.bPlayersBalanceTeams = bP;
+}
+
 /**
  * 49: turn tournament mode on or off, and optionally set the ready threshold.
  *
@@ -2068,7 +2085,7 @@ function HandleSetTournament(AOCRConPacket Packet)
 		// runtime-only on purpose; disable is the escape hatch for a stuck server.
 		class'AOCGame'.default.bTournamentMode = false;
 		class'AOCGame'.static.StaticSaveConfig();
-		Game.SaveConfig();
+		SaveGameKeepBalance(Game);
 	}
 
 	Game.GameReplicationInfo.bForceNetUpdate = true;

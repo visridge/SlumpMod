@@ -1978,6 +1978,8 @@ Game-side `config` variables in `Include/Game/Vars.uci`:
 |---|---|
 | `SDKPrefixes` | Map-prefix to gametype mapping — see §8.8 |
 | `fXangModTournamentHoldLimit` | Seconds before the tournament gate gives up; 0 disables. Default 300 |
+| `bXangModOverrideAutoBalance` | Per mode: replace the server's `[AOC.AOCGame]` autobalance and `[UTGame.UTTeamGame] bPlayersBalanceTeams` with `bXangModAutoBalance`. Off = server values |
+| `bXangModAutoBalance` | Per mode: team balance on/off when overriding. Tournament mode and an active ranked match force it off |
 | `bEnableCompForestAlternatingSpawns` | §8.3 |
 
 ### 8.8 `DefaultXangMod.ini`

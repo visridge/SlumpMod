@@ -25,6 +25,10 @@ var config array<GameTypePrefix> SDKPrefixes;
 var config float fXangModTournamentHoldLimit;   // seconds before giving up; 0 disables
 var float fXangModTournamentHoldSince;          // when the gate first blocked; 0 = not blocking
 
+// Per-mode team balance, read from this mode's own section. Override off = server values.
+var config bool bXangModOverrideAutoBalance;
+var config bool bXangModAutoBalance;
+
 //var string StatsMatchId;
 //var bool bStatsRequestInFlight;
 //var HttpRequestInterface StatsRequest;
